@@ -1,0 +1,108 @@
+{
+  "active": true,
+  "activeVersionId": "be2c294e-a182-461b-8bc1-cf30acea6a1a",
+  "connections": {
+    "Compose Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Compose Message",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-01-14T01:15:00.612Z",
+  "description": null,
+  "isArchived": false,
+  "name": "Error Handling",
+  "nodes": [
+    {
+      "id": "245d7990-8e0f-4d3a-a503-772bda739a30",
+      "name": "Error Trigger",
+      "parameters": {},
+      "position": [
+        -272,
+        -32
+      ],
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "4fadf119-21ac-4f95-9206-8d52e431d83f",
+      "name": "Send a text message",
+      "parameters": {
+        "additionalFields": {},
+        "chatId": "1509032341",
+        "text": "={{ $json.telegram_message }}"
+      },
+      "position": [
+        144,
+        -32
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "944396bc-56db-4702-8ac9-d2e1b31dfb63"
+    },
+    {
+      "id": "566912ab-5d96-4405-8443-6a296ef03366",
+      "name": "Compose Message",
+      "parameters": {
+        "jsCode": "const e = $json;\n\n// Best-effort extraction across n8n versions\nconst workflowName =\n  e.workflow?.name ||\n  e.workflowName ||\n  e.workflow?.id ||\n  'unknown-workflow';\n\nconst nodeName =\n  e.lastNodeExecuted ||\n  e.node?.name ||\n  e.error?.node?.name ||\n  'unknown-node';\n\nconst message =\n  e.error?.message ||\n  e.errorMessage ||\n  e.execution?.error?.message ||\n  'unknown error';\n\nconst time =\n  e.execution?.startedAt ||\n  e.execution?.startTime ||\n  e.timestamp ||\n  new Date().toISOString();\n\nconst execId =\n  e.execution?.id ||\n  e.executionId ||\n  null;\n\nconst execUrl =\n  e.execution?.url ||\n  (execId ? `/execution/${execId}` : null);\n\n// keep it short (telegram-friendly)\nconst shortMsg = String(message).slice(0, 500);\n\nconst telegram_message =\n  `🚨 n8n error\\n` +\n  `WF: ${workflowName}\\n` +\n  `Node: ${nodeName}\\n` +\n  `When: ${time}\\n` +\n  `Msg: ${shortMsg}` +\n  (execUrl ? `\\nExec: ${execUrl}` : '');\n\nreturn [{ json: { telegram_message } }];\n"
+      },
+      "position": [
+        -64,
+        -32
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-01-14T01:15:00.612Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-01-14T01:15:00.612Z",
+      "workflowId": "R2r3jkL5Rb39zKpyutwhW"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-01-18T02:56:56.639Z",
+  "versionCounter": 11
+}

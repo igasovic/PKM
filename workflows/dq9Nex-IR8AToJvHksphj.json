@@ -1,0 +1,781 @@
+{
+  "active": true,
+  "activeVersionId": "149c629b-919a-4676-8276-d17a2607691d",
+  "connections": {
+    "Build Context Pack": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message4",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build SQL - /CONTINUE": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a SQL query2",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build SQL - /FIND": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a SQL query1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build SQL - /LAST": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a SQL query",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build SQL - /PULL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a SQL query3",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Command Parser": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "IF: Ignore?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query2": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query3": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Telegram Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format /help Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message4",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Telegram Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message4",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF: Ignore?": {
+      "main": [
+        [],
+        [
+          {
+            "index": 0,
+            "node": "IF: Reply now?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF: Reply now?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Switch",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build SQL - /LAST",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Build SQL - /FIND",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Build SQL - /CONTINUE",
+            "type": "main"
+          }
+        ],
+        [],
+        [
+          {
+            "index": 0,
+            "node": "Build SQL - /PULL",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Format /help Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Command Parser",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Command Parser",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-01-18T03:45:24.643Z",
+  "description": null,
+  "isArchived": false,
+  "name": "Read",
+  "nodes": [
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "210ee0fc-439f-4e4a-9c1e-59ebdf97d21f",
+      "name": "Send a text message",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "1509032341",
+        "text": "={{$json.telegram_message}}"
+      },
+      "position": [
+        1120,
+        0
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    },
+    {
+      "id": "964a4450-21a5-4ea8-a743-61a1fcf00405",
+      "name": "IF: Ignore?",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "629f7d0c-7892-4a16-9b60-300305220042",
+              "leftValue": "={{$json._ignore === true}}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": ""
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        672,
+        128
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "id": "29c3dcb3-2789-43b1-a5d8-8690578b448e",
+      "name": "IF: Reply now?",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "629f7d0c-7892-4a16-9b60-300305220042",
+              "leftValue": "={{$json._reply_now === true}}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": ""
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        896,
+        128
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "id": "f8eb7c10-83c5-4cc8-8161-4281f258102f",
+      "name": "Switch",
+      "parameters": {
+        "options": {},
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "b766299f-eaee-4cbd-afb5-e3a573e3d9ec",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "last"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "last",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "86c55910-1027-409d-8ccb-b1ec51256dff",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "find"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "find",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "7fbd8a34-970a-424b-ae96-d87e6511ab4e",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "continue"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "continue",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "65f16c89-88ef-4c7e-a079-1b170c211618",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "with"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "with",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "ec9cff1e-feae-4287-9578-17545f4786ed",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "pull"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "pull",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "19de7464-62fb-43f6-86ca-6a6f5c46bcda",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "help"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "help",
+              "renameOutput": true
+            }
+          ]
+        }
+      },
+      "position": [
+        1120,
+        192
+      ],
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4
+    },
+    {
+      "id": "9943dcb4-e3fc-409f-9ae5-f9c6b9e31350",
+      "name": "When Executed by Another Workflow",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        224,
+        128
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "926eb875-5735-4746-a0a4-7801b8db586f",
+      "name": "Command Parser",
+      "parameters": {
+        "jsCode": "const msg = $json.message || {};\nconst text = String(msg.text || '').trim();\nconst chat_id = msg.chat?.id ?? null;\n\n// If reused accidentally for non-commands\nif (!text.startsWith('/')) {\n  return [{ json: { _ignore: true } }];\n}\n\n// Supported commands + defaults\nconst defaults = {\n  last: { days: 180, limit: 10 },\n  find: { days: 365, limit: 10 },\n  continue: { days: 90, limit: 10 },\n  with: { days: 90, limit: 10 },\n  pull: { days: null, limit: null },   // <-- NEW\n  help: { days: null, limit: null },\n};\n\nconst mCmd = text.match(/^\\/([a-zA-Z_]+)/);\nconst cmd = (mCmd?.[1] || '').toLowerCase();\n\nif (!defaults[cmd]) {\n  return [{\n    json: {\n      _reply_now: true,\n      chat_id,\n      telegram_message:\n        `Unknown command.\\n\\nCommands:\\n` +\n        `/help\\n` +\n        `/pull <id> [--excerpt]\\n` +\n        `/last \"phrase\" [--days N] [--limit M]\\n` +\n        `/find \"needle\" [--days N] [--limit M]\\n` +\n        `/continue topic [--days N] [--limit M]\\n` +\n        `/with person topic [--days N] [--limit M]`\n    }\n  }];\n}\n\n// Special case: /help always goes to switch (no reply_now)\nif (cmd === 'help') {\n  return [{ json: { cmd: 'help', chat_id } }];\n}\n\n// Special case: /pull <entry_id> [--excerpt]\nif (cmd === 'pull') {\n  const want_excerpt = /--excerpt\\b/i.test(text);\n\n  // allow: /pull 123, /pull 123 --excerpt\n  const mId = text.match(/^\\/pull\\s+(\\d+)\\b/i);\n  if (!mId?.[1]) {\n    return [{\n      json: {\n        _reply_now: true,\n        chat_id,\n        telegram_message: `Usage:\\n/pull <id> [--excerpt]\\nExample: /pull 12345 --excerpt`\n      }\n    }];\n  }\n\n  const entry_id = mId[1]; // keep as string to avoid JS precision issues\n\n  return [{\n    json: {\n      cmd,\n      entry_id,\n      want_excerpt,\n      chat_id\n    }\n  }];\n}\n\n// Flags\nlet days = defaults[cmd].days;\nlet limit = defaults[cmd].limit;\n\nconst mDays = text.match(/--days\\s+(\\d+)/i);\nif (mDays) days = Math.max(1, parseInt(mDays[1], 10));\n\nconst mLimit = text.match(/--limit\\s+(\\d+)/i);\nif (mLimit) limit = Math.min(50, Math.max(1, parseInt(mLimit[1], 10)));\n\n// Query extraction\nlet q = null;\n\n// Prefer quoted query for /last and /find\nif (cmd === 'last' || cmd === 'find') {\n  const quoted = text.match(/^\\/\\w+\\s+[\"']([\\s\\S]*?)[\"']/i);\n  if (quoted?.[1]) q = quoted[1].trim();\n}\n\n// Fallback: everything after /cmd minus flags\nif (!q) {\n  const rest = text.replace(/^\\/\\w+/i, '').trim();\n  q = rest\n    .replace(/--days\\s+\\d+/ig, '')\n    .replace(/--limit\\s+\\d+/ig, '')\n    .trim();\n  if (!q) q = null;\n}\n\nif (!q) {\n  return [{\n    json: {\n      _reply_now: true,\n      chat_id,\n      telegram_message: `Usage:\\n/${cmd} <query> [--days N] [--limit M]`\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    cmd,\n    q,\n    days,\n    limit,\n    chat_id\n  }\n}];\n"
+      },
+      "position": [
+        448,
+        128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "postgres": {
+          "id": "YICLDaLPmdddPcoA",
+          "name": "Postgres account"
+        }
+      },
+      "id": "129ffdab-f65d-4914-8645-c4c7ec721ed1",
+      "name": "Execute a SQL query",
+      "parameters": {
+        "operation": "executeQuery",
+        "options": {
+          "queryReplacement": "="
+        },
+        "query": "{{$json.sql}}"
+      },
+      "position": [
+        1568,
+        -128
+      ],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6
+    },
+    {
+      "credentials": {
+        "postgres": {
+          "id": "YICLDaLPmdddPcoA",
+          "name": "Postgres account"
+        }
+      },
+      "id": "c6ca235a-6adc-4f31-b797-a1f5cddcc9ed",
+      "name": "Execute a SQL query1",
+      "parameters": {
+        "operation": "executeQuery",
+        "options": {
+          "queryReplacement": "="
+        },
+        "query": "{{$json.sql}}"
+      },
+      "position": [
+        1568,
+        64
+      ],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6
+    },
+    {
+      "credentials": {
+        "postgres": {
+          "id": "YICLDaLPmdddPcoA",
+          "name": "Postgres account"
+        }
+      },
+      "id": "798abdd9-ceaf-446f-a751-0adaeddaa26c",
+      "name": "Execute a SQL query2",
+      "parameters": {
+        "operation": "executeQuery",
+        "options": {
+          "queryReplacement": "="
+        },
+        "query": "{{$json.sql}}"
+      },
+      "position": [
+        1568,
+        256
+      ],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "54ab1327-9b6a-4263-b901-2a70893d5ee6",
+      "name": "Send a text message4",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "1509032341",
+        "text": "={{$json.telegram_message}}"
+      },
+      "position": [
+        2016,
+        384
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    },
+    {
+      "id": "d0724507-154e-485c-8b0d-3523be365f6c",
+      "name": "Build SQL - /FIND",
+      "parameters": {
+        "jsCode": "function sqlString(v) {\n  if (v === null || v === undefined) return 'NULL';\n  const s = String(v).replace(/'/g, \"''\");\n  return `'${s}'`;\n}\n\nconst q = String($json.q || '').trim();\nconst days = Number($json.days || 365);\n\n// WP3 safety cap\nconst cfgLimit = Number($json.config?.scoring?.maxItems?.find || 15);\nconst limit = Math.min(cfgLimit, Math.max(1, Number($json.limit || 10)));\n\n// escape LIKE wildcards in user input\nconst needle = String(q).replace(/\\\\/g, '\\\\\\\\').replace(/%/g, '\\\\%').replace(/_/g, '\\\\_');\n\nconst W = $json.config?.scoring?.weightsByCmd?.find || {};\n\nconst sql = `\nWITH params AS (\n  SELECT\n    ${sqlString(q)}::text AS qtext,\n    websearch_to_tsquery('english', ${sqlString(q)}) AS tsq,\n    ${days}::int AS days,\n    ${limit}::int AS lim,\n    ${sqlString(needle)}::text AS needle\n),\nhits AS (\n  SELECT\n    e.entry_id,\n    e.id,\n    e.created_at,\n    e.source,\n    e.intent,\n    e.content_type,\n    COALESCE(e.url_canonical, e.url, '') AS url,\n    COALESCE(e.title, e.external_ref->>'title', '') AS title,\n    COALESCE(e.author, '') AS author,\n\n    COALESCE(e.topic_primary,'') AS topic_primary,\n    COALESCE(e.topic_secondary,'') AS topic_secondary,\n    COALESCE(e.gist,'') AS gist,\n    COALESCE(e.retrieval_excerpt, e.metadata #>> '{retrieval,excerpt}', '') AS excerpt,\n\n    COALESCE(char_length(COALESCE(e.clean_text, e.capture_text)), 0) AS text_len,\n\n    ts_rank_cd(e.tsv, p.tsq) AS fts_rank,\n    left(regexp_replace(COALESCE(e.clean_text, e.capture_text), '\\\\s+', ' ', 'g'), 600) AS snippet,\n\n    (\n      -- literal evidence matters most for /find\n      (CASE WHEN COALESCE(e.clean_text,'') ILIKE '%' || p.needle || '%' ESCAPE '\\\\' THEN 50 ELSE 0 END) +\n      (CASE WHEN COALESCE(e.capture_text,'') ILIKE '%' || p.needle || '%' ESCAPE '\\\\' THEN 20 ELSE 0 END) +\n      (${Number(W.fts_rank || 80)} * ts_rank_cd(e.tsv, p.tsq)) +\n\n      -- small chip boosts (don’t overwhelm find)\n      (CASE WHEN e.title ILIKE '%' || p.qtext || '%' THEN ${Number(W.title_match || 0)} ELSE 0 END) +\n      (CASE WHEN e.gist ILIKE '%' || p.qtext || '%' THEN ${Number(W.gist_match || 0)} ELSE 0 END)\n    ) AS score\n  FROM pkm.entries e, params p\n  WHERE\n    e.created_at >= (now() - (p.days || ' days')::interval)\n    AND e.duplicate_of IS NULL\n    AND (\n      COALESCE(e.clean_text,'') ILIKE '%' || p.needle || '%' ESCAPE '\\\\'\n      OR COALESCE(e.capture_text,'') ILIKE '%' || p.needle || '%' ESCAPE '\\\\'\n      OR (p.tsq IS NOT NULL AND e.tsv @@ p.tsq)\n    )\n  ORDER BY score DESC, e.created_at DESC\n  LIMIT (SELECT lim FROM params)\n),\nmeta AS (\n  SELECT\n    TRUE AS is_meta,\n    'find'::text AS cmd,\n    (SELECT qtext FROM params) AS query_text,\n    (SELECT days FROM params) AS days,\n    (SELECT lim FROM params) AS limit,\n    (SELECT count(*) FROM hits)::int AS hits\n)\nSELECT\n  TRUE AS is_meta,\n  m.cmd,\n  m.query_text,\n  m.days,\n  m.limit,\n  m.hits,\n  NULL::bigint AS entry_id,\n  NULL::uuid AS id,\n  NULL::timestamptz AS created_at,\n  NULL::text AS source,\n  NULL::text AS intent,\n  NULL::text AS content_type,\n  NULL::text AS url,\n  NULL::text AS title,\n  NULL::text AS author,\n  NULL::text AS topic_primary,\n  NULL::text AS topic_secondary,\n  NULL::text AS gist,\n  NULL::text AS excerpt,\n  NULL::double precision AS score,\n  NULL::text AS snippet\nFROM meta m\nUNION ALL\nSELECT\n  FALSE AS is_meta,\n  'find'::text AS cmd,\n  (SELECT qtext FROM params) AS query_text,\n  (SELECT days FROM params) AS days,\n  (SELECT lim FROM params) AS limit,\n  NULL::int AS hits,\n  h.entry_id,\n  h.id,\n  h.created_at,\n  h.source,\n  h.intent,\n  h.content_type,\n  h.url,\n  h.title,\n  h.author,\n  h.topic_primary,\n  h.topic_secondary,\n  h.gist,\n  h.excerpt,\n  h.score,\n  h.snippet\nFROM hits h;\n`.trim();\n\nreturn [{ json: { ...$json, sql } }];\n"
+      },
+      "position": [
+        1344,
+        64
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "97543204-559a-4946-8621-4faacda4643f",
+      "name": "Build SQL - /LAST",
+      "parameters": {
+        "jsCode": "function sqlString(v) {\n  if (v === null || v === undefined) return 'NULL';\n  const s = String(v).replace(/'/g, \"''\");\n  return `'${s}'`;\n}\n\nconst q = String($json.q || '').trim();\nconst days = Number($json.days || 180);\n\n// WP3 safety cap\nconst cfgLimit = Number($json.config?.scoring?.maxItems?.last || 15);\nconst limit = Math.min(cfgLimit, Math.max(1, Number($json.limit || 10)));\n\nconst W = $json.config?.scoring?.weightsByCmd?.last || {};\nconst halfLife = Number($json.config?.scoring?.recencyByCmd?.last?.half_life_days || 180);\n\nconst sql = `\nWITH params AS (\n  SELECT\n    ${sqlString(q)}::text AS qtext,\n    websearch_to_tsquery('english', ${sqlString(q)}) AS tsq,\n    ${days}::int AS days,\n    ${limit}::int AS lim,\n    ${halfLife}::real AS half_life_days\n),\nbase AS (\n  SELECT\n    e.entry_id,\n    e.id,\n    e.created_at,\n    e.source,\n    e.intent,\n    e.content_type,\n    COALESCE(e.url_canonical, e.url, '') AS url,\n    COALESCE(e.title, e.external_ref->>'title', '') AS title,\n    COALESCE(e.author, '') AS author,\n\n    COALESCE(e.topic_primary,'') AS topic_primary,\n    COALESCE(e.topic_secondary,'') AS topic_secondary,\n    COALESCE(e.gist,'') AS gist,\n    COALESCE(e.retrieval_excerpt, e.metadata #>> '{retrieval,excerpt}', '') AS excerpt,\n\n    COALESCE(e.keywords, ARRAY[]::text[]) AS keywords,\n    COALESCE(e.quality_score, 0.5) AS quality_score,\n    COALESCE(e.boilerplate_heavy, false) AS boilerplate_heavy,\n    COALESCE(e.low_signal, false) AS low_signal,\n    COALESCE(e.extraction_incomplete, false) AS extraction_incomplete,\n    COALESCE(e.link_ratio, 0.0) AS link_ratio,\n\n    p.qtext,\n    p.tsq,\n\n    exp( - (extract(epoch from (now() - e.created_at)) / 86400.0) / p.half_life_days ) AS recency,\n\n    to_tsvector('english',\n      trim(\n        COALESCE(e.topic_primary,'') || ' ' ||\n        COALESCE(e.topic_secondary,'') || ' ' ||\n        COALESCE(array_to_string(e.keywords,' '),'') || ' ' ||\n        COALESCE(e.gist,'') || ' ' ||\n        COALESCE(e.title,'') || ' ' ||\n        COALESCE(e.author,'')\n      )\n    ) AS t1_tsv\n  FROM pkm.entries e, params p\n  WHERE\n    e.created_at >= (now() - (p.days || ' days')::interval)\n    AND e.duplicate_of IS NULL\n),\nscored AS (\n  SELECT\n    b.*,\n\n    -- ranks\n    ts_rank_cd(b.t1_tsv, b.tsq) AS t1_rank,\n    ts_rank_cd(e.tsv, b.tsq) AS fts_rank,\n\n    -- score using config weights\n    (\n      -- topic matches\n      (CASE WHEN lower(b.topic_primary) = lower(b.qtext) THEN ${Number(W.topic_primary_exact || 0)} ELSE 0 END) +\n      (CASE WHEN lower(b.topic_primary) LIKE lower(b.qtext) || '%' THEN ${Number(W.topic_primary_fuzzy || 0)} ELSE 0 END) +\n      (CASE WHEN lower(b.topic_secondary) = lower(b.qtext) THEN ${Number(W.topic_secondary_exact || 0)} ELSE 0 END) +\n      (CASE WHEN lower(b.topic_secondary) LIKE '%' || lower(b.qtext) || '%' THEN ${Number(W.topic_secondary_fuzzy || 0)} ELSE 0 END) +\n\n      -- keywords overlap (FIXED: avoids text = text[] error)\n      LEAST(\n        ${Number(W.keywords_overlap_cap || 0)},\n        ${Number(W.keywords_overlap_each || 0)} * (\n          SELECT count(*)\n          FROM unnest(b.keywords) kw\n          WHERE kw <> ''\n            AND lower(kw) = ANY (regexp_split_to_array(lower(b.qtext), '\\\\s+'))\n        )\n      ) +\n\n      -- gist/title/author matches\n      (CASE WHEN b.gist ILIKE '%' || b.qtext || '%' THEN ${Number(W.gist_match || 0)} ELSE 0 END) +\n      (CASE WHEN b.title ILIKE '%' || b.qtext || '%' THEN ${Number(W.title_match || 0)} ELSE 0 END) +\n      (CASE WHEN b.author ILIKE '%' || b.qtext || '%' THEN ${Number(W.author_match || 0)} ELSE 0 END) +\n\n      -- fts rank (scaled)\n      (${Number(W.fts_rank || 0)} * ts_rank_cd(e.tsv, b.tsq)) +\n\n      -- preferences\n      (CASE WHEN b.content_type = 'note' THEN ${Number(W.prefer_content_type_note || 0)} ELSE 0 END) +\n      (CASE WHEN b.intent = 'think' THEN ${Number(W.prefer_intent_think || 0)} ELSE 0 END) +\n      (CASE WHEN b.topic_primary <> '' THEN ${Number(W.prefer_enriched || 0)} ELSE 0 END) +\n\n      -- quality + recency (continuous nudges)\n      (10.0 * b.quality_score) +\n      (5.0 * b.recency) -\n\n      -- penalties\n      (CASE WHEN b.boilerplate_heavy THEN ${Number(W.penalty_boilerplate_heavy || 0)} ELSE 0 END) -\n      (CASE WHEN b.low_signal THEN ${Number(W.penalty_low_signal || 0)} ELSE 0 END) -\n      (CASE WHEN b.link_ratio > 0.18 THEN ${Number(W.penalty_link_ratio_high || 0)} ELSE 0 END) -\n      (CASE WHEN b.extraction_incomplete THEN ${Number(W.penalty_extraction_incomplete || 0)} ELSE 0 END)\n    ) AS score\n  FROM base b\n  JOIN pkm.entries e ON e.id = b.id\n  WHERE\n    b.tsq IS NOT NULL\n    AND (e.tsv @@ b.tsq OR b.t1_tsv @@ b.tsq)\n),\nhits AS (\n  SELECT\n    entry_id,\n    id,\n    created_at,\n    source,\n    intent,\n    content_type,\n    url,\n    title,\n    author,\n    topic_primary,\n    topic_secondary,\n    gist,\n    excerpt,\n    score\n  FROM scored\n  ORDER BY score DESC, created_at DESC\n  LIMIT (SELECT lim FROM params)\n),\nmeta AS (\n  SELECT\n    TRUE AS is_meta,\n    'last'::text AS cmd,\n    (SELECT qtext FROM params) AS query_text,\n    (SELECT days FROM params) AS days,\n    (SELECT lim FROM params) AS limit,\n    (SELECT count(*) FROM hits)::int AS hits\n)\nSELECT\n  TRUE AS is_meta,\n  m.cmd,\n  m.query_text,\n  m.days,\n  m.limit,\n  m.hits,\n  NULL::bigint AS entry_id,\n  NULL::uuid AS id,\n  NULL::timestamptz AS created_at,\n  NULL::text AS source,\n  NULL::text AS intent,\n  NULL::text AS content_type,\n  NULL::text AS url,\n  NULL::text AS title,\n  NULL::text AS author,\n  NULL::text AS topic_primary,\n  NULL::text AS topic_secondary,\n  NULL::text AS gist,\n  NULL::text AS excerpt,\n  NULL::double precision AS score,\n  NULL::text AS snippet\nFROM meta m\nUNION ALL\nSELECT\n  FALSE AS is_meta,\n  'last'::text AS cmd,\n  (SELECT qtext FROM params) AS query_text,\n  (SELECT days FROM params) AS days,\n  (SELECT lim FROM params) AS limit,\n  NULL::int AS hits,\n  h.entry_id,\n  h.id,\n  h.created_at,\n  h.source,\n  h.intent,\n  h.content_type,\n  h.url,\n  h.title,\n  h.author,\n  h.topic_primary,\n  h.topic_secondary,\n  h.gist,\n  h.excerpt,\n  h.score,\n  NULL::text AS snippet\nFROM hits h;\n`.trim();\n\nreturn [{ json: { ...$json, sql } }];\n"
+      },
+      "position": [
+        1344,
+        -128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "138ce96f-f56c-4bea-9443-67686bd6066b",
+      "name": "Build SQL - /CONTINUE",
+      "parameters": {
+        "jsCode": "function sqlString(v) {\n  if (v === null || v === undefined) return 'NULL';\n  const s = String(v).replace(/'/g, \"''\");\n  return `'${s}'`;\n}\n\nconst q = String($json.q || '').trim();\nconst days = Number($json.days || 90);\n\nconst cfgLimit = Number($json.config?.scoring?.maxItems?.continue || 15);\nconst limit = Math.min(cfgLimit, Math.max(1, Number($json.limit || 10)));\n\nconst W = $json.config?.scoring?.weightsByCmd?.continue || {};\nconst halfLife = Number($json.config?.scoring?.recencyByCmd?.continue?.half_life_days || 45);\nconst noteQuota = Number($json.config?.scoring?.noteQuotaByCmd?.continue || 0.75);\n\nconst sql = `\nWITH params AS (\n  SELECT\n    ${sqlString(q)}::text AS qtext,\n    websearch_to_tsquery('english', ${sqlString(q)}) AS tsq,\n    ${days}::int AS days,\n    ${limit}::int AS lim,\n    ${halfLife}::real AS half_life_days,\n    ${noteQuota}::real AS note_quota\n),\n\nbase AS (\n  SELECT\n    e.entry_id,\n    e.id,\n    e.created_at,\n    e.source,\n    e.intent,\n    e.content_type,\n    COALESCE(e.url_canonical, e.url, '') AS url,\n    COALESCE(e.title, e.external_ref->>'title', '') AS title,\n    COALESCE(e.author, '') AS author,\n\n    COALESCE(e.topic_primary,'') AS topic_primary,\n    COALESCE(e.topic_secondary,'') AS topic_secondary,\n    COALESCE(e.gist,'') AS gist,\n    COALESCE(e.retrieval_excerpt, e.metadata #>> '{retrieval,excerpt}', '') AS excerpt,\n\n    COALESCE(e.keywords, ARRAY[]::text[]) AS keywords,\n    COALESCE(e.quality_score, 0.5) AS quality_score,\n    COALESCE(e.boilerplate_heavy, false) AS boilerplate_heavy,\n    COALESCE(e.low_signal, false) AS low_signal,\n    COALESCE(e.extraction_incomplete, false) AS extraction_incomplete,\n    COALESCE(e.link_ratio, 0.0) AS link_ratio,\n\n    p.qtext,\n    p.tsq,\n\n    exp( - (extract(epoch from (now() - e.created_at)) / 86400.0) / p.half_life_days ) AS recency,\n\n    to_tsvector('english',\n      trim(\n        COALESCE(e.topic_primary,'') || ' ' ||\n        COALESCE(e.topic_secondary,'') || ' ' ||\n        COALESCE(array_to_string(e.keywords,' '),'') || ' ' ||\n        COALESCE(e.gist,'') || ' ' ||\n        COALESCE(e.title,'') || ' ' ||\n        COALESCE(e.author,'')\n      )\n    ) AS t1_tsv\n  FROM pkm.entries e, params p\n  WHERE\n    e.created_at >= (now() - (p.days || ' days')::interval)\n    AND e.duplicate_of IS NULL\n),\n\nscored AS (\n  SELECT\n    b.*,\n    ts_rank_cd(b.t1_tsv, b.tsq) AS t1_rank,\n    ts_rank_cd(e.tsv, b.tsq) AS fts_rank,\n\n    (\n      (CASE WHEN lower(b.topic_primary) = lower(b.qtext) THEN ${Number(W.topic_primary_exact || 0)} ELSE 0 END) +\n      (CASE WHEN lower(b.topic_primary) LIKE lower(b.qtext) || '%' THEN ${Number(W.topic_primary_fuzzy || 0)} ELSE 0 END) +\n      (CASE WHEN lower(b.topic_secondary) = lower(b.qtext) THEN ${Number(W.topic_secondary_exact || 0)} ELSE 0 END) +\n      (CASE WHEN lower(b.topic_secondary) LIKE '%' || lower(b.qtext) || '%' THEN ${Number(W.topic_secondary_fuzzy || 0)} ELSE 0 END) +\n\n      -- keywords overlap (fixed)\n      LEAST(\n        ${Number(W.keywords_overlap_cap || 0)},\n        ${Number(W.keywords_overlap_each || 0)} * (\n          SELECT count(*)\n          FROM unnest(b.keywords) kw\n          WHERE kw <> ''\n            AND lower(kw) = ANY (regexp_split_to_array(lower(b.qtext), '\\\\s+'))\n        )\n      ) +\n\n      (CASE WHEN b.gist ILIKE '%' || b.qtext || '%' THEN ${Number(W.gist_match || 0)} ELSE 0 END) +\n      (CASE WHEN b.title ILIKE '%' || b.qtext || '%' THEN ${Number(W.title_match || 0)} ELSE 0 END) +\n      (CASE WHEN b.author ILIKE '%' || b.qtext || '%' THEN ${Number(W.author_match || 0)} ELSE 0 END) +\n\n      (${Number(W.fts_rank || 0)} * ts_rank_cd(e.tsv, b.tsq)) +\n\n      (CASE WHEN b.content_type = 'note' THEN ${Number(W.prefer_content_type_note || 0)} ELSE 0 END) +\n      (CASE WHEN b.intent = 'think' THEN ${Number(W.prefer_intent_think || 0)} ELSE 0 END) +\n      (CASE WHEN b.topic_primary <> '' THEN ${Number(W.prefer_enriched || 0)} ELSE 0 END) +\n\n      (10.0 * b.quality_score) +\n      (5.0 * b.recency) -\n\n      (CASE WHEN b.boilerplate_heavy THEN ${Number(W.penalty_boilerplate_heavy || 0)} ELSE 0 END) -\n      (CASE WHEN b.low_signal THEN ${Number(W.penalty_low_signal || 0)} ELSE 0 END) -\n      (CASE WHEN b.link_ratio > 0.18 THEN ${Number(W.penalty_link_ratio_high || 0)} ELSE 0 END) -\n      (CASE WHEN b.extraction_incomplete THEN ${Number(W.penalty_extraction_incomplete || 0)} ELSE 0 END)\n    ) AS score\n  FROM base b\n  JOIN pkm.entries e ON e.id = b.id\n  WHERE\n    b.tsq IS NOT NULL\n    AND (e.tsv @@ b.tsq OR b.t1_tsv @@ b.tsq OR lower(b.topic_primary) = lower(b.qtext))\n),\n\nnotes AS (\n  SELECT *, row_number() OVER (ORDER BY score DESC, created_at DESC) AS rn\n  FROM scored\n  WHERE content_type = 'note'\n),\nexternals AS (\n  SELECT *, row_number() OVER (ORDER BY score DESC, created_at DESC) AS rn\n  FROM scored\n  WHERE content_type IS DISTINCT FROM 'note'\n),\n\n/* FIX: only select the hit rows (notes/externals), not params/note_count columns */\nnote_pick AS (\n  SELECT n.*\n  FROM notes n\n  CROSS JOIN params p\n  WHERE n.rn <= greatest(1, floor(p.lim * p.note_quota))::int\n),\nnote_count AS (\n  SELECT count(*)::int AS n FROM note_pick\n),\nexternal_pick AS (\n  SELECT x.*\n  FROM externals x\n  CROSS JOIN params p\n  CROSS JOIN note_count nc\n  WHERE x.rn <= (p.lim - nc.n)\n),\nhits AS (\n  SELECT * FROM note_pick\n  UNION ALL\n  SELECT * FROM external_pick\n),\n\nmeta_row AS (\n  SELECT\n    TRUE AS is_meta,\n    'continue'::text AS cmd,\n    p.qtext AS query_text,\n    p.days AS days,\n    p.lim AS limit,\n    (SELECT count(*) FROM hits)::int AS hits,\n    NULL::bigint AS entry_id,\n    NULL::uuid AS id,\n    NULL::timestamptz AS created_at,\n    NULL::text AS source,\n    NULL::text AS intent,\n    NULL::text AS content_type,\n    NULL::text AS url,\n    NULL::text AS title,\n    NULL::text AS author,\n    NULL::text AS topic_primary,\n    NULL::text AS topic_secondary,\n    NULL::text AS gist,\n    NULL::text AS excerpt,\n    NULL::double precision AS score,\n    NULL::text AS snippet\n  FROM params p\n),\n\nhit_rows AS (\n  SELECT\n    FALSE AS is_meta,\n    'continue'::text AS cmd,\n    (SELECT qtext FROM params) AS query_text,\n    (SELECT days FROM params) AS days,\n    (SELECT lim FROM params) AS limit,\n    NULL::int AS hits,\n    h.entry_id,\n    h.id,\n    h.created_at,\n    h.source,\n    h.intent,\n    h.content_type,\n    h.url,\n    h.title,\n    h.author,\n    h.topic_primary,\n    h.topic_secondary,\n    h.gist,\n    h.excerpt,\n    h.score::double precision AS score,\n    NULL::text AS snippet\n  FROM hits h\n),\n\nout AS (\n  SELECT * FROM meta_row\n  UNION ALL\n  SELECT * FROM hit_rows\n)\n\nSELECT *\nFROM out\nORDER BY is_meta DESC, score DESC NULLS LAST, created_at DESC NULLS LAST;\n`.trim();\n\nreturn [{ json: { ...$json, sql } }];\n"
+      },
+      "position": [
+        1344,
+        256
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "postgres": {
+          "id": "YICLDaLPmdddPcoA",
+          "name": "Postgres account"
+        }
+      },
+      "id": "ec964067-8adc-468c-82cf-43aae9255360",
+      "name": "Execute a SQL query3",
+      "parameters": {
+        "operation": "executeQuery",
+        "options": {
+          "queryReplacement": "="
+        },
+        "query": "{{$json.sql}}"
+      },
+      "position": [
+        1568,
+        448
+      ],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6
+    },
+    {
+      "id": "55ed7dbe-1cc2-46de-98b5-0fa4d916c84c",
+      "name": "Build SQL - /PULL",
+      "parameters": {
+        "jsCode": "function sqlBigInt(v) {\n  const s = String(v ?? '').trim();\n  if (!/^\\d+$/.test(s)) return 'NULL';\n  return s;\n}\n\nconst entry_id = $json.entry_id;\nif (!entry_id || !String(entry_id).trim()) throw new Error('pull: missing entry_id');\n\nconst shortN = Number($json.config?.scoring?.maxItems?.pull_short_chars || 320);\nconst longN = Number($json.config?.scoring?.maxItems?.pull_excerpt_chars || 1800);\n\nconst sql = `\nSELECT\n  entry_id,\n  id,\n  created_at,\n  source,\n  intent,\n  content_type,\n  COALESCE(title,'') AS title,\n  COALESCE(author,'') AS author,\n  COALESCE(url_canonical, url, '') AS url,\n  COALESCE(topic_primary,'') AS topic_primary,\n  COALESCE(topic_secondary,'') AS topic_secondary,\n  COALESCE(gist,'') AS gist,\n  COALESCE(clean_text, '') AS clean_text,\n  keywords,\n\n  -- legacy name expected by current telegram message builder\n  left(COALESCE(retrieval_excerpt, metadata #>> '{retrieval,excerpt}', ''), ${shortN}) AS excerpt,\n\n  -- optional long body for later /pull --excerpt\n  left(regexp_replace(COALESCE(clean_text, capture_text), '\\\\s+', ' ', 'g'), ${longN}) AS excerpt_long\nFROM pkm.entries\nWHERE entry_id = ${sqlBigInt(entry_id)}::bigint\nLIMIT 1;\n`.trim();\n\nreturn [{ json: { ...$json, sql } }];\n"
+      },
+      "position": [
+        1344,
+        448
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "f305ac84-35d3-44df-8ef5-1c0e004f37b8",
+      "name": "Format Telegram Message",
+      "parameters": {
+        "jsCode": "function s(v){ return (v ?? '').toString().trim(); }\n\nconst entryId = s($json.entry_id);\nconst title = s($json.title);\nconst author = s($json.author);\nconst url = s($json.url);\nconst tp = s($json.topic_primary);\nconst ts = s($json.topic_secondary);\nconst gist = s($json.gist);\n\nconst wantExcerpt = $json.want_excerpt === true;\n\n// From SQL builder\nconst excerptShort = s($json.excerpt);\nconst excerptLong = s($json.excerpt_long);\nconst clean = s($json.clean_text);\n\n// Body selection:\n// - default: clean_text if present else short excerpt\n// - with --excerpt: prefer excerpt_long; fallback clean_text; fallback short excerpt\nlet body = '';\nif (wantExcerpt) body = excerptLong || clean || excerptShort || '(no text)';\nelse body = clean || excerptShort || '(no text)';\n\n// Build message\nconst lines = [];\nlines.push(`🧾 #${entryId || '?'}`);\nif (title) lines.push(`📰 ${title}`);\nif (author) lines.push(`🗣️ ${author}`);\nif (tp && ts) lines.push(`🏷️ ${tp} → ${ts}`);\nelse if (tp) lines.push(`🏷️ ${tp}`);\nif (url) lines.push(`🔗 ${url}`);\nif (gist) lines.push(`\\n_${gist}_`);\n\nlines.push(`\\n${body}`);\n\nlet msg = lines.join('\\n');\n\n// Telegram cap\nconst MAX = 4000;\nif (msg.length > MAX) msg = msg.slice(0, MAX - 1) + '…';\n\nreturn [{ json: { ...$json, telegram_message: msg } }];\n"
+      },
+      "position": [
+        1792,
+        448
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "83d12448-5f97-48f1-9ece-de61a9756db3",
+      "name": "Format /help Message",
+      "parameters": {
+        "jsCode": "const msg =\n`/last \"query\" [--days N] [--limit M]\nBest when you vaguely remember something. Ranks using your Tier-1 metadata + full-text + quality + recency.\n\n /find \"needle\" [--days N] [--limit M]\nBest for exact-ish strings (names, errors, phrases). Prefers literal matches + full-text; returns evidence snippets.\n\n /continue topic [--days N] [--limit M]\nBest to resume a topic. Uses Tier-1-first scoring and tries to return your notes first (if available).\n\n /pull <id> [--excerpt]\nFetch one entry by its numeric id (#12345). Default shows a short excerpt; --excerpt returns a longer excerpt.\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\n\nconst telegram_message = msg.split('\\n').map(l => l.trimEnd()).join('\\n').trim();\nreturn [{ json: { ...$json, telegram_message } }];\n"
+      },
+      "position": [
+        1344,
+        640
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "3580c243-cd64-4bc2-8b4f-ab5215ff71a1",
+      "name": "Build Context Pack",
+      "parameters": {
+        "jsCode": "/**\n * Build Telegram Context Pack from Postgres UNION result:\n * - One meta row: is_meta=true\n * - N hit rows:  is_meta=false\n *\n * Expected meta fields:\n * - query_text, days, limit, hits\n * - cmd (optional; /find and /continue already include this in your SQL; /last may not)\n *\n * Expected hit fields:\n * - entry_id (bigint)\n * - id (uuid)\n * - created_at, source, intent\n * - url, url_canonical\n * - title\n * - text_len\n * - snippet\n *\n * Output:\n * - telegram_message (<= ~3500 chars safety cap)\n */\n\nconst rows = $input.all().map(i => i.json);\n\n// meta row is always present\nconst meta = rows.find(r => r.is_meta === true) || {};\n\n// cmd handling:\n// - /find and /continue meta already include cmd in your SQL\n// - /last meta currently does NOT; default to 'last'\nconst cmd = String(meta.cmd || 'last').toLowerCase();\n\nconst q = String(meta.query_text || '').trim();\nconst days = meta.days ?? '';\nconst limit = meta.limit ?? '';\nconst hits = meta.hits ?? 0;\n\n// hit rows\nconst hitsRows = rows.filter(r => r.is_meta === false && r.id);\n\n// No hits\nif (!hitsRows.length) {\n  const msg =\n    `Context Pack — /${cmd}${q ? ` \"${q}\"` : ''}\\n` +\n    `Window: ${days}d | Limit: ${limit} | Hits: 0\\n\\n` +\n    `No matches. Try a larger --days or broader terms.`;\n\n  return [{ json: { telegram_message: msg } }];\n}\n\nconst maxSnippet = 300;\nconst lines = [];\n\nlines.push(`Context Pack — /${cmd}${q ? ` \"${q}\"` : ''}`);\nlines.push(`Window: ${days}d | Limit: ${limit} | Hits: ${hits}`);\nlines.push('');\n\n// Render each hit\nhitsRows.forEach((r, idx) => {\n  const created = String(r.created_at).slice(0, 19).replace('T', ' ');\n  const source = r.source || '';\n  const intent = r.intent || '';\n  const title = String(r.title || '').trim();\n  const url = r.url_canonical || r.url || '';\n  const textLen = Number(r.text_len || 0);\n\n  const entryId = (r.entry_id === null || r.entry_id === undefined) ? '' : String(r.entry_id);\n\n  let snippet = String(r.snippet || '').trim();\n  if (snippet.length > maxSnippet) snippet = snippet.slice(0, maxSnippet - 1) + '…';\n\n  // Header line includes WP2 entry_id for /pull\n  // Example: \"1) #12345 • 2026-01-26 04:56:56 • email • archive • 886 chars\"\n  const idPart = entryId ? `#${entryId} • ` : '';\n  lines.push(`${idx + 1}) ${idPart}${created} • ${source}${intent ? ` • ${intent}` : ''} • ${textLen} chars`);\n\n  if (title) lines.push(`Title: ${title}`);\n  if (url) lines.push(`URL: ${url}`);\n  if (snippet) lines.push(`Snippet: ${snippet}`);\n  lines.push('');\n});\n\nlet msg = lines.join('\\n').trim();\n\n// safety cap (Telegram hard limit is 4096; keep margin for safety)\nconst MAX_TELEGRAM = 3500;\nif (msg.length > MAX_TELEGRAM) {\n  msg = msg.slice(0, MAX_TELEGRAM - 1) + '…\\n\\n(Truncated — reduce --limit)';\n}\n\nreturn [{ json: { telegram_message: msg } }];\n"
+      },
+      "position": [
+        1792,
+        160
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "disabled": true,
+      "id": "55f666e7-4f6c-4d01-b985-2aeb9ec0b2ea",
+      "name": "Telegram Trigger",
+      "parameters": {
+        "additionalFields": {
+          "chatIds": "1509032341"
+        },
+        "updates": [
+          "message"
+        ]
+      },
+      "position": [
+        224,
+        -48
+      ],
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "webhookId": "a111da0e-d82b-4eac-9ca8-ddd49cc09794"
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-01-18T03:45:24.643Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-01-18T03:45:24.643Z",
+      "workflowId": "dq9Nex-IR8AToJvHksphj"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-01-27T17:45:59.857Z",
+  "versionCounter": 82
+}

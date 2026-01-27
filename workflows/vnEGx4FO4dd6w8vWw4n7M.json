@@ -1,0 +1,146 @@
+{
+  "active": false,
+  "activeVersionId": null,
+  "connections": {
+    "Prepare Files": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Convert to File",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a SQL query",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-01-20T17:20:06.147Z",
+  "description": null,
+  "isArchived": false,
+  "name": "Test",
+  "nodes": [
+    {
+      "id": "575a23c6-7a7e-438e-9e9c-bc0810fbade7",
+      "name": "When clicking ‘Execute workflow’",
+      "parameters": {},
+      "position": [
+        0,
+        0
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "credentials": {
+        "postgres": {
+          "id": "YICLDaLPmdddPcoA",
+          "name": "Postgres account"
+        }
+      },
+      "id": "aa76ea55-547c-4d81-8751-6415b424f7eb",
+      "name": "Execute a SQL query",
+      "parameters": {
+        "operation": "executeQuery",
+        "options": {},
+        "query": "-- table definition (to see tsv + generated/trigger approach)\n\n\n-- indexes\nSELECT indexname, indexdef\nFROM pg_indexes\nWHERE schemaname='pkm' AND tablename='entries'\nORDER BY indexname;\n\n-- triggers (to see if tsv is maintained automatically)\nSELECT tgname, pg_get_triggerdef(oid)\nFROM pg_trigger\nWHERE tgrelid = 'pkm.entries'::regclass\n  AND NOT tgisinternal;\n\n-- if tsv is generated from specific columns in a function, list functions named like it\n-- (optional; only if the trigger query references a function)\n"
+      },
+      "position": [
+        208,
+        0
+      ],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6
+    },
+    {
+      "credentials": {
+        "postgres": {
+          "id": "YICLDaLPmdddPcoA",
+          "name": "Postgres account"
+        }
+      },
+      "id": "b80c473a-d2ce-4a69-8f41-e2f3475a2170",
+      "name": "Execute a SQL query1",
+      "parameters": {
+        "operation": "executeQuery",
+        "options": {},
+        "query": "docker exec -it <container_name> psql -U <owner_user> -l\n"
+      },
+      "position": [
+        80,
+        272
+      ],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6
+    },
+    {
+      "id": "f8bca29d-3499-4df9-bd15-c45fd74b3664",
+      "name": "Prepare Files",
+      "parameters": {
+        "jsCode": "const baseFolder = `/home/node/.n8n/files/run-${Date.now()}`;\n\n// Replace these with your real fields:\nconst p1 = $json.capture_text ?? '';\nconst p2 = $json.core_text ?? '';\nconst p3 = $json.newsletter_text ?? '';\nconst p4 = $json.newsletter_md ?? {};\nconst p5 = $json.clean_text ?? {};\n\nreturn [\n  { filePath: `${baseFolder}/capture_text.txt`, content: p1 },\n  { filePath: `${baseFolder}/core_text.txt`,      content: p2 },\n  { filePath: `${baseFolder}/newsletter_text.txt`,        content: p3 },\n  { filePath: `${baseFolder}/newsletter_md.txt`,  content: p4 },\n  { filePath: `${baseFolder}/clean_text.txt`,  content: p5},\n];\n"
+      },
+      "position": [
+        -512,
+        192
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "a988cb10-6d77-4927-9acb-06b480a2f4ba",
+      "name": "Convert to File",
+      "parameters": {
+        "operation": "toText",
+        "options": {
+          "encoding": "utf8",
+          "fileName": "={{$json.filePath.split('/').pop()}}"
+        },
+        "sourceProperty": "content"
+      },
+      "position": [
+        -288,
+        192
+      ],
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-01-20T17:20:06.147Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-01-20T17:20:06.147Z",
+      "workflowId": "vnEGx4FO4dd6w8vWw4n7M"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-01-25T22:39:52.470Z",
+  "versionCounter": 4
+}

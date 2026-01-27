@@ -1,0 +1,187 @@
+{
+  "active": true,
+  "activeVersionId": "cf01052c-d1f2-4711-85ac-72774e9c9bed",
+  "connections": {
+    "IS COMMAND": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Call 'PKM Read'",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Call 'Telegram Capture'",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "IS COMMAND",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-01-19T03:35:03.724Z",
+  "description": null,
+  "isArchived": false,
+  "name": "Telegram Router",
+  "nodes": [
+    {
+      "id": "eb8d4710-428b-43ad-b1db-76f5593d28a7",
+      "name": "IS COMMAND",
+      "notes": "Notes go into different workflow\n",
+      "notesInFlow": true,
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d8b97b84-7d20-42f5-8b84-5fa7e7c791f2",
+              "leftValue": "={{ $json.message.text }}",
+              "operator": {
+                "operation": "startsWith",
+                "type": "string"
+              },
+              "rightValue": "/"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        128,
+        -96
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "2d639cfe-b474-4e3a-9834-c2daea9e25a4",
+      "name": "Telegram Trigger",
+      "parameters": {
+        "additionalFields": {
+          "chatIds": "1509032341"
+        },
+        "updates": [
+          "message"
+        ]
+      },
+      "position": [
+        -96,
+        -96
+      ],
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "webhookId": "a111da0e-d82b-4eac-9ca8-ddd49cc09794"
+    },
+    {
+      "id": "f5613e86-1374-4afe-b6fb-dd80ab7ff227",
+      "name": "Call 'PKM Read'",
+      "parameters": {
+        "options": {},
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "Read",
+          "cachedResultUrl": "/workflow/dq9Nex-IR8AToJvHksphj",
+          "mode": "list",
+          "value": "dq9Nex-IR8AToJvHksphj"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        352,
+        -192
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "9a22f55c-2bad-4098-aa84-8a3e8568d7dc",
+      "name": "Call 'Telegram Capture'",
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "Telegram Capture",
+          "cachedResultUrl": "/workflow/EWyb1cTmqDlKY2pIyqULN",
+          "mode": "list",
+          "value": "EWyb1cTmqDlKY2pIyqULN"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        352,
+        0
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-01-19T03:35:03.724Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-01-19T03:35:03.724Z",
+      "workflowId": "_NgZy8xU5XGXrBeBjl2cp"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-01-26T03:35:40.472Z",
+  "versionCounter": 20
+}

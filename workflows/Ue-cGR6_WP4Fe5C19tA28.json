@@ -1,0 +1,77 @@
+{
+  "active": true,
+  "activeVersionId": "36589780-29d1-4e48-bb49-303e087e3e13",
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Return Scoring Config (v1)",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-01-26T02:48:35.871Z",
+  "description": null,
+  "isArchived": false,
+  "name": "PKM — Retrieval Config",
+  "nodes": [
+    {
+      "id": "5c42cae2-11fa-4bd4-927f-6c215e0ea9d1",
+      "name": "When Executed by Another Workflow",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        0,
+        0
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "3777a6b5-9f85-4272-ac9c-5a445e7658e7",
+      "name": "Return Scoring Config (v1)",
+      "parameters": {
+        "jsCode": "// PKM — Retrieval Config (Execute Workflow Trigger -> Code)\n// Returns the inbound item + attaches a single config object at $json.config\n//\n// WHY THIS EXISTS\n// - Central place to tune retrieval behavior without touching SQL builders.\n// - Read workflows call this via \"Execute Workflow\" (wait=true), then SQL builders use $json.config.\n//\n// WHAT CONSUMES THIS CONFIG\n// 1) Read workflow SQL builders (/last, /find, /continue, /pull):\n//    - $json.config.scoring.weightsByCmd[cmd]         -> score weights\n//    - $json.config.scoring.recencyByCmd[cmd]         -> half-life for recency decay\n//    - $json.config.scoring.noteQuotaByCmd.continue   -> /continue \"my thoughts first\" composition\n//    - $json.config.scoring.maxItems[cmd]             -> safety caps vs long Telegram messages\n//    - $json.config.scoring.maxItems.pull_*           -> excerpt lengths for /pull\n//\n// 2) Capture workflow \"Compute retrieval excerpt + quality signals\":\n//    - $json.config.qualityThresholds                 -> low_signal / boilerplate / excerpt sizing\n//    - $json.config.metadataPaths                     -> where retrieval info lives in metadata (compat)\n//\n// NOTES / CONVENTIONS\n// - weightsByCmd are intentionally \"human scale\" integers (not normalized). SQL builders treat them\n//   as additive components in a single score.\n// - Commands:\n//   /last      = \"vaguely remember something\": Tier-1-first + FTS + quality + recency\n//   /find      = \"exact-ish string\": literal match + FTS primary; Tier-1 chips are supporting context\n//   /continue  = \"resume topic\": Tier-1-first; composition tries to return your notes first (quota)\n//   /pull      = fetch one item by numeric #entry_id; excerpt caps protect Telegram length\n//\n// CHANGE MANAGEMENT\n// - Bump version when you change semantics (weights meaning, quotas, recency model).\n// - Keep fields stable where possible so SQL builders don't break.\n\nconst CONFIG_V1 = {\n  // Semantic version of this config payload\n  version: \"v1\",\n\n  scoring: {\n    // Preferred ordering for read outputs.\n    // SQL builders typically implement: ORDER BY score DESC, created_at DESC\n    ordering: [\"score_desc\", \"created_at_desc\"],\n\n    // WP3: composition controls (used by /continue)\n    // - If enough notes exist, attempt to fill this fraction of results with content_type='note'\n    // - Remaining slots are filled by non-notes (newsletters/links/etc)\n    noteQuotaByCmd: {\n      continue: 0.75,   // \"my thoughts first\": 75% notes if available\n    },\n\n    // WP3: recency decay settings (half-life in days, used in SQL score)\n    // - recency_boost = exp(-(age_days)/half_life_days)\n    // - shorter half-life => favors newer items more aggressively\n    recencyByCmd: {\n      continue: { half_life_days: 45 },\n      last: { half_life_days: 180 },\n      find: { half_life_days: 365 },\n    },\n\n    // WP3: safety caps\n    // - Max items returned per command (protects Telegram max chars and keeps packs focused)\n    // - /pull excerpt caps protect against sending huge clean_text payloads in chat\n    maxItems: {\n      continue: 15,\n      last: 15,\n      find: 15,\n      pull_excerpt_chars: 1800, // long excerpt for /pull --excerpt\n      pull_short_chars: 320,    // short excerpt for /pull default view\n    },\n\n    // Scoring weights (per command) used by SQL builders.\n    // Fields are grouped by \"signal type\":\n    // - topic_*: match against Tier-1 topic_primary/topic_secondary\n    // - keywords_*: overlap between query tokens and Tier-1 keywords\n    // - gist/title/author/people: simple substring match boosts\n    // - fts_rank: Postgres tsv rank (clean_text/capture_text) where applicable\n    // - prefer_*: soft boosts (notes first, intent=think, enriched items)\n    // - penalty_*: downrank low quality / duplicate content\n    weightsByCmd: {\n      continue: {\n        // Topic match signals\n        topic_primary_exact: 70,\n        topic_primary_fuzzy: 50,\n        topic_secondary_exact: 35,\n        topic_secondary_fuzzy: 25,\n\n        // Keyword overlap (each match adds overlap_each, capped by overlap_cap)\n        keywords_overlap_each: 6,\n        keywords_overlap_cap: 36,\n\n        // Text/metadata match boosts\n        gist_match: 18,\n        title_match: 10,\n        author_match: 6,\n        people_match: 10, // reserved for future \"people[]\" population\n\n        // Classic full-text rank (tsv)\n        fts_rank: 6,\n\n        // Preferences\n        prefer_content_type_note: 14,\n        prefer_intent_think: 10,\n        prefer_enriched: 4,\n\n        // Penalties (quality + dedupe)\n        penalty_boilerplate_heavy: 22,\n        penalty_low_signal: 18,\n        penalty_link_ratio_high: 10,\n        penalty_extraction_incomplete: 8,\n        penalty_is_duplicate: 50\n      },\n\n      last: {\n        topic_primary_exact: 35,\n        topic_primary_fuzzy: 25,\n        topic_secondary_exact: 40,\n        topic_secondary_fuzzy: 30,\n\n        keywords_overlap_each: 7,\n        keywords_overlap_cap: 42,\n\n        gist_match: 24,\n        title_match: 12,\n        author_match: 8,\n        people_match: 10,\n\n        fts_rank: 18,\n\n        prefer_content_type_note: 10,\n        prefer_intent_think: 8,\n        prefer_enriched: 4,\n\n        penalty_boilerplate_heavy: 18,\n        penalty_low_signal: 14,\n        penalty_link_ratio_high: 8,\n        penalty_extraction_incomplete: 6,\n        penalty_is_duplicate: 50\n      },\n\n      find: {\n        topic_primary_exact: 10,\n        topic_primary_fuzzy: 8,\n        topic_secondary_exact: 10,\n        topic_secondary_fuzzy: 8,\n\n        keywords_overlap_each: 3,\n        keywords_overlap_cap: 18,\n\n        gist_match: 10,\n        title_match: 10,\n        author_match: 8,\n        people_match: 8,\n\n        // /find heavily prefers literal/FTS matching\n        fts_rank: 80,\n\n        // no preferences for /find (it’s evidence-driven)\n        prefer_content_type_note: 0,\n        prefer_intent_think: 0,\n        prefer_enriched: 0,\n\n        penalty_boilerplate_heavy: 8,\n        penalty_low_signal: 6,\n        penalty_link_ratio_high: 4,\n        penalty_extraction_incomplete: 3,\n        penalty_is_duplicate: 30\n      }\n    }\n  },\n\n  // Used by \"Compute retrieval excerpt + quality signals\" node in capture flows.\n  qualityThresholds: {\n    excerpt_max_chars: 320,\n\n    low_signal: {\n      min_words: 35,\n      min_chars: 220\n    },\n\n    boilerplate: {\n      link_ratio_high: 0.18,\n      link_count_high: 25\n    },\n\n    extraction_incomplete: {\n      min_extracted_chars_to_consider: 800,\n      clean_vs_extracted_ratio_low: 0.25\n    }\n  },\n\n  // Compatibility layer: where to find retrieval metadata inside metadata jsonb.\n  // (Some SQL builders read promoted columns; others still read metadata paths.)\n  metadataPaths: {\n    excerpt: [\"retrieval\", \"excerpt\"],\n    sourceDomain: [\"retrieval\", \"source_domain\"],\n    quality: [\"retrieval\", \"quality\"],\n    version: [\"retrieval\", \"version\"]\n  }\n};\n\nreturn [{\n  json: {\n    ...$json,\n    config: CONFIG_V1\n  }\n}];\n"
+      },
+      "position": [
+        208,
+        0
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-01-26T02:48:35.871Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-01-26T02:48:35.871Z",
+      "workflowId": "Ue-cGR6_WP4Fe5C19tA28"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-01-27T13:05:10.406Z",
+  "versionCounter": 14
+}
