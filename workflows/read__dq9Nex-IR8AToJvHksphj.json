@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "149c629b-919a-4676-8276-d17a2607691d",
+  "activeVersionId": "890c9925-f6f9-4bcb-aebc-7f92dd5fdef2",
   "connections": {
     "Build Context Pack": {
       "main": [
@@ -18,7 +18,7 @@
         [
           {
             "index": 0,
-            "node": "Execute a SQL query2",
+            "node": "Execute a SQL query",
             "type": "main"
           }
         ]
@@ -29,7 +29,7 @@
         [
           {
             "index": 0,
-            "node": "Execute a SQL query1",
+            "node": "Execute a SQL query",
             "type": "main"
           }
         ]
@@ -69,28 +69,6 @@
       ]
     },
     "Execute a SQL query": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Context Pack",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Execute a SQL query1": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Context Pack",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Execute a SQL query2": {
       "main": [
         [
           {
@@ -250,7 +228,7 @@
       },
       "position": [
         1120,
-        0
+        -64
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -285,7 +263,7 @@
       },
       "position": [
         672,
-        128
+        64
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -319,7 +297,7 @@
       },
       "position": [
         896,
-        128
+        64
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -498,7 +476,7 @@
       },
       "position": [
         224,
-        128
+        160
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -511,7 +489,7 @@
       },
       "position": [
         448,
-        128
+        64
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -534,53 +512,7 @@
       },
       "position": [
         1568,
-        -128
-      ],
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6
-    },
-    {
-      "credentials": {
-        "postgres": {
-          "id": "YICLDaLPmdddPcoA",
-          "name": "Postgres account"
-        }
-      },
-      "id": "c6ca235a-6adc-4f31-b797-a1f5cddcc9ed",
-      "name": "Execute a SQL query1",
-      "parameters": {
-        "operation": "executeQuery",
-        "options": {
-          "queryReplacement": "="
-        },
-        "query": "{{$json.sql}}"
-      },
-      "position": [
-        1568,
-        64
-      ],
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6
-    },
-    {
-      "credentials": {
-        "postgres": {
-          "id": "YICLDaLPmdddPcoA",
-          "name": "Postgres account"
-        }
-      },
-      "id": "798abdd9-ceaf-446f-a751-0adaeddaa26c",
-      "name": "Execute a SQL query2",
-      "parameters": {
-        "operation": "executeQuery",
-        "options": {
-          "queryReplacement": "="
-        },
-        "query": "{{$json.sql}}"
-      },
-      "position": [
-        1568,
-        256
+        160
       ],
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6
@@ -603,7 +535,7 @@
       },
       "position": [
         2016,
-        384
+        544
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -704,7 +636,7 @@
         "jsCode": "const msg =\n`/last \"query\" [--days N] [--limit M]\nBest when you vaguely remember something. Ranks using your Tier-1 metadata + full-text + quality + recency.\n\n /find \"needle\" [--days N] [--limit M]\nBest for exact-ish strings (names, errors, phrases). Prefers literal matches + full-text; returns evidence snippets.\n\n /continue topic [--days N] [--limit M]\nBest to resume a topic. Uses Tier-1-first scoring and tries to return your notes first (if available).\n\n /pull <id> [--excerpt]\nFetch one entry by its numeric id (#12345). Default shows a short excerpt; --excerpt returns a longer excerpt.\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\n\nconst telegram_message = msg.split('\\n').map(l => l.trimEnd()).join('\\n').trim();\nreturn [{ json: { ...$json, telegram_message } }];\n"
       },
       "position": [
-        1344,
+        1792,
         640
       ],
       "type": "n8n-nodes-base.code",
@@ -743,7 +675,7 @@
       },
       "position": [
         224,
-        -48
+        -32
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -776,6 +708,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-01-27T17:45:59.857Z",
-  "versionCounter": 82
+  "updatedAt": "2026-01-28T03:25:07.170Z",
+  "versionCounter": 88
 }

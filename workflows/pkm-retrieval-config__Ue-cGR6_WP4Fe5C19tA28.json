@@ -1,0 +1,77 @@
+{
+  "active": true,
+  "activeVersionId": "1cf90bfb-e3df-45ac-a5ed-f448d4e0c5a1",
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Return Scoring Config (v1)",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-01-26T02:48:35.871Z",
+  "description": null,
+  "isArchived": false,
+  "name": "PKM — Retrieval Config",
+  "nodes": [
+    {
+      "id": "5c42cae2-11fa-4bd4-927f-6c215e0ea9d1",
+      "name": "When Executed by Another Workflow",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        0,
+        0
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "3777a6b5-9f85-4272-ac9c-5a445e7658e7",
+      "name": "Return Scoring Config (v1)",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/pkm-retrieval-config/return_scoring_config_v1.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:pkm-retrieval-config/return_scoring_config_v1.js] ${e.message}`;throw e;}\n"
+      },
+      "position": [
+        208,
+        0
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-01-26T02:48:35.871Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-01-26T02:48:35.871Z",
+      "workflowId": "Ue-cGR6_WP4Fe5C19tA28"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-01-28T03:36:31.104Z",
+  "versionCounter": 19
+}
