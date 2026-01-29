@@ -1,0 +1,713 @@
+{
+  "active": true,
+  "activeVersionId": "890c9925-f6f9-4bcb-aebc-7f92dd5fdef2",
+  "connections": {
+    "Build Context Pack": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message4",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build SQL - /CONTINUE": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a SQL query",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build SQL - /FIND": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a SQL query",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build SQL - /LAST": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a SQL query",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build SQL - /PULL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a SQL query3",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Command Parser": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "IF: Ignore?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query3": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Telegram Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format /help Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message4",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Telegram Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message4",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF: Ignore?": {
+      "main": [
+        [],
+        [
+          {
+            "index": 0,
+            "node": "IF: Reply now?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF: Reply now?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Switch",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build SQL - /LAST",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Build SQL - /FIND",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Build SQL - /CONTINUE",
+            "type": "main"
+          }
+        ],
+        [],
+        [
+          {
+            "index": 0,
+            "node": "Build SQL - /PULL",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Format /help Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Command Parser",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Command Parser",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-01-18T03:45:24.643Z",
+  "description": null,
+  "isArchived": false,
+  "name": "Read",
+  "nodes": [
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "210ee0fc-439f-4e4a-9c1e-59ebdf97d21f",
+      "name": "Send a text message",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "1509032341",
+        "text": "={{$json.telegram_message}}"
+      },
+      "position": [
+        1120,
+        -64
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    },
+    {
+      "id": "964a4450-21a5-4ea8-a743-61a1fcf00405",
+      "name": "IF: Ignore?",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "629f7d0c-7892-4a16-9b60-300305220042",
+              "leftValue": "={{$json._ignore === true}}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": ""
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        672,
+        64
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "id": "29c3dcb3-2789-43b1-a5d8-8690578b448e",
+      "name": "IF: Reply now?",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "629f7d0c-7892-4a16-9b60-300305220042",
+              "leftValue": "={{$json._reply_now === true}}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": ""
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        896,
+        64
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "id": "f8eb7c10-83c5-4cc8-8161-4281f258102f",
+      "name": "Switch",
+      "parameters": {
+        "options": {},
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "b766299f-eaee-4cbd-afb5-e3a573e3d9ec",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "last"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "last",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "86c55910-1027-409d-8ccb-b1ec51256dff",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "find"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "find",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "7fbd8a34-970a-424b-ae96-d87e6511ab4e",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "continue"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "continue",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "65f16c89-88ef-4c7e-a079-1b170c211618",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "with"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "with",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "ec9cff1e-feae-4287-9578-17545f4786ed",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "pull"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "pull",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "19de7464-62fb-43f6-86ca-6a6f5c46bcda",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "help"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "help",
+              "renameOutput": true
+            }
+          ]
+        }
+      },
+      "position": [
+        1120,
+        192
+      ],
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4
+    },
+    {
+      "id": "9943dcb4-e3fc-409f-9ae5-f9c6b9e31350",
+      "name": "When Executed by Another Workflow",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        224,
+        160
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "926eb875-5735-4746-a0a4-7801b8db586f",
+      "name": "Command Parser",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/read/06_command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/06_command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        448,
+        64
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "postgres": {
+          "id": "YICLDaLPmdddPcoA",
+          "name": "Postgres account"
+        }
+      },
+      "id": "129ffdab-f65d-4914-8645-c4c7ec721ed1",
+      "name": "Execute a SQL query",
+      "parameters": {
+        "operation": "executeQuery",
+        "options": {
+          "queryReplacement": "="
+        },
+        "query": "{{$json.sql}}"
+      },
+      "position": [
+        1568,
+        160
+      ],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "54ab1327-9b6a-4263-b901-2a70893d5ee6",
+      "name": "Send a text message4",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "1509032341",
+        "text": "={{$json.telegram_message}}"
+      },
+      "position": [
+        2016,
+        544
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    },
+    {
+      "id": "d0724507-154e-485c-8b0d-3523be365f6c",
+      "name": "Build SQL - /FIND",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/read/03_build-sql-find__d0724507-154e-485c-8b0d-3523be365f6c.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/03_build-sql-find__d0724507-154e-485c-8b0d-3523be365f6c.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1344,
+        64
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "97543204-559a-4946-8621-4faacda4643f",
+      "name": "Build SQL - /LAST",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/read/04_build-sql-last__97543204-559a-4946-8621-4faacda4643f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/04_build-sql-last__97543204-559a-4946-8621-4faacda4643f.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1344,
+        -128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "138ce96f-f56c-4bea-9443-67686bd6066b",
+      "name": "Build SQL - /CONTINUE",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/read/02_build-sql-continue__138ce96f-f56c-4bea-9443-67686bd6066b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/02_build-sql-continue__138ce96f-f56c-4bea-9443-67686bd6066b.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1344,
+        256
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "postgres": {
+          "id": "YICLDaLPmdddPcoA",
+          "name": "Postgres account"
+        }
+      },
+      "id": "ec964067-8adc-468c-82cf-43aae9255360",
+      "name": "Execute a SQL query3",
+      "parameters": {
+        "operation": "executeQuery",
+        "options": {
+          "queryReplacement": "="
+        },
+        "query": "{{$json.sql}}"
+      },
+      "position": [
+        1568,
+        448
+      ],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6
+    },
+    {
+      "id": "55ed7dbe-1cc2-46de-98b5-0fa4d916c84c",
+      "name": "Build SQL - /PULL",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/read/05_build-sql-pull__55ed7dbe-1cc2-46de-98b5-0fa4d916c84c.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/05_build-sql-pull__55ed7dbe-1cc2-46de-98b5-0fa4d916c84c.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1344,
+        448
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "f305ac84-35d3-44df-8ef5-1c0e004f37b8",
+      "name": "Format Telegram Message",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/read/08_format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/08_format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1792,
+        448
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "83d12448-5f97-48f1-9ece-de61a9756db3",
+      "name": "Format /help Message",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/read/07_format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/07_format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1792,
+        640
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "3580c243-cd64-4bc2-8b4f-ab5215ff71a1",
+      "name": "Build Context Pack",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/read/01_build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/01_build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1792,
+        160
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "disabled": true,
+      "id": "55f666e7-4f6c-4d01-b985-2aeb9ec0b2ea",
+      "name": "Telegram Trigger",
+      "parameters": {
+        "additionalFields": {
+          "chatIds": "1509032341"
+        },
+        "updates": [
+          "message"
+        ]
+      },
+      "position": [
+        224,
+        -32
+      ],
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "webhookId": "a111da0e-d82b-4eac-9ca8-ddd49cc09794"
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-01-18T03:45:24.643Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-01-18T03:45:24.643Z",
+      "workflowId": "dq9Nex-IR8AToJvHksphj"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-01-28T03:25:07.170Z",
+  "versionCounter": 88
+}

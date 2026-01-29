@@ -1,0 +1,42 @@
+[
+  {
+    "node_name": "Build Context Pack",
+    "node_id": "3580c243-cd64-4bc2-8b4f-ab5215ff71a1",
+    "file": "js/workflows/read/01_build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js"
+  },
+  {
+    "node_name": "Build SQL - /CONTINUE",
+    "node_id": "138ce96f-f56c-4bea-9443-67686bd6066b",
+    "file": "js/workflows/read/02_build-sql-continue__138ce96f-f56c-4bea-9443-67686bd6066b.js"
+  },
+  {
+    "node_name": "Build SQL - /FIND",
+    "node_id": "d0724507-154e-485c-8b0d-3523be365f6c",
+    "file": "js/workflows/read/03_build-sql-find__d0724507-154e-485c-8b0d-3523be365f6c.js"
+  },
+  {
+    "node_name": "Build SQL - /LAST",
+    "node_id": "97543204-559a-4946-8621-4faacda4643f",
+    "file": "js/workflows/read/04_build-sql-last__97543204-559a-4946-8621-4faacda4643f.js"
+  },
+  {
+    "node_name": "Build SQL - /PULL",
+    "node_id": "55ed7dbe-1cc2-46de-98b5-0fa4d916c84c",
+    "file": "js/workflows/read/05_build-sql-pull__55ed7dbe-1cc2-46de-98b5-0fa4d916c84c.js"
+  },
+  {
+    "node_name": "Command Parser",
+    "node_id": "926eb875-5735-4746-a0a4-7801b8db586f",
+    "file": "js/workflows/read/06_command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js"
+  },
+  {
+    "node_name": "Format /help Message",
+    "node_id": "83d12448-5f97-48f1-9ece-de61a9756db3",
+    "file": "js/workflows/read/07_format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js"
+  },
+  {
+    "node_name": "Format Telegram Message",
+    "node_id": "f305ac84-35d3-44df-8ef5-1c0e004f37b8",
+    "file": "js/workflows/read/08_format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js"
+  }
+]
