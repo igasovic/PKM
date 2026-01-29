@@ -782,11 +782,11 @@
   ],
   "staticData": {
     "node:Email Trigger (IMAP)1": {
-      "lastMessageUid": 64
+      "lastMessageUid": 80
     }
   },
   "tags": [],
   "triggerCount": 1,
   "updatedAt": "2026-01-26T23:19:27.519Z",
-  "versionCounter": 50
+  "versionCounter": 56
 }
