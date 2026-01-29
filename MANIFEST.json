@@ -1,42 +1,52 @@
 [
   {
-    "node_name": "Build Context Pack",
-    "node_id": "3580c243-cd64-4bc2-8b4f-ab5215ff71a1",
-    "file": "js/workflows/read/01_build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js"
+    "node_name": "Build SQL - INSERT",
+    "node_id": "5ea800e9-24b0-4674-8ec9-e0a92e5c574b",
+    "file": "js/workflows/telegram-capture/01_build-sql-insert__5ea800e9-24b0-4674-8ec9-e0a92e5c574b.js"
   },
   {
-    "node_name": "Build SQL - /CONTINUE",
-    "node_id": "138ce96f-f56c-4bea-9443-67686bd6066b",
-    "file": "js/workflows/read/02_build-sql-continue__138ce96f-f56c-4bea-9443-67686bd6066b.js"
+    "node_name": "Build SQL - UPDATE",
+    "node_id": "1c1e479b-b8f6-4d85-9c69-8c0f9943982f",
+    "file": "js/workflows/telegram-capture/02_build-sql-update__1c1e479b-b8f6-4d85-9c69-8c0f9943982f.js"
   },
   {
-    "node_name": "Build SQL - /FIND",
-    "node_id": "d0724507-154e-485c-8b0d-3523be365f6c",
-    "file": "js/workflows/read/03_build-sql-find__d0724507-154e-485c-8b0d-3523be365f6c.js"
+    "node_name": "Compose Response",
+    "node_id": "7a117ec5-8af2-4d89-a227-128c2c488114",
+    "file": "js/workflows/telegram-capture/03_compose-response__7a117ec5-8af2-4d89-a227-128c2c488114.js"
   },
   {
-    "node_name": "Build SQL - /LAST",
-    "node_id": "97543204-559a-4946-8621-4faacda4643f",
-    "file": "js/workflows/read/04_build-sql-last__97543204-559a-4946-8621-4faacda4643f.js"
+    "node_name": "Compute Retrieval Excerpt + Quality Signals (from capture_text)",
+    "node_id": "f9724210-2848-4b77-be35-30b5007bc3ef",
+    "file": "js/workflows/telegram-capture/04_compute-retrieval-excerpt-quality-signals-from-capture-text__f9724210-2848-4b77-be35-30b5007bc3ef.js"
   },
   {
-    "node_name": "Build SQL - /PULL",
-    "node_id": "55ed7dbe-1cc2-46de-98b5-0fa4d916c84c",
-    "file": "js/workflows/read/05_build-sql-pull__55ed7dbe-1cc2-46de-98b5-0fa4d916c84c.js"
+    "node_name": "Create Message",
+    "node_id": "e7474a77-f17b-4f8f-bbe1-632804bd2e69",
+    "file": "js/workflows/telegram-capture/05_create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js"
   },
   {
-    "node_name": "Command Parser",
-    "node_id": "926eb875-5735-4746-a0a4-7801b8db586f",
-    "file": "js/workflows/read/06_command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js"
+    "node_name": "Extract Title & Author",
+    "node_id": "0cfd5e2a-ef19-4ec1-b575-eba3131c8977",
+    "file": "js/workflows/telegram-capture/06_extract-title-author__0cfd5e2a-ef19-4ec1-b575-eba3131c8977.js"
   },
   {
-    "node_name": "Format /help Message",
-    "node_id": "83d12448-5f97-48f1-9ece-de61a9756db3",
-    "file": "js/workflows/read/07_format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js"
+    "node_name": "Normalize",
+    "node_id": "08ca99f5-2ba7-42e9-aab6-4b90e6055f85",
+    "file": "js/workflows/telegram-capture/07_normalize__08ca99f5-2ba7-42e9-aab6-4b90e6055f85.js"
   },
   {
-    "node_name": "Format Telegram Message",
-    "node_id": "f305ac84-35d3-44df-8ef5-1c0e004f37b8",
-    "file": "js/workflows/read/08_format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js"
+    "node_name": "Recompute retrieval excerpt + quality signals from clean_text",
+    "node_id": "5116846d-f384-40e1-a928-518eb22430a7",
+    "file": "js/workflows/telegram-capture/08_recompute-retrieval-excerpt-quality-signals-from-clean-text__5116846d-f384-40e1-a928-518eb22430a7.js"
+  },
+  {
+    "node_name": "Text Clean",
+    "node_id": "ef9f91cc-dbd4-48b7-a22d-66f47ea07239",
+    "file": "js/workflows/telegram-capture/09_text-clean__ef9f91cc-dbd4-48b7-a22d-66f47ea07239.js"
+  },
+  {
+    "node_name": "remove trafiltura title - hack",
+    "node_id": "a02c847f-191c-4f90-adf2-c76d3b715596",
+    "file": "js/workflows/telegram-capture/10_remove-trafiltura-title-hack__a02c847f-191c-4f90-adf2-c76d3b715596.js"
   }
 ]
