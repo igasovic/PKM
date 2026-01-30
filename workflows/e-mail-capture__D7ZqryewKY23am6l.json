@@ -1,6 +1,6 @@
 {
-  "active": false,
-  "activeVersionId": null,
+  "active": true,
+  "activeVersionId": "8d9a6cbf-e00e-4f81-a475-6a7def9ccd57",
   "connections": {
     "Build SQL INSERT": {
       "main": [
@@ -788,5 +788,5 @@
   "tags": [],
   "triggerCount": 1,
   "updatedAt": "2026-01-26T23:19:27.519Z",
-  "versionCounter": 57
+  "versionCounter": 59
 }
