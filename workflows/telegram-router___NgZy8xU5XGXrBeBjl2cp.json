@@ -158,7 +158,10 @@
   ],
   "settings": {
     "availableInMCP": false,
-    "executionOrder": "v1"
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed"
   },
   "shared": [
     {
@@ -182,6 +185,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2026-01-26T03:35:40.472Z",
-  "versionCounter": 22
+  "updatedAt": "2026-01-30T00:33:04.125Z",
+  "versionCounter": 25
 }
