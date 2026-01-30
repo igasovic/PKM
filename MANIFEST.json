@@ -1,52 +1,72 @@
 [
   {
-    "node_name": "Build SQL - INSERT",
-    "node_id": "5ea800e9-24b0-4674-8ec9-e0a92e5c574b",
-    "file": "js/workflows/telegram-capture/01_build-sql-insert__5ea800e9-24b0-4674-8ec9-e0a92e5c574b.js"
+    "node_name": "Build SQL INSERT",
+    "node_id": "c4848348-bcd7-42b5-80d4-5b59e0152a45",
+    "file": "js/workflows/e-mail-capture/01_build-sql-insert__c4848348-bcd7-42b5-80d4-5b59e0152a45.js"
   },
   {
-    "node_name": "Build SQL - UPDATE",
-    "node_id": "1c1e479b-b8f6-4d85-9c69-8c0f9943982f",
-    "file": "js/workflows/telegram-capture/02_build-sql-update__1c1e479b-b8f6-4d85-9c69-8c0f9943982f.js"
+    "node_name": "Capture",
+    "node_id": "0d46a330-acb5-4954-a88e-1e0ee38ac0cf",
+    "file": "js/workflows/e-mail-capture/02_capture__0d46a330-acb5-4954-a88e-1e0ee38ac0cf.js"
   },
   {
-    "node_name": "Compose Response",
-    "node_id": "7a117ec5-8af2-4d89-a227-128c2c488114",
-    "file": "js/workflows/telegram-capture/03_compose-response__7a117ec5-8af2-4d89-a227-128c2c488114.js"
+    "node_name": "Compose Reply Text",
+    "node_id": "0ae5a1f1-fc06-445c-b460-7447a1632dba",
+    "file": "js/workflows/e-mail-capture/03_compose-reply-text__0ae5a1f1-fc06-445c-b460-7447a1632dba.js"
   },
   {
-    "node_name": "Compute Retrieval Excerpt + Quality Signals (from capture_text)",
-    "node_id": "f9724210-2848-4b77-be35-30b5007bc3ef",
-    "file": "js/workflows/telegram-capture/04_compute-retrieval-excerpt-quality-signals-from-capture-text__f9724210-2848-4b77-be35-30b5007bc3ef.js"
+    "node_name": "Compute Retrieval Excerpt + Quality (email clean_text)",
+    "node_id": "2b306dd2-9dfb-4d42-9302-0258fd2d5ce0",
+    "file": "js/workflows/e-mail-capture/04_compute-retrieval-excerpt-quality-email-clean-text__2b306dd2-9dfb-4d42-9302-0258fd2d5ce0.js"
   },
   {
-    "node_name": "Create Message",
-    "node_id": "e7474a77-f17b-4f8f-bbe1-632804bd2e69",
-    "file": "js/workflows/telegram-capture/05_create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js"
+    "node_name": "Create Sampled Prompt",
+    "node_id": "16117688-d107-4f1d-81d0-048fb7619e92",
+    "file": "js/workflows/e-mail-capture/05_create-sampled-prompt__16117688-d107-4f1d-81d0-048fb7619e92.js"
   },
   {
-    "node_name": "Extract Title & Author",
-    "node_id": "0cfd5e2a-ef19-4ec1-b575-eba3131c8977",
-    "file": "js/workflows/telegram-capture/06_extract-title-author__0cfd5e2a-ef19-4ec1-b575-eba3131c8977.js"
+    "node_name": "Create Whole Text Prompt",
+    "node_id": "4da5cf51-2d6b-45a3-a9c8-e13f63bad821",
+    "file": "js/workflows/e-mail-capture/06_create-whole-text-prompt__4da5cf51-2d6b-45a3-a9c8-e13f63bad821.js"
+  },
+  {
+    "node_name": "Markdown Conversion",
+    "node_id": "224e23d6-aa73-4cc8-917d-b6d951546451",
+    "file": "js/workflows/e-mail-capture/07_markdown-conversion__224e23d6-aa73-4cc8-917d-b6d951546451.js"
+  },
+  {
+    "node_name": "Normalization1",
+    "node_id": "344c864b-cc78-4f3c-b10a-c7cf2f1050dd",
+    "file": "js/workflows/e-mail-capture/08_normalization1__344c864b-cc78-4f3c-b10a-c7cf2f1050dd.js"
   },
   {
     "node_name": "Normalize",
-    "node_id": "08ca99f5-2ba7-42e9-aab6-4b90e6055f85",
-    "file": "js/workflows/telegram-capture/07_normalize__08ca99f5-2ba7-42e9-aab6-4b90e6055f85.js"
+    "node_id": "b74a02d7-1371-4de6-afc4-4499b981e469",
+    "file": "js/workflows/e-mail-capture/09_normalize__b74a02d7-1371-4de6-afc4-4499b981e469.js"
   },
   {
-    "node_name": "Recompute retrieval excerpt + quality signals from clean_text",
-    "node_id": "5116846d-f384-40e1-a928-518eb22430a7",
-    "file": "js/workflows/telegram-capture/08_recompute-retrieval-excerpt-quality-signals-from-clean-text__5116846d-f384-40e1-a928-518eb22430a7.js"
+    "node_name": "Parse T1",
+    "node_id": "5cd4f138-20ac-4c36-867b-e0f618fd3149",
+    "file": "js/workflows/e-mail-capture/10_parse-t1__5cd4f138-20ac-4c36-867b-e0f618fd3149.js"
   },
   {
-    "node_name": "Text Clean",
-    "node_id": "ef9f91cc-dbd4-48b7-a22d-66f47ea07239",
-    "file": "js/workflows/telegram-capture/09_text-clean__ef9f91cc-dbd4-48b7-a22d-66f47ea07239.js"
+    "node_name": "Remove Boilerplate",
+    "node_id": "02e08da0-cb80-465c-b77b-d881bfe5a0b0",
+    "file": "js/workflows/e-mail-capture/11_remove-boilerplate__02e08da0-cb80-465c-b77b-d881bfe5a0b0.js"
   },
   {
-    "node_name": "remove trafiltura title - hack",
-    "node_id": "a02c847f-191c-4f90-adf2-c76d3b715596",
-    "file": "js/workflows/telegram-capture/10_remove-trafiltura-title-hack__a02c847f-191c-4f90-adf2-c76d3b715596.js"
+    "node_name": "Signatures and Markdown",
+    "node_id": "46831d4c-c2ac-42a8-823f-9947d36c5201",
+    "file": "js/workflows/e-mail-capture/12_signatures-and-markdown__46831d4c-c2ac-42a8-823f-9947d36c5201.js"
+  },
+  {
+    "node_name": "Thread Parser",
+    "node_id": "00fb2628-a0f9-40a0-9307-ba07a9fcc25a",
+    "file": "js/workflows/e-mail-capture/13_thread-parser__00fb2628-a0f9-40a0-9307-ba07a9fcc25a.js"
+  },
+  {
+    "node_name": "Update T1 Info to DB",
+    "node_id": "1a6df95f-7a5c-4203-b82c-f2e0a84b70c0",
+    "file": "js/workflows/e-mail-capture/14_update-t1-info-to-db__1a6df95f-7a5c-4203-b82c-f2e0a84b70c0.js"
   }
 ]
