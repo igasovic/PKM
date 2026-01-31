@@ -44,4 +44,21 @@ Final verification commands (passed):
 - n8n JS mount present: `/data/js/workflows/*`
 - `https://n8n.gasovic.com` → `302` to Cloudflare Access login (expected)
 - `https://ha.gasovic.com` → `405` for HEAD; use GET to validate
+## 2026-01-31 — Matter support (Home Assistant Container)
 
+### What was added
+- Enabled Matter support for Home Assistant running as a Docker container (not HA OS).
+- Added `matter-server` as a dedicated container (`python-matter-server`) to the Docker stack.
+- Configured Matter Server to run with `network_mode: host` for reliable mDNS/Thread discovery on Raspberry Pi 4.
+- Connected Home Assistant to Matter Server via WebSocket endpoint.
+
+### Key configuration details
+- Matter Server UI: `http://192.168.5.4:5580`
+- Matter Server WebSocket: `ws://192.168.5.4:5580/ws`
+- Home Assistant Matter integration configured to use the above WebSocket URL (not `localhost`).
+
+### Operational notes
+- Devices are paired via Home Assistant, not directly in the Matter Server UI.
+- Matter Server acts as a backend service only.
+- Eero 6 provides Thread Border Router functionality implicitly; it is not added to Home Assistant or Matter.
+- Compatible with existing SSD-booted Pi and Docker-based stack.
