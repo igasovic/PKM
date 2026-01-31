@@ -61,6 +61,12 @@ if (flagBits.length) lines.push(`\n${flagBits.join(' · ')}`);
 
 let telegram_message = lines.join('\n');
 
+const config = $items('PKM Config')[0].json.config;
+if (config?.db?.is_test_mode === true) {
+  telegram_message = `⚗️🧪 TEST MODE
+${telegram_message}`;
+}
+
 // hard cap for Telegram
 const MAX = 4000;
 if (telegram_message.length > MAX) telegram_message = telegram_message.slice(0, MAX - 1) + '…';

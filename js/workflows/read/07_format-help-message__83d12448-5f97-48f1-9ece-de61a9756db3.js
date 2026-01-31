@@ -32,6 +32,10 @@ Tips:
 - Every result shows #<id> so you can /pull it.
 - Reduce --limit if messages truncate.`;
 
+const config = $items('PKM Config')[0].json.config;
+const isTestMode = config?.db?.is_test_mode === true;
+const banner = isTestMode ? '⚗️🧪 TEST MODE
+' : '';
 const telegram_message = msg.split('\n').map(l => l.trimEnd()).join('\n').trim();
 return [{ json: { ...$json, telegram_message } }];
 };
