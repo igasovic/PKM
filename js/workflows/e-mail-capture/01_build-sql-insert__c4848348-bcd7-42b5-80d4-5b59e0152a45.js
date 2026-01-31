@@ -10,6 +10,26 @@
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
+
+  // --- DB schema routing (prod vs test) ---
+  // Default: production schema ("pkm"). Enable test mode by setting:
+  //   $json.config.db.is_test_mode = true
+  // Optionally override schema names:
+  //   $json.config.db.schema_prod = "pkm"
+  //   $json.config.db.schema_test = "pkm_test"
+  const config = ($json && $json.config) ? $json.config : {};
+  const db = (config && config.db) ? config.db : {};
+
+  const is_test_mode = !!db.is_test_mode;
+  const schema_prod = db.schema_prod || 'pkm';
+  const schema_test = db.schema_test || 'pkm_test';
+  const schema_candidate = is_test_mode ? schema_test : schema_prod;
+
+  const isValidIdent = (s) => (typeof s === 'string') && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s);
+  const db_schema = isValidIdent(schema_candidate) ? schema_candidate : 'pkm';
+
+  // Safe, quoted identifier reference for SQL templates
+  const entries_table = `"${db_schema}"."entries"`;
 function esc(s) {
   return String(s).replace(/\\/g, '\\\\').replace(/'/g, "''");
 }
@@ -79,7 +99,7 @@ const extraction_incomplete = q.extraction_incomplete ?? null;
 const quality_score = q.quality_score ?? null;
 
 const sql = `
-INSERT INTO pkm.entries (
+INSERT INTO ${entries_table} (
   created_at,
   source,
   intent,

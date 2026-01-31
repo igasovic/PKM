@@ -10,6 +10,26 @@
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
+
+  // --- DB schema routing (prod vs test) ---
+  // Default: production schema ("pkm"). Enable test mode by setting:
+  //   $json.config.db.is_test_mode = true
+  // Optionally override schema names:
+  //   $json.config.db.schema_prod = "pkm"
+  //   $json.config.db.schema_test = "pkm_test"
+  const config = ($json && $json.config) ? $json.config : {};
+  const db = (config && config.db) ? config.db : {};
+
+  const is_test_mode = !!db.is_test_mode;
+  const schema_prod = db.schema_prod || 'pkm';
+  const schema_test = db.schema_test || 'pkm_test';
+  const schema_candidate = is_test_mode ? schema_test : schema_prod;
+
+  const isValidIdent = (s) => (typeof s === 'string') && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s);
+  const db_schema = isValidIdent(schema_candidate) ? schema_candidate : 'pkm';
+
+  // Safe, quoted identifier reference for SQL templates
+  const entries_table = `"${db_schema}"."entries"`;
 // Update Info to DB (Tier-1): build UPDATE from $json.t1 (already parsed upstream)
 // Pattern: output { ...$json, sql } then Postgres Execute Query runs {{$json.sql}}
 
@@ -78,7 +98,7 @@ const saveRaw = true;
 
 // build SQL
 const sql = `
-UPDATE pkm.entries
+UPDATE ${entries_table}
 SET
   topic_primary = ${lit(topic_primary)}::text,
   topic_primary_confidence = ${topic_primary_confidence === null ? 'NULL' : Number(topic_primary_confidence)},

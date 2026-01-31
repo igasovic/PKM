@@ -4,6 +4,13 @@ module.exports = async function ({ $json }) {
   const CONFIG_V1 = {
     version: "v1",
 
+
+    db: {
+      // Toggle-able: default off (production)
+      is_test_mode: false,
+      schema_prod: "pkm",
+      schema_test: "pkm_test",
+    },
     scoring: {
       ordering: ["score_desc", "created_at_desc"],
 
