@@ -14,16 +14,13 @@
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
-
-
   // --- DB schema routing (prod vs test) ---
-  // Default: production schema ("pkm"). Enable test mode by setting:
-  //   $json.config.db.is_test_mode = true
-  // Optionally override schema names:
-  //   $json.config.db.schema_prod = "pkm"
-  //   $json.config.db.schema_test = "pkm_test"
-  const config = ($json && $json.config) ? $json.config : {};
-  const db = (config && config.db) ? config.db : {};
+  // IMPORTANT:
+  // - This module reads config from the *sub-workflow node output* named exactly: "PKM Config"
+  // - Your entry workflows must execute that sub-workflow at the very start.
+
+  const config = $items('PKM Config')[0].json.config;
+  const db = config.db;
 
   const is_test_mode = !!db.is_test_mode;
   const schema_prod = db.schema_prod || 'pkm';

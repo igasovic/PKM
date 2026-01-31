@@ -14,7 +14,7 @@ module.exports = async function run(ctx) {
 // HARD RULE: clean_text must be non-empty, else fail.
 // Output: $json.retrieval + $json.metadata_patch
 
-const cfg = $json.config?.qualityThresholds || {};
+const cfg = $items('PKM Config')[0].json.config.qualityThresholds;
 const TH = {
   excerpt_max_chars: cfg.excerpt_max_chars ?? 320,
   low_signal: {
