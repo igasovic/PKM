@@ -1,5 +1,5 @@
 # env.md — PKM DEV Raspberry Pi stack environment
-Version: 2026.01.31-ssd-migration
+Version: 2026.01.31-matter-server
 Updated: 2026-01-31
 Host (SSH): igasovic@192.168.5.4
 
@@ -38,6 +38,31 @@ Services (current):
 - n8n: docker.n8n.io/n8nio/n8n:latest
 - homeassistant: ghcr.io/home-assistant/home-assistant:stable
 - cloudflared: cloudflare/cloudflared:latest
+- matter-server: ghcr.io/home-assistant-libs/python-matter-server:stable
+
+### Matter (Home Assistant Container)
+Context:
+- Home Assistant is running as a Docker container (not HA OS / not Add-ons).
+- Matter support requires a separate **Matter Server** container.
+- The Matter integration in HA should point to the server via WebSocket URL (do NOT rely on `localhost` inside the HA container unless you intentionally share network namespaces).
+
+Expected compose service (minimal):
+- service name: `matter-server`
+- image: `ghcr.io/home-assistant-libs/python-matter-server:stable`
+- `network_mode: host` (recommended on Pi for discovery / mDNS stability)
+
+Endpoints (LAN):
+- Matter Server UI: http://192.168.5.4:5580
+- Matter Server WebSocket: ws://192.168.5.4:5580/ws
+- Home Assistant Matter integration should use: ws://192.168.5.4:5580/ws
+
+Pairing rule of thumb:
+- Pair Matter devices in **Home Assistant** (controller).
+- Matter Server is a backend; you generally don’t “add devices” in the Matter Server UI.
+
+Thread / Eero note:
+- Eero 6 can act as a Thread Border Router (infrastructure). You typically **do not** add Eero itself to HA/Matter.
+- If pairing/discovery is flaky, suspect multicast/mDNS handling; host networking for Matter Server is the first lever.
 
 Persistence (bind mounts):
 - Postgres data (host): /home/igasovic/stack/postgres  -> /var/lib/postgresql/data
