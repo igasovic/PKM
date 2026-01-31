@@ -10,6 +10,10 @@
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
+const config = $items('PKM Config')[0].json.config;
+const isTestMode = !!(config && config.db && config.db.is_test_mode);
+
+
 const entryId = ($json.entry_id ?? '').toString().trim();
 
 const text = String($json.capture_text || '').trim();
@@ -27,6 +31,8 @@ let msg =
   (entryId ? ` (#${entryId})` : ``) +
   ` (${textLen} chars)\n` +
   `${preview}`;
+
+if (isTestMode) msg = `⚗️🧪 TEST MODE\n` + msg;
 
 // hard cap for Telegram
 const MAX = 4000;

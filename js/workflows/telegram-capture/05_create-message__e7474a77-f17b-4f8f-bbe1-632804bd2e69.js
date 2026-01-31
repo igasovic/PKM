@@ -10,6 +10,10 @@
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
+const config = $items('PKM Config')[0].json.config;
+const isTestMode = !!(config && config.db && config.db.is_test_mode);
+
+
 const entryId = ($json.entry_id ?? '').toString().trim();
 
 const url = String($json.url_canonical || $json.url || '').trim();
@@ -34,6 +38,8 @@ if (status === 'ok') {
 } else {
   msg = `❌ Saved (extraction failed)${idLine}: ${labelBase}\n${url}`;
 }
+
+if (isTestMode) msg = `⚗️🧪 TEST MODE\n` + msg;
 
 // hard cap for Telegram
 const MAX = 4000;
