@@ -1,5 +1,5 @@
 # env.md — PKM DEV Raspberry Pi stack environment
-Version: 2026.01.31-matter-server
+Version: 2026.01.31-db-container-vars
 Updated: 2026-01-31
 Host (SSH): igasovic@192.168.5.4
 
@@ -35,6 +35,12 @@ Compose file:
 
 Services (current):
 - postgres: postgres:16-alpine
+  - Container name: postgres
+  - Container init env:
+    - POSTGRES_USER=pgadmin
+    - POSTGRES_DB=postgres
+  - Connect from host (example):
+    - docker exec -it postgres psql -U pgadmin -d postgres
 - n8n: docker.n8n.io/n8nio/n8n:latest
 - homeassistant: ghcr.io/home-assistant/home-assistant:stable
 - cloudflared: cloudflare/cloudflared:latest
