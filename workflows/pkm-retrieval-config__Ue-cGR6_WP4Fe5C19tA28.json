@@ -1,7 +1,18 @@
 {
   "active": true,
-  "activeVersionId": "1cf90bfb-e3df-45ac-a5ed-f448d4e0c5a1",
+  "activeVersionId": "f692b7e9-6a2d-44eb-b277-f4a075c73062",
   "connections": {
+    "Return Scoring Config (v1)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Force Test Mode",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "When Executed by Another Workflow": {
       "main": [
         [
@@ -44,6 +55,20 @@
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
+    },
+    {
+      "disabled": true,
+      "id": "993c88b7-10eb-44bd-92e2-bab8118dbec2",
+      "name": "Force Test Mode",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/pkm-retrieval-config/99_force-test-mode__7e73de3a-7dec-4e6f-8178-8639f53c7cc0.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:pkm-retrieval-config/99_force-test-mode__7e73de3a-7dec-4e6f-8178-8639f53c7cc0.js] ${e.message}`;throw e;}\n"
+      },
+      "position": [
+        416,
+        0
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
@@ -75,6 +100,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-01-30T00:31:20.201Z",
-  "versionCounter": 22
+  "updatedAt": "2026-01-31T18:45:27.970Z",
+  "versionCounter": 30
 }
