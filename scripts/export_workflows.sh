@@ -6,6 +6,9 @@ OUT_DIR="$REPO_DIR/workflows"
 
 mkdir -p "$OUT_DIR"
 
+#repo cleanup
+docker exec -u node n8n sh -lc 'rm -rf /tmp/workflows && mkdir -p /tmp/workflows'
+
 # Export all workflows inside container
 docker exec -u node n8n n8n export:workflow --backup --output=/tmp/workflows
 
