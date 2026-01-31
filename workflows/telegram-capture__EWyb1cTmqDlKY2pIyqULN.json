@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "c5093fd5-0862-4205-bb81-20edbc549a47",
+  "activeVersionId": "2ffd5dae-e21e-42a3-aa21-3731c0975cb1",
   "connections": {
     "Build SQL - INSERT": {
       "main": [
@@ -19,17 +19,6 @@
           {
             "index": 0,
             "node": "Postgres Update Extract",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Call 'PKM — Retrieval Config'": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Compute Retrieval Excerpt + Quality Signals (from capture_text)",
             "type": "main"
           }
         ]
@@ -156,7 +145,18 @@
         [
           {
             "index": 0,
-            "node": "Call 'PKM — Retrieval Config'",
+            "node": "Compute Retrieval Excerpt + Quality Signals (from capture_text)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Normalize",
             "type": "main"
           }
         ]
@@ -189,7 +189,7 @@
         [
           {
             "index": 0,
-            "node": "Normalize",
+            "node": "PKM Config",
             "type": "main"
           }
         ]
@@ -222,7 +222,7 @@
         [
           {
             "index": 0,
-            "node": "Normalize",
+            "node": "PKM Config",
             "type": "main"
           }
         ]
@@ -263,7 +263,7 @@
       },
       "position": [
         2928,
-        -320
+        -312
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -287,7 +287,7 @@
       },
       "position": [
         16,
-        -320
+        -336
       ],
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6
@@ -321,7 +321,7 @@
       },
       "position": [
         240,
-        -320
+        -336
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2
@@ -342,7 +342,7 @@
       },
       "position": [
         2480,
-        -416
+        -408
       ],
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2
@@ -413,7 +413,7 @@
       },
       "position": [
         688,
-        -416
+        -408
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -428,7 +428,7 @@
       },
       "position": [
         1584,
-        -416
+        -408
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -454,7 +454,7 @@
       },
       "position": [
         2704,
-        -416
+        -408
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -467,7 +467,7 @@
       },
       "position": [
         2704,
-        -176
+        -168
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -480,7 +480,7 @@
       },
       "position": [
         -1104,
-        -320
+        -216
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -492,8 +492,8 @@
         "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/07_normalize__08ca99f5-2ba7-42e9-aab6-4b90e6055f85.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/07_normalize__08ca99f5-2ba7-42e9-aab6-4b90e6055f85.js] ${e.message}`;throw e;}"
       },
       "position": [
-        -880,
-        -320
+        -656,
+        -336
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -506,7 +506,7 @@
       },
       "position": [
         912,
-        -416
+        -408
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -519,7 +519,7 @@
       },
       "position": [
         -432,
-        -320
+        -336
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -532,7 +532,7 @@
       },
       "position": [
         2032,
-        -416
+        -408
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -545,7 +545,7 @@
       },
       "position": [
         -208,
-        -320
+        -336
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -558,7 +558,7 @@
       },
       "position": [
         2256,
-        -416
+        -408
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -571,40 +571,10 @@
       },
       "position": [
         1808,
-        -416
+        -408
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
-    },
-    {
-      "id": "8c21d27b-1a45-46d8-bcaf-976265c0ab96",
-      "name": "Call 'PKM — Retrieval Config'",
-      "parameters": {
-        "options": {
-          "waitForSubWorkflow": true
-        },
-        "workflowId": {
-          "__rl": true,
-          "cachedResultName": "PKM — Retrieval Config",
-          "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
-          "mode": "list",
-          "value": "Ue-cGR6_WP4Fe5C19tA28"
-        },
-        "workflowInputs": {
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true,
-          "mappingMode": "defineBelow",
-          "matchingColumns": [],
-          "schema": [],
-          "value": {}
-        }
-      },
-      "position": [
-        -656,
-        -320
-      ],
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
     },
     {
       "credentials": {
@@ -626,11 +596,41 @@
       },
       "position": [
         -1104,
-        -480
+        -408
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
       "webhookId": "a111da0e-d82b-4eac-9ca8-ddd49cc09794"
+    },
+    {
+      "id": "ec9b2bd3-c07c-47c2-b9ef-a050f71de4dc",
+      "name": "PKM Config",
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "PKM — Retrieval Config",
+          "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
+          "mode": "list",
+          "value": "Ue-cGR6_WP4Fe5C19tA28"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        -880,
+        -336
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
     }
   ],
   "settings": {
@@ -662,6 +662,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-01-30T00:32:42.017Z",
-  "versionCounter": 138
+  "updatedAt": "2026-01-31T20:10:30.219Z",
+  "versionCounter": 146
 }

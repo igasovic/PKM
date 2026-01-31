@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "890c9925-f6f9-4bcb-aebc-7f92dd5fdef2",
+  "activeVersionId": "525b34eb-2118-4375-895b-0a42c96c6892",
   "connections": {
     "Build Context Pack": {
       "main": [
@@ -142,6 +142,17 @@
         ]
       ]
     },
+    "PKM Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Command Parser",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Switch": {
       "main": [
         [
@@ -187,7 +198,7 @@
         [
           {
             "index": 0,
-            "node": "Command Parser",
+            "node": "PKM Config",
             "type": "main"
           }
         ]
@@ -198,7 +209,7 @@
         [
           {
             "index": 0,
-            "node": "Command Parser",
+            "node": "PKM Config",
             "type": "main"
           }
         ]
@@ -227,7 +238,7 @@
         "text": "={{$json.telegram_message}}"
       },
       "position": [
-        1120,
+        1344,
         -64
       ],
       "type": "n8n-nodes-base.telegram",
@@ -262,7 +273,7 @@
         "options": {}
       },
       "position": [
-        672,
+        896,
         64
       ],
       "type": "n8n-nodes-base.if",
@@ -296,7 +307,7 @@
         "options": {}
       },
       "position": [
-        896,
+        1120,
         64
       ],
       "type": "n8n-nodes-base.if",
@@ -462,7 +473,7 @@
         }
       },
       "position": [
-        1120,
+        1344,
         192
       ],
       "type": "n8n-nodes-base.switch",
@@ -488,7 +499,7 @@
         "jsCode": "try{const fn=require('/data/js/workflows/read/06_command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/06_command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js] ${e.message}`;throw e;}"
       },
       "position": [
-        448,
+        672,
         64
       ],
       "type": "n8n-nodes-base.code",
@@ -511,7 +522,7 @@
         "query": "{{$json.sql}}"
       },
       "position": [
-        1568,
+        1792,
         160
       ],
       "type": "n8n-nodes-base.postgres",
@@ -534,7 +545,7 @@
         "text": "={{$json.telegram_message}}"
       },
       "position": [
-        2016,
+        2240,
         544
       ],
       "type": "n8n-nodes-base.telegram",
@@ -548,7 +559,7 @@
         "jsCode": "try{const fn=require('/data/js/workflows/read/03_build-sql-find__d0724507-154e-485c-8b0d-3523be365f6c.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/03_build-sql-find__d0724507-154e-485c-8b0d-3523be365f6c.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1344,
+        1568,
         64
       ],
       "type": "n8n-nodes-base.code",
@@ -561,7 +572,7 @@
         "jsCode": "try{const fn=require('/data/js/workflows/read/04_build-sql-last__97543204-559a-4946-8621-4faacda4643f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/04_build-sql-last__97543204-559a-4946-8621-4faacda4643f.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1344,
+        1568,
         -128
       ],
       "type": "n8n-nodes-base.code",
@@ -574,7 +585,7 @@
         "jsCode": "try{const fn=require('/data/js/workflows/read/02_build-sql-continue__138ce96f-f56c-4bea-9443-67686bd6066b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/02_build-sql-continue__138ce96f-f56c-4bea-9443-67686bd6066b.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1344,
+        1568,
         256
       ],
       "type": "n8n-nodes-base.code",
@@ -597,7 +608,7 @@
         "query": "{{$json.sql}}"
       },
       "position": [
-        1568,
+        1792,
         448
       ],
       "type": "n8n-nodes-base.postgres",
@@ -610,7 +621,7 @@
         "jsCode": "try{const fn=require('/data/js/workflows/read/05_build-sql-pull__55ed7dbe-1cc2-46de-98b5-0fa4d916c84c.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/05_build-sql-pull__55ed7dbe-1cc2-46de-98b5-0fa4d916c84c.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1344,
+        1568,
         448
       ],
       "type": "n8n-nodes-base.code",
@@ -623,7 +634,7 @@
         "jsCode": "try{const fn=require('/data/js/workflows/read/08_format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/08_format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1792,
+        2016,
         448
       ],
       "type": "n8n-nodes-base.code",
@@ -636,7 +647,7 @@
         "jsCode": "try{const fn=require('/data/js/workflows/read/07_format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/07_format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1792,
+        2016,
         640
       ],
       "type": "n8n-nodes-base.code",
@@ -649,7 +660,7 @@
         "jsCode": "try{const fn=require('/data/js/workflows/read/01_build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/01_build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1792,
+        2016,
         160
       ],
       "type": "n8n-nodes-base.code",
@@ -680,6 +691,36 @@
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
       "webhookId": "a111da0e-d82b-4eac-9ca8-ddd49cc09794"
+    },
+    {
+      "id": "52cd8bc3-fe41-4576-b31e-9f38491b0e18",
+      "name": "PKM Config",
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "PKM — Retrieval Config",
+          "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
+          "mode": "list",
+          "value": "Ue-cGR6_WP4Fe5C19tA28"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        448,
+        64
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
     }
   ],
   "settings": {
@@ -711,6 +752,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-01-30T00:32:01.996Z",
-  "versionCounter": 102
+  "updatedAt": "2026-01-31T20:09:40.051Z",
+  "versionCounter": 105
 }
