@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "2ffd5dae-e21e-42a3-aa21-3731c0975cb1",
+  "activeVersionId": "d9c61740-0707-447f-b86a-da76510ad764",
   "connections": {
     "Build SQL - INSERT": {
       "main": [
@@ -19,6 +19,17 @@
           {
             "index": 0,
             "node": "Postgres Update Extract",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Call 'Tier-1 Enhancement'": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Create Message",
             "type": "main"
           }
         ]
@@ -167,7 +178,7 @@
         [
           {
             "index": 0,
-            "node": "Create Message",
+            "node": "Call 'Tier-1 Enhancement'",
             "type": "main"
           }
         ]
@@ -262,8 +273,8 @@
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        2928,
-        -312
+        3136,
+        -320
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -342,7 +353,7 @@
       },
       "position": [
         2480,
-        -408
+        -416
       ],
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2
@@ -413,7 +424,7 @@
       },
       "position": [
         688,
-        -408
+        -416
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -428,7 +439,7 @@
       },
       "position": [
         1584,
-        -408
+        -416
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -453,8 +464,8 @@
         "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/05_create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/05_create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js] ${e.message}`;throw e;}"
       },
       "position": [
-        2704,
-        -408
+        2912,
+        -416
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -467,7 +478,7 @@
       },
       "position": [
         2704,
-        -168
+        -176
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -480,7 +491,7 @@
       },
       "position": [
         -1104,
-        -216
+        -224
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -506,7 +517,7 @@
       },
       "position": [
         912,
-        -408
+        -416
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -532,7 +543,7 @@
       },
       "position": [
         2032,
-        -408
+        -416
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -558,7 +569,7 @@
       },
       "position": [
         2256,
-        -408
+        -416
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -571,7 +582,7 @@
       },
       "position": [
         1808,
-        -408
+        -416
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -596,7 +607,7 @@
       },
       "position": [
         -1104,
-        -408
+        -416
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -631,6 +642,34 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
+    },
+    {
+      "id": "16932292-79d1-4e14-a64e-3b84fce41bd5",
+      "name": "Call 'Tier-1 Enhancement'",
+      "parameters": {
+        "options": {},
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "Tier-1 Enhancement",
+          "cachedResultUrl": "/workflow/WFB4SDkDPDPIphppIn3l7",
+          "mode": "list",
+          "value": "WFB4SDkDPDPIphppIn3l7"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        2688,
+        -416
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
     }
   ],
   "settings": {
@@ -662,6 +701,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-01-31T20:10:30.219Z",
-  "versionCounter": 146
+  "updatedAt": "2026-02-01T13:40:11.565Z",
+  "versionCounter": 153
 }
