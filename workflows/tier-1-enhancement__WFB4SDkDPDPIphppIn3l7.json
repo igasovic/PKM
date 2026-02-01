@@ -1,23 +1,7 @@
 {
-  "active": false,
-  "activeVersionId": null,
+  "active": true,
+  "activeVersionId": "316bea5c-733c-4985-bbaa-ef87f890e545",
   "connections": {
-    "Call 'PKM — Retrieval Config'": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Topics = {}",
-            "type": "main"
-          },
-          {
-            "index": 0,
-            "node": "Merge",
-            "type": "main"
-          }
-        ]
-      ]
-    },
     "Create Sampled Prompt": {
       "main": [
         [
@@ -80,6 +64,22 @@
         ]
       ]
     },
+    "PKM Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Topics = {}",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Parse T1": {
       "main": [
         [
@@ -118,7 +118,7 @@
         [
           {
             "index": 0,
-            "node": "Call 'PKM — Retrieval Config'",
+            "node": "PKM Config",
             "type": "main"
           }
         ]
@@ -142,36 +142,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
-    },
-    {
-      "id": "c368b350-0e36-423a-8368-bc7167df4d83",
-      "name": "Call 'PKM — Retrieval Config'",
-      "parameters": {
-        "options": {
-          "waitForSubWorkflow": true
-        },
-        "workflowId": {
-          "__rl": true,
-          "cachedResultName": "PKM — Retrieval Config",
-          "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
-          "mode": "list",
-          "value": "Ue-cGR6_WP4Fe5C19tA28"
-        },
-        "workflowInputs": {
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true,
-          "mappingMode": "defineBelow",
-          "matchingColumns": [],
-          "schema": [],
-          "value": {}
-        }
-      },
-      "position": [
-        208,
-        0
-      ],
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
     },
     {
       "credentials": {
@@ -354,6 +324,36 @@
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
+    },
+    {
+      "id": "c368b350-0e36-423a-8368-bc7167df4d83",
+      "name": "PKM Config",
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "PKM — Retrieval Config",
+          "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
+          "mode": "list",
+          "value": "Ue-cGR6_WP4Fe5C19tA28"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        208,
+        0
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
     }
   ],
   "settings": {
@@ -385,6 +385,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-02-01T13:34:15.952Z",
-  "versionCounter": 12
+  "updatedAt": "2026-02-01T14:16:03.557Z",
+  "versionCounter": 17
 }
