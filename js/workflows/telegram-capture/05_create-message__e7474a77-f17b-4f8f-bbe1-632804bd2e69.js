@@ -19,7 +19,7 @@ const entryId = ($json.entry_id ?? '').toString().trim();
 const url = String($json.url_canonical || $json.url || '').trim();
 const title = String($json.title || '').trim();
 const author = String($json.author || '').trim();
-const cleanLen = Number($json.clean_len || 0);
+const cleanLen = Number($json.clean_text?.length || 0);
 
 const labelBase = title || 'link';
 const label = author ? `${labelBase} — ${author}` : labelBase;
