@@ -8,42 +8,84 @@
 'use strict';
 
 module.exports = async function run(ctx) {
-  const { $input, $json, $items, $node, $env, helpers } = ctx;
+  const { $json, $items } = ctx;
 
-const config = $items('PKM Config')[0].json.config;
-const isTestMode = !!(config && config.db && config.db.is_test_mode);
+  const s = (v) => (v ?? '').toString().trim();
 
+  const config = $items('PKM Config')[0].json.config;
+  const isTestMode = !!(config && config.db && config.db.is_test_mode);
 
-const entryId = ($json.entry_id ?? '').toString().trim();
+  const entryId = s($json.entry_id);
 
-const url = String($json.url_canonical || $json.url || '').trim();
-const title = String($json.title || '').trim();
-const author = String($json.author || '').trim();
-const cleanLen = Number($json.clean_text?.length || 0);
+  const url = s($json.url_canonical || $json.url);
+  const title = s($json.title);
+  const author = s($json.author);
 
-const labelBase = title || 'link';
-const label = author ? `${labelBase} — ${author}` : labelBase;
+  // IMPORTANT: length should be based on clean_text (fallback to capture_text)
+  const cleanText = s($json.clean_text || $json.clear_text || $json.capture_text);
+  const cleanLen = cleanText.length;
 
-// Determine status purely from extracted length
-let status = 'failed';
-if (cleanLen > 0) status = cleanLen < 500 ? 'low_quality' : 'ok';
+  const topicPrimary = s($json.topic_primary);
+  const topicSecondary = s($json.topic_secondary);
+  const gist = s($json.gist);
 
-let msg;
-const idLine = entryId ? ` (#${entryId})` : '';
+  const labelBase = title || 'link';
+  const label = author ? `${labelBase} — ${author}` : labelBase;
 
-if (status === 'ok') {
-  msg = `✅ Saved${idLine}: ${label} (${cleanLen} chars)\n${url}`;
-} else if (status === 'low_quality') {
-  msg = `⚠️ Saved (low quality)${idLine}: ${label} (${cleanLen} chars)\n${url}`;
-} else {
-  msg = `❌ Saved (extraction failed)${idLine}: ${labelBase}\n${url}`;
-}
+  // Determine status purely from clean_text length
+  let status = 'failed';
+  if (cleanLen > 0) status = cleanLen < 500 ? 'low_quality' : 'ok';
 
-if (isTestMode) msg = `⚗️🧪 TEST MODE\n` + msg;
+  const idLine = entryId ? ` (#${entryId})` : '';
 
-// hard cap for Telegram
-const MAX = 4000;
-if (msg.length > MAX) msg = msg.slice(0, MAX - 1) + '…';
+  // Keep the previous core message semantics (status + label + url),
+  // but enrich with topics + gist when available.
+  const lines = [];
 
-return [{ json: { ...$json, telegram_message: msg } }];
+  if (status === 'ok') {
+    lines.push(`✅ Saved${idLine}: ${label} (${cleanLen.toLocaleString()} chars)`);
+  } else if (status === 'low_quality') {
+    lines.push(`⚠️ Saved (low quality)${idLine}: ${label} (${cleanLen.toLocaleString()} chars)`);
+  } else {
+    lines.push(`❌ Saved (extraction failed)${idLine}: ${labelBase}`);
+  }
+
+  if (url) lines.push(url);
+
+  // Add topic path + gist (new)
+  if (topicPrimary && topicSecondary) lines.push(`🏷️ ${topicPrimary} → ${topicSecondary}`);
+  else if (topicPrimary) lines.push(`🏷️ ${topicPrimary}`);
+
+  if (gist) lines.push(`_${gist}_`);
+
+  let msg = lines.join('\n');
+
+  if (isTestMode) msg = `⚗️🧪 TEST MODE\n` + msg;
+
+  // hard cap for Telegram
+  const MAX = 4000;
+  if (msg.length > MAX) msg = msg.slice(0, MAX - 1) + '…';
+
+  const topic_path =
+    topicPrimary && topicSecondary ? `${topicPrimary} → ${topicSecondary}`
+    : topicPrimary ? topicPrimary
+    : '';
+
+  // Keep prior behavior: return everything as before, plus new fields
+  return [{
+    json: {
+      ...$json,
+      telegram_message: msg,
+
+      // new/normalized outputs
+      gist: gist || $json.gist,
+      topic_primary: topicPrimary || $json.topic_primary,
+      topic_secondary: topicSecondary || $json.topic_secondary,
+      topic_path,
+
+      // updated length derived from clean_text (your requirement)
+      text_len: cleanLen,
+      clean_len: cleanLen,
+    }
+  }];
 };
