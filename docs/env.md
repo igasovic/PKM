@@ -103,3 +103,23 @@ Mac backup dir:
 Files copied to Mac:
 - postgres_dumpall.sql.gz (pg_dumpall of cluster)
 - pi_backup_bundle.tgz (includes /home/igasovic/stack, repo, and /home/igasovic/.ssh)
+
+
+## PKM Test Mode (Global)
+
+PKM supports a **global test mode** for safe experimentation.
+
+- Test mode is controlled by the **`PKM Config`** sub-workflow in n8n.
+- When enabled, all workflows write to and read from:
+  - `pkm_test.entries`
+- When disabled (default), workflows use:
+  - `pkm.entries`
+
+### Operational rules
+- Test mode is **off by default**.
+- Test mode must only be enabled intentionally (via workflow toggle).
+- Telegram and email responses visibly display a **TEST MODE banner** when active.
+- Test data can be wiped safely using:
+  ```sql
+  TRUNCATE TABLE pkm_test.entries RESTART IDENTITY;
+  ```

@@ -62,3 +62,27 @@ Final verification commands (passed):
 - Matter Server acts as a backend service only.
 - Eero 6 provides Thread Border Router functionality implicitly; it is not added to Home Assistant or Matter.
 - Compatible with existing SSD-booted Pi and Docker-based stack.
+
+## 2026-01-31 — PKM test mode & schema isolation
+
+### What was added
+- Introduced **schema-level test/production isolation** in Postgres:
+  - Production: `pkm.entries`
+  - Test: `pkm_test.entries`
+- Added `PKM Config` sub-workflow as the **single source of truth** for runtime configuration.
+- All workflows now invoke `PKM Config` at startup.
+- All SQL and JS builders read configuration **exclusively** from `PKM Config` output.
+- Implemented global **test mode** toggle (no parallel deployments required).
+- Added visible **⚗️🧪 TEST MODE** banner to Telegram and email responses when active.
+
+### Safety guarantees
+- Test data is physically separated from production data.
+- Test runs can be wiped safely using:
+  ```sql
+  TRUNCATE TABLE pkm_test.entries RESTART IDENTITY;
+  ```
+- No reliance on global mutable state (Data Tables, static data, env vars).
+
+### Developer impact
+- Builders fail fast if `PKM Config` is missing.
+- Configuration flow is explicit, deterministic, and auditable.
