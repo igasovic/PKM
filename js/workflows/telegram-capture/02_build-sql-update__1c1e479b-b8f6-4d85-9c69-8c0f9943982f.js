@@ -155,7 +155,7 @@ RETURNING
   content_type,
   COALESCE(title,'') AS title,
   COALESCE(author,'') AS author,
-  clean_text,
+  COALESCE(clean_text,'') AS clean_text,
   url_canonical,
   COALESCE(char_length(clean_text), 0) AS clean_len,
   COALESCE(char_length(extracted_text), 0) AS extracted_len;
