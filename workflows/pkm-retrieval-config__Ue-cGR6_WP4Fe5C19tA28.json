@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "8b88f81d-5730-41fb-b18b-5c0df2d9050e",
+  "activeVersionId": "a5f8f80f-c09c-495f-b4fe-43c3a9e82e93",
   "connections": {
     "Return Scoring Config (v1)": {
       "main": [
@@ -57,6 +57,7 @@
       "typeVersion": 2
     },
     {
+      "disabled": true,
       "id": "993c88b7-10eb-44bd-92e2-bab8118dbec2",
       "name": "Force Test Mode",
       "parameters": {
@@ -99,6 +100,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-01-31T19:30:31.906Z",
-  "versionCounter": 33
+  "updatedAt": "2026-01-31T21:23:59.045Z",
+  "versionCounter": 46
 }
