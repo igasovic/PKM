@@ -2,7 +2,7 @@
 
 This repository contains the **PKM DEV** n8n + Postgres workflow system: exported n8n workflows, externalized JavaScript for n8n Code nodes, and the operational documentation needed to reproduce the stack.
 
-> Generated: 2026-01-31
+> Generated: 2026-02-01
 
 ## Top-level layout
 
@@ -70,6 +70,22 @@ Workflow slugs currently present:
   - `return_scoring_config_v1.js` — central config provider for retrieval and routing.
   - `99_force-test-mode__*.js` — toggle helper (force test mode on a per-run basis).
 
+- `js/workflows/tier-1-enhancement/`
+  Shared Tier‑1 enrichment modules (prompt construction, response parsing, and DB update) used by the Tier‑1 subworkflow.
+
+- `js/workflows/telegram-capture/`
+  Externalized nodes for Telegram ingestion (normalize, build SQL insert/update, compute quality signals, create message/response).
+
+- `js/workflows/e-mail-capture/`
+  Externalized nodes for newsletter/email ingestion and reply composition.
+  (Some Tier‑1 helper modules may also exist here for backwards compatibility.)
+
+- `js/workflows/read/`
+  Externalized nodes for the Telegram “read” commands (`/last`, `/find`, `/continue`, `/pull`, `/help`) including SQL builders and message formatting.
+
+  - `return_scoring_config_v1.js` — central config provider for retrieval and routing.
+  - `99_force-test-mode__*.js` — toggle helper (force test mode on a per-run basis).
+
 - `js/workflows/telegram-capture/`
   Externalized nodes for Telegram ingestion (normalize, build SQL insert/update, compute quality signals, compose response).
 
@@ -99,10 +115,13 @@ Current workflows (examples in this snapshot):
   Central config workflow (returned config consumed by other workflows via “PKM Config” sub-workflow call).
 
 - `workflows/telegram-capture__*.json`  
-  Telegram ingestion pipeline.
+  Telegram ingestion pipeline (calls Tier‑1 Enhancement for newsletter/article captures once `clean_text` is available).
 
 - `workflows/e-mail-capture__*.json`  
-  Email/newsletter ingestion pipeline.
+  Email/newsletter ingestion pipeline (calls Tier‑1 Enhancement for `content_type=newsletter`).
+
+- `workflows/tier-1-enhancement__*.json`  
+  Tier‑1 enrichment subworkflow: builds prompt(s), calls the LLM, parses metadata (`gist`, topics, keywords), and updates the entry in Postgres.
 
 - `workflows/read__*.json`  
   Telegram read/query commands pipeline.

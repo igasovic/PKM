@@ -1,4 +1,17 @@
 # changelog
+## 2026-02-01 — Tier‑1 enrichment subworkflow + Telegram message enrichment
+
+### What changed
+- Extracted the Tier‑1 newsletter enrichment chain out of `e-mail-capture` into a dedicated subworkflow: `workflows/tier-1-enhancement__WFB4SDkDPDPIphppIn3l7.json`.
+- Updated both `e-mail-capture` and `telegram-capture` workflows to call **Tier‑1 Enhancement** (Execute Workflow) on the newsletter path instead of duplicating nodes.
+- Externalized Tier‑1 JS modules into `js/workflows/tier-1-enhancement/` and updated subworkflow Code-node wrappers to load them from the new path.
+- Ensured callers keep using the config subworkflow named exactly **PKM Config**.
+
+### Fixes / gotchas discovered
+- n8n can keep running “old” external JS after file updates; a container restart (`docker compose restart n8n`) resolved mismatches between repo code and executed SQL.
+- Telegram Capture: updated the runtime message builder (`js/workflows/telegram-capture/05_create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js`) to include `gist`, topic path (`topic_primary → topic_secondary`), and to compute message length from `clean_text`.
+- Cleaned up Git sync between Mac ↔ Pi (avoid committing `versionCounter`-only workflow diffs; reset Pi to `origin/main` when needed).
+
 
 ## 2026-01-30 — Pi SD → SSD migration (with SD rollback)
 
