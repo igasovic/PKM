@@ -238,7 +238,7 @@
       "id": "7bfb8977-e2a3-4b28-9872-f92d4357a9c1",
       "name": "Create Whole Text Prompt",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/06_create-whole-text-prompt__4da5cf51-2d6b-45a3-a9c8-e13f63bad821.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/06_create-whole-text-prompt__4da5cf51-2d6b-45a3-a9c8-e13f63bad821.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/js/workflows/tier-1-enhancement/06_create-whole-text-prompt__4da5cf51-2d6b-45a3-a9c8-e13f63bad821.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:tier-1-enhancement/06_create-whole-text-prompt__4da5cf51-2d6b-45a3-a9c8-e13f63bad821.js] ${e.message}`;throw e;}"
       },
       "position": [
         928,
@@ -251,7 +251,7 @@
       "id": "e77465e9-824d-4207-8b87-e0c0af6f411f",
       "name": "Create Sampled Prompt",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/05_create-sampled-prompt__16117688-d107-4f1d-81d0-048fb7619e92.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/05_create-sampled-prompt__16117688-d107-4f1d-81d0-048fb7619e92.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/js/workflows/tier-1-enhancement/05_create-sampled-prompt__16117688-d107-4f1d-81d0-048fb7619e92.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:tier-1-enhancement/05_create-sampled-prompt__16117688-d107-4f1d-81d0-048fb7619e92.js] ${e.message}`;throw e;}"
       },
       "position": [
         928,
@@ -333,7 +333,7 @@
       "id": "97baf2ec-94f1-4587-8f8c-4c3d171a0528",
       "name": "Parse T1",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/10_parse-t1__5cd4f138-20ac-4c36-867b-e0f618fd3149.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/10_parse-t1__5cd4f138-20ac-4c36-867b-e0f618fd3149.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/js/workflows/tier-1-enhancement/10_parse-t1__5cd4f138-20ac-4c36-867b-e0f618fd3149.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:tier-1-enhancement/10_parse-t1__5cd4f138-20ac-4c36-867b-e0f618fd3149.js] ${e.message}`;throw e;}"
       },
       "position": [
         1728,
@@ -346,7 +346,7 @@
       "id": "33697669-02ab-4a83-a894-ed73d94dd00c",
       "name": "Update T1 Info to DB",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/14_update-t1-info-to-db__1a6df95f-7a5c-4203-b82c-f2e0a84b70c0.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/14_update-t1-info-to-db__1a6df95f-7a5c-4203-b82c-f2e0a84b70c0.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/js/workflows/tier-1-enhancement/14_update-t1-info-to-db__1a6df95f-7a5c-4203-b82c-f2e0a84b70c0.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:tier-1-enhancement/14_update-t1-info-to-db__1a6df95f-7a5c-4203-b82c-f2e0a84b70c0.js] ${e.message}`;throw e;}"
       },
       "position": [
         1952,
@@ -386,5 +386,5 @@
   "tags": [],
   "triggerCount": 0,
   "updatedAt": "2026-02-01T13:34:15.952Z",
-  "versionCounter": 9
+  "versionCounter": 12
 }
