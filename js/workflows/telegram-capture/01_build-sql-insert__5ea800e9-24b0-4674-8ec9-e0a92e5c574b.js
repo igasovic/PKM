@@ -30,16 +30,27 @@ module.exports = async function run(ctx) {
 
   function sqlString(v) {
     if (v === null || v === undefined) return 'NULL';
-    const s = String(v).replace(/\\/g, '\\\\').replace(/'/g, "''");
-    return `'${s}'`;
+    return `'${String(v).replace(/'/g, "''")}'`;
   }
 
   function sqlJsonb(obj) {
     if (obj === null || obj === undefined) return 'NULL';
-    const s = JSON.stringify(obj).replace(/\\/g, '\\\\').replace(/'/g, "''");
-    return `'${s}'::jsonb`;
+  
+    const s = JSON.stringify(obj);
+  
+    // Dollar-quoting avoids all quote/backslash escaping issues.
+    // Use a tag unlikely to appear in your JSON.
+    const tag = 'pkmjson';
+  
+    if (s.includes(`$${tag}$`)) {
+      // Extremely unlikely fallback: only escape single quotes
+      const esc = s.replace(/'/g, "''");
+      return `'${esc}'::jsonb`;
+    }
+  
+    return `$${tag}$${s}$${tag}$::jsonb`;
   }
-
+  
   function sqlInt(v) {
     if (v === null || v === undefined) return 'NULL';
     const n = Number(v);
