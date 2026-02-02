@@ -8,12 +8,12 @@
 'use strict';
 
 module.exports = async function run(ctx) {
-  const { $input, $json, $items, $node, $env, helpers } = ctx;
+  const { $json, $items } = ctx;
+
   // --- DB schema routing (prod vs test) ---
   // IMPORTANT:
   // - This module reads config from the *sub-workflow node output* named exactly: "PKM Config"
   // - Your entry workflows must execute that sub-workflow at the very start.
-
   const config = $items('PKM Config')[0].json.config;
   const db = config.db;
 
@@ -27,74 +27,89 @@ module.exports = async function run(ctx) {
 
   // Safe, quoted identifier reference for SQL templates
   const entries_table = `"${db_schema}"."entries"`;
-function sqlString(v) {
-  if (v === null || v === undefined) return 'NULL';
-  const s = String(v).replace(/\\/g, '\\\\').replace(/'/g, "''");
-  return `'${s}'`;
-}
 
-function sqlJsonb(obj) {
-  if (obj === null || obj === undefined) return 'NULL';
-  const s = JSON.stringify(obj).replace(/\\/g, '\\\\').replace(/'/g, "''");
-  return `'${s}'::jsonb`;
-}
+  function sqlString(v) {
+    if (v === null || v === undefined) return 'NULL';
+    const s = String(v).replace(/\\/g, '\\\\').replace(/'/g, "''");
+    return `'${s}'`;
+  }
 
-function sqlInt(v) {
-  if (v === null || v === undefined) return 'NULL';
-  const n = Number(v);
-  if (!Number.isFinite(n)) return 'NULL';
-  return String(Math.trunc(n));
-}
+  function sqlJsonb(obj) {
+    if (obj === null || obj === undefined) return 'NULL';
+    const s = JSON.stringify(obj).replace(/\\/g, '\\\\').replace(/'/g, "''");
+    return `'${s}'::jsonb`;
+  }
 
-function sqlNum(v) {
-  if (v === null || v === undefined) return 'NULL';
-  const n = Number(v);
-  if (!Number.isFinite(n)) return 'NULL';
-  return String(n);
-}
+  function sqlInt(v) {
+    if (v === null || v === undefined) return 'NULL';
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 'NULL';
+    return String(Math.trunc(n));
+  }
 
-function sqlBool(v) {
-  if (v === null || v === undefined) return 'NULL';
-  return v ? 'true' : 'false';
-}
+  function sqlNum(v) {
+    if (v === null || v === undefined) return 'NULL';
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 'NULL';
+    return String(n);
+  }
 
-const msg = $json.message || {};
+  function sqlBool(v) {
+    if (v === null || v === undefined) return 'NULL';
+    return v ? 'true' : 'false';
+  }
 
-const source = 'telegram';
-const intent = $json.intent || 'archive';
-const content_type = $json.content_type || null;
+  const msg = $json.message || {};
 
-const title = $json.title ?? null;
-const author = $json.author ?? null;
+  const source = 'telegram';
+  const intent = $json.intent || 'archive';
+  const content_type = $json.content_type || null;
 
-const capture_text = $json.capture_text ?? msg.text ?? '';
-const url = $json.url ?? null;
-const url_canonical = $json.url_canonical ?? null;
+  const title = $json.title ?? null;
+  const author = $json.author ?? null;
 
-// metadata + retrieval (WP1 compute node)
-const metadata_patch = $json.metadata_patch ?? ($json.retrieval ? { retrieval: $json.retrieval } : null);
-const r = $json.retrieval ?? metadata_patch?.retrieval ?? null;
-const q = r?.quality ?? {};
+  const capture_text = $json.capture_text ?? msg.text ?? '';
 
-// promoted retrieval columns (WP2)
-const retrieval_excerpt = r?.excerpt ?? null;
-const retrieval_version = r?.version ?? null;
-const source_domain = r?.source_domain ?? null;
+  // For PKM JSON note mode, Normalize forces these to null to bypass extraction.
+  const url = $json.url ?? null;
+  const url_canonical = $json.url_canonical ?? null;
 
-const clean_word_count = q.clean_word_count ?? null;
-const clean_char_count = q.clean_char_count ?? null;
-const extracted_char_count = q.extracted_char_count ?? null;
+  // New: Persist clean_text + topic + gist (from Normalize)
+  const clean_text = $json.clean_text ?? null;
 
-const link_count = q.link_count ?? null;
-const link_ratio = q.link_ratio ?? null;
+  // Accept either the JSON-note field names or already-promoted names
+  const topic_primary = $json.topic_primary ?? $json.topic ?? null;
+  const topic_primary_confidence = $json.topic_primary_confidence ?? $json.primary_topic_confidence ?? null;
 
-const boilerplate_heavy = q.boilerplate_heavy ?? null;
-const low_signal = q.low_signal ?? null;
-const extraction_incomplete = q.extraction_incomplete ?? null;
+  const topic_secondary = $json.topic_secondary ?? $json.secondary_topic ?? null;
+  const topic_secondary_confidence = $json.topic_secondary_confidence ?? $json.secondary_topic_confidence ?? null;
 
-const quality_score = q.quality_score ?? null;
+  const gist = $json.gist ?? null;
 
-const sql = `
+  // metadata + retrieval (WP1 compute node)
+  const metadata_patch = $json.metadata_patch ?? ($json.retrieval ? { retrieval: $json.retrieval } : null);
+  const r = $json.retrieval ?? metadata_patch?.retrieval ?? null;
+  const q = r?.quality ?? {};
+
+  // promoted retrieval columns (WP2)
+  const retrieval_excerpt = r?.excerpt ?? null;
+  const retrieval_version = r?.version ?? null;
+  const source_domain = r?.source_domain ?? null;
+
+  const clean_word_count = q.clean_word_count ?? null;
+  const clean_char_count = q.clean_char_count ?? null;
+  const extracted_char_count = q.extracted_char_count ?? null;
+
+  const link_count = q.link_count ?? null;
+  const link_ratio = q.link_ratio ?? null;
+
+  const boilerplate_heavy = q.boilerplate_heavy ?? null;
+  const low_signal = q.low_signal ?? null;
+  const extraction_incomplete = q.extraction_incomplete ?? null;
+
+  const quality_score = q.quality_score ?? null;
+
+  const sql = `
 INSERT INTO ${entries_table} (
   created_at,
   source,
@@ -103,8 +118,17 @@ INSERT INTO ${entries_table} (
   title,
   author,
   capture_text,
+  clean_text,
   url,
   url_canonical,
+
+  -- Tier-1-ish fields supplied by PKM JSON note mode (or null otherwise)
+  topic_primary,
+  topic_primary_confidence,
+  topic_secondary,
+  topic_secondary_confidence,
+  gist,
+
   metadata,
 
   -- WP2 promoted retrieval columns
@@ -129,8 +153,16 @@ VALUES (
   ${sqlString(title)}::text,
   ${sqlString(author)}::text,
   ${sqlString(capture_text)}::text,
+  ${sqlString(clean_text)}::text,
   ${sqlString(url)}::text,
   ${sqlString(url_canonical)}::text,
+
+  ${sqlString(topic_primary)}::text,
+  ${sqlNum(topic_primary_confidence)}::real,
+  ${sqlString(topic_secondary)}::text,
+  ${sqlNum(topic_secondary_confidence)}::real,
+  ${sqlString(gist)}::text,
+
   ${sqlJsonb(metadata_patch)},
 
   ${sqlString(retrieval_excerpt)}::text,
@@ -160,5 +192,5 @@ RETURNING
   COALESCE(char_length(capture_text), 0) AS text_len;
 `.trim();
 
-return [{ json: { ...$json, sql } }];
+  return [{ json: { ...$json, sql } }];
 };

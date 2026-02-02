@@ -1,123 +1,150 @@
 /**
- * PKM / n8n Externalized Code Node
- *
- * Workflow: Telegram Capture (telegram-capture)
- * Node: Normalize
- * Node ID: 08ca99f5-2ba7-42e9-aab6-4b90e6055f85
+ * Telegram Capture — Normalize (07)
+ * PKM JSON note fast-path:
+ * - capture_text = whole telegram message
+ * - parse JSON (fenced ```json ... ```, or leading {...})
+ * - clean_text = text after JSON block
+ * - url/url_canonical forced null (no extraction)
+ * - source=telegram, intent=think, content_type=note, author=null
  */
-'use strict';
-
-module.exports = async function run(ctx) {
-  const { $input, $json, $items, $node, $env, helpers } = ctx;
-
-// Telegram normalization node (fits pkm.entries schema)
-
-// 1) Get Telegram text
-const text = $json.message?.text || '';
-const capture_text = String(text);
-
-// 2) Extract first URL from Telegram text
-const match = capture_text.match(/https?:\/\/[^\s<>()]+/i);
-let url = match ? match[0] : null;
-
-// Trim common trailing punctuation/brackets
-if (url) {
-  while (/[)\],.?!:;"'»]+$/.test(url)) {
-    url = url.replace(/[)\],.?!:;"'»]+$/, '');
-  }
-}
-
-// 3) Canonicalize using plain JS (no URL(), no modules)
-function canonicalizeUrl(raw) {
-  if (!raw) return null;
-
-  let s = String(raw).trim();
-
-  // Remove invisible characters
-  s = s.replace(/[\u200B-\u200D\uFEFF]/g, '');
-
-  // Drop fragment
-  const hashIdx = s.indexOf('#');
-  if (hashIdx !== -1) s = s.slice(0, hashIdx);
-
-  // Split base / query
-  const qIdx = s.indexOf('?');
-  let base = qIdx === -1 ? s : s.slice(0, qIdx);
-  let query = qIdx === -1 ? '' : s.slice(qIdx + 1);
-
-  // Normalize scheme + host casing
-  base = base.replace(/^https?:\/\//i, m => m.toLowerCase());
-  base = base.replace(
-    /^https?:\/\/([^\/]+)/i,
-    (m, host) => m.replace(host, host.toLowerCase())
+function getTelegramText(json) {
+  // Try common n8n Telegram node shapes.
+  return (
+    json.message?.text ??
+    json.message?.caption ??
+    json.text ??
+    json.body?.message?.text ??
+    json.update?.message?.text ??
+    ''
   );
-
-  // Remove trailing slash (except root)
-  base = base.replace(/^(https?:\/\/[^\/]+)\/+$/, '$1');
-  base = base.replace(/(.+?)\/+$/, '$1');
-
-  // Filter tracking query params
-  if (!query) return base;
-
-  const parts = query.split('&').filter(Boolean);
-  const kept = [];
-
-  for (const part of parts) {
-    const eq = part.indexOf('=');
-    const k = eq === -1 ? part : part.slice(0, eq);
-
-    let key;
-    try { key = decodeURIComponent(k).toLowerCase(); }
-    catch { key = k.toLowerCase(); }
-
-    const drop =
-      key.startsWith('utm_') ||
-      key === 'fbclid' ||
-      key === 'gclid' ||
-      key === 'dclid' ||
-      key === 'msclkid' ||
-      key === 'igshid' ||
-      key === 'mc_cid' ||
-      key === 'mc_eid' ||
-      key === 'mkt_tok' ||
-      key === 'oly_anon_id' ||
-      key === 'oly_enc_id';
-
-    if (!drop) kept.push(part);
-  }
-
-  return kept.length ? `${base}?${kept.join('&')}` : base;
 }
 
-const url_canonical = canonicalizeUrl(url);
-
-// 4) Guidelines -> content_type + intent
-const content_type = url ? 'newsletter' : 'note';
-const intent = content_type === 'newsletter' ? 'archive' : 'think';
-
-// 5) Optional: pull title/author if Telegram provides them (usually not)
-const title =
-  $json.message?.document?.file_name ||
-  $json.message?.caption ||
-  null;
-
-const author = null;
-
-// 6) Return normalized fields (keep original payload too)
-return [
-  {
-    ...$json,
-
-    // pkm.entries core fields you care about downstream
-    source: 'telegram',
-    intent,
-    content_type,
-    title,
-    author,
-
-    capture_text,
-    url,
-    url_canonical,
+function tryParseJsonString(s) {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
   }
-];
-};
+}
+
+function extractFencedJsonBlock(text) {
+  const re = /```json\s*([\s\S]*?)\s*```/i;
+  const m = text.match(re);
+  if (!m) return null;
+  const jsonStr = m[1].trim();
+  const obj = tryParseJsonString(jsonStr);
+  if (!obj) return null;
+
+  const after = text.slice(m.index + m[0].length).replace(/^\s+/, '');
+  return { obj, jsonStr, after, rawBlock: m[0] };
+}
+
+/**
+ * Extract a leading JSON object even if not fenced.
+ * We only accept it if it begins near the start (ignoring whitespace),
+ * and braces are balanced.
+ */
+function extractLeadingJsonObject(text) {
+  const leading = text.replace(/^\s+/, '');
+  if (!leading.startsWith('{')) return null;
+
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  for (let i = 0; i < leading.length; i++) {
+    const ch = leading[i];
+
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    } else {
+      if (ch === '"') {
+        inStr = true;
+        continue;
+      }
+      if (ch === '{') depth++;
+      if (ch === '}') depth--;
+      if (depth === 0) {
+        const jsonStr = leading.slice(0, i + 1).trim();
+        const obj = tryParseJsonString(jsonStr);
+        if (!obj) return null;
+
+        const after = leading.slice(i + 1).replace(/^\s+/, '');
+        return { obj, jsonStr, after, rawBlock: jsonStr };
+      }
+    }
+  }
+  return null;
+}
+
+function normalizeTopic(s) {
+  if (s === null || s === undefined) return null;
+  const t = String(s).trim();
+  return t.length ? t : null;
+}
+
+function normalizeNumber01(v, fallback = null) {
+  if (v === null || v === undefined || v === '') return fallback;
+  const n = Number(v);
+  if (Number.isNaN(n)) return fallback;
+  return Math.max(0, Math.min(1, n));
+}
+
+const text = getTelegramText($json);
+const fenced = extractFencedJsonBlock(text);
+const leading = fenced ? null : extractLeadingJsonObject(text);
+
+const parsed = fenced ?? leading;
+
+if (parsed?.obj) {
+  const j = parsed.obj;
+
+  // Required behavior for PKM JSON note mode
+  const title = j.title ?? null;
+  const topic = normalizeTopic(j.topic) ?? null;
+
+  const secondary_topic = normalizeTopic(j.secondary_topic) ?? null;
+  const secondary_topic_confidence = normalizeNumber01(j.secondary_topic_confidence, null);
+
+  const gist = j.gist ?? null;
+  const excerpt = j.excerpt ?? null;
+
+  const out = {
+    // marker so downstream nodes can preserve fields
+    _pkm_mode: 'pkm_json_note_v1',
+
+    // pipeline core
+    source: 'telegram',
+    intent: 'think',
+    content_type: 'note',
+    author: null,
+
+    // IMPORTANT: bypass URL extraction flow
+    url: null,
+    url_canonical: null,
+
+    // store whole message
+    capture_text: text,
+
+    // store only text after the JSON block
+    clean_text: parsed.after ?? '',
+
+    // extracted vars
+    title,
+    topic,
+    primary_topic_confidence: 1,
+    secondary_topic,
+    secondary_topic_confidence,
+    gist,
+    excerpt
+  };
+
+  return [{ json: out }];
+}
+
+// Fallback: no JSON detected -> keep existing behavior.
+// If you already have legacy normalize logic below, keep it.
+// Otherwise just pass-through:
+return [{ json: { ...$json, capture_text: text } }];
