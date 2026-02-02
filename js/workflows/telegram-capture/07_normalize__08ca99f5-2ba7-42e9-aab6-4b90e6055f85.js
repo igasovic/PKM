@@ -40,44 +40,74 @@ function extractFencedJsonBlock(text) {
 }
 
 /**
- * Extract a leading JSON object even if not fenced.
- * We only accept it if it begins near the start (ignoring whitespace),
- * and braces are balanced.
+ * Extract the first valid JSON object in the message by scanning for '{'
+ * and attempting a balanced-brace parse.
+ *
+ * Safety:
+ * - Only accepts parsed JSON if it contains required keys: title + topic
+ * - Scans up to MAX_SCAN_CHARS to avoid O(n^2) on huge messages
+ * - Tries up to MAX_CANDIDATES brace-start positions
  */
 function extractLeadingJsonObject(text) {
-  const leading = text.replace(/^\s+/, '');
-  if (!leading.startsWith('{')) return null;
+  const hay = String(text || '');
+  const MAX_SCAN_CHARS = 12000;     // plenty for long notes
+  const MAX_CANDIDATES = 30;        // prevents pathological cases
+  const scan = hay.slice(0, MAX_SCAN_CHARS);
 
-  let depth = 0;
-  let inStr = false;
-  let esc = false;
-  for (let i = 0; i < leading.length; i++) {
-    const ch = leading[i];
+  const requiredKeysPresent = (obj) =>
+    obj && typeof obj === 'object' &&
+    typeof obj.title === 'string' && obj.title.trim().length > 0 &&
+    typeof obj.topic === 'string' && obj.topic.trim().length > 0;
 
-    if (inStr) {
-      if (esc) esc = false;
-      else if (ch === '\\') esc = true;
-      else if (ch === '"') inStr = false;
-      continue;
-    } else {
-      if (ch === '"') {
-        inStr = true;
+  let candidatesTried = 0;
+  let startIdx = scan.indexOf('{');
+
+  while (startIdx !== -1 && candidatesTried < MAX_CANDIDATES) {
+    candidatesTried++;
+
+    const slice = scan.slice(startIdx);
+
+    let depth = 0;
+    let inStr = false;
+    let esc = false;
+
+    for (let i = 0; i < slice.length; i++) {
+      const ch = slice[i];
+
+      if (inStr) {
+        if (esc) esc = false;
+        else if (ch === '\\') esc = true;
+        else if (ch === '"') inStr = false;
         continue;
-      }
-      if (ch === '{') depth++;
-      if (ch === '}') depth--;
-      if (depth === 0) {
-        const jsonStr = leading.slice(0, i + 1).trim();
-        const obj = tryParseJsonString(jsonStr);
-        if (!obj) return null;
+      } else {
+        if (ch === '"') { inStr = true; continue; }
+        if (ch === '{') depth++;
+        if (ch === '}') depth--;
 
-        const after = leading.slice(i + 1).replace(/^\s+/, '');
-        return { obj, jsonStr, after, rawBlock: jsonStr };
+        if (depth === 0) {
+          const jsonStr = slice.slice(0, i + 1).trim();
+          const obj = tryParseJsonString(jsonStr);
+
+          if (obj && requiredKeysPresent(obj)) {
+            let after = hay.slice(startIdx + i + 1).replace(/^\s+/, '');
+            // If you *do* ever include END as a literal marker, strip it:
+            after = after.replace(/\n?\s*END\s*$/i, '').replace(/^\s+/, '');
+
+            return { obj, jsonStr, after, rawBlock: jsonStr };
+          }
+
+          // Not our JSON object; break and continue scanning for the next '{'
+          break;
+        }
       }
     }
+
+    startIdx = scan.indexOf('{', startIdx + 1);
   }
+
   return null;
 }
+
 
 function normalizeTopic(s) {
   if (s === null || s === undefined) return null;
