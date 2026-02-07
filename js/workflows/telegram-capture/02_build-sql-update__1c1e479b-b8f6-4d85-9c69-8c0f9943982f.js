@@ -34,7 +34,10 @@ const esc = (s) => String(s).replace(/\\/g, '\\\\').replace(/'/g, "''");
 const lit = (v) => (v === null || v === undefined) ? 'NULL' : `'${esc(v)}'`;
 const jsonbLit = (obj) => {
   if (!obj) return 'NULL';
-  const s = JSON.stringify(obj).replace(/\\/g, '\\\\').replace(/'/g, "''");
+  // IMPORTANT: do NOT escape backslashes here.
+  // JSON.stringify already produces valid JSON escapes (e.g. \" and \n).
+  // Only escape single quotes for SQL string literal safety.
+  const s = JSON.stringify(obj).replace(/'/g, "''");
   return `'${s}'::jsonb`;
 };
 const intLit = (v) => {

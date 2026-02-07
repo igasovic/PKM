@@ -38,7 +38,10 @@ function lit(v) {
 }
 function jsonbLit(obj) {
   if (obj === null || obj === undefined) return 'NULL';
-  const s = JSON.stringify(obj).replace(/\\/g, '\\\\').replace(/'/g, "''");
+  // IMPORTANT: do NOT escape backslashes here.
+  // JSON.stringify already produces valid JSON escapes (e.g. \" and \n).
+  // Only escape single quotes for SQL string literal safety.
+  const s = JSON.stringify(obj).replace(/'/g, "''");
   return `'${s}'::jsonb`;
 }
 function textArrayLit(arr) {
