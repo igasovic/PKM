@@ -7,6 +7,8 @@
  */
 'use strict';
 
+const sb = require('../../libs/sql-builder.js');
+
 module.exports = async function run(ctx) {
   const { $json, $items } = ctx;
 
@@ -16,59 +18,7 @@ module.exports = async function run(ctx) {
   // - Your entry workflows must execute that sub-workflow at the very start.
   const config = $items('PKM Config')[0].json.config;
   const db = config.db;
-
-  const is_test_mode = !!db.is_test_mode;
-  const schema_prod = db.schema_prod || 'pkm';
-  const schema_test = db.schema_test || 'pkm_test';
-  const schema_candidate = is_test_mode ? schema_test : schema_prod;
-
-  const isValidIdent = (s) => (typeof s === 'string') && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s);
-  const db_schema = isValidIdent(schema_candidate) ? schema_candidate : 'pkm';
-
-  // Safe, quoted identifier reference for SQL templates
-  const entries_table = `"${db_schema}"."entries"`;
-
-  function sqlString(v) {
-    if (v === null || v === undefined) return 'NULL';
-    return `'${String(v).replace(/'/g, "''")}'`;
-  }
-
-  function sqlJsonb(obj) {
-    if (obj === null || obj === undefined) return 'NULL';
-  
-    const s = JSON.stringify(obj);
-  
-    // Dollar-quoting avoids all quote/backslash escaping issues.
-    // Use a tag unlikely to appear in your JSON.
-    const tag = 'pkmjson';
-  
-    if (s.includes(`$${tag}$`)) {
-      // Extremely unlikely fallback: only escape single quotes
-      const esc = s.replace(/'/g, "''");
-      return `'${esc}'::jsonb`;
-    }
-  
-    return `$${tag}$${s}$${tag}$::jsonb`;
-  }
-  
-  function sqlInt(v) {
-    if (v === null || v === undefined) return 'NULL';
-    const n = Number(v);
-    if (!Number.isFinite(n)) return 'NULL';
-    return String(Math.trunc(n));
-  }
-
-  function sqlNum(v) {
-    if (v === null || v === undefined) return 'NULL';
-    const n = Number(v);
-    if (!Number.isFinite(n)) return 'NULL';
-    return String(n);
-  }
-
-  function sqlBool(v) {
-    if (v === null || v === undefined) return 'NULL';
-    return v ? 'true' : 'false';
-  }
+  const entries_table = sb.resolveEntriesTable(db);
 
   const msg = $json.message || {};
 
@@ -158,36 +108,36 @@ INSERT INTO ${entries_table} (
 )
 VALUES (
   now(),
-  ${sqlString(source)}::text,
-  ${sqlString(intent)}::text,
-  ${sqlString(content_type)}::text,
-  ${sqlString(title)}::text,
-  ${sqlString(author)}::text,
-  ${sqlString(capture_text)}::text,
-  ${sqlString(clean_text)}::text,
-  ${sqlString(url)}::text,
-  ${sqlString(url_canonical)}::text,
+  ${sb.lit(source)}::text,
+  ${sb.lit(intent)}::text,
+  ${sb.lit(content_type)}::text,
+  ${sb.lit(title)}::text,
+  ${sb.lit(author)}::text,
+  ${sb.lit(capture_text)}::text,
+  ${sb.lit(clean_text)}::text,
+  ${sb.lit(url)}::text,
+  ${sb.lit(url_canonical)}::text,
 
-  ${sqlString(topic_primary)}::text,
-  ${sqlNum(topic_primary_confidence)}::real,
-  ${sqlString(topic_secondary)}::text,
-  ${sqlNum(topic_secondary_confidence)}::real,
-  ${sqlString(gist)}::text,
+  ${sb.lit(topic_primary)}::text,
+  ${sb.numLit(topic_primary_confidence)}::real,
+  ${sb.lit(topic_secondary)}::text,
+  ${sb.numLit(topic_secondary_confidence)}::real,
+  ${sb.lit(gist)}::text,
 
-  ${sqlJsonb(metadata_patch)},
+  ${sb.jsonbLit(metadata_patch, { dollarTag: 'pkmjson' })},
 
-  ${sqlString(retrieval_excerpt)}::text,
-  ${sqlString(retrieval_version)}::text,
-  ${sqlString(source_domain)}::text,
-  ${sqlInt(clean_word_count)}::int,
-  ${sqlInt(clean_char_count)}::int,
-  ${sqlInt(extracted_char_count)}::int,
-  ${sqlInt(link_count)}::int,
-  ${sqlNum(link_ratio)}::real,
-  ${sqlBool(boilerplate_heavy)}::boolean,
-  ${sqlBool(low_signal)}::boolean,
-  ${sqlBool(extraction_incomplete)}::boolean,
-  ${sqlNum(quality_score)}::real
+  ${sb.lit(retrieval_excerpt)}::text,
+  ${sb.lit(retrieval_version)}::text,
+  ${sb.lit(source_domain)}::text,
+  ${sb.intLit(clean_word_count)}::int,
+  ${sb.intLit(clean_char_count)}::int,
+  ${sb.intLit(extracted_char_count)}::int,
+  ${sb.intLit(link_count)}::int,
+  ${sb.numLit(link_ratio)}::real,
+  ${sb.boolLit(boilerplate_heavy)}::boolean,
+  ${sb.boolLit(low_signal)}::boolean,
+  ${sb.boolLit(extraction_incomplete)}::boolean,
+  ${sb.numLit(quality_score)}::real
 )
 RETURNING
   entry_id,

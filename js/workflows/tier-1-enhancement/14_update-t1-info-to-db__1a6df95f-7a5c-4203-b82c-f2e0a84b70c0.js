@@ -7,6 +7,8 @@
  */
 'use strict';
 
+const sb = require('../../libs/sql-builder.js');
+
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
   // --- DB schema routing (prod vs test) ---
@@ -16,43 +18,9 @@ module.exports = async function run(ctx) {
 
   const config = $items('PKM Config')[0].json.config;
   const db = config.db;
+  const entries_table = sb.resolveEntriesTable(db);
 
-  const is_test_mode = !!db.is_test_mode;
-  const schema_prod = db.schema_prod || 'pkm';
-  const schema_test = db.schema_test || 'pkm_test';
-  const schema_candidate = is_test_mode ? schema_test : schema_prod;
-
-  const isValidIdent = (s) => (typeof s === 'string') && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s);
-  const db_schema = isValidIdent(schema_candidate) ? schema_candidate : 'pkm';
-
-  // Safe, quoted identifier reference for SQL templates
-  const entries_table = `"${db_schema}"."entries"`;
-// Update Info to DB (Tier-1): build UPDATE from $json.t1 (already parsed upstream)
-// Pattern: output { ...$json, sql } then Postgres Execute Query runs {{$json.sql}}
-
-function esc(s) {
-  return String(s).replace(/\\/g, '\\\\').replace(/'/g, "''");
-}
-function lit(v) {
-  return (v === null || v === undefined) ? 'NULL' : `'${esc(v)}'`;
-}
-function jsonbLit(obj) {
-  if (obj === null || obj === undefined) return 'NULL';
-  const s = JSON.stringify(obj).replace(/\\/g, '\\\\').replace(/'/g, "''");
-  return `'${s}'::jsonb`;
-}
-function textArrayLit(arr) {
-  if (!Array.isArray(arr) || arr.length === 0) return 'NULL';
-  const items = arr
-    .map(x => String(x ?? '').trim())
-    .filter(Boolean)
-    .map(x => `'${esc(x)}'`);
-  if (items.length === 0) return 'NULL';
-  return `ARRAY[${items.join(', ')}]::text[]`;
-}
-const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
-
-// --- required identity ---
+  // --- required identity ---
 const id = $json.id;
 if (!id) throw new Error('Tier-1 update: missing id (merge must include INSERT RETURNING id)');
 
@@ -84,9 +52,9 @@ if (keywords.length > 12) keywords = keywords.slice(0, 12);
 
 // confidences optional
 const topic_primary_confidence =
-  (typeof t1.topic_primary_confidence === 'number') ? clamp01(t1.topic_primary_confidence) : null;
+  (typeof t1.topic_primary_confidence === 'number') ? sb.clamp01(t1.topic_primary_confidence) : null;
 const topic_secondary_confidence =
-  (typeof t1.topic_secondary_confidence === 'number') ? clamp01(t1.topic_secondary_confidence) : null;
+  (typeof t1.topic_secondary_confidence === 'number') ? sb.clamp01(t1.topic_secondary_confidence) : null;
 
 // optional instrumentation fields
 const enrichment_model = $json.enrichment_model ?? 'gpt-5-nano';
@@ -97,28 +65,28 @@ const saveRaw = true;
 const sql = `
 UPDATE ${entries_table}
 SET
-  topic_primary = ${lit(topic_primary)}::text,
+  topic_primary = ${sb.lit(topic_primary)}::text,
   topic_primary_confidence = ${topic_primary_confidence === null ? 'NULL' : Number(topic_primary_confidence)},
-  topic_secondary = ${lit(topic_secondary)}::text,
+  topic_secondary = ${sb.lit(topic_secondary)}::text,
   topic_secondary_confidence = ${topic_secondary_confidence === null ? 'NULL' : Number(topic_secondary_confidence)},
-  keywords = ${textArrayLit(keywords)},
-  gist = ${lit(gist)}::text,
+  keywords = ${sb.textArrayLit(keywords)},
+  gist = ${sb.lit(gist)}::text,
   enrichment_status = 'done',
-  enrichment_model = ${lit(enrichment_model)}::text,
-  prompt_version = ${lit(prompt_version)}::text,
+  enrichment_model = ${sb.lit(enrichment_model)}::text,
+  prompt_version = ${sb.lit(prompt_version)}::text,
 
   metadata = CASE
     WHEN ${saveRaw ? 'true' : 'false'} THEN
       jsonb_set(
         COALESCE(metadata, '{}'::jsonb),
         '{t1_raw}',
-        ${jsonbLit(t1)},
+        ${sb.jsonbLit(t1)},
         true
       )
     ELSE metadata
   END
 
-WHERE id = ${lit(id)}::uuid
+WHERE id = ${sb.lit(id)}::uuid
 RETURNING
   entry_id,
   id,

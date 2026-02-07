@@ -7,6 +7,8 @@
  */
 'use strict';
 
+const sb = require('../../libs/sql-builder.js');
+
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
   // --- DB schema routing (prod vs test) ---
@@ -16,49 +18,9 @@ module.exports = async function run(ctx) {
 
   const config = $items('PKM Config')[0].json.config;
   const db = config.db;
+  const entries_table = sb.resolveEntriesTable(db);
 
-  const is_test_mode = !!db.is_test_mode;
-  const schema_prod = db.schema_prod || 'pkm';
-  const schema_test = db.schema_test || 'pkm_test';
-  const schema_candidate = is_test_mode ? schema_test : schema_prod;
-
-  const isValidIdent = (s) => (typeof s === 'string') && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s);
-  const db_schema = isValidIdent(schema_candidate) ? schema_candidate : 'pkm';
-
-  // Safe, quoted identifier reference for SQL templates
-  const entries_table = `"${db_schema}"."entries"`;
-function esc(s) {
-  return String(s).replace(/\\/g, '\\\\').replace(/'/g, "''");
-}
-function lit(v) {
-  return (v === null || v === undefined) ? 'NULL' : `'${esc(v)}'`;
-}
-function jsonbLit(obj) {
-  if (obj === null || obj === undefined) return 'NULL';
-  // IMPORTANT: do NOT escape backslashes here.
-  // JSON.stringify already produces valid JSON escapes (e.g. \" and \n).
-  // Only escape single quotes for SQL string literal safety.
-  const s = JSON.stringify(obj).replace(/'/g, "''");
-  return `'${s}'::jsonb`;
-}
-function intLit(v) {
-  if (v === null || v === undefined) return 'NULL';
-  const n = Number(v);
-  if (!Number.isFinite(n)) return 'NULL';
-  return String(Math.trunc(n));
-}
-function numLit(v) {
-  if (v === null || v === undefined) return 'NULL';
-  const n = Number(v);
-  if (!Number.isFinite(n)) return 'NULL';
-  return String(n);
-}
-function boolLit(v) {
-  if (v === null || v === undefined) return 'NULL';
-  return v ? 'true' : 'false';
-}
-
-// core fields from your normalize node
+  // core fields from your normalize node
 const source = 'email';
 const intent = $json.intent ?? 'archive';
 const content_type = $json.content_type ?? null;
@@ -130,31 +92,31 @@ INSERT INTO ${entries_table} (
 )
 VALUES (
   now(),
-  ${lit(source)}::text,
-  ${lit(intent)}::text,
-  ${lit(content_type)}::text,
-  ${lit(title)}::text,
-  ${lit(author)}::text,
-  ${lit(capture_text)}::text,
-  ${lit(clean_text)}::text,
-  ${lit(url)}::text,
-  ${lit(url_canonical)}::text,
-  ${jsonbLit(external_ref)},
-  ${jsonbLit(metadata_patch)},
+  ${sb.lit(source)}::text,
+  ${sb.lit(intent)}::text,
+  ${sb.lit(content_type)}::text,
+  ${sb.lit(title)}::text,
+  ${sb.lit(author)}::text,
+  ${sb.lit(capture_text)}::text,
+  ${sb.lit(clean_text)}::text,
+  ${sb.lit(url)}::text,
+  ${sb.lit(url_canonical)}::text,
+  ${sb.jsonbLit(external_ref)},
+  ${sb.jsonbLit(metadata_patch)},
   'pending',
 
-  ${lit(retrieval_excerpt)}::text,
-  ${lit(retrieval_version)}::text,
-  ${lit(source_domain)}::text,
-  ${intLit(clean_word_count)}::int,
-  ${intLit(clean_char_count)}::int,
-  ${intLit(extracted_char_count)}::int,
-  ${intLit(link_count)}::int,
-  ${numLit(link_ratio)}::real,
-  ${boolLit(boilerplate_heavy)}::boolean,
-  ${boolLit(low_signal)}::boolean,
-  ${boolLit(extraction_incomplete)}::boolean,
-  ${numLit(quality_score)}::real
+  ${sb.lit(retrieval_excerpt)}::text,
+  ${sb.lit(retrieval_version)}::text,
+  ${sb.lit(source_domain)}::text,
+  ${sb.intLit(clean_word_count)}::int,
+  ${sb.intLit(clean_char_count)}::int,
+  ${sb.intLit(extracted_char_count)}::int,
+  ${sb.intLit(link_count)}::int,
+  ${sb.numLit(link_ratio)}::real,
+  ${sb.boolLit(boilerplate_heavy)}::boolean,
+  ${sb.boolLit(low_signal)}::boolean,
+  ${sb.boolLit(extraction_incomplete)}::boolean,
+  ${sb.numLit(quality_score)}::real
 )
 RETURNING
   entry_id,

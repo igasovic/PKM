@@ -12,6 +12,8 @@
  */
 'use strict';
 
+const sb = require('../../libs/sql-builder.js');
+
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
   // --- DB schema routing (prod vs test) ---
@@ -21,24 +23,9 @@ module.exports = async function run(ctx) {
 
   const config = $items('PKM Config')[0].json.config;
   const db = config.db;
+  const entries_table = sb.resolveEntriesTable(db);
 
-  const is_test_mode = !!db.is_test_mode;
-  const schema_prod = db.schema_prod || 'pkm';
-  const schema_test = db.schema_test || 'pkm_test';
-  const schema_candidate = is_test_mode ? schema_test : schema_prod;
-
-  const isValidIdent = (s) => (typeof s === 'string') && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s);
-  const db_schema = isValidIdent(schema_candidate) ? schema_candidate : 'pkm';
-
-  // Safe, quoted identifier reference for SQL templates
-  const entries_table = `"${db_schema}"."entries"`;
-function sqlString(v) {
-  if (v === null || v === undefined) return 'NULL';
-  const s = String(v).replace(/'/g, "''");
-  return `'${s}'`;
-}
-
-const q = String($json.q || '').trim();
+  const q = String($json.q || '').trim();
 const days = Number($json.days || 90);
 
 const cfgLimit = Number($json.config?.scoring?.maxItems?.continue || 15);
@@ -51,8 +38,8 @@ const noteQuota = Number($json.config?.scoring?.noteQuotaByCmd?.continue || 0.75
 const sql = `
 WITH params AS (
   SELECT
-    ${sqlString(q)}::text AS qtext,
-    websearch_to_tsquery('english', ${sqlString(q)}) AS tsq,
+    ${sb.lit(q)}::text AS qtext,
+    websearch_to_tsquery('english', ${sb.lit(q)}) AS tsq,
     ${days}::int AS days,
     ${limit}::int AS lim,
     ${halfLife}::real AS half_life_days,
