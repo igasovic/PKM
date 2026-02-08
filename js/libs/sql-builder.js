@@ -206,6 +206,7 @@ module.exports = {
   resolveEntriesTable,
   clamp01,
   buildInsert,
+  buildUpdate,
 };
 
 /**
@@ -251,4 +252,72 @@ function buildInsert(opts) {
     `  ${vals.join(',\n  ')}`,
     `)${returningClause};`,
   ].join('\n');
+}
+
+/**
+ * Build a parameter-free UPDATE statement with explicit SET clauses.
+ * @param {{ table: string, set: string[], where: string, returning?: string[] | string }} opts
+ * @returns {string}
+ */
+function buildUpdate(opts) {
+  const table = opts && opts.table;
+  const set = opts && opts.set;
+  const where = opts && opts.where;
+  const returning = opts && opts.returning;
+
+  if (!table || typeof table !== 'string') {
+    throw new Error('buildUpdate: table must be a non-empty string');
+  }
+  if (!Array.isArray(set) || set.length === 0) {
+    throw new Error('buildUpdate: set must be a non-empty array');
+  }
+  if (!where || typeof where !== 'string') {
+    throw new Error('buildUpdate: where must be a non-empty string');
+  }
+
+  const setLines = set.map(line => (line === null || line === undefined) ? '' : String(line).trim());
+  const assignmentIdx = [];
+  for (let i = 0; i < setLines.length; i += 1) {
+    const line = setLines[i];
+    if (line === '') continue;
+    if (line.startsWith('--')) continue;
+    assignmentIdx.push(i);
+  }
+
+  const lastAssignment = assignmentIdx.length > 0 ? assignmentIdx[assignmentIdx.length - 1] : -1;
+  const renderedSet = setLines.map((line, idx) => {
+    if (line === '') return '';
+    if (line.startsWith('--')) return line;
+    const clean = line.replace(/,+$/, '');
+    return (idx === lastAssignment) ? clean : `${clean},`;
+  });
+
+  const whereClause = where.trim().toUpperCase().startsWith('WHERE ')
+    ? where.trim()
+    : `WHERE ${where.trim()}`;
+
+  const returningLines = [];
+  if (returning && Array.isArray(returning) && returning.length > 0) {
+    returningLines.push('RETURNING');
+    returningLines.push(`  ${returning.map(r => String(r).trim()).join(',\n  ')}`);
+  } else if (returning) {
+    const ret = String(returning).trim().replace(/;$/, '');
+    if (ret) {
+      returningLines.push('RETURNING');
+      returningLines.push(`  ${ret}`);
+    }
+  }
+
+  const lines = [
+    `UPDATE ${table}`,
+    'SET',
+    `  ${renderedSet.join('\n  ')}`,
+    whereClause,
+  ];
+  if (returningLines.length > 0) {
+    lines.push(...returningLines);
+  }
+  lines[lines.length - 1] = `${lines[lines.length - 1]};`;
+
+  return lines.join('\n');
 }

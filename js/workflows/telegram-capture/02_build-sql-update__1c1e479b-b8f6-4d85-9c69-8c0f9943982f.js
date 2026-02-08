@@ -66,22 +66,18 @@ const extraction_incomplete = doMeta ? (q.extraction_incomplete ?? null) : null;
 const quality_score = doMeta ? (q.quality_score ?? null) : null;
 
 // ---- SQL ----
-const sql = `
-UPDATE ${entries_table}
-SET
-  url = COALESCE(${sb.lit(url)}, url),
-  url_canonical = COALESCE(${sb.lit(url_canonical)}, url_canonical),
-
-  -- only overwrite when non-empty
-  clean_text = COALESCE(${cleanLit}, clean_text),
-
-  -- only overwrite when non-empty
-  extracted_text = COALESCE(${extractedLit}, extracted_text),
-
-  title = COALESCE(${sb.lit(title)}::text, title),
-  author = COALESCE(${sb.lit(author)}::text, author),
-
-  metadata = CASE
+const sql = sb.buildUpdate({
+  table: entries_table,
+  set: [
+    `url = COALESCE(${sb.lit(url)}, url)`,
+    `url_canonical = COALESCE(${sb.lit(url_canonical)}, url_canonical)`,
+    '-- only overwrite when non-empty',
+    `clean_text = COALESCE(${cleanLit}, clean_text)`,
+    '-- only overwrite when non-empty',
+    `extracted_text = COALESCE(${extractedLit}, extracted_text)`,
+    `title = COALESCE(${sb.lit(title)}::text, title)`,
+    `author = COALESCE(${sb.lit(author)}::text, author)`,
+    `metadata = CASE
     WHEN ${doMeta ? 'true' : 'false'} THEN
       jsonb_set(
         COALESCE(metadata, '{}'::jsonb),
@@ -90,42 +86,38 @@ SET
         true
       )
     ELSE metadata
-  END,
-
-  -- WP2 promoted retrieval columns: update only when retrieval exists
-  retrieval_excerpt = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.lit(retrieval_excerpt)}::text ELSE retrieval_excerpt END,
-  retrieval_version = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.lit(retrieval_version)}::text ELSE retrieval_version END,
-  source_domain = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.lit(source_domain)}::text ELSE source_domain END,
-
-  clean_word_count = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.intLit(clean_word_count)}::int ELSE clean_word_count END,
-  clean_char_count = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.intLit(clean_char_count)}::int ELSE clean_char_count END,
-  extracted_char_count = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.intLit(extracted_char_count)}::int ELSE extracted_char_count END,
-
-  link_count = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.intLit(link_count)}::int ELSE link_count END,
-  link_ratio = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.numLit(link_ratio)}::real ELSE link_ratio END,
-
-  boilerplate_heavy = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.boolLit(boilerplate_heavy)}::boolean ELSE boilerplate_heavy END,
-  low_signal = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.boolLit(low_signal)}::boolean ELSE low_signal END,
-  extraction_incomplete = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.boolLit(extraction_incomplete)}::boolean ELSE extraction_incomplete END,
-
-  quality_score = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.numLit(quality_score)}::real ELSE quality_score END,
-
-  content_hash = NULL
-WHERE id = ${sb.lit(id)}::uuid
-RETURNING
-  entry_id,
-  id,
-  created_at,
-  source,
-  intent,
-  content_type,
-  COALESCE(title,'') AS title,
-  COALESCE(author,'') AS author,
-  COALESCE(clean_text,'') AS clean_text,
-  url_canonical,
-  COALESCE(char_length(clean_text), 0) AS clean_len,
-  COALESCE(char_length(extracted_text), 0) AS extracted_len;
-`.trim();
+  END`,
+    '-- WP2 promoted retrieval columns: update only when retrieval exists',
+    `retrieval_excerpt = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.lit(retrieval_excerpt)}::text ELSE retrieval_excerpt END`,
+    `retrieval_version = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.lit(retrieval_version)}::text ELSE retrieval_version END`,
+    `source_domain = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.lit(source_domain)}::text ELSE source_domain END`,
+    `clean_word_count = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.intLit(clean_word_count)}::int ELSE clean_word_count END`,
+    `clean_char_count = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.intLit(clean_char_count)}::int ELSE clean_char_count END`,
+    `extracted_char_count = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.intLit(extracted_char_count)}::int ELSE extracted_char_count END`,
+    `link_count = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.intLit(link_count)}::int ELSE link_count END`,
+    `link_ratio = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.numLit(link_ratio)}::real ELSE link_ratio END`,
+    `boilerplate_heavy = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.boolLit(boilerplate_heavy)}::boolean ELSE boilerplate_heavy END`,
+    `low_signal = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.boolLit(low_signal)}::boolean ELSE low_signal END`,
+    `extraction_incomplete = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.boolLit(extraction_incomplete)}::boolean ELSE extraction_incomplete END`,
+    `quality_score = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.numLit(quality_score)}::real ELSE quality_score END`,
+    'content_hash = NULL',
+  ],
+  where: `id = ${sb.lit(id)}::uuid`,
+  returning: [
+    'entry_id',
+    'id',
+    'created_at',
+    'source',
+    'intent',
+    'content_type',
+    "COALESCE(title,'') AS title",
+    "COALESCE(author,'') AS author",
+    "COALESCE(clean_text,'') AS clean_text",
+    'url_canonical',
+    'COALESCE(char_length(clean_text), 0) AS clean_len',
+    'COALESCE(char_length(extracted_text), 0) AS extracted_len',
+  ],
+});
 
 return [{ json: { ...$json, sql } }];
 };

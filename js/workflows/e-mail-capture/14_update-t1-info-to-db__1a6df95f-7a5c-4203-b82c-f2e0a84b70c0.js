@@ -62,20 +62,19 @@ const prompt_version = $json.prompt_version ?? 'v1';
 const saveRaw = true;
 
 // build SQL
-const sql = `
-UPDATE ${entries_table}
-SET
-  topic_primary = ${sb.lit(topic_primary)}::text,
-  topic_primary_confidence = ${topic_primary_confidence === null ? 'NULL' : Number(topic_primary_confidence)},
-  topic_secondary = ${sb.lit(topic_secondary)}::text,
-  topic_secondary_confidence = ${topic_secondary_confidence === null ? 'NULL' : Number(topic_secondary_confidence)},
-  keywords = ${sb.textArrayLit(keywords)},
-  gist = ${sb.lit(gist)}::text,
-  enrichment_status = 'done',
-  enrichment_model = ${sb.lit(enrichment_model)}::text,
-  prompt_version = ${sb.lit(prompt_version)}::text,
-
-  metadata = CASE
+const sql = sb.buildUpdate({
+  table: entries_table,
+  set: [
+    `topic_primary = ${sb.lit(topic_primary)}::text`,
+    `topic_primary_confidence = ${topic_primary_confidence === null ? 'NULL' : Number(topic_primary_confidence)}`,
+    `topic_secondary = ${sb.lit(topic_secondary)}::text`,
+    `topic_secondary_confidence = ${topic_secondary_confidence === null ? 'NULL' : Number(topic_secondary_confidence)}`,
+    `keywords = ${sb.textArrayLit(keywords)}`,
+    `gist = ${sb.lit(gist)}::text`,
+    `enrichment_status = 'done'`,
+    `enrichment_model = ${sb.lit(enrichment_model)}::text`,
+    `prompt_version = ${sb.lit(prompt_version)}::text`,
+    `metadata = CASE
     WHEN ${saveRaw ? 'true' : 'false'} THEN
       jsonb_set(
         COALESCE(metadata, '{}'::jsonb),
@@ -84,26 +83,27 @@ SET
         true
       )
     ELSE metadata
-  END
-
-WHERE id = ${sb.lit(id)}::uuid
-RETURNING
-  entry_id,
-  id,
-  created_at,
-  source,
-  intent,
-  content_type,
-  COALESCE(title,'') AS title,
-  COALESCE(author,'') AS author,
-  COALESCE(url_canonical,'') AS url_canonical,
-  topic_primary,
-  topic_secondary,
-  gist,
-  clean_text,
-  array_length(keywords,1) AS kw_count,
-  enrichment_status;
-`.trim();
+  END`,
+  ],
+  where: `id = ${sb.lit(id)}::uuid`,
+  returning: [
+    'entry_id',
+    'id',
+    'created_at',
+    'source',
+    'intent',
+    'content_type',
+    "COALESCE(title,'') AS title",
+    "COALESCE(author,'') AS author",
+    "COALESCE(url_canonical,'') AS url_canonical",
+    'topic_primary',
+    'topic_secondary',
+    'gist',
+    'clean_text',
+    'array_length(keywords,1) AS kw_count',
+    'enrichment_status',
+  ],
+});
 
 return [{ json: { ...$json, sql } }];
 };
