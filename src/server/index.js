@@ -9,25 +9,23 @@ let braintrustLogger = null;
 function getBraintrustLogger() {
   if (braintrustLogger !== null) return braintrustLogger;
   if (!process.env.BRAINTRUST_API_KEY) {
-    braintrustLogger = null;
-    return braintrustLogger;
+    throw new Error('BRAINTRUST_API_KEY is required');
   }
-  try {
-    // Lazy-load to keep local dev/tests working without the dependency installed.
-    const { initLogger } = require('braintrust');
-    const projectName =
-      process.env.BRAINTRUST_PROJECT ||
-      process.env.BRAINTRUST_PROJECT_NAME ||
-      'pkm-backend';
-    braintrustLogger = initLogger({
-      projectName,
-      apiKey: process.env.BRAINTRUST_API_KEY,
-      asyncFlush: true,
-    });
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.warn('braintrust disabled:', err.message);
-    braintrustLogger = null;
+  const { initLogger } = require('braintrust');
+  const projectName =
+    process.env.BRAINTRUST_PROJECT ||
+    process.env.BRAINTRUST_PROJECT_NAME ||
+    'pkm-backend';
+  if (!projectName || !String(projectName).trim()) {
+    throw new Error('BRAINTRUST_PROJECT (or BRAINTRUST_PROJECT_NAME) is required');
+  }
+  braintrustLogger = initLogger({
+    projectName,
+    apiKey: process.env.BRAINTRUST_API_KEY,
+    asyncFlush: true,
+  });
+  if (!braintrustLogger) {
+    throw new Error('Braintrust init returned no logger');
   }
   return braintrustLogger;
 }
@@ -132,6 +130,8 @@ function createServer() {
 
 function start() {
   const port = Number(process.env.PORT || 8080);
+  // Hard-fail startup if Braintrust can't initialize.
+  getBraintrustLogger();
   const server = createServer();
   server.listen(port, '0.0.0.0', () => {
     // eslint-disable-next-line no-console

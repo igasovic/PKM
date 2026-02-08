@@ -7,6 +7,7 @@
 - Added `js/libs/prompt-builder.js` and refactored Tier‑1 prompt creation nodes (sample + whole) to use it.
 - Added a minimal Node.js backend in `src/server/` with a Pi-friendly Dockerfile, plus basic server tests.
 - Added Braintrust observability hooks for server errors (config via env).
+- Enforced Braintrust initialization at startup (service fails fast if missing config or init fails).
 
 ## 2026-02-01 — Tier‑1 enrichment subworkflow + Telegram message enrichment
 
