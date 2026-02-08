@@ -45,6 +45,18 @@ const sb = require('../js/libs/sql-builder.js');
     assert.ok(sql.includes('SELECT *'));
   }
 
+  {
+    const built = require('../src/server/db.js').buildGenericInsertPayload({
+      source: 'telegram',
+      capture_text: 'hello',
+      clean_word_count: 3,
+    });
+    assert.ok(Array.isArray(built.columns));
+    assert.ok(Array.isArray(built.values));
+    assert.ok(built.columns.includes('capture_text'));
+    assert.ok(built.values.find(v => v.includes('hello')));
+  }
+
   // eslint-disable-next-line no-console
   console.log('db-client: OK');
 })();

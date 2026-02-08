@@ -12,6 +12,8 @@
 - Added `/docs/api.md` describing the backend API for external systems.
 - Updated server Dockerfile to copy project sources instead of individual files.
 - Updated server image build to include `js/libs/sql-builder.js` from the repo without duplicating files (requires repo-root build context).
+- Replaced Telegram-specific insert mapping with a generic insert that accepts any `pkm.entries` columns and sanitizes server-side.
+- Added support for client-specified `RETURNING` columns on `/db/insert` requests.
 
 ## 2026-02-01 — Tier‑1 enrichment subworkflow + Telegram message enrichment
 

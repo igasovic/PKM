@@ -33,7 +33,8 @@ Response:
 ## Insert / Update
 
 ### `POST /db/insert`
-Builds and executes a SQL `INSERT` using `js/libs/sql-builder.js`.
+Builds and executes a SQL `INSERT` using a **generic JSON input** that matches `docs/database_schema.md`.
+The backend validates and sanitizes fields and builds SQL.
 
 Body:
 ```json
@@ -42,6 +43,62 @@ Body:
   "columns": ["source", "intent"],
   "values": ["'telegram'::text", "'archive'::text"],
   "returning": ["id", "created_at"]
+}
+```
+
+**Simple input (recommended for n8n)**
+
+```json
+{
+  "input": {
+    "source": "telegram",
+    "intent": "archive",
+    "capture_text": "raw text",
+    "clean_text": "cleaned text",
+    "content_type": "note",
+    "title": "Some title",
+    "author": "Some author",
+    "url": "https://example.com",
+    "url_canonical": "https://example.com",
+    "topic_primary": "ai",
+    "topic_primary_confidence": 0.7,
+    "topic_secondary": "decision hygiene",
+    "topic_secondary_confidence": 0.5,
+    "gist": "One sentence gist.",
+    "metadata": {
+      "retrieval": {
+        "excerpt": "excerpt",
+        "version": "v1",
+        "source_domain": "example.com",
+        "quality": {
+          "clean_word_count": 10,
+          "clean_char_count": 20,
+          "extracted_char_count": 30,
+          "link_count": 2,
+          "link_ratio": 0.2,
+          "boilerplate_heavy": false,
+          "low_signal": false,
+          "extraction_incomplete": false,
+          "quality_score": 0.8
+        }
+      }
+    }
+  }
+}
+```
+
+You can also send the same fields at the top level (no `input` wrapper).
+Required fields: `source`, `capture_text`. Optional: any `pkm.entries` column (see `docs/database_schema.md`).
+
+**Custom RETURNING**
+
+You can override the default `RETURNING` columns by adding `returning` at the top level or inside `input`:
+
+```json
+{
+  "source": "telegram",
+  "capture_text": "raw text",
+  "returning": ["id", "entry_id", "created_at"]
 }
 ```
 
