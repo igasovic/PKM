@@ -1,4 +1,12 @@
 # changelog
+## 2026-02-08 — SQL builders, prompt builders, and Pi-ready server
+
+### What changed
+- Centralized SQL `INSERT` and `UPDATE` construction in `js/libs/sql-builder.js` and refactored workflow builders to use them.
+- Added snapshot-style tests for SQL insert/update/read builders in `test/`.
+- Added `js/libs/prompt-builder.js` and refactored Tier‑1 prompt creation nodes (sample + whole) to use it.
+- Added a minimal Node.js backend in `src/server/` with a Pi-friendly Dockerfile, plus basic server tests.
+
 ## 2026-02-01 — Tier‑1 enrichment subworkflow + Telegram message enrichment
 
 ### What changed

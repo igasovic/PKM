@@ -1,0 +1,95 @@
+'use strict';
+
+const http = require('http');
+const { URL } = require('url');
+const pkg = require('./package.json');
+
+function json(res, status, payload) {
+  const body = JSON.stringify(payload);
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Length': Buffer.byteLength(body),
+  });
+  res.end(body);
+}
+
+function notFound(res) {
+  json(res, 404, { error: 'not_found' });
+}
+
+async function readBody(req, limitBytes = 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    let total = 0;
+    const chunks = [];
+    req.on('data', (chunk) => {
+      total += chunk.length;
+      if (total > limitBytes) {
+        reject(new Error('payload too large'));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    req.on('error', reject);
+  });
+}
+
+async function handleRequest(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const method = (req.method || 'GET').toUpperCase();
+
+  if (method === 'GET' && url.pathname === '/health') {
+    return json(res, 200, { status: 'ok' });
+  }
+
+  if (method === 'GET' && url.pathname === '/ready') {
+    return json(res, 200, { status: 'ready' });
+  }
+
+  if (method === 'GET' && url.pathname === '/version') {
+    return json(res, 200, { name: pkg.name, version: pkg.version });
+  }
+
+  if (method === 'POST' && url.pathname === '/echo') {
+    try {
+      const raw = await readBody(req);
+      const contentType = req.headers['content-type'] || '';
+      if (contentType.includes('application/json')) {
+        const parsed = raw ? JSON.parse(raw) : null;
+        return json(res, 200, { ok: true, data: parsed });
+      }
+      return json(res, 200, { ok: true, data: raw });
+    } catch (err) {
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  return notFound(res);
+}
+
+function createServer() {
+  return http.createServer((req, res) => {
+    handleRequest(req, res).catch((err) => {
+      json(res, 500, { error: 'internal_error', message: err.message });
+    });
+  });
+}
+
+function start() {
+  const port = Number(process.env.PORT || 8080);
+  const server = createServer();
+  server.listen(port, '0.0.0.0', () => {
+    // eslint-disable-next-line no-console
+    console.log(`server listening on :${port}`);
+  });
+}
+
+if (require.main === module) {
+  start();
+}
+
+module.exports = {
+  createServer,
+  handleRequest,
+};
