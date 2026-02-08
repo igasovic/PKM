@@ -15,6 +15,7 @@
 - Replaced Telegram-specific insert mapping with a generic insert that accepts any `pkm.entries` columns and sanitizes server-side.
 - Added support for client-specified `RETURNING` columns on `/db/insert` requests.
 - API responses now flatten the first row into the top-level JSON (no `rows` or `data` wrapper).
+- Added generic `/db/update` input handling with server-side validation/sanitization and optional `returning`.
 
 ## 2026-02-01 — Tier‑1 enrichment subworkflow + Telegram message enrichment
 

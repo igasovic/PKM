@@ -101,6 +101,13 @@ const DISALLOWED_INSERT_COLUMNS = new Set([
   'tsv',
 ]);
 
+const DISALLOWED_UPDATE_COLUMNS = new Set([
+  'id',
+  'entry_id',
+  'created_at',
+  'tsv',
+]);
+
 function toSqlValue(type, value) {
   if (type === 'text') return `${sb.lit(value)}::text`;
   if (type === 'int') return `${sb.intLit(value)}::int`;
@@ -176,6 +183,63 @@ function buildGenericInsertPayload(input, returningOverride) {
   return { columns, values, returning };
 }
 
+function buildGenericUpdatePayload(input, returningOverride) {
+  if (!input || typeof input !== 'object') {
+    throw new Error('update requires JSON object input');
+  }
+
+  const data = input.input || input.data || input;
+  if (!data || typeof data !== 'object') {
+    throw new Error('update requires JSON object input');
+  }
+
+  const whereData = data.where || {};
+  const id = Object.prototype.hasOwnProperty.call(whereData, 'id') ? whereData.id : data.id;
+  const entry_id = Object.prototype.hasOwnProperty.call(whereData, 'entry_id') ? whereData.entry_id : data.entry_id;
+
+  let where = null;
+  if (id) {
+    where = `id = ${toSqlValue('uuid', id)}`;
+  } else if (entry_id) {
+    where = `entry_id = ${toSqlValue('bigint', entry_id)}`;
+  }
+
+  if (!where) {
+    throw new Error('update requires where.id or where.entry_id (or top-level id/entry_id)');
+  }
+
+  const set = [];
+  Object.keys(data).forEach((key) => {
+    if (key === 'where' || key === 'id' || key === 'entry_id') return;
+    if (DISALLOWED_UPDATE_COLUMNS.has(key)) return;
+    const type = COLUMN_TYPES[key];
+    if (!type) return;
+    set.push(`${key} = ${toSqlValue(type, data[key])}`);
+  });
+
+  if (set.length === 0) {
+    throw new Error('update requires at least one updatable field');
+  }
+
+  const defaultReturning = [
+    'entry_id',
+    'id',
+    'created_at',
+    'source',
+    'intent',
+    'content_type',
+    'title',
+    'author',
+    'url',
+    'url_canonical',
+  ];
+  const returning = Array.isArray(returningOverride) && returningOverride.length > 0
+    ? returningOverride
+    : defaultReturning;
+
+  return { set, where, returning };
+}
+
 async function insert(opts) {
   const table = opts.table || getEntriesTable();
   let columns = opts.columns;
@@ -202,11 +266,24 @@ async function insert(opts) {
 
 async function update(opts) {
   const table = opts.table || getEntriesTable();
+  let set = opts.set;
+  let where = opts.where;
+  let returning = opts.returning;
+
+  if (!Array.isArray(set) || !where) {
+    const data = opts.input || opts.data || opts || {};
+    const returningOverride = opts.returning || data.returning;
+    const built = buildGenericUpdatePayload(data, returningOverride);
+    set = built.set;
+    where = built.where;
+    returning = built.returning;
+  }
+
   const sql = sb.buildUpdate({
     table,
-    set: opts.set,
-    where: opts.where,
-    returning: opts.returning,
+    set,
+    where,
+    returning,
   });
   return exec(sql, { op: 'update', table });
 }
@@ -267,4 +344,5 @@ module.exports = {
   readLast,
   readPull,
   buildGenericInsertPayload,
+  buildGenericUpdatePayload,
 };

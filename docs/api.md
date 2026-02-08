@@ -103,7 +103,8 @@ You can override the default `RETURNING` columns by adding `returning` at the to
 ```
 
 ### `POST /db/update`
-Builds and executes a SQL `UPDATE` using `js/libs/sql-builder.js`.
+Builds and executes a SQL `UPDATE` using a generic JSON input that matches `docs/database_schema.md`.
+The backend validates and sanitizes fields and builds SQL.
 
 Body:
 ```json
@@ -112,6 +113,26 @@ Body:
   "set": ["intent = 'think'::text", "content_type = 'note'::text"],
   "where": "id = '00000000-0000-0000-0000-000000000000'::uuid",
   "returning": ["id", "intent", "content_type"]
+}
+```
+
+**Simple input (recommended for n8n)**
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "title": "Updated title",
+  "clean_text": "Updated text",
+  "returning": ["id", "title", "clean_text"]
+}
+```
+
+You can also use a `where` object:
+
+```json
+{
+  "where": { "entry_id": 123 },
+  "gist": "Updated gist"
 }
 ```
 

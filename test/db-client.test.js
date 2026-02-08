@@ -57,6 +57,15 @@ const sb = require('../js/libs/sql-builder.js');
     assert.ok(built.values.find(v => v.includes('hello')));
   }
 
+  {
+    const built = require('../src/server/db.js').buildGenericUpdatePayload({
+      id: '00000000-0000-0000-0000-000000000000',
+      title: 'Updated',
+    });
+    assert.ok(Array.isArray(built.set));
+    assert.ok(built.where.includes('id ='));
+  }
+
   // eslint-disable-next-line no-console
   console.log('db-client: OK');
 })();
