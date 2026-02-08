@@ -2,11 +2,13 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --omit=dev
+COPY src/server/package*.json ./src/server/
+RUN cd src/server && npm install --omit=dev
 
-COPY . .
+COPY src/server ./src/server
+COPY js/libs ./js/libs
 
+WORKDIR /app/src/server
 ENV NODE_ENV=production
 EXPOSE 8080
 

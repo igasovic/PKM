@@ -11,6 +11,7 @@
 - Added Postgres DB module + HTTP endpoints for insert/update/read (last/find/continue/pull) with Braintrust tracing.
 - Added `/docs/api.md` describing the backend API for external systems.
 - Updated server Dockerfile to copy project sources instead of individual files.
+- Updated server image build to include `js/libs/sql-builder.js` from the repo without duplicating files (requires repo-root build context).
 
 ## 2026-02-01 — Tier‑1 enrichment subworkflow + Telegram message enrichment
 
