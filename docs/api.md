@@ -179,7 +179,8 @@ All DB endpoints return:
 {
   "ok": true,
   "rowCount": 1,
-  "rows": []
+  "id": "...",
+  "entry_id": 123
 }
 ```
 

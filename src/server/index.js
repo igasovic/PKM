@@ -90,11 +90,11 @@ async function handleRequest(req, res) {
         return notFound(res);
       }
 
-      return json(res, 200, {
+      const firstRow = (result.rows && result.rows[0]) || null;
+      return json(res, 200, Object.assign({
         ok: true,
         rowCount: result.rowCount,
-        rows: result.rows,
-      });
+      }, firstRow || {}));
     } catch (err) {
       logError(err, req);
       return json(res, 400, { error: 'bad_request', message: err.message });
