@@ -6,6 +6,7 @@
 - Added snapshot-style tests for SQL insert/update/read builders in `test/`.
 - Added `js/libs/prompt-builder.js` and refactored Tier‑1 prompt creation nodes (sample + whole) to use it.
 - Added a minimal Node.js backend in `src/server/` with a Pi-friendly Dockerfile, plus basic server tests.
+- Added Braintrust observability hooks for server errors (config via env).
 
 ## 2026-02-01 — Tier‑1 enrichment subworkflow + Telegram message enrichment
 

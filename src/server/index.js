@@ -4,6 +4,58 @@ const http = require('http');
 const { URL } = require('url');
 const pkg = require('./package.json');
 
+let braintrustLogger = null;
+
+function getBraintrustLogger() {
+  if (braintrustLogger !== null) return braintrustLogger;
+  if (!process.env.BRAINTRUST_API_KEY) {
+    braintrustLogger = null;
+    return braintrustLogger;
+  }
+  try {
+    // Lazy-load to keep local dev/tests working without the dependency installed.
+    const { initLogger } = require('braintrust');
+    const projectName =
+      process.env.BRAINTRUST_PROJECT ||
+      process.env.BRAINTRUST_PROJECT_NAME ||
+      'pkm-backend';
+    braintrustLogger = initLogger({
+      projectName,
+      apiKey: process.env.BRAINTRUST_API_KEY,
+      asyncFlush: true,
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('braintrust disabled:', err.message);
+    braintrustLogger = null;
+  }
+  return braintrustLogger;
+}
+
+function logError(err, req) {
+  const logger = getBraintrustLogger();
+  if (!logger) return;
+  try {
+    logger.log({
+      input: {
+        method: req && req.method,
+        path: req && req.url,
+      },
+      error: {
+        name: err && err.name,
+        message: err && err.message,
+        stack: err && err.stack,
+      },
+      metadata: {
+        source: 'server',
+      },
+    });
+  } catch (logErr) {
+    // eslint-disable-next-line no-console
+    console.warn('braintrust log failed:', logErr.message);
+  }
+}
+
 function json(res, status, payload) {
   const body = JSON.stringify(payload);
   res.writeHead(status, {
@@ -61,6 +113,7 @@ async function handleRequest(req, res) {
       }
       return json(res, 200, { ok: true, data: raw });
     } catch (err) {
+      logError(err, req);
       return json(res, 400, { error: 'bad_request', message: err.message });
     }
   }
@@ -71,6 +124,7 @@ async function handleRequest(req, res) {
 function createServer() {
   return http.createServer((req, res) => {
     handleRequest(req, res).catch((err) => {
+      logError(err, req);
       json(res, 500, { error: 'internal_error', message: err.message });
     });
   });
