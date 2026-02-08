@@ -113,7 +113,20 @@ function toSqlValue(type, value) {
   if (type === 'int') return `${sb.intLit(value)}::int`;
   if (type === 'real') return `${sb.numLit(value)}::real`;
   if (type === 'boolean') return `${sb.boolLit(value)}::boolean`;
-  if (type === 'jsonb') return `${sb.jsonbLit(value)}`;
+  if (type === 'jsonb') {
+    let v = value;
+    if (typeof v === 'string') {
+      const trimmed = v.trim();
+      if (trimmed.length > 0) {
+        try {
+          v = JSON.parse(trimmed);
+        } catch (err) {
+          throw new Error('invalid jsonb: expected object/array or valid JSON string');
+        }
+      }
+    }
+    return `${sb.jsonbLit(v)}`;
+  }
   if (type === 'text[]') return `${sb.textArrayLit(value)}`;
   if (type === 'uuid') return `${sb.lit(value)}::uuid`;
   if (type === 'bigint') return `${sb.bigIntLit(value)}::bigint`;

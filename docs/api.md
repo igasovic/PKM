@@ -89,6 +89,7 @@ Body:
 
 You can also send the same fields at the top level (no `input` wrapper).
 Required fields: `source`, `capture_text`. Optional: any `pkm.entries` column (see `docs/database_schema.md`).
+For JSONB columns (`metadata`, `external_ref`), send either a JSON object or a JSON string; invalid JSON strings will be rejected.
 
 **Custom RETURNING**
 

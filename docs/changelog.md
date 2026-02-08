@@ -16,6 +16,7 @@
 - Added support for client-specified `RETURNING` columns on `/db/insert` requests.
 - API responses now flatten the first row into the top-level JSON (no `rows` or `data` wrapper).
 - Added generic `/db/update` input handling with server-side validation/sanitization and optional `returning`.
+- Added JSONB validation for `metadata`/`external_ref` inputs (accept objects or valid JSON strings).
 
 ## 2026-02-01 — Tier‑1 enrichment subworkflow + Telegram message enrichment
 
