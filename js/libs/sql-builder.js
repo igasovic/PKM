@@ -205,4 +205,50 @@ module.exports = {
   qualifiedTable,
   resolveEntriesTable,
   clamp01,
+  buildInsert,
 };
+
+/**
+ * Build a parameter-free INSERT statement with explicit column/value lists.
+ * @param {{ table: string, columns: string[], values: string[], returning?: string[] | string }} opts
+ * @returns {string}
+ */
+function buildInsert(opts) {
+  const table = opts && opts.table;
+  const columns = opts && opts.columns;
+  const values = opts && opts.values;
+  const returning = opts && opts.returning;
+
+  if (!table || typeof table !== 'string') {
+    throw new Error('buildInsert: table must be a non-empty string');
+  }
+  if (!Array.isArray(columns) || columns.length === 0) {
+    throw new Error('buildInsert: columns must be a non-empty array');
+  }
+  if (!Array.isArray(values) || values.length === 0) {
+    throw new Error('buildInsert: values must be a non-empty array');
+  }
+  if (columns.length !== values.length) {
+    throw new Error('buildInsert: columns/values length mismatch');
+  }
+
+  const cols = columns.map(c => String(c).trim());
+  const vals = values.map(v => String(v).trim());
+
+  let returningClause = '';
+  if (returning && Array.isArray(returning) && returning.length > 0) {
+    returningClause = `\nRETURNING\n  ${returning.map(r => String(r).trim()).join(',\n  ')}`;
+  } else if (returning) {
+    const ret = String(returning).trim().replace(/;$/, '');
+    if (ret) returningClause = `\nRETURNING\n  ${ret}`;
+  }
+
+  return [
+    `INSERT INTO ${table} (`,
+    `  ${cols.join(',\n  ')}`,
+    `)`,
+    `VALUES (`,
+    `  ${vals.join(',\n  ')}`,
+    `)${returningClause};`,
+  ].join('\n');
+}
