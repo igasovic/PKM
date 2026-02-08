@@ -3,56 +3,8 @@
 const http = require('http');
 const { URL } = require('url');
 const pkg = require('./package.json');
-
-let braintrustLogger = null;
-
-function getBraintrustLogger() {
-  if (braintrustLogger !== null) return braintrustLogger;
-  if (!process.env.BRAINTRUST_API_KEY) {
-    throw new Error('BRAINTRUST_API_KEY is required');
-  }
-  const { initLogger } = require('braintrust');
-  const projectName =
-    process.env.BRAINTRUST_PROJECT ||
-    process.env.BRAINTRUST_PROJECT_NAME ||
-    'pkm-backend';
-  if (!projectName || !String(projectName).trim()) {
-    throw new Error('BRAINTRUST_PROJECT (or BRAINTRUST_PROJECT_NAME) is required');
-  }
-  braintrustLogger = initLogger({
-    projectName,
-    apiKey: process.env.BRAINTRUST_API_KEY,
-    asyncFlush: true,
-  });
-  if (!braintrustLogger) {
-    throw new Error('Braintrust init returned no logger');
-  }
-  return braintrustLogger;
-}
-
-function logError(err, req) {
-  const logger = getBraintrustLogger();
-  if (!logger) return;
-  try {
-    logger.log({
-      input: {
-        method: req && req.method,
-        path: req && req.url,
-      },
-      error: {
-        name: err && err.name,
-        message: err && err.message,
-        stack: err && err.stack,
-      },
-      metadata: {
-        source: 'server',
-      },
-    });
-  } catch (logErr) {
-    // eslint-disable-next-line no-console
-    console.warn('braintrust log failed:', logErr.message);
-  }
-}
+const db = require('./db.js');
+const { getBraintrustLogger, logError } = require('./observability.js');
 
 function json(res, status, payload) {
   const body = JSON.stringify(payload);
@@ -110,6 +62,39 @@ async function handleRequest(req, res) {
         return json(res, 200, { ok: true, data: parsed });
       }
       return json(res, 200, { ok: true, data: raw });
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname.startsWith('/db/')) {
+    try {
+      const raw = await readBody(req);
+      const body = raw ? JSON.parse(raw) : {};
+      let result;
+
+      if (url.pathname === '/db/insert') {
+        result = await db.insert(body);
+      } else if (url.pathname === '/db/update') {
+        result = await db.update(body);
+      } else if (url.pathname === '/db/read/continue') {
+        result = await db.readContinue(body);
+      } else if (url.pathname === '/db/read/find') {
+        result = await db.readFind(body);
+      } else if (url.pathname === '/db/read/last') {
+        result = await db.readLast(body);
+      } else if (url.pathname === '/db/read/pull') {
+        result = await db.readPull(body);
+      } else {
+        return notFound(res);
+      }
+
+      return json(res, 200, {
+        ok: true,
+        rowCount: result.rowCount,
+        rows: result.rows,
+      });
     } catch (err) {
       logError(err, req);
       return json(res, 400, { error: 'bad_request', message: err.message });

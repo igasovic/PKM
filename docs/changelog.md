@@ -8,6 +8,8 @@
 - Added a minimal Node.js backend in `src/server/` with a Pi-friendly Dockerfile, plus basic server tests.
 - Added Braintrust observability hooks for server errors (config via env).
 - Enforced Braintrust initialization at startup (service fails fast if missing config or init fails).
+- Added Postgres DB module + HTTP endpoints for insert/update/read (last/find/continue/pull) with Braintrust tracing.
+- Added `/docs/api.md` describing the backend API for external systems.
 
 ## 2026-02-01 — Tier‑1 enrichment subworkflow + Telegram message enrichment
 

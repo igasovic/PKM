@@ -1,0 +1,50 @@
+'use strict';
+
+const assert = require('assert');
+const sb = require('../js/libs/sql-builder.js');
+
+(() => {
+  {
+    const table = '"pkm"."entries"';
+    const sql = sb.buildInsert({
+      table,
+      columns: ['a', 'b'],
+      values: ['1', '2'],
+      returning: ['id'],
+    });
+
+    assert.ok(sql.includes('INSERT INTO'));
+    assert.ok(sql.includes('RETURNING'));
+  }
+
+  {
+    const table = '"pkm"."entries"';
+    const sql = sb.buildUpdate({
+      table,
+      set: ['a = 1'],
+      where: 'id = 1',
+      returning: ['id'],
+    });
+
+    assert.ok(sql.startsWith('UPDATE'));
+    assert.ok(sql.includes('SET'));
+    assert.ok(sql.includes('WHERE id = 1'));
+  }
+
+  {
+    const sql = sb.buildReadLast({
+      entries_table: '"pkm"."entries"',
+      q: 'x',
+      days: 1,
+      limit: 1,
+      weights: {},
+      halfLife: 1,
+    });
+
+    assert.ok(sql.includes('WITH params AS'));
+    assert.ok(sql.includes('SELECT *'));
+  }
+
+  // eslint-disable-next-line no-console
+  console.log('db-client: OK');
+})();
