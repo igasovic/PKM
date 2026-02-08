@@ -1,6 +1,6 @@
 # env.md — PKM DEV Raspberry Pi stack environment
-Version: 2026.01.31-db-container-vars
-Updated: 2026-01-31
+Version: 2026.02.08-backend-bootstrap
+Updated: 2026-02-08
 Host (SSH): igasovic@192.168.5.4
 
 ## Storage and boot
@@ -45,6 +45,19 @@ Services (current):
 - homeassistant: ghcr.io/home-assistant/home-assistant:stable
 - cloudflared: cloudflare/cloudflared:latest
 - matter-server: ghcr.io/home-assistant-libs/python-matter-server:stable
+- pkm-server: custom Node.js backend (Docker build)
+  - Purpose: backend bootstrap for PKM API (currently basic health/echo endpoints; later will host Postgres + OpenAI endpoints)
+  - Source code (repo): /home/igasovic/repos/n8n-workflows/src/server
+  - Built/managed via compose from: /home/igasovic/stack/docker-compose.yml
+  - Runtime port:
+    - Container listens on: 8080 (default in code: `process.env.PORT || 8080`)
+    - Host port mapping (current): 3010 -> 8080
+      - Base URL (LAN/host): http://192.168.5.4:3010
+  - Endpoints (validated):
+    - GET  /health  -> 200 OK
+    - GET  /ready   -> 200 OK
+    - GET  /version -> 200 OK
+    - POST /echo    -> 200 OK (expects JSON body)
 
 ### Matter (Home Assistant Container)
 Context:
@@ -90,6 +103,11 @@ Ingress targets observed in logs:
 - n8n.gasovic.com -> http://localhost:5678
 - n8n-hook.gasovic.com -> http://localhost:5678
 
+Notes:
+- pkm-server is currently exposed on LAN at http://192.168.5.4:3010.
+- If remote access is desired later, add a new Cloudflared ingress mapping (example):
+  - pkm-api.gasovic.com -> http://localhost:3010
+
 External checks:
 - n8n.gasovic.com returns 302 to Cloudflare Access login (expected)
 - ha.gasovic.com may return 405 for HEAD; validate with GET.
@@ -104,9 +122,7 @@ Files copied to Mac:
 - postgres_dumpall.sql.gz (pg_dumpall of cluster)
 - pi_backup_bundle.tgz (includes /home/igasovic/stack, repo, and /home/igasovic/.ssh)
 
-
 ## PKM Test Mode (Global)
-
 PKM supports a **global test mode** for safe experimentation.
 
 - Test mode is controlled by the **`PKM Config`** sub-workflow in n8n.
@@ -122,4 +138,3 @@ PKM supports a **global test mode** for safe experimentation.
 - Test data can be wiped safely using:
   ```sql
   TRUNCATE TABLE pkm_test.entries RESTART IDENTITY;
-  ```
