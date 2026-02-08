@@ -207,6 +207,10 @@ module.exports = {
   clamp01,
   buildInsert,
   buildUpdate,
+  buildReadContinue,
+  buildReadFind,
+  buildReadLast,
+  buildReadPull,
 };
 
 /**
@@ -320,4 +324,565 @@ function buildUpdate(opts) {
   lines[lines.length - 1] = `${lines[lines.length - 1]};`;
 
   return lines.join('\n');
+}
+
+function buildReadContinue(opts) {
+  const entries_table = opts.entries_table;
+  const q = String(opts.q ?? '').trim();
+  const days = Number(opts.days ?? 90);
+  const limit = Number(opts.limit ?? 10);
+  const W = opts.weights || {};
+  const halfLife = Number(opts.halfLife ?? 45);
+  const noteQuota = Number(opts.noteQuota ?? 0.75);
+
+  return `
+WITH params AS (
+  SELECT
+    ${lit(q)}::text AS qtext,
+    websearch_to_tsquery('english', ${lit(q)}) AS tsq,
+    ${days}::int AS days,
+    ${limit}::int AS lim,
+    ${halfLife}::real AS half_life_days,
+    ${noteQuota}::real AS note_quota
+),
+
+base AS (
+  SELECT
+    e.entry_id,
+    e.id,
+    e.created_at,
+    e.source,
+    e.intent,
+    e.content_type,
+    COALESCE(e.url_canonical, e.url, '') AS url,
+    COALESCE(e.title, e.external_ref->>'title', '') AS title,
+    COALESCE(e.author, '') AS author,
+
+    COALESCE(e.topic_primary,'') AS topic_primary,
+    COALESCE(e.topic_secondary,'') AS topic_secondary,
+    COALESCE(e.gist,'') AS gist,
+    COALESCE(e.retrieval_excerpt, e.metadata #>> '{retrieval,excerpt}', '') AS excerpt,
+
+    COALESCE(e.keywords, ARRAY[]::text[]) AS keywords,
+    COALESCE(e.quality_score, 0.5) AS quality_score,
+    COALESCE(e.boilerplate_heavy, false) AS boilerplate_heavy,
+    COALESCE(e.low_signal, false) AS low_signal,
+    COALESCE(e.extraction_incomplete, false) AS extraction_incomplete,
+    COALESCE(e.link_ratio, 0.0) AS link_ratio,
+
+    p.qtext,
+    p.tsq,
+
+    exp( - (extract(epoch from (now() - e.created_at)) / 86400.0) / p.half_life_days ) AS recency,
+
+    to_tsvector('english',
+      trim(
+        COALESCE(e.topic_primary,'') || ' ' ||
+        COALESCE(e.topic_secondary,'') || ' ' ||
+        COALESCE(array_to_string(e.keywords,' '),'') || ' ' ||
+        COALESCE(e.gist,'') || ' ' ||
+        COALESCE(e.title,'') || ' ' ||
+        COALESCE(e.author,'')
+      )
+    ) AS t1_tsv
+  FROM ${entries_table} e, params p
+  WHERE
+    e.created_at >= (now() - (p.days || ' days')::interval)
+    AND e.duplicate_of IS NULL
+),
+
+scored AS (
+  SELECT
+    b.*,
+    ts_rank_cd(b.t1_tsv, b.tsq) AS t1_rank,
+    ts_rank_cd(e.tsv, b.tsq) AS fts_rank,
+
+    (
+      (CASE WHEN lower(b.topic_primary) = lower(b.qtext) THEN ${Number(W.topic_primary_exact || 0)} ELSE 0 END) +
+      (CASE WHEN lower(b.topic_primary) LIKE lower(b.qtext) || '%' THEN ${Number(W.topic_primary_fuzzy || 0)} ELSE 0 END) +
+      (CASE WHEN lower(b.topic_secondary) = lower(b.qtext) THEN ${Number(W.topic_secondary_exact || 0)} ELSE 0 END) +
+      (CASE WHEN lower(b.topic_secondary) LIKE '%' || lower(b.qtext) || '%' THEN ${Number(W.topic_secondary_fuzzy || 0)} ELSE 0 END) +
+
+      -- keywords overlap (fixed)
+      LEAST(
+        ${Number(W.keywords_overlap_cap || 0)},
+        ${Number(W.keywords_overlap_each || 0)} * (
+          SELECT count(*)
+          FROM unnest(b.keywords) kw
+          WHERE kw <> ''
+            AND lower(kw) = ANY (regexp_split_to_array(lower(b.qtext), '\\s+'))
+        )
+      ) +
+
+      (CASE WHEN b.gist ILIKE '%' || b.qtext || '%' THEN ${Number(W.gist_match || 0)} ELSE 0 END) +
+      (CASE WHEN b.title ILIKE '%' || b.qtext || '%' THEN ${Number(W.title_match || 0)} ELSE 0 END) +
+      (CASE WHEN b.author ILIKE '%' || b.qtext || '%' THEN ${Number(W.author_match || 0)} ELSE 0 END) +
+
+      (${Number(W.fts_rank || 0)} * ts_rank_cd(e.tsv, b.tsq)) +
+
+      (CASE WHEN b.content_type = 'note' THEN ${Number(W.prefer_content_type_note || 0)} ELSE 0 END) +
+      (CASE WHEN b.intent = 'think' THEN ${Number(W.prefer_intent_think || 0)} ELSE 0 END) +
+      (CASE WHEN b.topic_primary <> '' THEN ${Number(W.prefer_enriched || 0)} ELSE 0 END) +
+
+      (10.0 * b.quality_score) +
+      (5.0 * b.recency) -
+
+      (CASE WHEN b.boilerplate_heavy THEN ${Number(W.penalty_boilerplate_heavy || 0)} ELSE 0 END) -
+      (CASE WHEN b.low_signal THEN ${Number(W.penalty_low_signal || 0)} ELSE 0 END) -
+      (CASE WHEN b.link_ratio > 0.18 THEN ${Number(W.penalty_link_ratio_high || 0)} ELSE 0 END) -
+      (CASE WHEN b.extraction_incomplete THEN ${Number(W.penalty_extraction_incomplete || 0)} ELSE 0 END)
+    ) AS score
+  FROM base b
+  JOIN ${entries_table} e ON e.id = b.id
+  WHERE
+    b.tsq IS NOT NULL
+    AND (e.tsv @@ b.tsq OR b.t1_tsv @@ b.tsq OR lower(b.topic_primary) = lower(b.qtext))
+),
+
+notes AS (
+  SELECT *, row_number() OVER (ORDER BY score DESC, created_at DESC) AS rn
+  FROM scored
+  WHERE content_type = 'note'
+),
+externals AS (
+  SELECT *, row_number() OVER (ORDER BY score DESC, created_at DESC) AS rn
+  FROM scored
+  WHERE content_type IS DISTINCT FROM 'note'
+),
+
+/* FIX: only select the hit rows (notes/externals), not params/note_count columns */
+note_pick AS (
+  SELECT n.*
+  FROM notes n
+  CROSS JOIN params p
+  WHERE n.rn <= greatest(1, floor(p.lim * p.note_quota))::int
+),
+note_count AS (
+  SELECT count(*)::int AS n FROM note_pick
+),
+external_pick AS (
+  SELECT x.*
+  FROM externals x
+  CROSS JOIN params p
+  CROSS JOIN note_count nc
+  WHERE x.rn <= (p.lim - nc.n)
+),
+hits AS (
+  SELECT * FROM note_pick
+  UNION ALL
+  SELECT * FROM external_pick
+),
+
+meta_row AS (
+  SELECT
+    TRUE AS is_meta,
+    'continue'::text AS cmd,
+    p.qtext AS query_text,
+    p.days AS days,
+    p.lim AS limit,
+    (SELECT count(*) FROM hits)::int AS hits,
+    NULL::bigint AS entry_id,
+    NULL::uuid AS id,
+    NULL::timestamptz AS created_at,
+    NULL::text AS source,
+    NULL::text AS intent,
+    NULL::text AS content_type,
+    NULL::text AS url,
+    NULL::text AS title,
+    NULL::text AS author,
+    NULL::text AS topic_primary,
+    NULL::text AS topic_secondary,
+    NULL::text AS gist,
+    NULL::text AS excerpt,
+    NULL::double precision AS score,
+    NULL::text AS snippet
+  FROM params p
+),
+
+hit_rows AS (
+  SELECT
+    FALSE AS is_meta,
+    'continue'::text AS cmd,
+    (SELECT qtext FROM params) AS query_text,
+    (SELECT days FROM params) AS days,
+    (SELECT lim FROM params) AS limit,
+    NULL::int AS hits,
+    h.entry_id,
+    h.id,
+    h.created_at,
+    h.source,
+    h.intent,
+    h.content_type,
+    h.url,
+    h.title,
+    h.author,
+    h.topic_primary,
+    h.topic_secondary,
+    h.gist,
+    h.excerpt,
+    h.score::double precision AS score,
+    NULL::text AS snippet
+  FROM hits h
+),
+
+out AS (
+  SELECT * FROM meta_row
+  UNION ALL
+  SELECT * FROM hit_rows
+)
+
+SELECT *
+FROM out
+ORDER BY is_meta DESC, score DESC NULLS LAST, created_at DESC NULLS LAST;
+`.trim();
+}
+
+function buildReadFind(opts) {
+  const entries_table = opts.entries_table;
+  const q = String(opts.q ?? '').trim();
+  const days = Number(opts.days ?? 365);
+  const limit = Number(opts.limit ?? 10);
+  const needle = String(opts.needle ?? escapeLikeWildcards(q));
+  const W = opts.weights || {};
+
+  return `
+WITH params AS (
+  SELECT
+    ${lit(q)}::text AS qtext,
+    websearch_to_tsquery('english', ${lit(q)}) AS tsq,
+    ${days}::int AS days,
+    ${limit}::int AS lim,
+    ${lit(needle)}::text AS needle
+),
+hits AS (
+  SELECT
+    e.entry_id,
+    e.id,
+    e.created_at,
+    e.source,
+    e.intent,
+    e.content_type,
+    COALESCE(e.url_canonical, e.url, '') AS url,
+    COALESCE(e.title, e.external_ref->>'title', '') AS title,
+    COALESCE(e.author, '') AS author,
+
+    COALESCE(e.topic_primary,'') AS topic_primary,
+    COALESCE(e.topic_secondary,'') AS topic_secondary,
+    COALESCE(e.gist,'') AS gist,
+    COALESCE(e.retrieval_excerpt, e.metadata #>> '{retrieval,excerpt}', '') AS excerpt,
+
+    COALESCE(char_length(COALESCE(e.clean_text, e.capture_text)), 0) AS text_len,
+
+    ts_rank_cd(e.tsv, p.tsq) AS fts_rank,
+    left(regexp_replace(COALESCE(e.clean_text, e.capture_text), '\\s+', ' ', 'g'), 600) AS snippet,
+
+    (
+      -- literal evidence matters most for /find
+      (CASE WHEN COALESCE(e.clean_text,'') ILIKE '%' || p.needle || '%' ESCAPE '\\' THEN 50 ELSE 0 END) +
+      (CASE WHEN COALESCE(e.capture_text,'') ILIKE '%' || p.needle || '%' ESCAPE '\\' THEN 20 ELSE 0 END) +
+      (${Number(W.fts_rank || 80)} * ts_rank_cd(e.tsv, p.tsq)) +
+
+      -- small chip boosts (don’t overwhelm find)
+      (CASE WHEN e.title ILIKE '%' || p.qtext || '%' THEN ${Number(W.title_match || 0)} ELSE 0 END) +
+      (CASE WHEN e.gist ILIKE '%' || p.qtext || '%' THEN ${Number(W.gist_match || 0)} ELSE 0 END)
+    ) AS score
+  FROM ${entries_table} e, params p
+  WHERE
+    e.created_at >= (now() - (p.days || ' days')::interval)
+    AND e.duplicate_of IS NULL
+    AND (
+      COALESCE(e.clean_text,'') ILIKE '%' || p.needle || '%' ESCAPE '\\'
+      OR COALESCE(e.capture_text,'') ILIKE '%' || p.needle || '%' ESCAPE '\\'
+      OR (p.tsq IS NOT NULL AND e.tsv @@ p.tsq)
+    )
+  ORDER BY score DESC, e.created_at DESC
+  LIMIT (SELECT lim FROM params)
+),
+meta AS (
+  SELECT
+    TRUE AS is_meta,
+    'find'::text AS cmd,
+    (SELECT qtext FROM params) AS query_text,
+    (SELECT days FROM params) AS days,
+    (SELECT lim FROM params) AS limit,
+    (SELECT count(*) FROM hits)::int AS hits
+)
+SELECT
+  TRUE AS is_meta,
+  m.cmd,
+  m.query_text,
+  m.days,
+  m.limit,
+  m.hits,
+  NULL::bigint AS entry_id,
+  NULL::uuid AS id,
+  NULL::timestamptz AS created_at,
+  NULL::text AS source,
+  NULL::text AS intent,
+  NULL::text AS content_type,
+  NULL::text AS url,
+  NULL::text AS title,
+  NULL::text AS author,
+  NULL::text AS topic_primary,
+  NULL::text AS topic_secondary,
+  NULL::text AS gist,
+  NULL::text AS excerpt,
+  NULL::double precision AS score,
+  NULL::text AS snippet
+FROM meta m
+UNION ALL
+SELECT
+  FALSE AS is_meta,
+  'find'::text AS cmd,
+  (SELECT qtext FROM params) AS query_text,
+  (SELECT days FROM params) AS days,
+  (SELECT lim FROM params) AS limit,
+  NULL::int AS hits,
+  h.entry_id,
+  h.id,
+  h.created_at,
+  h.source,
+  h.intent,
+  h.content_type,
+  h.url,
+  h.title,
+  h.author,
+  h.topic_primary,
+  h.topic_secondary,
+  h.gist,
+  h.excerpt,
+  h.score,
+  h.snippet
+FROM hits h;
+`.trim();
+}
+
+function buildReadLast(opts) {
+  const entries_table = opts.entries_table;
+  const q = String(opts.q ?? '').trim();
+  const days = Number(opts.days ?? 180);
+  const limit = Number(opts.limit ?? 10);
+  const W = opts.weights || {};
+  const halfLife = Number(opts.halfLife ?? 180);
+
+  return `
+WITH params AS (
+  SELECT
+    ${lit(q)}::text AS qtext,
+    websearch_to_tsquery('english', ${lit(q)}) AS tsq,
+    ${days}::int AS days,
+    ${limit}::int AS lim,
+    ${halfLife}::real AS half_life_days
+),
+base AS (
+  SELECT
+    e.entry_id,
+    e.id,
+    e.created_at,
+    e.source,
+    e.intent,
+    e.content_type,
+    COALESCE(e.url_canonical, e.url, '') AS url,
+    COALESCE(e.title, e.external_ref->>'title', '') AS title,
+    COALESCE(e.author, '') AS author,
+
+    COALESCE(e.topic_primary,'') AS topic_primary,
+    COALESCE(e.topic_secondary,'') AS topic_secondary,
+    COALESCE(e.gist,'') AS gist,
+    COALESCE(e.retrieval_excerpt, e.metadata #>> '{retrieval,excerpt}', '') AS excerpt,
+
+    COALESCE(e.keywords, ARRAY[]::text[]) AS keywords,
+    COALESCE(e.quality_score, 0.5) AS quality_score,
+    COALESCE(e.boilerplate_heavy, false) AS boilerplate_heavy,
+    COALESCE(e.low_signal, false) AS low_signal,
+    COALESCE(e.extraction_incomplete, false) AS extraction_incomplete,
+    COALESCE(e.link_ratio, 0.0) AS link_ratio,
+
+    p.qtext,
+    p.tsq,
+
+    exp( - (extract(epoch from (now() - e.created_at)) / 86400.0) / p.half_life_days ) AS recency,
+
+    to_tsvector('english',
+      trim(
+        COALESCE(e.topic_primary,'') || ' ' ||
+        COALESCE(e.topic_secondary,'') || ' ' ||
+        COALESCE(array_to_string(e.keywords,' '),'') || ' ' ||
+        COALESCE(e.gist,'') || ' ' ||
+        COALESCE(e.title,'') || ' ' ||
+        COALESCE(e.author,'')
+      )
+    ) AS t1_tsv
+  FROM ${entries_table} e, params p
+  WHERE
+    e.created_at >= (now() - (p.days || ' days')::interval)
+    AND e.duplicate_of IS NULL
+),
+scored AS (
+  SELECT
+    b.*,
+
+    -- ranks
+    ts_rank_cd(b.t1_tsv, b.tsq) AS t1_rank,
+    ts_rank_cd(e.tsv, b.tsq) AS fts_rank,
+
+    -- score using config weights
+    (
+      -- topic matches
+      (CASE WHEN lower(b.topic_primary) = lower(b.qtext) THEN ${Number(W.topic_primary_exact || 0)} ELSE 0 END) +
+      (CASE WHEN lower(b.topic_primary) LIKE lower(b.qtext) || '%' THEN ${Number(W.topic_primary_fuzzy || 0)} ELSE 0 END) +
+      (CASE WHEN lower(b.topic_secondary) = lower(b.qtext) THEN ${Number(W.topic_secondary_exact || 0)} ELSE 0 END) +
+      (CASE WHEN lower(b.topic_secondary) LIKE '%' || lower(b.qtext) || '%' THEN ${Number(W.topic_secondary_fuzzy || 0)} ELSE 0 END) +
+
+      -- keywords overlap (FIXED: avoids text = text[] error)
+      LEAST(
+        ${Number(W.keywords_overlap_cap || 0)},
+        ${Number(W.keywords_overlap_each || 0)} * (
+          SELECT count(*)
+          FROM unnest(b.keywords) kw
+          WHERE kw <> ''
+            AND lower(kw) = ANY (regexp_split_to_array(lower(b.qtext), '\\s+'))
+        )
+      ) +
+
+      -- gist/title/author matches
+      (CASE WHEN b.gist ILIKE '%' || b.qtext || '%' THEN ${Number(W.gist_match || 0)} ELSE 0 END) +
+      (CASE WHEN b.title ILIKE '%' || b.qtext || '%' THEN ${Number(W.title_match || 0)} ELSE 0 END) +
+      (CASE WHEN b.author ILIKE '%' || b.qtext || '%' THEN ${Number(W.author_match || 0)} ELSE 0 END) +
+
+      -- fts rank (scaled)
+      (${Number(W.fts_rank || 0)} * ts_rank_cd(e.tsv, b.tsq)) +
+
+      -- preferences
+      (CASE WHEN b.content_type = 'note' THEN ${Number(W.prefer_content_type_note || 0)} ELSE 0 END) +
+      (CASE WHEN b.intent = 'think' THEN ${Number(W.prefer_intent_think || 0)} ELSE 0 END) +
+      (CASE WHEN b.topic_primary <> '' THEN ${Number(W.prefer_enriched || 0)} ELSE 0 END) +
+
+      -- quality + recency (continuous nudges)
+      (10.0 * b.quality_score) +
+      (5.0 * b.recency) -
+
+      -- penalties
+      (CASE WHEN b.boilerplate_heavy THEN ${Number(W.penalty_boilerplate_heavy || 0)} ELSE 0 END) -
+      (CASE WHEN b.low_signal THEN ${Number(W.penalty_low_signal || 0)} ELSE 0 END) -
+      (CASE WHEN b.link_ratio > 0.18 THEN ${Number(W.penalty_link_ratio_high || 0)} ELSE 0 END) -
+      (CASE WHEN b.extraction_incomplete THEN ${Number(W.penalty_extraction_incomplete || 0)} ELSE 0 END)
+    ) AS score
+  FROM base b
+  JOIN ${entries_table} e ON e.id = b.id
+  WHERE
+    b.tsq IS NOT NULL
+    AND (e.tsv @@ b.tsq OR b.t1_tsv @@ b.tsq)
+),
+hits AS (
+  SELECT
+    entry_id,
+    id,
+    created_at,
+    source,
+    intent,
+    content_type,
+    url,
+    title,
+    author,
+    topic_primary,
+    topic_secondary,
+    gist,
+    excerpt,
+    score
+  FROM scored
+  ORDER BY score DESC, created_at DESC
+  LIMIT (SELECT lim FROM params)
+),
+meta AS (
+  SELECT
+    TRUE AS is_meta,
+    'last'::text AS cmd,
+    (SELECT qtext FROM params) AS query_text,
+    (SELECT days FROM params) AS days,
+    (SELECT lim FROM params) AS limit,
+    (SELECT count(*) FROM hits)::int AS hits
+)
+SELECT
+  TRUE AS is_meta,
+  m.cmd,
+  m.query_text,
+  m.days,
+  m.limit,
+  m.hits,
+  NULL::bigint AS entry_id,
+  NULL::uuid AS id,
+  NULL::timestamptz AS created_at,
+  NULL::text AS source,
+  NULL::text AS intent,
+  NULL::text AS content_type,
+  NULL::text AS url,
+  NULL::text AS title,
+  NULL::text AS author,
+  NULL::text AS topic_primary,
+  NULL::text AS topic_secondary,
+  NULL::text AS gist,
+  NULL::text AS excerpt,
+  NULL::double precision AS score,
+  NULL::text AS snippet
+FROM meta m
+UNION ALL
+SELECT
+  FALSE AS is_meta,
+  'last'::text AS cmd,
+  (SELECT qtext FROM params) AS query_text,
+  (SELECT days FROM params) AS days,
+  (SELECT lim FROM params) AS limit,
+  NULL::int AS hits,
+  h.entry_id,
+  h.id,
+  h.created_at,
+  h.source,
+  h.intent,
+  h.content_type,
+  h.url,
+  h.title,
+  h.author,
+  h.topic_primary,
+  h.topic_secondary,
+  h.gist,
+  h.excerpt,
+  h.score,
+  NULL::text AS snippet
+FROM hits h;
+`.trim();
+}
+
+function buildReadPull(opts) {
+  const entries_table = opts.entries_table;
+  const entry_id = opts.entry_id;
+  const shortN = Number(opts.shortN ?? 320);
+  const longN = Number(opts.longN ?? 1800);
+
+  return `
+SELECT
+  entry_id,
+  id,
+  created_at,
+  source,
+  intent,
+  content_type,
+  COALESCE(title,'') AS title,
+  COALESCE(author,'') AS author,
+  COALESCE(url_canonical, url, '') AS url,
+  COALESCE(topic_primary,'') AS topic_primary,
+  COALESCE(topic_secondary,'') AS topic_secondary,
+  COALESCE(gist,'') AS gist,
+  COALESCE(clean_text, '') AS clean_text,
+  keywords,
+
+  -- legacy name expected by current telegram message builder
+  left(COALESCE(retrieval_excerpt, metadata #>> '{retrieval,excerpt}', ''), ${shortN}) AS excerpt,
+
+  -- optional long body for later /pull --excerpt
+  left(regexp_replace(COALESCE(clean_text, capture_text), '\\s+', ' ', 'g'), ${longN}) AS excerpt_long
+FROM ${entries_table}
+WHERE entry_id = ${bigIntLit(entry_id)}::bigint
+LIMIT 1;
+`.trim();
 }

@@ -31,32 +31,12 @@ if (!entry_id || !String(entry_id).trim()) throw new Error('pull: missing entry_
 const shortN = Number($json.config?.scoring?.maxItems?.pull_short_chars || 320);
 const longN = Number($json.config?.scoring?.maxItems?.pull_excerpt_chars || 1800);
 
-const sql = `
-SELECT
+const sql = sb.buildReadPull({
+  entries_table,
   entry_id,
-  id,
-  created_at,
-  source,
-  intent,
-  content_type,
-  COALESCE(title,'') AS title,
-  COALESCE(author,'') AS author,
-  COALESCE(url_canonical, url, '') AS url,
-  COALESCE(topic_primary,'') AS topic_primary,
-  COALESCE(topic_secondary,'') AS topic_secondary,
-  COALESCE(gist,'') AS gist,
-  COALESCE(clean_text, '') AS clean_text,
-  keywords,
-
-  -- legacy name expected by current telegram message builder
-  left(COALESCE(retrieval_excerpt, metadata #>> '{retrieval,excerpt}', ''), ${shortN}) AS excerpt,
-
-  -- optional long body for later /pull --excerpt
-  left(regexp_replace(COALESCE(clean_text, capture_text), '\\s+', ' ', 'g'), ${longN}) AS excerpt_long
-FROM ${entries_table}
-WHERE entry_id = ${sb.bigIntLit(entry_id)}::bigint
-LIMIT 1;
-`.trim();
+  shortN,
+  longN,
+});
 
 return [{ json: { ...$json, sql } }];
 };
