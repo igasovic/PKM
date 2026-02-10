@@ -30,6 +30,22 @@ Response:
 { "name": "pkm-backend", "version": "0.1.0" }
 ```
 
+## Config
+
+### `GET /config`
+Returns the retrieval/scoring config as JSON.
+
+Response:
+```json
+{
+  "version": "v1",
+  "db": { "is_test_mode": false, "schema_prod": "pkm", "schema_test": "pkm_test" },
+  "scoring": {},
+  "qualityThresholds": {},
+  "metadataPaths": {}
+}
+```
+
 ## Insert / Update
 
 ### `POST /db/insert`

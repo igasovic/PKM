@@ -4,6 +4,7 @@ const http = require('http');
 const { URL } = require('url');
 const pkg = require('./package.json');
 const db = require('./db.js');
+const { getConfig } = require('./config.js');
 const { getBraintrustLogger, logError } = require('./observability.js');
 
 function json(res, status, payload) {
@@ -51,6 +52,10 @@ async function handleRequest(req, res) {
 
   if (method === 'GET' && url.pathname === '/version') {
     return json(res, 200, { name: pkg.name, version: pkg.version });
+  }
+
+  if (method === 'GET' && url.pathname === '/config') {
+    return json(res, 200, getConfig());
   }
 
   if (method === 'POST' && url.pathname === '/echo') {
