@@ -29,11 +29,11 @@ module.exports = async function run(ctx) {
 const days = Number($json.days || 180);
 
 // WP3 safety cap
-const cfgLimit = Number($json.config?.scoring?.maxItems?.last || 15);
+const cfgLimit = Number(config.scoring.maxItems.last);
 const limit = Math.min(cfgLimit, Math.max(1, Number($json.limit || 10)));
 
-const W = $json.config?.scoring?.weightsByCmd?.last || {};
-const halfLife = Number($json.config?.scoring?.recencyByCmd?.last?.half_life_days || 180);
+const W = config.scoring.weightsByCmd.last;
+const halfLife = Number(config.scoring.recencyByCmd.last.half_life_days);
 
 const sql = sb.buildReadLast({
   entries_table,

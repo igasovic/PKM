@@ -29,13 +29,13 @@ module.exports = async function run(ctx) {
   const days = Number($json.days || 365);
 
   // WP3 safety cap
-  const cfgLimit = Number($json.config?.scoring?.maxItems?.find || 15);
+  const cfgLimit = Number(config.scoring.maxItems.find);
   const limit = Math.min(cfgLimit, Math.max(1, Number($json.limit || 10)));
 
   // escape LIKE wildcards in user input
   const needle = sb.escapeLikeWildcards(q);
 
-const W = $json.config?.scoring?.weightsByCmd?.find || {};
+const W = config.scoring.weightsByCmd.find;
 
 const sql = sb.buildReadFind({
   entries_table,

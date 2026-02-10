@@ -54,7 +54,7 @@ lines.push(`\n${body}`);
 let msg = lines.join('\n');
 
 const config = $items('PKM Config')[0].json.config;
-if (config?.db?.is_test_mode === true) {
+if (config.db.is_test_mode === true) {
   msg = `⚗️🧪 TEST MODE
 ${msg}`;
 }

@@ -28,12 +28,12 @@ module.exports = async function run(ctx) {
   const q = String($json.q || '').trim();
 const days = Number($json.days || 90);
 
-const cfgLimit = Number($json.config?.scoring?.maxItems?.continue || 15);
+const cfgLimit = Number(config.scoring.maxItems.continue);
 const limit = Math.min(cfgLimit, Math.max(1, Number($json.limit || 10)));
 
-const W = $json.config?.scoring?.weightsByCmd?.continue || {};
-const halfLife = Number($json.config?.scoring?.recencyByCmd?.continue?.half_life_days || 45);
-const noteQuota = Number($json.config?.scoring?.noteQuotaByCmd?.continue || 0.75);
+const W = config.scoring.weightsByCmd.continue;
+const halfLife = Number(config.scoring.recencyByCmd.continue.half_life_days);
+const noteQuota = Number(config.scoring.noteQuotaByCmd.continue);
 
 const sql = sb.buildReadContinue({
   entries_table,

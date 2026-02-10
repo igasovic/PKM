@@ -28,8 +28,8 @@ module.exports = async function run(ctx) {
   const entry_id = $json.entry_id;
 if (!entry_id || !String(entry_id).trim()) throw new Error('pull: missing entry_id');
 
-const shortN = Number($json.config?.scoring?.maxItems?.pull_short_chars || 320);
-const longN = Number($json.config?.scoring?.maxItems?.pull_excerpt_chars || 1800);
+const shortN = Number(config.scoring.maxItems.pull_short_chars);
+const longN = Number(config.scoring.maxItems.pull_excerpt_chars);
 
 const sql = sb.buildReadPull({
   entries_table,
