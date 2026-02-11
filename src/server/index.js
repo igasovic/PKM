@@ -6,7 +6,7 @@ const pkg = require('./package.json');
 const db = require('./db.js');
 const { TestModeService } = require('./test-mode.js');
 const { getConfig } = require('../libs/config.js');
-const { normalizeTelegram } = require('./normalization.js');
+const { normalizeTelegram, normalizeEmailNewsletter, decideEmailIntent } = require('./normalization.js');
 const {
   getBraintrustLogger,
   logError,
@@ -74,6 +74,30 @@ async function handleRequest(req, res) {
       const body = raw ? JSON.parse(raw) : {};
       const normalized = await normalizeTelegram({ text: body.text });
       return json(res, 200, normalized);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/normalize/email/newsletter') {
+    try {
+      const raw = await readBody(req);
+      const body = raw ? JSON.parse(raw) : {};
+      const normalized = await normalizeEmailNewsletter({ raw_text: body.raw_text });
+      return json(res, 200, normalized);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/normalize/email/intent') {
+    try {
+      const raw = await readBody(req);
+      const body = raw ? JSON.parse(raw) : {};
+      const intent = decideEmailIntent(body.textPlain);
+      return json(res, 200, { content_type: intent.content_type });
     } catch (err) {
       logError(err, req);
       return json(res, 400, { error: 'bad_request', message: err.message });

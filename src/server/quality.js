@@ -60,6 +60,7 @@ function buildRetrieval({
   config,
   excerpt_override,
   excerpt_source,
+  quality_source_text,
 }) {
   const cfg = config.qualityThresholds;
   const TH = {
@@ -78,13 +79,16 @@ function buildRetrieval({
     },
   };
 
-  const clean = normWS(capture_text);
+  const qualityBase = (quality_source_text !== undefined && quality_source_text !== null)
+    ? String(quality_source_text)
+    : String(capture_text);
+  const clean = normWS(qualityBase);
   const clean_word_count = clean ? clean.split(/\s+/).filter(Boolean).length : 0;
   const clean_char_count = clean.length;
 
   const extracted_char_count = String(extracted_text || '').length;
 
-  const link_count = linkCountFromText(capture_text);
+  const link_count = linkCountFromText(clean);
   const link_ratio = link_count / Math.max(1, clean_word_count);
 
   const lowTH = lowSignalThresholdFor(content_type, TH.low_signal);

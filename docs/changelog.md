@@ -12,6 +12,8 @@
 - `/db/*` endpoints now return only `rows` from SQL (no ok/rowCount wrapper).
 - Added cached test mode reads (10s TTL) to reduce runtime_config lookups.
 - Added Telegram normalization API and extracted quality signals into `src/server/quality.js`.
+- Added email newsletter normalization endpoint (`/normalize/email/newsletter`) using raw IMAP text/plain input.
+- Added email intent detection endpoint (`/normalize/email/intent`) returning `content_type`.
 - Moved test mode caching/logic into `src/server/test-mode.js` and removed it from config.
 - `/config` now returns only static config (no test mode state).
 - Moved shared libs to `src/libs` and updated server Dockerfile copy path.

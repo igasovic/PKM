@@ -100,6 +100,51 @@ Response:
 }
 ```
 
+### `POST /normalize/email/newsletter`
+Normalizes a raw IMAP text/plain payload into a `pkm.entries`-compatible payload.
+
+Body:
+```json
+{ "raw_text": "raw IMAP text/plain message" }
+```
+
+Response:
+```json
+{
+  "source": "email",
+  "intent": "archive",
+  "content_type": "newsletter",
+  "capture_text": "...",
+  "clean_text": "...",
+  "retrieval_excerpt": "...",
+  "retrieval_version": "v1",
+  "source_domain": "...",
+  "clean_word_count": 10,
+  "clean_char_count": 200,
+  "extracted_char_count": 0,
+  "link_count": 1,
+  "link_ratio": 0.1,
+  "boilerplate_heavy": false,
+  "low_signal": false,
+  "extraction_incomplete": false,
+  "quality_score": 0.7,
+  "metadata": { "retrieval": { "version": "v1" } }
+}
+```
+
+### `POST /normalize/email/intent`
+Detects email intent and returns the resulting `content_type` based on raw IMAP text/plain.
+
+Body:
+```json
+{ "textPlain": "raw IMAP text/plain message" }
+```
+
+Response:
+```json
+{ "content_type": "newsletter" }
+```
+
 ## Insert / Update
 
 ### `POST /db/insert`
