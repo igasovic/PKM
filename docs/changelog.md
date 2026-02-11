@@ -6,6 +6,11 @@
 - `/db/read/*` now defaults `days` and `limit` from config when omitted or `0`.
 - `/db/read/find` now derives `needle` from `q` internally.
 - Updated API docs for read endpoints.
+- Persisted test mode in Postgres (`pkm.runtime_config`) and wired config to read it.
+- Insert/update/read now respect persisted test mode when choosing the schema.
+- Added `/db/test-mode` and `/db/test-mode/toggle` endpoints.
+- `/db/*` endpoints now return only `rows` from SQL (no ok/rowCount wrapper).
+- Added cached test mode reads (10s TTL) to reduce runtime_config lookups.
 
 ## 2026-02-10 — Backend config module + API endpoint
 

@@ -114,3 +114,20 @@ This design guarantees:
 - Zero production data contamination
 - No need for parallel Postgres instances or n8n deployments
 - Deterministic cleanup after test runs
+
+---
+
+## Runtime Config (Persisted)
+
+Test mode is persisted in Postgres so backend and workflows can share state.
+
+Table:
+- `pkm.runtime_config`
+
+Columns:
+- `key` (text, primary key)
+- `value` (jsonb)
+- `updated_at` (timestamptz)
+
+Key used:
+- `is_test_mode` → boolean stored as jsonb

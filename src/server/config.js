@@ -1,5 +1,8 @@
 'use strict';
 
+const sb = require('../../js/libs/sql-builder.js');
+const { getPool } = require('./db-pool.js');
+
 const CONFIG_V1 = {
   version: 'v1',
 
@@ -142,11 +145,65 @@ const CONFIG_V1 = {
   },
 };
 
-function getConfig() {
-  return JSON.parse(JSON.stringify(CONFIG_V1));
+const CONFIG_TABLE = sb.qualifiedTable(CONFIG_V1.db.schema_prod, 'runtime_config');
+let ensureConfigTablePromise = null;
+let cachedTestMode = null;
+let cachedTestModeAt = 0;
+const TEST_MODE_CACHE_MS = 10000;
+
+async function ensureConfigTable() {
+  if (ensureConfigTablePromise) return ensureConfigTablePromise;
+  ensureConfigTablePromise = (async () => {
+    const p = getPool();
+    await p.query(`CREATE TABLE IF NOT EXISTS ${CONFIG_TABLE} (\n  key text PRIMARY KEY,\n  value jsonb NOT NULL,\n  updated_at timestamptz NOT NULL DEFAULT now()\n);`);
+  })().catch((err) => {
+    ensureConfigTablePromise = null;
+    throw err;
+  });
+  return ensureConfigTablePromise;
+}
+
+async function getTestModeState() {
+  const now = Date.now();
+  if (cachedTestMode !== null && (now - cachedTestModeAt) < TEST_MODE_CACHE_MS) {
+    return cachedTestMode;
+  }
+  await ensureConfigTable();
+  const p = getPool();
+  const res = await p.query(`SELECT value FROM ${CONFIG_TABLE} WHERE key = $1`, ['is_test_mode']);
+  const value = !!(res.rows && res.rows[0] && res.rows[0].value === true);
+  cachedTestMode = value;
+  cachedTestModeAt = now;
+  return value;
+}
+
+async function setTestModeState(nextState) {
+  await ensureConfigTable();
+  const p = getPool();
+  await p.query(
+    `INSERT INTO ${CONFIG_TABLE} (key, value, updated_at)\n     VALUES ($1, $2::jsonb, now())\n     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+    ['is_test_mode', JSON.stringify(!!nextState)]
+  );
+  cachedTestMode = !!nextState;
+  cachedTestModeAt = Date.now();
+}
+
+async function toggleTestMode() {
+  const current = await getTestModeState();
+  const next = !current;
+  await setTestModeState(next);
+  return next;
+}
+
+async function getConfig() {
+  const config = JSON.parse(JSON.stringify(CONFIG_V1));
+  config.db.is_test_mode = await getTestModeState();
+  return config;
 }
 
 module.exports = {
   CONFIG_V1,
   getConfig,
+  getTestModeState,
+  toggleTestMode,
 };

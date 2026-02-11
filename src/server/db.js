@@ -1,50 +1,22 @@
 'use strict';
 
-const { Pool } = require('pg');
 const sb = require('../../js/libs/sql-builder.js');
-const { getConfig } = require('./config.js');
+const { getPool } = require('./db-pool.js');
+const {
+  getConfig,
+  getTestModeState,
+  toggleTestMode,
+} = require('./config.js');
 const { traceDb } = require('./observability.js');
-
-let pool = null;
-
-function envBool(value, fallback = false) {
-  if (value === undefined || value === null || value === '') return fallback;
-  const s = String(value).toLowerCase().trim();
-  if (['1', 'true', 'yes', 'on'].includes(s)) return true;
-  if (['0', 'false', 'no', 'off'].includes(s)) return false;
-  return fallback;
-}
-
-function getPool() {
-  if (pool) return pool;
-
-  const user = process.env.PKM_INGEST_USER;
-  const password = process.env.PKM_INGEST_PASSWORD;
-  if (!user || !password) {
-    throw new Error('PKM_INGEST_USER and PKM_INGEST_PASSWORD are required');
-  }
-
-  const host = process.env.PKM_DB_HOST || 'postgres';
-  const port = Number(process.env.PKM_DB_PORT || 5432);
-  const database = process.env.PKM_DB_NAME || 'pkm';
-  const ssl = envBool(process.env.PKM_DB_SSL, false);
-  const rejectUnauthorized = envBool(process.env.PKM_DB_SSL_REJECT_UNAUTHORIZED, true);
-
-  pool = new Pool({
-    host,
-    port,
-    user,
-    password,
-    database,
-    ssl: ssl ? { rejectUnauthorized } : false,
-  });
-
-  return pool;
-}
 
 function getEntriesTable() {
   const schema = process.env.PKM_DB_SCHEMA || 'pkm';
   return sb.qualifiedTable(schema, 'entries');
+}
+
+async function getEntriesTableFromConfig(config) {
+  const cfg = config || await getConfig();
+  return sb.resolveEntriesTable(cfg.db);
 }
 
 async function exec(sql, meta) {
@@ -255,7 +227,8 @@ function buildGenericUpdatePayload(input, returningOverride) {
 }
 
 async function insert(opts) {
-  const table = opts.table || getEntriesTable();
+  const config = await getConfig();
+  const table = opts.table || await getEntriesTableFromConfig(config);
   let columns = opts.columns;
   let values = opts.values;
   let returning = opts.returning;
@@ -279,7 +252,8 @@ async function insert(opts) {
 }
 
 async function update(opts) {
-  const table = opts.table || getEntriesTable();
+  const config = await getConfig();
+  const table = await getEntriesTableFromConfig(config);
   let set = opts.set;
   let where = opts.where;
   let returning = opts.returning;
@@ -303,23 +277,22 @@ async function update(opts) {
 }
 
 async function readContinue(opts) {
-  console.log('readContinue opts:', JSON.stringify(opts));
-  const config = getConfig();
+  const config = await getConfig();
   const sql = sb.buildReadContinue({
     config,
-    entries_table: opts.entries_table || getEntriesTable(),
+    entries_table: await getEntriesTableFromConfig(config),
     q: opts.q,
-    days: opts.days || config.readContinue.defaultDays,
-    limit: opts.limit || config.readContinue.defaultLimit,
+    days: opts.days,
+    limit: opts.limit,
   });
   return exec(sql, { op: 'read_continue' });
 }
 
 async function readFind(opts) {
-  const config = getConfig();
+  const config = await getConfig();
   const sql = sb.buildReadFind({
     config,
-    entries_table: opts.entries_table || getEntriesTable(),
+    entries_table: await getEntriesTableFromConfig(config),
     q: opts.q,
     days: opts.days,
     limit: opts.limit,
@@ -328,10 +301,10 @@ async function readFind(opts) {
 }
 
 async function readLast(opts) {
-  const config = getConfig();
+  const config = await getConfig();
   const sql = sb.buildReadLast({
     config,
-    entries_table: opts.entries_table || getEntriesTable(),
+    entries_table: await getEntriesTableFromConfig(config),
     q: opts.q,
     days: opts.days,
     limit: opts.limit,
@@ -341,12 +314,22 @@ async function readLast(opts) {
 
 async function readPull(opts) {
   const sql = sb.buildReadPull({
-    entries_table: opts.entries_table || getEntriesTable(),
+    entries_table: await getEntriesTableFromConfig(),
     entry_id: opts.entry_id,
     shortN: opts.shortN,
     longN: opts.longN,
   });
   return exec(sql, { op: 'read_pull' });
+}
+
+async function getTestMode() {
+  const state = await getTestModeState();
+  return { rows: [{ is_test_mode: state }], rowCount: 1 };
+}
+
+async function toggleTestModeState() {
+  const state = await toggleTestMode();
+  return { rows: [{ is_test_mode: state }], rowCount: 1 };
 }
 
 module.exports = {
@@ -357,6 +340,8 @@ module.exports = {
   readFind,
   readLast,
   readPull,
+  getTestMode,
+  toggleTestModeState,
   buildGenericInsertPayload,
   buildGenericUpdatePayload,
 };

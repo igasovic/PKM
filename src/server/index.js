@@ -60,7 +60,13 @@ async function handleRequest(req, res) {
   }
 
   if (method === 'GET' && url.pathname === '/config') {
-    return json(res, 200, getConfig());
+    const config = await getConfig();
+    return json(res, 200, config);
+  }
+
+  if (method === 'GET' && url.pathname === '/db/test-mode') {
+    const result = await db.getTestMode();
+    return json(res, 200, result.rows || []);
   }
 
   if (method === 'POST' && url.pathname === '/echo') {
@@ -103,6 +109,8 @@ async function handleRequest(req, res) {
         result = await db.readLast(body);
       } else if (url.pathname === '/db/read/pull') {
         result = await db.readPull(body);
+      } else if (url.pathname === '/db/test-mode/toggle') {
+        result = await db.toggleTestModeState();
       } else {
         return notFound(res);
       }

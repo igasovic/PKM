@@ -33,7 +33,7 @@ Response:
 ## Config
 
 ### `GET /config`
-Returns the retrieval/scoring config as JSON.
+Returns the retrieval/scoring config as JSON (including test mode state read from Postgres).
 
 Response:
 ```json
@@ -44,6 +44,26 @@ Response:
   "qualityThresholds": {},
   "metadataPaths": {}
 }
+```
+
+### `GET /db/test-mode`
+Returns the current test mode state.
+
+Response:
+```json
+[
+  { "is_test_mode": false }
+]
+```
+
+### `POST /db/test-mode/toggle`
+Toggles test mode and returns the resulting state.
+
+Response:
+```json
+[
+  { "is_test_mode": true }
+]
 ```
 
 ## Insert / Update
@@ -215,14 +235,11 @@ Body:
 
 ## Response format
 
-All DB endpoints return:
+All `/db/*` endpoints return **only the rows** from SQL:
 ```json
-{
-  "ok": true,
-  "rowCount": 1,
-  "id": "...",
-  "entry_id": 123
-}
+[
+  { "id": "...", "entry_id": 123 }
+]
 ```
 
 If an error occurs:
