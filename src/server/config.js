@@ -168,6 +168,7 @@ async function getTestModeState() {
   const p = getPool();
   let res;
   try {
+    console.log(`reading from ${CONFIG_TABLE} for test mode state`);
     res = await p.query(`SELECT value FROM ${CONFIG_TABLE} WHERE key = $1`, ['is_test_mode']);
   } catch (err) {
     throw wrapConfigTableError(err);
@@ -181,6 +182,7 @@ async function getTestModeState() {
 async function setTestModeState(nextState) {
   const p = getPool();
   try {
+    console.log(`toggling ${CONFIG_TABLE} to ${nextState}`);
     await p.query(
       `INSERT INTO ${CONFIG_TABLE} (key, value, updated_at)\n     VALUES ($1, $2::jsonb, now())\n     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
       ['is_test_mode', JSON.stringify(!!nextState)]
