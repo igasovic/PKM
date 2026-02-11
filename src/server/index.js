@@ -88,6 +88,7 @@ async function handleRequest(req, res) {
     try {
       const raw = await readBody(req);
       const body = raw ? JSON.parse(raw) : {};
+      meta.input = body;
       let result;
 
       if (url.pathname === '/db/insert') {
