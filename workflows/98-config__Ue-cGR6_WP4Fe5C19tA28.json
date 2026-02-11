@@ -1,13 +1,13 @@
 {
   "active": true,
-  "activeVersionId": "a5f8f80f-c09c-495f-b4fe-43c3a9e82e93",
+  "activeVersionId": "ea4cfcaa-75f4-4c8e-a142-ea28067d9bab",
   "connections": {
-    "Return Scoring Config (v1)": {
+    "Get Config": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Force Test Mode",
+            "node": "Wrap in config param",
             "type": "main"
           }
         ]
@@ -18,7 +18,23 @@
         [
           {
             "index": 0,
-            "node": "Return Scoring Config (v1)",
+            "node": "Get Config",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Wrap in config param": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge",
             "type": "main"
           }
         ]
@@ -28,7 +44,7 @@
   "createdAt": "2026-01-26T02:48:35.871Z",
   "description": null,
   "isArchived": false,
-  "name": "PKM — Retrieval Config",
+  "name": "98 Config",
   "nodes": [
     {
       "id": "5c42cae2-11fa-4bd4-927f-6c215e0ea9d1",
@@ -37,38 +53,64 @@
         "inputSource": "passthrough"
       },
       "position": [
-        0,
+        -64,
         0
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
     },
     {
-      "id": "3777a6b5-9f85-4272-ac9c-5a445e7658e7",
-      "name": "Return Scoring Config (v1)",
+      "id": "9b5e9cb5-0389-42dc-8ce7-9f05e4571dc7",
+      "name": "Toggle Test Mode",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/pkm-retrieval-config/return_scoring_config_v1.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:pkm-retrieval-config/return_scoring_config_v1.js] ${e.message}`;throw e;}\n"
+        "method": "POST",
+        "options": {},
+        "url": "http://pkm-server:8080/db/test-mode/toggle"
       },
       "position": [
-        208,
+        -64,
+        -320
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "a55eb994-44aa-4300-9a1e-666dbf2414e4",
+      "name": "Get Config",
+      "parameters": {
+        "options": {},
+        "url": "http://pkm-server:8080/config"
+      },
+      "position": [
+        192,
+        0
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "08c7e45a-acbb-4b2a-b00c-6f72a46dd68d",
+      "name": "Wrap in config param",
+      "parameters": {
+        "jsCode": "return [{ config: { ...$json } }];"
+      },
+      "position": [
+        368,
         0
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
     },
     {
-      "disabled": true,
-      "id": "993c88b7-10eb-44bd-92e2-bab8118dbec2",
-      "name": "Force Test Mode",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/pkm-retrieval-config/99_force-test-mode__7e73de3a-7dec-4e6f-8178-8639f53c7cc0.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:pkm-retrieval-config/99_force-test-mode__7e73de3a-7dec-4e6f-8178-8639f53c7cc0.js] ${e.message}`;throw e;}\n"
-      },
+      "id": "d4945feb-1510-4a61-9895-333fb5657e91",
+      "name": "Merge",
+      "parameters": {},
       "position": [
-        416,
-        0
+        592,
+        -112
       ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
     }
   ],
   "settings": {
@@ -100,6 +142,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-01-31T21:23:59.045Z",
-  "versionCounter": 46
+  "updatedAt": "2026-02-11T18:13:30.049Z",
+  "versionCounter": 77
 }

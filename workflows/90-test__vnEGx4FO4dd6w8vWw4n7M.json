@@ -18,7 +18,7 @@
         [
           {
             "index": 0,
-            "node": "Execute a SQL query",
+            "node": "HTTP Request",
             "type": "main"
           }
         ]
@@ -28,14 +28,14 @@
   "createdAt": "2026-01-20T17:20:06.147Z",
   "description": null,
   "isArchived": false,
-  "name": "Test",
+  "name": "90 Test",
   "nodes": [
     {
       "id": "575a23c6-7a7e-438e-9e9c-bc0810fbade7",
       "name": "When clicking ‘Execute workflow’",
       "parameters": {},
       "position": [
-        0,
+        -96,
         0
       ],
       "type": "n8n-nodes-base.manualTrigger",
@@ -56,8 +56,8 @@
         "query": "-- table definition (to see tsv + generated/trigger approach)\n\n\n-- indexes\nSELECT indexname, indexdef\nFROM pg_indexes\nWHERE schemaname='pkm' AND tablename='entries'\nORDER BY indexname;\n\n-- triggers (to see if tsv is maintained automatically)\nSELECT tgname, pg_get_triggerdef(oid)\nFROM pg_trigger\nWHERE tgrelid = 'pkm.entries'::regclass\n  AND NOT tgisinternal;\n\n-- if tsv is generated from specific columns in a function, list functions named like it\n-- (optional; only if the trigger query references a function)\n"
       },
       "position": [
-        208,
-        0
+        80,
+        -128
       ],
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6
@@ -113,6 +113,26 @@
       ],
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1
+    },
+    {
+      "id": "898376ef-d582-4347-b3b9-de2f19492ced",
+      "name": "HTTP Request",
+      "parameters": {
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "url": "http://pkm-server:8080/health"
+      },
+      "position": [
+        80,
+        0
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
     }
   ],
   "settings": {
@@ -141,6 +161,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-01-25T22:39:52.470Z",
-  "versionCounter": 4
+  "updatedAt": "2026-02-11T18:09:57.369Z",
+  "versionCounter": 6
 }

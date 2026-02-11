@@ -1,18 +1,7 @@
 {
   "active": true,
-  "activeVersionId": "d9c61740-0707-447f-b86a-da76510ad764",
+  "activeVersionId": "b9b87455-9aff-4005-a03d-c473ba1b3830",
   "connections": {
-    "Build SQL - INSERT": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Execute a SQL query",
-            "type": "main"
-          }
-        ]
-      ]
-    },
     "Build SQL - UPDATE": {
       "main": [
         [
@@ -48,13 +37,7 @@
     },
     "Compute Retrieval Excerpt + Quality Signals (from capture_text)": {
       "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build SQL - INSERT",
-            "type": "main"
-          }
-        ]
+        []
       ]
     },
     "Create Message": {
@@ -63,17 +46,6 @@
           {
             "index": 0,
             "node": "Send a text message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Execute a SQL query": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "IF Has URL",
             "type": "main"
           }
         ]
@@ -167,13 +139,35 @@
         [
           {
             "index": 0,
-            "node": "Normalize",
+            "node": "PKM Normalize Telegram",
             "type": "main"
           }
         ]
       ]
     },
-    "Postgres Update Extract": {
+    "PKM Insert": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "IF Has URL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Normalize Telegram": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Insert",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Update": {
       "main": [
         [
           {
@@ -184,12 +178,17 @@
         ]
       ]
     },
+    "Postgres Update Extract": {
+      "main": [
+        []
+      ]
+    },
     "Recompute retrieval excerpt + quality signals from clean_text": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Build SQL - UPDATE",
+            "node": "PKM Update",
             "type": "main"
           }
         ]
@@ -254,7 +253,7 @@
   "createdAt": "2026-01-13T04:28:47.800Z",
   "description": null,
   "isArchived": false,
-  "name": "Telegram Capture",
+  "name": "02 Telegram Capture",
   "nodes": [
     {
       "credentials": {
@@ -279,29 +278,6 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
-    },
-    {
-      "credentials": {
-        "postgres": {
-          "id": "YICLDaLPmdddPcoA",
-          "name": "Postgres account"
-        }
-      },
-      "id": "9aaba58e-e24b-49b0-b5e6-63fbf9a28965",
-      "name": "Execute a SQL query",
-      "parameters": {
-        "operation": "executeQuery",
-        "options": {
-          "queryReplacement": "="
-        },
-        "query": "{{$json.sql}}"
-      },
-      "position": [
-        16,
-        -336
-      ],
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6
     },
     {
       "id": "0ff69fb7-2f88-4864-8ccd-385134a83376",
@@ -352,7 +328,7 @@
         "query": "={{$json.sql}}"
       },
       "position": [
-        2480,
+        2416,
         -416
       ],
       "type": "n8n-nodes-base.postgres",
@@ -549,32 +525,6 @@
       "typeVersion": 2
     },
     {
-      "id": "5ea800e9-24b0-4674-8ec9-e0a92e5c574b",
-      "name": "Build SQL - INSERT",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/01_build-sql-insert__5ea800e9-24b0-4674-8ec9-e0a92e5c574b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/01_build-sql-insert__5ea800e9-24b0-4674-8ec9-e0a92e5c574b.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        -208,
-        -336
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "1c1e479b-b8f6-4d85-9c69-8c0f9943982f",
-      "name": "Build SQL - UPDATE",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/02_build-sql-update__1c1e479b-b8f6-4d85-9c69-8c0f9943982f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/02_build-sql-update__1c1e479b-b8f6-4d85-9c69-8c0f9943982f.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        2256,
-        -416
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
       "id": "ef9f91cc-dbd4-48b7-a22d-66f47ea07239",
       "name": "Text Clean",
       "parameters": {
@@ -670,6 +620,73 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
+    },
+    {
+      "id": "2c78cab4-52de-430e-90e4-6f46f5fe340c",
+      "name": "PKM Insert",
+      "parameters": {
+        "jsonBody": "={{ JSON.stringify({\n  source: \"telegram\",\n  intent: $json.intent ?? \"archive\",\n  content_type: $json.content_type ?? null,\n  title: $json.title ?? null,\n  author: $json.author ?? null,\n  capture_text: $json.capture_text ?? $json.message?.text ?? \"\",\n  clean_text: $json.clean_text ?? null,\n  url: $json.url ?? null,\n  url_canonical: $json.url_canonical ?? null,\n\n  topic_primary: $json.topic_primary ?? $json.topic ?? null,\n  topic_primary_confidence: $json.topic_primary_confidence ?? $json.primary_topic_confidence ?? null,\n  topic_secondary: $json.topic_secondary ?? $json.secondary_topic ?? null,\n  topic_secondary_confidence: $json.topic_secondary_confidence ?? $json.secondary_topic_confidence ?? null,\n\n  gist: $json.gist ?? null,\n\n  // nested JSON stays nested\n  metadata: $json.metadata_patch ?? ($json.retrieval ? { retrieval: $json.retrieval } : null),\n\n  retrieval_excerpt: $json.retrieval?.excerpt ?? null,\n  retrieval_version: $json.retrieval?.version ?? null,\n  source_domain: $json.retrieval?.source_domain ?? null,\n\n  clean_word_count: $json.retrieval?.quality?.clean_word_count ?? null,\n  clean_char_count: $json.retrieval?.quality?.clean_char_count ?? null,\n  extracted_char_count: $json.retrieval?.quality?.extracted_char_count ?? null,\n  link_count: $json.retrieval?.quality?.link_count ?? null,\n  link_ratio: $json.retrieval?.quality?.link_ratio ?? null,\n  boilerplate_heavy: $json.retrieval?.quality?.boilerplate_heavy ?? null,\n  low_signal: $json.retrieval?.quality?.low_signal ?? null,\n  extraction_incomplete: $json.retrieval?.quality?.extraction_incomplete ?? null,\n  quality_score: $json.retrieval?.quality?.quality_score ?? null,\n\n  returning: [\n    \"entry_id\",\"id\",\"created_at\",\"source\",\"intent\",\"content_type\",\"title\",\"author\",\"url\",\"url_canonical\",\n    \"COALESCE(char_length(capture_text), 0) AS text_len\"\n  ]\n}) }}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/insert"
+      },
+      "position": [
+        -96,
+        -336
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "ce7068f8-f017-4926-9142-7fa06b9f18fe",
+      "name": "PKM Update",
+      "parameters": {
+        "jsonBody": "={{ JSON.stringify((() => {\n  const id = $json.id;\n\n  const url = $json.url ?? null;\n  const url_canonical = $json.url_canonical ?? null;\n  const title = $json.title ?? null;\n  const author = $json.author ?? null;\n\n  // only send clean_text/extracted_text if non-empty (matches your previous COALESCE logic)\n  const clean = String($json.clean_text ?? \"\");\n  const cleanTrim = clean.trim();\n\n  const extractedRaw = $json.extracted_text ?? $json.text ?? null;\n  const extracted = (extractedRaw === null || extractedRaw === undefined) ? \"\" : String(extractedRaw);\n  const extractedTrim = extracted.trim();\n\n  // retrieval patch + promoted columns (WP2)\n  const retrieval = $json.retrieval ?? null;\n  const doMeta = !!(retrieval && typeof retrieval === \"object\");\n  const q = doMeta ? (retrieval.quality || {}) : {};\n\n  const body = {\n    id,\n\n    url,\n    url_canonical,\n    title,\n    author,\n\n    // backend accepts JSONB as object or valid JSON string; we send object\n    metadata: doMeta ? { retrieval } : null,\n\n    // promoted columns only when retrieval exists\n    retrieval_excerpt: doMeta ? (retrieval.excerpt ?? null) : null,\n    retrieval_version: doMeta ? (retrieval.version ?? null) : null,\n    source_domain: doMeta ? (retrieval.source_domain ?? null) : null,\n\n    clean_word_count: doMeta ? (q.clean_word_count ?? null) : null,\n    clean_char_count: doMeta ? (q.clean_char_count ?? null) : null,\n    extracted_char_count: doMeta ? (q.extracted_char_count ?? null) : null,\n\n    link_count: doMeta ? (q.link_count ?? null) : null,\n    link_ratio: doMeta ? (q.link_ratio ?? null) : null,\n\n    boilerplate_heavy: doMeta ? (q.boilerplate_heavy ?? null) : null,\n    low_signal: doMeta ? (q.low_signal ?? null) : null,\n    extraction_incomplete: doMeta ? (q.extraction_incomplete ?? null) : null,\n    quality_score: doMeta ? (q.quality_score ?? null) : null,\n\n    returning: [\n      \"entry_id\",\n      \"id\",\n      \"created_at\",\n      \"source\",\n      \"intent\",\n      \"content_type\",\n      \"COALESCE(title,'') AS title\",\n      \"COALESCE(author,'') AS author\",\n      \"COALESCE(clean_text,'') AS clean_text\",\n      \"url_canonical\",\n      \"COALESCE(char_length(clean_text), 0) AS clean_len\",\n      \"COALESCE(char_length(extracted_text), 0) AS extracted_len\"\n    ]\n  };\n\n  if (cleanTrim) body.clean_text = clean;\n  if (extractedTrim) body.extracted_text = extracted;\n\n  return body;\n})()) }}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/update"
+      },
+      "position": [
+        2336,
+        -576
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "1c1e479b-b8f6-4d85-9c69-8c0f9943982f",
+      "name": "Build SQL - UPDATE",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/02_build-sql-update__1c1e479b-b8f6-4d85-9c69-8c0f9943982f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/02_build-sql-update__1c1e479b-b8f6-4d85-9c69-8c0f9943982f.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        2256,
+        -416
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "77be5c05-f9f1-4190-a2ac-d80f08258a62",
+      "name": "PKM Normalize Telegram",
+      "parameters": {
+        "jsonBody": "={ \"text\" : \"{{$json.message.text}}\"}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/normalize/telegram"
+      },
+      "position": [
+        -528,
+        -528
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
     }
   ],
   "settings": {
@@ -701,6 +718,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-02-01T13:40:11.565Z",
-  "versionCounter": 153
+  "updatedAt": "2026-02-11T18:11:07.258Z",
+  "versionCounter": 184
 }

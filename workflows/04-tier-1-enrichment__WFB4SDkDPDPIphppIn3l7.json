@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "316bea5c-733c-4985-bbaa-ef87f890e545",
+  "activeVersionId": "4e81ae16-1da6-4bd1-a84c-91cb81751bab",
   "connections": {
     "Create Sampled Prompt": {
       "main": [
@@ -85,7 +85,7 @@
         [
           {
             "index": 0,
-            "node": "Update T1 Info to DB",
+            "node": "PKM Update",
             "type": "main"
           }
         ]
@@ -97,17 +97,6 @@
           {
             "index": 0,
             "node": "If TEXT < 4000",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Update T1 Info to DB": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Postgres Update Extract",
             "type": "main"
           }
         ]
@@ -128,7 +117,7 @@
   "createdAt": "2026-02-01T01:55:35.999Z",
   "description": null,
   "isArchived": false,
-  "name": "Tier-1 Enhancement",
+  "name": "04 Tier-1 Enrichment",
   "nodes": [
     {
       "id": "24662a93-7dee-4daa-9368-48438073c63f",
@@ -279,27 +268,6 @@
       "typeVersion": 3.2
     },
     {
-      "credentials": {
-        "postgres": {
-          "id": "YICLDaLPmdddPcoA",
-          "name": "Postgres account"
-        }
-      },
-      "id": "bc68c641-b963-442d-8299-006e3ff88db0",
-      "name": "Postgres Update Extract",
-      "parameters": {
-        "operation": "executeQuery",
-        "options": {},
-        "query": "={{$json.sql}}"
-      },
-      "position": [
-        2176,
-        32
-      ],
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2
-    },
-    {
       "id": "97baf2ec-94f1-4587-8f8c-4c3d171a0528",
       "name": "Parse T1",
       "parameters": {
@@ -307,19 +275,6 @@
       },
       "position": [
         1728,
-        32
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "33697669-02ab-4a83-a894-ed73d94dd00c",
-      "name": "Update T1 Info to DB",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/tier-1-enhancement/14_update-t1-info-to-db__1a6df95f-7a5c-4203-b82c-f2e0a84b70c0.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:tier-1-enhancement/14_update-t1-info-to-db__1a6df95f-7a5c-4203-b82c-f2e0a84b70c0.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        1952,
         32
       ],
       "type": "n8n-nodes-base.code",
@@ -354,6 +309,24 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
+    },
+    {
+      "id": "96cb3643-51db-4c68-ae9e-c957d2d38eb8",
+      "name": "PKM Update",
+      "parameters": {
+        "jsonBody": "={{ JSON.stringify((() => {\n  // --- required identity ---\n  const id = $json.id;\n  if (!id) throw new Error(\"Tier-1 update: missing id\");\n\n  // --- required Tier-1 payload (from your Parse Tier-1 node) ---\n  const t1 = $json.t1;\n  if (!t1 || typeof t1 !== \"object\") {\n    throw new Error(\"Tier-1 update: missing $json.t1\");\n  }\n\n  const reqStr = (k) => typeof t1[k] === \"string\" && t1[k].trim().length > 0;\n  if (!reqStr(\"topic_primary\")) throw new Error(\"Tier-1 update: missing topic_primary\");\n  if (!reqStr(\"topic_secondary\")) throw new Error(\"Tier-1 update: missing topic_secondary\");\n  if (!reqStr(\"gist\")) throw new Error(\"Tier-1 update: missing gist\");\n  if (!Array.isArray(t1.keywords)) throw new Error(\"Tier-1 update: keywords must be an array\");\n\n  // normalize (matches your JS node)\n  const topic_primary = t1.topic_primary.trim();\n  const topic_secondary = t1.topic_secondary.trim();\n  const gist = t1.gist.trim();\n\n  let keywords = t1.keywords\n    .map(x => String(x ?? \"\").trim())\n    .filter(Boolean);\n\n  keywords = Array.from(new Set(keywords));\n  if (keywords.length < 5) throw new Error(\"Tier-1 update: keywords must have at least 5 items\");\n  if (keywords.length > 12) keywords = keywords.slice(0, 12);\n\n  // confidences optional (clamp 0..1)\n  const clamp01 = (n) => Math.max(0, Math.min(1, n));\n  const topic_primary_confidence =\n    (typeof t1.topic_primary_confidence === \"number\") ? clamp01(t1.topic_primary_confidence) : null;\n  const topic_secondary_confidence =\n    (typeof t1.topic_secondary_confidence === \"number\") ? clamp01(t1.topic_secondary_confidence) : null;\n\n  // instrumentation fields (same defaults)\n  const enrichment_model = $json.enrichment_model ?? \"gpt-5-nano\";\n  const prompt_version = $json.prompt_version ?? \"v1\";\n\n  // schema routing (prod vs test) via PKM Config, same idea as your code nodes\n  const cfg = $items(\"PKM Config\")[0]?.json?.config?.db;\n  if (!cfg) throw new Error(\"Tier-1 update: missing PKM Config output\");\n  const schema = cfg.is_test_mode ? cfg.schema_test : cfg.schema_prod;\n\n  // SQL escaping helpers (mirror sb.lit behavior)\n  const sqlStr = (s) => String(s).replace(/'/g, \"''\");\n  const litText = (s) => `'${sqlStr(s)}'`;\n\n  // keywords literal: ARRAY['a','b']::text[]\n  const kwArrayLit = `ARRAY[${keywords.map(k => `'${sqlStr(k)}'`).join(\",\")}]::text[]`;\n\n  // jsonb literal for t1_raw\n  const t1JsonbLit = `'${sqlStr(JSON.stringify(t1))}'::jsonb`;\n\n  return {\n    table: `\"${schema}\".\"entries\"`,\n\n    set: [\n      `topic_primary = ${litText(topic_primary)}::text`,\n      `topic_primary_confidence = ${topic_primary_confidence === null ? \"NULL\" : Number(topic_primary_confidence)}`,\n      `topic_secondary = ${litText(topic_secondary)}::text`,\n      `topic_secondary_confidence = ${topic_secondary_confidence === null ? \"NULL\" : Number(topic_secondary_confidence)}`,\n      `keywords = ${kwArrayLit}`,\n      `gist = ${litText(gist)}::text`,\n      `enrichment_status = 'done'`,\n      `enrichment_model = ${litText(enrichment_model)}::text`,\n      `prompt_version = ${litText(prompt_version)}::text`,\n      `metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{t1_raw}', ${t1JsonbLit}, true)`\n    ],\n\n    where: `id = ${litText(id)}::uuid`,\n\n    returning: [\n      \"entry_id\",\n      \"id\",\n      \"created_at\",\n      \"source\",\n      \"intent\",\n      \"content_type\",\n      \"COALESCE(title,'') AS title\",\n      \"COALESCE(author,'') AS author\",\n      \"COALESCE(url_canonical,'') AS url_canonical\",\n      \"topic_primary\",\n      \"topic_secondary\",\n      \"gist\",\n      \"clean_text\",\n      \"array_length(keywords,1) AS kw_count\",\n      \"enrichment_status\"\n    ]\n  };\n})()) }}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/update"
+      },
+      "position": [
+        1936,
+        32
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
     }
   ],
   "settings": {
@@ -385,6 +358,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-02-01T14:16:03.557Z",
-  "versionCounter": 17
+  "updatedAt": "2026-02-11T18:23:00.289Z",
+  "versionCounter": 36
 }

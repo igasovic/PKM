@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "525b34eb-2118-4375-895b-0a42c96c6892",
+  "activeVersionId": "74c95572-3460-4fdc-ab0a-95100aeb5ed3",
   "connections": {
     "Build Context Pack": {
       "main": [
@@ -13,78 +13,12 @@
         ]
       ]
     },
-    "Build SQL - /CONTINUE": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Execute a SQL query",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Build SQL - /FIND": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Execute a SQL query",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Build SQL - /LAST": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Execute a SQL query",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Build SQL - /PULL": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Execute a SQL query3",
-            "type": "main"
-          }
-        ]
-      ]
-    },
     "Command Parser": {
       "main": [
         [
           {
             "index": 0,
             "node": "IF: Ignore?",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Execute a SQL query": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Context Pack",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Execute a SQL query3": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Format Telegram Message",
             "type": "main"
           }
         ]
@@ -153,26 +87,70 @@
         ]
       ]
     },
+    "PKM Continue": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Find": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Last": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Pull": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Telegram Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Switch": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Build SQL - /LAST",
+            "node": "PKM Last",
             "type": "main"
           }
         ],
         [
           {
             "index": 0,
-            "node": "Build SQL - /FIND",
+            "node": "PKM Find",
             "type": "main"
           }
         ],
         [
           {
             "index": 0,
-            "node": "Build SQL - /CONTINUE",
+            "node": "PKM Continue",
             "type": "main"
           }
         ],
@@ -180,7 +158,7 @@
         [
           {
             "index": 0,
-            "node": "Build SQL - /PULL",
+            "node": "PKM Pull",
             "type": "main"
           }
         ],
@@ -219,7 +197,7 @@
   "createdAt": "2026-01-18T03:45:24.643Z",
   "description": null,
   "isArchived": false,
-  "name": "Read",
+  "name": "10 Read",
   "nodes": [
     {
       "credentials": {
@@ -238,8 +216,8 @@
         "text": "={{$json.telegram_message}}"
       },
       "position": [
-        1344,
-        -64
+        1360,
+        -192
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -274,7 +252,7 @@
       },
       "position": [
         896,
-        64
+        128
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -308,7 +286,7 @@
       },
       "position": [
         1120,
-        64
+        128
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -474,7 +452,7 @@
       },
       "position": [
         1344,
-        192
+        256
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -487,7 +465,7 @@
       },
       "position": [
         224,
-        160
+        224
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -500,33 +478,10 @@
       },
       "position": [
         672,
-        64
+        128
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
-    },
-    {
-      "credentials": {
-        "postgres": {
-          "id": "YICLDaLPmdddPcoA",
-          "name": "Postgres account"
-        }
-      },
-      "id": "129ffdab-f65d-4914-8645-c4c7ec721ed1",
-      "name": "Execute a SQL query",
-      "parameters": {
-        "operation": "executeQuery",
-        "options": {
-          "queryReplacement": "="
-        },
-        "query": "{{$json.sql}}"
-      },
-      "position": [
-        1792,
-        160
-      ],
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6
     },
     {
       "credentials": {
@@ -545,87 +500,12 @@
         "text": "={{$json.telegram_message}}"
       },
       "position": [
-        2240,
-        544
+        2016,
+        448
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
-    },
-    {
-      "id": "d0724507-154e-485c-8b0d-3523be365f6c",
-      "name": "Build SQL - /FIND",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/read/03_build-sql-find__d0724507-154e-485c-8b0d-3523be365f6c.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/03_build-sql-find__d0724507-154e-485c-8b0d-3523be365f6c.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        1568,
-        64
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "97543204-559a-4946-8621-4faacda4643f",
-      "name": "Build SQL - /LAST",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/read/04_build-sql-last__97543204-559a-4946-8621-4faacda4643f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/04_build-sql-last__97543204-559a-4946-8621-4faacda4643f.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        1568,
-        -128
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "138ce96f-f56c-4bea-9443-67686bd6066b",
-      "name": "Build SQL - /CONTINUE",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/read/02_build-sql-continue__138ce96f-f56c-4bea-9443-67686bd6066b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/02_build-sql-continue__138ce96f-f56c-4bea-9443-67686bd6066b.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        1568,
-        256
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "credentials": {
-        "postgres": {
-          "id": "YICLDaLPmdddPcoA",
-          "name": "Postgres account"
-        }
-      },
-      "id": "ec964067-8adc-468c-82cf-43aae9255360",
-      "name": "Execute a SQL query3",
-      "parameters": {
-        "operation": "executeQuery",
-        "options": {
-          "queryReplacement": "="
-        },
-        "query": "{{$json.sql}}"
-      },
-      "position": [
-        1792,
-        448
-      ],
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6
-    },
-    {
-      "id": "55ed7dbe-1cc2-46de-98b5-0fa4d916c84c",
-      "name": "Build SQL - /PULL",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/read/05_build-sql-pull__55ed7dbe-1cc2-46de-98b5-0fa4d916c84c.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/05_build-sql-pull__55ed7dbe-1cc2-46de-98b5-0fa4d916c84c.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        1568,
-        448
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
     },
     {
       "id": "f305ac84-35d3-44df-8ef5-1c0e004f37b8",
@@ -634,8 +514,8 @@
         "jsCode": "try{const fn=require('/data/js/workflows/read/08_format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/08_format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js] ${e.message}`;throw e;}"
       },
       "position": [
-        2016,
-        448
+        1792,
+        512
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -647,8 +527,8 @@
         "jsCode": "try{const fn=require('/data/js/workflows/read/07_format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/07_format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js] ${e.message}`;throw e;}"
       },
       "position": [
-        2016,
-        640
+        1792,
+        704
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -660,8 +540,8 @@
         "jsCode": "try{const fn=require('/data/js/workflows/read/01_build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/01_build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js] ${e.message}`;throw e;}"
       },
       "position": [
-        2016,
-        160
+        1792,
+        176
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -686,7 +566,7 @@
       },
       "position": [
         224,
-        -32
+        32
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -717,10 +597,82 @@
       },
       "position": [
         448,
-        64
+        128
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
+    },
+    {
+      "id": "2cce1bfc-827b-44f3-86d8-5b22f7ea5d93",
+      "name": "PKM Pull",
+      "parameters": {
+        "jsonBody": "={ \"entry_id\" : \"{{$json.entry_id}}\"}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/read/pull"
+      },
+      "position": [
+        1568,
+        512
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "df81f142-e2e4-47df-902e-49f4ed9c95e6",
+      "name": "PKM Continue",
+      "parameters": {
+        "jsonBody": "={ \n  \"q\" : \"{{ $json.q }}\",\n  \"days\" : \"{{$json.days}}\",\n  \"limit\" : \"{{$json.limit}}\"\n}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/read/continue"
+      },
+      "position": [
+        1568,
+        128
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "b7917712-ba33-4d11-8d33-26dad0a7f707",
+      "name": "PKM Find",
+      "parameters": {
+        "jsonBody": "={ \n  \"q\" : \"{{ $json.q }}\",\n  \"days\" : \"{{$json.days}}\",\n  \"limit\" : \"{{$json.limit}}\"\n}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/read/find"
+      },
+      "position": [
+        1568,
+        -64
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "a9cd2690-c5df-4d8d-87eb-491e29fdbc1d",
+      "name": "PKM Last",
+      "parameters": {
+        "jsonBody": "={ \n  \"q\" : \"{{ $json.q }}\",\n  \"days\" : \"{{$json.days}}\",\n  \"limit\" : \"{{$json.limit}}\"\n}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/read/last"
+      },
+      "position": [
+        1568,
+        320
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
     }
   ],
   "settings": {
@@ -752,6 +704,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-01-31T20:09:40.051Z",
-  "versionCounter": 109
+  "updatedAt": "2026-02-11T18:22:28.601Z",
+  "versionCounter": 136
 }
