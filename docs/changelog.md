@@ -14,6 +14,7 @@
 - Added Telegram normalization API and extracted quality signals into `src/server/quality.js`.
 - Moved test mode caching/logic into `src/server/test-mode.js` and removed it from config.
 - `/config` now returns only static config (no test mode state).
+- Moved shared libs to `src/libs` and updated server Dockerfile copy path.
 
 ## 2026-02-10 — Backend config module + API endpoint
 
