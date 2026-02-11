@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { getConfig } = require('../../../src/server/config.js');
+const { getConfigStatic } = require('../../../src/server/config.js');
 
 const sb = require('../../libs/sql-builder.js');
 
@@ -18,7 +18,7 @@ module.exports = async function run(ctx) {
   // IMPORTANT:
   // - This module reads config from the *sub-workflow node output* named exactly: "PKM Config"
   // - Your entry workflows must execute that sub-workflow at the very start.
-  const config = await getConfig();
+  const config = getConfigStatic();
   const db = config.db;
   const entries_table = sb.resolveEntriesTable(db);
 

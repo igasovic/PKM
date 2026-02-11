@@ -12,7 +12,7 @@
  */
 'use strict';
 
-const { getConfig } = require('../../../src/server/config.js');
+const { getConfigStatic } = require('../../../src/server/config.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
@@ -55,7 +55,7 @@ lines.push(`\n${body}`);
 
 let msg = lines.join('\n');
 
-const config = await getConfig();
+const config = getConfigStatic();
 if (config.db.is_test_mode === true) {
   msg = `⚗️🧪 TEST MODE
 ${msg}`;

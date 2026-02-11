@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { getConfig } = require('../../../src/server/config.js');
+const { getConfigStatic } = require('../../../src/server/config.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
@@ -15,7 +15,7 @@ module.exports = async function run(ctx) {
 // WP1 Step 1A: compute retrieval excerpt + quality signals from capture_text
 // Output: $json.retrieval (object) + $json.metadata_patch ({ retrieval: ... })
 
-const config = await getConfig();
+const config = getConfigStatic();
 
 const cfg = config.qualityThresholds;
 const TH = {

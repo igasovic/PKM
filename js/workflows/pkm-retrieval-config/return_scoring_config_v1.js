@@ -1,9 +1,9 @@
 'use strict';
 
-const { getConfig } = require('../../../src/server/config.js');
+const { getConfigStatic } = require('../../../src/server/config.js');
 
 module.exports = async function ({ $json }) {
-  const config = await getConfig();
+  const config = getConfigStatic();
   return [{
     json: {
       ...$json,

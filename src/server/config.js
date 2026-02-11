@@ -195,6 +195,10 @@ async function toggleTestMode() {
   return next;
 }
 
+function getConfigStatic() {
+  return JSON.parse(JSON.stringify(CONFIG_V1));
+}
+
 async function getConfig() {
   const config = JSON.parse(JSON.stringify(CONFIG_V1));
   config.db.is_test_mode = await getTestModeState();
@@ -203,6 +207,7 @@ async function getConfig() {
 
 module.exports = {
   CONFIG_V1,
+  getConfigStatic,
   getConfig,
   getTestModeState,
   toggleTestMode,

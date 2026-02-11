@@ -203,6 +203,9 @@ async function normalizeTelegram({ text }) {
   }
 
   const config = await getConfig();
+  if (!config || !config.qualityThresholds) {
+    throw new Error('config missing qualityThresholds');
+  }
 
   let capture_text = String(text || '');
   capture_text = maybeUnescapeTelegramText(capture_text);
