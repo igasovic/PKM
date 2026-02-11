@@ -163,11 +163,12 @@ Body:
 {
   "q": "ai",
   "days": 180,
-  "limit": 10,
-  "weights": {},
-  "halfLife": 180
+  "limit": 10
 }
 ```
+Notes:
+- `q` is required.
+- If `days` or `limit` are `0`/null/omitted, defaults are taken from config.
 
 ### `POST /db/read/find`
 Builds and executes the `/find` query.
@@ -177,11 +178,13 @@ Body:
 {
   "q": "ai",
   "days": 365,
-  "limit": 10,
-  "needle": "ai",
-  "weights": { "fts_rank": 80 }
+  "limit": 10
 }
 ```
+Notes:
+- `q` is required.
+- The backend derives the needle from `q` using safe escaping.
+- If `days` or `limit` are `0`/null/omitted, defaults are taken from config.
 
 ### `POST /db/read/continue`
 Builds and executes the `/continue` query.
@@ -191,12 +194,12 @@ Body:
 {
   "q": "ai",
   "days": 90,
-  "limit": 10,
-  "weights": {},
-  "halfLife": 45,
-  "noteQuota": 0.75
+  "limit": 10
 }
 ```
+Notes:
+- `q` is required.
+- If `days` or `limit` are `0`/null/omitted, defaults are taken from config.
 
 ### `POST /db/read/pull`
 Builds and executes the `/pull` query.

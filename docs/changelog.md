@@ -1,4 +1,12 @@
 # changelog
+## 2026-02-11 — Config-driven read defaults
+
+### What changed
+- Read queries now take weights, half-life, and note quota directly from config instead of request payloads.
+- `/db/read/*` now defaults `days` and `limit` from config when omitted or `0`.
+- `/db/read/find` now derives `needle` from `q` internally.
+- Updated API docs for read endpoints.
+
 ## 2026-02-10 — Backend config module + API endpoint
 
 ### What changed
