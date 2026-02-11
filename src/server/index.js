@@ -107,11 +107,19 @@ async function handleRequest(req, res) {
         return notFound(res);
       }
 
+      const isRead = url.pathname.startsWith('/db/read/');
+      const isPull = url.pathname === '/db/read/pull';
       const firstRow = (result.rows && result.rows[0]) || null;
-      const payload = Object.assign({
-        ok: true,
-        rowCount: result.rowCount,
-      }, firstRow || {});
+      const payload = isRead && !isPull
+        ? {
+          ok: true,
+          rowCount: result.rowCount,
+          rows: result.rows || [],
+        }
+        : Object.assign({
+          ok: true,
+          rowCount: result.rowCount,
+        }, firstRow || {});
       logApiSuccess(meta, { rowCount: result.rowCount }, { duration_ms: Date.now() - start });
       return json(res, 200, payload);
     } catch (err) {
