@@ -146,21 +146,18 @@ const CONFIG_V1 = {
 };
 
 const CONFIG_TABLE = sb.qualifiedTable(CONFIG_V1.db.schema_prod, 'runtime_config');
-let ensureConfigTablePromise = null;
 let cachedTestMode = null;
 let cachedTestModeAt = 0;
 const TEST_MODE_CACHE_MS = 10000;
 
-async function ensureConfigTable() {
-  if (ensureConfigTablePromise) return ensureConfigTablePromise;
-  ensureConfigTablePromise = (async () => {
-    const p = getPool();
-    await p.query(`CREATE TABLE IF NOT EXISTS ${CONFIG_TABLE} (\n  key text PRIMARY KEY,\n  value jsonb NOT NULL,\n  updated_at timestamptz NOT NULL DEFAULT now()\n);`);
-  })().catch((err) => {
-    ensureConfigTablePromise = null;
-    throw err;
-  });
-  return ensureConfigTablePromise;
+function wrapConfigTableError(err) {
+  if (!err) return err;
+  if (err.code === '42P01' || err.code === '3F000') {
+    const wrapped = new Error(`runtime_config table missing: create ${CONFIG_TABLE} before using test mode`);
+    wrapped.cause = err;
+    return wrapped;
+  }
+  return err;
 }
 
 async function getTestModeState() {
@@ -168,9 +165,13 @@ async function getTestModeState() {
   if (cachedTestMode !== null && (now - cachedTestModeAt) < TEST_MODE_CACHE_MS) {
     return cachedTestMode;
   }
-  await ensureConfigTable();
   const p = getPool();
-  const res = await p.query(`SELECT value FROM ${CONFIG_TABLE} WHERE key = $1`, ['is_test_mode']);
+  let res;
+  try {
+    res = await p.query(`SELECT value FROM ${CONFIG_TABLE} WHERE key = $1`, ['is_test_mode']);
+  } catch (err) {
+    throw wrapConfigTableError(err);
+  }
   const value = !!(res.rows && res.rows[0] && res.rows[0].value === true);
   cachedTestMode = value;
   cachedTestModeAt = now;
@@ -178,12 +179,15 @@ async function getTestModeState() {
 }
 
 async function setTestModeState(nextState) {
-  await ensureConfigTable();
   const p = getPool();
-  await p.query(
-    `INSERT INTO ${CONFIG_TABLE} (key, value, updated_at)\n     VALUES ($1, $2::jsonb, now())\n     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
-    ['is_test_mode', JSON.stringify(!!nextState)]
-  );
+  try {
+    await p.query(
+      `INSERT INTO ${CONFIG_TABLE} (key, value, updated_at)\n     VALUES ($1, $2::jsonb, now())\n     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+      ['is_test_mode', JSON.stringify(!!nextState)]
+    );
+  } catch (err) {
+    throw wrapConfigTableError(err);
+  }
   cachedTestMode = !!nextState;
   cachedTestModeAt = Date.now();
 }
