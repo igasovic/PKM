@@ -837,6 +837,139 @@ function deriveAuthorFromTop(mdText) {
   return null;
 }
 
+function buildEmailNewsletterText(core_text) {
+  let text = String(core_text || '');
+  const mojiText = fixMojibakeGuarded(text);
+  text = mojiText.text;
+  text = decodeEntities(text);
+  text = stripInvisibleTransport(text);
+  text = dropTransportArtifactLines(text);
+  text = collapseDecorativeDividerRuns(text);
+  text = collapseWhitespacePreserveNewlines(text);
+
+  const teaser = maybeDropTeaser(text);
+  let newsletter_text = teaser.text;
+
+  const footer = trimFooterSpanAware(newsletter_text);
+  newsletter_text = footer.text;
+  newsletter_text = collapseWhitespacePreserveNewlines(newsletter_text);
+
+  return { newsletter_text };
+}
+
+function prepareCorrespondenceText(text) {
+  let t = stripInvisibleTransport(normalizeNewlines(text));
+
+  const dropLine = [
+    /^proprietary\s*$/i,
+    /^get outlook for ios$/i,
+    /^caution:\s*this email originated from outside/i,
+    /^links contained in this email have been replaced by zixprotect/i,
+  ];
+
+  t = t
+    .split('\n')
+    .filter((line) => !dropLine.some((re) => re.test(String(line || '').trim())))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return t;
+}
+
+function parseOutlookBlocks(text) {
+  const t = String(text || '');
+  const blocks = [];
+  const re = /^From:\s*(.+)\nSent:\s*(.+)\nTo:\s*(.+)\nSubject:\s*(.+)\s*$/gim;
+
+  const matches = [];
+  let m;
+  while ((m = re.exec(t)) !== null) {
+    matches.push({ idx: m.index, from: m[1], sent: m[2], to: m[3], subject: m[4] });
+  }
+
+  if (matches.length === 0) return null;
+
+  for (let i = 0; i < matches.length; i++) {
+    const cur = matches[i];
+    const nextIdx = (i + 1 < matches.length) ? matches[i + 1].idx : t.length;
+    const startBodyIdx = cur.idx + (t.slice(cur.idx).match(re)?.[0]?.length || 0);
+    const body = t.slice(startBodyIdx, nextIdx).trim();
+
+    blocks.push({
+      from: String(cur.from || '').trim(),
+      sent: String(cur.sent || '').trim(),
+      to: String(cur.to || '').trim(),
+      subject: String(cur.subject || '').trim(),
+      body,
+    });
+  }
+
+  return blocks;
+}
+
+function stripSignature(body) {
+  let lines = stripInvisibleTransport(body)
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split('\n');
+
+  const killIf = [
+    /^get outlook for ios$/i,
+    /^follow us\b/i,
+    /zixprotect/i,
+    /^caution:\s*this email originated from outside/i,
+    /^\[cid:/i,
+  ];
+
+  lines = lines.filter((l) => !killIf.some((re) => re.test(String(l || '').trim())));
+
+  const contactish = (l) =>
+    /(phone|mobile|tel|fax|address|website|linkedin|ht?ecgroup|@)/i.test(l) ||
+    /\+?\d[\d\s().-]{7,}\d/.test(l);
+
+  for (let i = Math.max(0, lines.length - 25); i < lines.length; i++) {
+    if (contactish(lines[i])) {
+      const tail = lines.slice(i).filter((x) => String(x || '').trim() !== '');
+      const tailContactCount = tail.filter(contactish).length;
+      if (tailContactCount >= 2) {
+        lines = lines.slice(0, i);
+        break;
+      }
+    }
+  }
+
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function formatThreadMarkdown(blocks) {
+  const safeBlocks = Array.isArray(blocks) ? blocks : [];
+
+  const fmtBlock = (b, idx) => {
+    const header = [
+      `### Message ${idx + 1}`,
+      b.from ? `- From: ${b.from}` : null,
+      b.to ? `- To: ${b.to}` : null,
+      b.sent ? `- Sent: ${b.sent}` : null,
+      b.subject ? `- Subject: ${b.subject}` : null,
+    ].filter(Boolean).join('\n');
+
+    const body = stripSignature(b.body || '');
+    return `${header}\n\n${body}`.trim();
+  };
+
+  const parts = safeBlocks.map(fmtBlock).filter(Boolean);
+  return parts.join('\n\n---\n\n').trim();
+}
+
+function deriveAuthorFromFromHeader(fromRaw) {
+  const raw = String(fromRaw || '').trim();
+  if (!raw) return null;
+  const m = raw.match(/^\s*"?([^"<]+?)"?\s*<[^>]+>\s*$/);
+  if (m && m[1]) return m[1].trim();
+  return raw;
+}
+
 function parseMiniHeaderBlock(lines, startIdx, opts) {
   const maxLines = (opts && opts.maxLines) || 30;
   const keys = /^(From|To|Subject|Date|Sent|Cc|Bcc|Reply-To):\s*(.*)\s*$/i;
@@ -1050,8 +1183,7 @@ function normalizeEmailTransport(rawText) {
   return { capture_text, core_text };
 }
 
-function decideEmailIntent(rawText) {
-  const { core_text } = normalizeEmailTransport(rawText);
+function decideEmailIntentFromCore(core_text) {
   const thinkApplied = applyThink(core_text);
   const intent = thinkApplied.intent;
   const content_type = intent === 'think'
@@ -1060,7 +1192,12 @@ function decideEmailIntent(rawText) {
   return { intent, content_type, core_text: thinkApplied.text };
 }
 
-async function normalizeEmailNewsletter({ raw_text }) {
+function decideEmailIntent(rawText) {
+  const { core_text } = normalizeEmailTransport(rawText);
+  return decideEmailIntentFromCore(core_text);
+}
+
+async function normalizeEmailInternal({ raw_text, force_content_type, from, subject }) {
   if (raw_text === undefined || raw_text === null) {
     throw new Error('raw_text is required');
   }
@@ -1070,23 +1207,84 @@ async function normalizeEmailNewsletter({ raw_text }) {
     throw new Error('config missing qualityThresholds');
   }
 
+  // Step 1: transport-level cleanup (forwarded wrappers, mojibake, invisibles)
   const { capture_text, core_text } = normalizeEmailTransport(raw_text);
 
-  let text = String(core_text || '');
-  const mojiText = fixMojibakeGuarded(text);
-  text = mojiText.text;
-  text = decodeEntities(text);
-  text = stripInvisibleTransport(text);
-  text = dropTransportArtifactLines(text);
-  text = collapseDecorativeDividerRuns(text);
-  text = collapseWhitespacePreserveNewlines(text);
+  // Step 2: intent + content_type decision (note/newsletter/correspondence)
+  const decision = decideEmailIntentFromCore(core_text);
+  const content_type = force_content_type || decision.content_type;
+  const intent = decision.intent;
+  const authorFromHeader = deriveAuthorFromFromHeader(from);
+  const titleFromHeader = subject ? String(subject).trim() : null;
 
-  const teaser = maybeDropTeaser(text);
-  let newsletter_text = teaser.text;
+  if (content_type === 'correspondence') {
+    // Step 3a: correspondence path (newsletter-style cleanup -> thread parsing -> signatures -> markdown)
+    const { newsletter_text } = buildEmailNewsletterText(core_text);
+    const corr_text = prepareCorrespondenceText(newsletter_text);
 
-  const footer = trimFooterSpanAware(newsletter_text);
-  newsletter_text = footer.text;
-  newsletter_text = collapseWhitespacePreserveNewlines(newsletter_text);
+    const blocks = parseOutlookBlocks(corr_text) || [
+      { from: authorFromHeader || '', sent: '', to: '', subject: titleFromHeader || '', body: corr_text },
+    ];
+
+    const clean_text = formatThreadMarkdown(blocks);
+
+    const retrieval = buildRetrieval({
+      capture_text,
+      content_type: 'correspondence',
+      extracted_text: '',
+      url_canonical: null,
+      url: null,
+      config,
+      excerpt_override: null,
+      excerpt_source: clean_text,
+      quality_source_text: clean_text,
+    });
+
+    return formatForInsert({
+      source: 'email',
+      intent,
+      content_type: 'correspondence',
+      title: titleFromHeader || null,
+      author: authorFromHeader || null,
+      capture_text,
+      clean_text,
+      url: null,
+      url_canonical: null,
+      retrieval,
+    });
+  }
+
+  if (content_type === 'note') {
+    // Step 3b: note fallback (preserve cleaned core_text)
+    const clean_text = collapseWhitespacePreserveNewlines(core_text);
+    const retrieval = buildRetrieval({
+      capture_text,
+      content_type: 'note',
+      extracted_text: '',
+      url_canonical: null,
+      url: null,
+      config,
+      excerpt_override: null,
+      excerpt_source: clean_text,
+      quality_source_text: clean_text,
+    });
+
+    return formatForInsert({
+      source: 'email',
+      intent,
+      content_type: 'note',
+      title: titleFromHeader || null,
+      author: authorFromHeader || null,
+      capture_text,
+      clean_text,
+      url: null,
+      url_canonical: null,
+      retrieval,
+    });
+  }
+
+  // Step 3c: newsletter path (normalize -> markdown -> boilerplate removal)
+  const { newsletter_text } = buildEmailNewsletterText(core_text);
 
   const mdFromText = buildMdFromText(newsletter_text);
   const coreFallback = buildMdFromText(core_text);
@@ -1125,10 +1323,10 @@ async function normalizeEmailNewsletter({ raw_text }) {
 
   let clean_text = collapseWhitespacePreserveNewlines(lines.join('\n'));
   if (!clean_text) {
-    clean_text = collapseWhitespacePreserveNewlines(text);
+    clean_text = collapseWhitespacePreserveNewlines(newsletter_text);
   }
 
-  let author = deriveAuthorFromTop(clean_text);
+  const author = authorFromHeader || deriveAuthorFromTop(clean_text);
 
   const url_canonical = canonical_url || null;
   const url = url_canonical || null;
@@ -1147,9 +1345,9 @@ async function normalizeEmailNewsletter({ raw_text }) {
 
   return formatForInsert({
     source: 'email',
-    intent: 'archive',
+    intent,
     content_type: 'newsletter',
-    title: null,
+    title: titleFromHeader || null,
     author: author || null,
     capture_text,
     clean_text,
@@ -1159,8 +1357,12 @@ async function normalizeEmailNewsletter({ raw_text }) {
   });
 }
 
+async function normalizeEmail({ raw_text, from, subject }) {
+  return normalizeEmailInternal({ raw_text, from, subject });
+}
+
 module.exports = {
   normalizeTelegram,
-  normalizeEmailNewsletter,
+  normalizeEmail,
   decideEmailIntent,
 };

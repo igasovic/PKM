@@ -100,12 +100,16 @@ Response:
 }
 ```
 
-### `POST /normalize/email/newsletter`
+### `POST /normalize/email`
 Normalizes a raw IMAP text/plain payload into a `pkm.entries`-compatible payload.
 
 Body:
 ```json
-{ "raw_text": "raw IMAP text/plain message" }
+{
+  "raw_text": "raw IMAP text/plain message",
+  "from": "Sender Name <sender@example.com>",
+  "subject": "Email subject line"
+}
 ```
 
 Response:
