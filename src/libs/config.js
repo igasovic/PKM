@@ -1,9 +1,6 @@
 'use strict';
 
-const sb = require('../../src/libs/sql-builder.js');
-const { getPool } = require('./db-pool.js');
-
-const CONFIG_V1 = {
+const getConfig() = {
   version: 'v1',
 
 
@@ -145,70 +142,10 @@ const CONFIG_V1 = {
   },
 };
 
-const CONFIG_TABLE = sb.qualifiedTable(CONFIG_V1.db.schema_prod, 'runtime_config');
-let cachedTestMode = null;
-let cachedTestModeAt = 0;
-const TEST_MODE_CACHE_MS = 10000;
-
-function wrapConfigTableError(err) {
-  if (!err) return err;
-  if (err.code === '42P01' || err.code === '3F000') {
-    const wrapped = new Error(`runtime_config table missing: create ${CONFIG_TABLE} before using test mode`);
-    wrapped.cause = err;
-    return wrapped;
-  }
-  return err;
-}
-
-async function getTestModeState() {
-  const now = Date.now();
-  if (cachedTestMode !== null && (now - cachedTestModeAt) < TEST_MODE_CACHE_MS) {
-    return cachedTestMode;
-  }
-  const p = getPool();
-  let res;
-
-  res = await p.query(`SELECT value FROM ${CONFIG_TABLE} WHERE key = $1`, ['is_test_mode']);
-
-  const value = !!(res.rows && res.rows[0] && res.rows[0].value === true);
-  cachedTestMode = value;
-  cachedTestModeAt = now;
-  return value;
-}
-
-async function setTestModeState(nextState) {
-  const p = getPool();
-
-  await p.query(
-    `INSERT INTO ${CONFIG_TABLE} (key, value, updated_at)\n     VALUES ($1, $2::jsonb, now())\n     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
-    ['is_test_mode', JSON.stringify(!!nextState)]
-  );
-
-  cachedTestMode = !!nextState;
-  cachedTestModeAt = Date.now();
-}
-
-async function toggleTestMode() {
-  const current = await getTestModeState();
-  const next = !current;
-  await setTestModeState(next);
-  return next;
-}
-
-function getConfigStatic() {
-  return JSON.parse(JSON.stringify(CONFIG_V1));
-}
-
-async function getConfig() {
-  const config = JSON.parse(JSON.stringify(CONFIG_V1));
-  config.db.is_test_mode = await getTestModeState();
-  return config;
+function getConfig() {
+  return JSON.parse(JSON.stringify(getConfig()));
 }
 
 module.exports = {
-  CONFIG_V1,
-  getConfigStatic,
   getConfig,
-  getTestModeState,
-  toggleTestMode,
 };

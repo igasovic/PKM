@@ -12,6 +12,8 @@
 - `/db/*` endpoints now return only `rows` from SQL (no ok/rowCount wrapper).
 - Added cached test mode reads (10s TTL) to reduce runtime_config lookups.
 - Added Telegram normalization API and extracted quality signals into `src/server/quality.js`.
+- Moved test mode caching/logic into `src/server/test-mode.js` and removed it from config.
+- `/config` now returns only static config (no test mode state).
 
 ## 2026-02-10 — Backend config module + API endpoint
 

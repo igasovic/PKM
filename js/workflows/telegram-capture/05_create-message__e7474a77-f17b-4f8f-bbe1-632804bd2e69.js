@@ -7,14 +7,14 @@
  */
 'use strict';
 
-const { getConfigStatic } = require('../../../src/libs/config.js');
+const { getConfig } = require('../../../src/libs/config.js');
 
 module.exports = async function run(ctx) {
   const { $json, $items } = ctx;
 
   const s = (v) => (v ?? '').toString().trim();
 
-  const config = getConfigStatic();
+  const config = getConfig();
   const isTestMode = !!(config && config.db && config.db.is_test_mode);
 
   const entryId = s($json.entry_id);

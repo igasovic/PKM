@@ -32,7 +32,7 @@ const sb = require('../src/libs/sql-builder.js');
   }
 
   {
-    const config = require('../src/libs/config.js').CONFIG_V1;
+    const config = require('../src/libs/config.js').getConfig();
     const sql = sb.buildReadLast({
       config,
       entries_table: '"pkm"."entries"',

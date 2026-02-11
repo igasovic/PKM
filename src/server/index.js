@@ -4,6 +4,7 @@ const http = require('http');
 const { URL } = require('url');
 const pkg = require('./package.json');
 const db = require('./db.js');
+const { TestModeService } = require('./test-mode.js');
 const { getConfig } = require('../libs/config.js');
 const { normalizeTelegram } = require('./normalization.js');
 const {
@@ -12,6 +13,8 @@ const {
   logApiSuccess,
   logApiError,
 } = require('./observability.js');
+
+const testModeService = new TestModeService();
 
 function json(res, status, payload) {
   const body = JSON.stringify(payload);
@@ -61,7 +64,7 @@ async function handleRequest(req, res) {
   }
 
   if (method === 'GET' && url.pathname === '/config') {
-    const config = await getConfig();
+    const config = getConfig();
     return json(res, 200, config);
   }
 
@@ -78,8 +81,8 @@ async function handleRequest(req, res) {
   }
 
   if (method === 'GET' && url.pathname === '/db/test-mode') {
-    const result = await db.getTestMode();
-    return json(res, 200, result.rows || []);
+    const state = await testModeService.getState();
+    return json(res, 200, [{ is_test_mode: state }]);
   }
 
   if (method === 'POST' && url.pathname === '/echo') {
@@ -123,7 +126,8 @@ async function handleRequest(req, res) {
       } else if (url.pathname === '/db/read/pull') {
         result = await db.readPull(body);
       } else if (url.pathname === '/db/test-mode/toggle') {
-        result = await db.toggleTestModeState();
+        const state = await testModeService.toggle();
+        result = { rows: [{ is_test_mode: state }], rowCount: 1 };
       } else {
         return notFound(res);
       }

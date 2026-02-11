@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { getConfigStatic } = require('../../../src/libs/config.js');
+const { getConfig } = require('../../../src/libs/config.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
@@ -16,7 +16,7 @@ module.exports = async function run(ctx) {
 // HARD RULE: clean_text must be non-empty, else fail.
 // Output: $json.retrieval + $json.metadata_patch
 
-const config = getConfigStatic();
+const config = getConfig();
 
 const cfg = config.qualityThresholds;
 const TH = {

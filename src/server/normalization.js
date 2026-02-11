@@ -202,7 +202,7 @@ async function normalizeTelegram({ text }) {
     throw new Error('text is required');
   }
 
-  const config = await getConfig();
+  const config = getConfig();
   if (!config || !config.qualityThresholds) {
     throw new Error('config missing qualityThresholds');
   }

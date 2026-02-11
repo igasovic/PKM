@@ -33,7 +33,7 @@ Response:
 ## Config
 
 ### `GET /config`
-Returns the retrieval/scoring config as JSON (including test mode state read from Postgres).
+Returns the retrieval/scoring config as JSON (static; does not include test mode state).
 
 Response:
 ```json

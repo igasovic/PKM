@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { getConfigStatic } = require('../../../src/libs/config.js');
+const { getConfig } = require('../../../src/libs/config.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
@@ -63,7 +63,7 @@ if (flagBits.length) lines.push(`\n${flagBits.join(' · ')}`);
 
 let telegram_message = lines.join('\n');
 
-const config = getConfigStatic();
+const config = getConfig();
 if (config?.db?.is_test_mode === true) {
   telegram_message = `⚗️🧪 TEST MODE
 ${telegram_message}`;

@@ -2,11 +2,7 @@
 
 const sb = require('../../src/libs/sql-builder.js');
 const { getPool } = require('./db-pool.js');
-const {
-  getConfig,
-  getTestModeState,
-  toggleTestMode,
-} = require('../libs/config.js');
+const { getConfig } = require('../libs/config.js');
 const { traceDb } = require('./observability.js');
 
 function getEntriesTable() {
@@ -14,9 +10,56 @@ function getEntriesTable() {
   return sb.qualifiedTable(schema, 'entries');
 }
 
+const CONFIG_TABLE = sb.qualifiedTable(process.env.PKM_DB_SCHEMA || 'pkm', 'runtime_config');
+
+function wrapConfigTableError(err) {
+  if (!err) return err;
+  if (err.code === '42P01' || err.code === '3F000') {
+    const wrapped = new Error(`runtime_config table missing: create ${CONFIG_TABLE} before using test mode`);
+    wrapped.cause = err;
+    return wrapped;
+  }
+  return err;
+}
+
+async function getTestModeStateFromDb() {
+  const p = getPool();
+  try {
+    const res = await p.query(`SELECT value FROM ${CONFIG_TABLE} WHERE key = $1`, ['is_test_mode']);
+    return !!(res.rows && res.rows[0] && res.rows[0].value === true);
+  } catch (err) {
+    throw wrapConfigTableError(err);
+  }
+}
+
+async function setTestModeStateInDb(nextState) {
+  const p = getPool();
+  try {
+    await p.query(
+      `INSERT INTO ${CONFIG_TABLE} (key, value, updated_at)\n     VALUES ($1, $2::jsonb, now())\n     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+      ['is_test_mode', JSON.stringify(!!nextState)]
+    );
+  } catch (err) {
+    throw wrapConfigTableError(err);
+  }
+}
+
+async function toggleTestModeStateInDb() {
+  const current = await getTestModeStateFromDb();
+  const next = !current;
+  await setTestModeStateInDb(next);
+  return next;
+}
+
 async function getEntriesTableFromConfig(config) {
-  const cfg = config || await getConfig();
+  const cfg = config || getConfig();
   return sb.resolveEntriesTable(cfg.db);
+}
+
+async function getConfigWithTestMode() {
+  const config = getConfig();
+  config.db.is_test_mode = await getTestModeStateFromDb();
+  return config;
 }
 
 async function exec(sql, meta) {
@@ -227,7 +270,7 @@ function buildGenericUpdatePayload(input, returningOverride) {
 }
 
 async function insert(opts) {
-  const config = await getConfig();
+  const config = await getConfigWithTestMode();
   const table = opts.table || await getEntriesTableFromConfig(config);
   let columns = opts.columns;
   let values = opts.values;
@@ -252,7 +295,7 @@ async function insert(opts) {
 }
 
 async function update(opts) {
-  const config = await getConfig();
+  const config = await getConfigWithTestMode();
   const table = await getEntriesTableFromConfig(config);
   let set = opts.set;
   let where = opts.where;
@@ -277,7 +320,7 @@ async function update(opts) {
 }
 
 async function readContinue(opts) {
-  const config = await getConfig();
+  const config = await getConfigWithTestMode();
   const sql = sb.buildReadContinue({
     config,
     entries_table: await getEntriesTableFromConfig(config),
@@ -289,7 +332,7 @@ async function readContinue(opts) {
 }
 
 async function readFind(opts) {
-  const config = await getConfig();
+  const config = await getConfigWithTestMode();
   const sql = sb.buildReadFind({
     config,
     entries_table: await getEntriesTableFromConfig(config),
@@ -301,7 +344,7 @@ async function readFind(opts) {
 }
 
 async function readLast(opts) {
-  const config = await getConfig();
+  const config = getConfig();
   const sql = sb.buildReadLast({
     config,
     entries_table: await getEntriesTableFromConfig(config),
@@ -323,12 +366,12 @@ async function readPull(opts) {
 }
 
 async function getTestMode() {
-  const state = await getTestModeState();
+  const state = await getTestModeStateFromDb();
   return { rows: [{ is_test_mode: state }], rowCount: 1 };
 }
 
 async function toggleTestModeState() {
-  const state = await toggleTestMode();
+  const state = await toggleTestModeStateInDb();
   return { rows: [{ is_test_mode: state }], rowCount: 1 };
 }
 
@@ -342,6 +385,8 @@ module.exports = {
   readPull,
   getTestMode,
   toggleTestModeState,
+  getTestModeStateFromDb,
+  setTestModeStateInDb,
   buildGenericInsertPayload,
   buildGenericUpdatePayload,
 };
