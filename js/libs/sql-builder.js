@@ -119,6 +119,14 @@ function bigIntLit(v) {
   return s;
 }
 
+function requireConfig(opts) {
+  const config = opts && opts.config;
+  if (!config || !config.scoring) {
+    throw new Error('config is required');
+  }
+  return config;
+}
+
 /**
  * SQL text[] literal. null/non-array/empty → 'NULL'; else ARRAY['a','b']::text[].
  * Elements are trimmed and escaped; empty after trim are skipped.
@@ -327,13 +335,23 @@ function buildUpdate(opts) {
 }
 
 function buildReadContinue(opts) {
+  const config = requireConfig(opts);
+  const scoring = config.scoring;
   const entries_table = opts.entries_table;
   const q = String(opts.q ?? '').trim();
-  const days = Number(opts.days ?? 90);
-  const limit = Number(opts.limit ?? 10);
-  const W = opts.weights || {};
-  const halfLife = Number(opts.halfLife ?? 45);
-  const noteQuota = Number(opts.noteQuota ?? 0.75);
+  let days = Number(opts.days);
+  if (!days) {
+    days = Number(scoring.daysByCmd.continue);
+  }
+  const maxLimit = Number(scoring.maxItems.continue);
+  let limit = Number(opts.limit);
+  if (!limit) {
+    limit = maxLimit;
+  }
+  limit = Math.min(maxLimit, Math.max(1, limit));
+  const W = scoring.weightsByCmd.continue;
+  const halfLife = Number(scoring.recencyByCmd.continue.half_life_days);
+  const noteQuota = Number(scoring.noteQuotaByCmd.continue);
 
   return `
 WITH params AS (
@@ -538,12 +556,22 @@ ORDER BY is_meta DESC, score DESC NULLS LAST, created_at DESC NULLS LAST;
 }
 
 function buildReadFind(opts) {
+  const config = requireConfig(opts);
+  const scoring = config.scoring;
   const entries_table = opts.entries_table;
   const q = String(opts.q ?? '').trim();
-  const days = Number(opts.days ?? 365);
-  const limit = Number(opts.limit ?? 10);
-  const needle = String(opts.needle ?? escapeLikeWildcards(q));
-  const W = opts.weights || {};
+  let days = Number(opts.days);
+  if (!days) {
+    days = Number(scoring.daysByCmd.find);
+  }
+  const maxLimit = Number(scoring.maxItems.find);
+  let limit = Number(opts.limit);
+  if (!limit) {
+    limit = maxLimit;
+  }
+  limit = Math.min(maxLimit, Math.max(1, limit));
+  const needle = String(escapeLikeWildcards(q));
+  const W = scoring.weightsByCmd.find;
 
   return `
 WITH params AS (
@@ -658,12 +686,22 @@ FROM hits h;
 }
 
 function buildReadLast(opts) {
+  const config = requireConfig(opts);
+  const scoring = config.scoring;
   const entries_table = opts.entries_table;
   const q = String(opts.q ?? '').trim();
-  const days = Number(opts.days ?? 180);
-  const limit = Number(opts.limit ?? 10);
-  const W = opts.weights || {};
-  const halfLife = Number(opts.halfLife ?? 180);
+  let days = Number(opts.days);
+  if (!days) {
+    days = Number(scoring.daysByCmd.last);
+  }
+  const maxLimit = Number(scoring.maxItems.last);
+  let limit = Number(opts.limit);
+  if (!limit) {
+    limit = maxLimit;
+  }
+  limit = Math.min(maxLimit, Math.max(1, limit));
+  const W = scoring.weightsByCmd.last;
+  const halfLife = Number(scoring.recencyByCmd.last.half_life_days);
 
   return `
 WITH params AS (

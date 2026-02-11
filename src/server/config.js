@@ -23,6 +23,12 @@ const CONFIG_V1 = {
       find: { half_life_days: 365 },
     },
 
+    daysByCmd: {
+      continue: 90,
+      last: 180,
+      find: 365,
+    },
+
     maxItems: {
       continue: 15,
       last: 15,

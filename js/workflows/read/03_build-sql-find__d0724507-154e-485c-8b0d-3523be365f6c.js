@@ -26,25 +26,16 @@ module.exports = async function run(ctx) {
   const entries_table = sb.resolveEntriesTable(db);
 
   const q = String($json.q || '').trim();
-  const days = Number($json.days || 365);
+  const days = Number($json.days || 0);
+  const limit = Number($json.limit || 0);
 
-  // WP3 safety cap
-  const cfgLimit = Number(config.scoring.maxItems.find);
-  const limit = Math.min(cfgLimit, Math.max(1, Number($json.limit || 10)));
+  const sql = sb.buildReadFind({
+    config,
+    entries_table,
+    q,
+    days,
+    limit,
+  });
 
-  // escape LIKE wildcards in user input
-  const needle = sb.escapeLikeWildcards(q);
-
-const W = config.scoring.weightsByCmd.find;
-
-const sql = sb.buildReadFind({
-  entries_table,
-  q,
-  days,
-  limit,
-  needle,
-  weights: W,
-});
-
-return [{ json: { ...$json, sql } }];
+  return [{ json: { ...$json, sql } }];
 };

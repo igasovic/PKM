@@ -26,24 +26,16 @@ module.exports = async function run(ctx) {
   const entries_table = sb.resolveEntriesTable(db);
 
   const q = String($json.q || '').trim();
-const days = Number($json.days || 90);
+  const days = Number($json.days || 0);
+  const limit = Number($json.limit || 0);
 
-const cfgLimit = Number(config.scoring.maxItems.continue);
-const limit = Math.min(cfgLimit, Math.max(1, Number($json.limit || 10)));
+  const sql = sb.buildReadContinue({
+    config,
+    entries_table,
+    q,
+    days,
+    limit,
+  });
 
-const W = config.scoring.weightsByCmd.continue;
-const halfLife = Number(config.scoring.recencyByCmd.continue.half_life_days);
-const noteQuota = Number(config.scoring.noteQuotaByCmd.continue);
-
-const sql = sb.buildReadContinue({
-  entries_table,
-  q,
-  days,
-  limit,
-  weights: W,
-  halfLife,
-  noteQuota,
-});
-
-return [{ json: { ...$json, sql } }];
+  return [{ json: { ...$json, sql } }];
 };

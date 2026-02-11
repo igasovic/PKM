@@ -32,13 +32,13 @@ const sb = require('../js/libs/sql-builder.js');
   }
 
   {
+    const config = require('../src/server/config.js').getConfig();
     const sql = sb.buildReadLast({
+      config,
       entries_table: '"pkm"."entries"',
       q: 'x',
       days: 1,
       limit: 1,
-      weights: {},
-      halfLife: 1,
     });
 
     assert.ok(sql.includes('WITH params AS'));

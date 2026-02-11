@@ -2,6 +2,7 @@
 
 const { Pool } = require('pg');
 const sb = require('../../js/libs/sql-builder.js');
+const { getConfig } = require('./config.js');
 const { traceDb } = require('./observability.js');
 
 let pool = null;
@@ -302,38 +303,37 @@ async function update(opts) {
 }
 
 async function readContinue(opts) {
+  const config = getConfig();
   const sql = sb.buildReadContinue({
+    config,
     entries_table: opts.entries_table || getEntriesTable(),
     q: opts.q,
     days: opts.days,
     limit: opts.limit,
-    weights: opts.weights,
-    halfLife: opts.halfLife,
-    noteQuota: opts.noteQuota,
   });
   return exec(sql, { op: 'read_continue' });
 }
 
 async function readFind(opts) {
+  const config = getConfig();
   const sql = sb.buildReadFind({
+    config,
     entries_table: opts.entries_table || getEntriesTable(),
     q: opts.q,
     days: opts.days,
     limit: opts.limit,
-    needle: opts.needle,
-    weights: opts.weights,
   });
   return exec(sql, { op: 'read_find' });
 }
 
 async function readLast(opts) {
+  const config = getConfig();
   const sql = sb.buildReadLast({
+    config,
     entries_table: opts.entries_table || getEntriesTable(),
     q: opts.q,
     days: opts.days,
     limit: opts.limit,
-    weights: opts.weights,
-    halfLife: opts.halfLife,
   });
   return exec(sql, { op: 'read_last' });
 }
