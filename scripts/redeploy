@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="/home/igasovic/repos/n8n-workflows"
+STACK_DIR="/home/igasovic/stack"
+SERVICE="pkm-server"
+
+echo "==> Updating repo: $REPO_DIR"
+cd "$REPO_DIR"
+git pull
+
+echo "==> Redeploying: $SERVICE (compose in $STACK_DIR)"
+cd "$STACK_DIR"
+docker compose up -d --build "$SERVICE"
+
+echo "==> Tailing logs: $SERVICE"
+docker compose logs -f --tail=50 "$SERVICE"
