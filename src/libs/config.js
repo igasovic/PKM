@@ -1,6 +1,6 @@
 'use strict';
 
-const getConfig() = {
+const CONFIG_V1 = {
   version: 'v1',
 
 
@@ -143,7 +143,7 @@ const getConfig() = {
 };
 
 function getConfig() {
-  return JSON.parse(JSON.stringify(getConfig()));
+  return JSON.parse(JSON.stringify(CONFIG_V1));
 }
 
 module.exports = {
