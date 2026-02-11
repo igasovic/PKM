@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const pb = require('../../libs/prompt-builder.js');
+const pb = require('../../../src/libs/prompt-builder.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
