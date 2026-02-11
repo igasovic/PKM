@@ -5,7 +5,12 @@ const { URL } = require('url');
 const pkg = require('./package.json');
 const db = require('./db.js');
 const { getConfig } = require('./config.js');
-const { getBraintrustLogger, logError } = require('./observability.js');
+const {
+  getBraintrustLogger,
+  logError,
+  logApiSuccess,
+  logApiError,
+} = require('./observability.js');
 
 function json(res, status, payload) {
   const body = JSON.stringify(payload);
@@ -74,6 +79,12 @@ async function handleRequest(req, res) {
   }
 
   if (method === 'POST' && url.pathname.startsWith('/db/')) {
+    const start = Date.now();
+    const meta = {
+      op: `api${url.pathname.replace(/\//g, '_')}`,
+      method,
+      path: url.pathname,
+    };
     try {
       const raw = await readBody(req);
       const body = raw ? JSON.parse(raw) : {};
@@ -96,11 +107,14 @@ async function handleRequest(req, res) {
       }
 
       const firstRow = (result.rows && result.rows[0]) || null;
-      return json(res, 200, Object.assign({
+      const payload = Object.assign({
         ok: true,
         rowCount: result.rowCount,
-      }, firstRow || {}));
+      }, firstRow || {});
+      logApiSuccess(meta, { rowCount: result.rowCount }, { duration_ms: Date.now() - start });
+      return json(res, 200, payload);
     } catch (err) {
+      logApiError(meta, err, { duration_ms: Date.now() - start });
       logError(err, req);
       return json(res, 400, { error: 'bad_request', message: err.message });
     }

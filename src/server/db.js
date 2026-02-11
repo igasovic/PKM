@@ -303,13 +303,14 @@ async function update(opts) {
 }
 
 async function readContinue(opts) {
+  print('readContinue opts:', JSON.stringify(opts));
   const config = getConfig();
   const sql = sb.buildReadContinue({
     config,
     entries_table: opts.entries_table || getEntriesTable(),
     q: opts.q,
-    days: opts.days,
-    limit: opts.limit,
+    days: opts.days || config.readContinue.defaultDays,
+    limit: opts.limit || config.readContinue.defaultLimit,
   });
   return exec(sql, { op: 'read_continue' });
 }

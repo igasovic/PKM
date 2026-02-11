@@ -44,6 +44,38 @@ function logError(err, req) {
   });
 }
 
+function logApiSuccess(meta, output, metrics) {
+  const logger = getBraintrustLogger();
+  logger.log({
+    input: {
+      ...meta,
+    },
+    output,
+    metadata: {
+      source: 'api',
+    },
+    metrics: metrics || undefined,
+  });
+}
+
+function logApiError(meta, err, metrics) {
+  const logger = getBraintrustLogger();
+  logger.log({
+    input: {
+      ...meta,
+    },
+    error: {
+      name: err && err.name,
+      message: err && err.message,
+      stack: err && err.stack,
+    },
+    metadata: {
+      source: 'api',
+    },
+    metrics: metrics || undefined,
+  });
+}
+
 async function traceDb(op, meta, fn) {
   const logger = getBraintrustLogger();
   const start = Date.now();
@@ -92,5 +124,7 @@ async function traceDb(op, meta, fn) {
 module.exports = {
   getBraintrustLogger,
   logError,
+  logApiSuccess,
+  logApiError,
   traceDb,
 };
