@@ -7,10 +7,12 @@
  */
 'use strict';
 
+const { getConfig } = require('../../../src/server/config.js');
+
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
-const config = $items('PKM Config')[0].json.config;
+const config = await getConfig();
 const isTestMode = !!(config && config.db && config.db.is_test_mode);
 
 

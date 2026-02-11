@@ -12,6 +12,8 @@
  */
 'use strict';
 
+const { getConfig } = require('../../../src/server/config.js');
+
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
@@ -53,7 +55,7 @@ lines.push(`\n${body}`);
 
 let msg = lines.join('\n');
 
-const config = $items('PKM Config')[0].json.config;
+const config = await getConfig();
 if (config.db.is_test_mode === true) {
   msg = `⚗️🧪 TEST MODE
 ${msg}`;

@@ -66,6 +66,40 @@ Response:
 ]
 ```
 
+## Normalization
+
+### `POST /normalize/telegram`
+Normalizes a Telegram capture into a `pkm.entries`-compatible payload.
+
+Body:
+```json
+{ "text": "raw telegram message" }
+```
+
+Response:
+```json
+{
+  "source": "telegram",
+  "intent": "think",
+  "content_type": "note",
+  "capture_text": "...",
+  "clean_text": "...",
+  "retrieval_excerpt": "...",
+  "retrieval_version": "v1",
+  "source_domain": "...",
+  "clean_word_count": 10,
+  "clean_char_count": 200,
+  "extracted_char_count": 0,
+  "link_count": 1,
+  "link_ratio": 0.1,
+  "boilerplate_heavy": false,
+  "low_signal": false,
+  "extraction_incomplete": false,
+  "quality_score": 0.7,
+  "metadata": { "retrieval": { "version": "v1" } }
+}
+```
+
 ## Insert / Update
 
 ### `POST /db/insert`

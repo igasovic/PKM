@@ -7,6 +7,8 @@
  */
 'use strict';
 
+const { getConfig } = require('../../../src/server/config.js');
+
 module.exports = async function run(ctx) {
   const { $json, $items } = ctx;
 
@@ -14,7 +16,9 @@ module.exports = async function run(ctx) {
   // Output: $json.retrieval + $json.metadata_patch
   // Safe behavior: if clean_text is empty, DO NOT produce a patch.
 
-  const cfg = $items('PKM Config')[0].json.config.qualityThresholds;
+  const config = await getConfig();
+
+  const cfg = config.qualityThresholds;
   const TH = {
     excerpt_max_chars: cfg.excerpt_max_chars ?? 320,
     low_signal: {

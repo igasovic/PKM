@@ -12,6 +12,8 @@
  */
 'use strict';
 
+const { getConfig } = require('../../../src/server/config.js');
+
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
@@ -32,7 +34,7 @@ Tips:
 - Every result shows #<id> so you can /pull it.
 - Reduce --limit if messages truncate.`;
 
-const config = $items('PKM Config')[0].json.config;
+const config = await getConfig();
 const isTestMode = config.db.is_test_mode === true;
 const banner = isTestMode ? '⚗️🧪 TEST MODE
 ' : '';

@@ -7,13 +7,17 @@
  */
 'use strict';
 
+const { getConfig } = require('../../../src/server/config.js');
+
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
 // WP1 Step 1A: compute retrieval excerpt + quality signals from capture_text
 // Output: $json.retrieval (object) + $json.metadata_patch ({ retrieval: ... })
 
-const cfg = $items('PKM Config')[0].json.config.qualityThresholds;
+const config = await getConfig();
+
+const cfg = config.qualityThresholds;
 const TH = {
   excerpt_max_chars: cfg.excerpt_max_chars ?? 320,
   low_signal: {

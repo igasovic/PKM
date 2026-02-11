@@ -7,6 +7,8 @@
  */
 'use strict';
 
+const { getConfig } = require('../../../src/server/config.js');
+
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
@@ -61,7 +63,7 @@ if (flagBits.length) lines.push(`\n${flagBits.join(' · ')}`);
 
 let telegram_message = lines.join('\n');
 
-const config = $items('PKM Config')[0].json.config;
+const config = await getConfig();
 if (config?.db?.is_test_mode === true) {
   telegram_message = `⚗️🧪 TEST MODE
 ${telegram_message}`;
