@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('assert');
-const pb = require('../js/libs/prompt-builder.js');
+const pb = require('../src/libs/prompt-builder.js');
 
 (() => {
   {

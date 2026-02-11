@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('assert');
-const sb = require('../js/libs/sql-builder.js');
+const sb = require('../src/libs/sql-builder.js');
 
 (() => {
   {
@@ -32,7 +32,7 @@ const sb = require('../js/libs/sql-builder.js');
   }
 
   {
-    const config = require('../src/server/config.js').CONFIG_V1;
+    const config = require('../src/libs/config.js').CONFIG_V1;
     const sql = sb.buildReadLast({
       config,
       entries_table: '"pkm"."entries"',

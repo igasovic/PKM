@@ -1,12 +1,12 @@
 'use strict';
 
-const sb = require('../../js/libs/sql-builder.js');
+const sb = require('../../src/libs/sql-builder.js');
 const { getPool } = require('./db-pool.js');
 const {
   getConfig,
   getTestModeState,
   toggleTestMode,
-} = require('./config.js');
+} = require('../libs/config.js');
 const { traceDb } = require('./observability.js');
 
 function getEntriesTable() {

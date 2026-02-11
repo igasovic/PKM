@@ -12,7 +12,7 @@
  */
 'use strict';
 
-const { getConfigStatic } = require('../../../src/server/config.js');
+const { getConfigStatic } = require('../../../src/libs/config.js');
 
 const sb = require('../../libs/sql-builder.js');
 

@@ -4,7 +4,7 @@ const http = require('http');
 const { URL } = require('url');
 const pkg = require('./package.json');
 const db = require('./db.js');
-const { getConfig } = require('./config.js');
+const { getConfig } = require('../libs/config.js');
 const { normalizeTelegram } = require('./normalization.js');
 const {
   getBraintrustLogger,

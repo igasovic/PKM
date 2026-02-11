@@ -12,7 +12,7 @@
  */
 'use strict';
 
-const { getConfigStatic } = require('../../../src/server/config.js');
+const { getConfigStatic } = require('../../../src/libs/config.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;

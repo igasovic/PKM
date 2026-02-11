@@ -17,7 +17,7 @@
 
 ### What changed
 - Added a shared retrieval config module in `js/workflows/pkm-retrieval-config/config_v1.js`.
-- Added `src/server/config.js` so backend code can read config via a single import.
+- Added `src/libs/config.js` so backend code can read config via a single import.
 - Added `GET /config` endpoint to return the config as JSON.
 - Updated API docs for the new config endpoint.
 

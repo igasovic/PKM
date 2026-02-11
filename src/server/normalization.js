@@ -1,6 +1,6 @@
 'use strict';
 
-const { getConfig } = require('./config.js');
+const { getConfig } = require('../libs/config.js');
 const { buildRetrieval } = require('./quality.js');
 
 function maybeUnescapeTelegramText(s) {
