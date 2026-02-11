@@ -5,6 +5,7 @@ const { URL } = require('url');
 const pkg = require('./package.json');
 const db = require('./db.js');
 const { getConfig } = require('./config.js');
+const { normalizeTelegram } = require('./normalization.js');
 const {
   getBraintrustLogger,
   logError,
@@ -62,6 +63,18 @@ async function handleRequest(req, res) {
   if (method === 'GET' && url.pathname === '/config') {
     const config = await getConfig();
     return json(res, 200, config);
+  }
+
+  if (method === 'POST' && url.pathname === '/normalize/telegram') {
+    try {
+      const raw = await readBody(req);
+      const body = raw ? JSON.parse(raw) : {};
+      const normalized = await normalizeTelegram({ text: body.text });
+      return json(res, 200, normalized);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
   }
 
   if (method === 'GET' && url.pathname === '/db/test-mode') {
