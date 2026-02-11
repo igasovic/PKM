@@ -303,7 +303,7 @@ async function update(opts) {
 }
 
 async function readContinue(opts) {
-  print('readContinue opts:', JSON.stringify(opts));
+  console.log('readContinue opts:', JSON.stringify(opts));
   const config = getConfig();
   const sql = sb.buildReadContinue({
     config,
