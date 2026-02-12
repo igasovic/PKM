@@ -842,7 +842,10 @@ function buildEmailNewsletterText(core_text) {
   const mojiText = fixMojibakeGuarded(text);
   text = mojiText.text;
   text = decodeEntities(text);
+  const preStrip = text;
   text = stripInvisibleTransport(text);
+  // Drop noisy "n" lines caused by hidden transport artifacts.
+  text = dropNoisyNLines(preStrip, text);
   text = dropTransportArtifactLines(text);
   text = collapseDecorativeDividerRuns(text);
   text = collapseWhitespacePreserveNewlines(text);
@@ -855,6 +858,32 @@ function buildEmailNewsletterText(core_text) {
   newsletter_text = collapseWhitespacePreserveNewlines(newsletter_text);
 
   return { newsletter_text };
+}
+
+function dropNoisyNLines(rawText, cleanedText) {
+  const rawLines = normalizeNewlines(String(rawText || '')).split('\n');
+  const cleanLines = normalizeNewlines(String(cleanedText || '')).split('\n');
+  const out = [];
+
+  const badGlyphs = /[\u034F\u200B-\u200D\u2060\uFEFF\u00AD]/;
+
+  for (let i = 0; i < cleanLines.length; i++) {
+    const raw = rawLines[i] ?? '';
+    const clean = cleanLines[i] ?? '';
+    const trimmed = String(clean || '').trim().toLowerCase();
+
+    if (trimmed === 'n') {
+      const rawHasBad = badGlyphs.test(raw);
+      const rawLong = String(raw).length >= 5;
+      if (rawHasBad || rawLong) {
+        continue;
+      }
+    }
+
+    out.push(clean);
+  }
+
+  return out.join('\n');
 }
 
 function prepareCorrespondenceText(text) {
@@ -968,6 +997,12 @@ function deriveAuthorFromFromHeader(fromRaw) {
   const m = raw.match(/^\s*"?([^"<]+?)"?\s*<[^>]+>\s*$/);
   if (m && m[1]) return m[1].trim();
   return raw;
+}
+
+function stripForwardPrefixOnce(subject) {
+  const raw = String(subject || '').trim();
+  if (!raw) return null;
+  return raw.replace(/^\s*(?:fwd?|fw|forward)\s*:\s*/i, '').trim();
 }
 
 function parseMiniHeaderBlock(lines, startIdx, opts) {
@@ -1180,7 +1215,14 @@ function normalizeEmailTransport(rawText) {
   let core_text = stripInvisibleTransport(decodeEntities(coreMoji.text));
   core_text = collapseWhitespacePreserveNewlines(core_text);
 
-  return { capture_text, core_text };
+  return {
+    capture_text,
+    core_text,
+    forwarded: {
+      found: !!fwd.found,
+      headers: fwd.headers || {},
+    },
+  };
 }
 
 function decideEmailIntentFromCore(core_text) {
@@ -1208,14 +1250,18 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
   }
 
   // Step 1: transport-level cleanup (forwarded wrappers, mojibake, invisibles)
-  const { capture_text, core_text } = normalizeEmailTransport(raw_text);
+  const { capture_text, core_text, forwarded } = normalizeEmailTransport(raw_text);
 
   // Step 2: intent + content_type decision (note/newsletter/correspondence)
   const decision = decideEmailIntentFromCore(core_text);
   const content_type = force_content_type || decision.content_type;
   const intent = decision.intent;
-  const authorFromHeader = deriveAuthorFromFromHeader(from);
-  const titleFromHeader = subject ? String(subject).trim() : null;
+  const forwardedFrom = forwarded?.found ? forwarded.headers?.from : null;
+  const forwardedSubject = forwarded?.found ? forwarded.headers?.subject : null;
+  const authorFromHeader = deriveAuthorFromFromHeader(forwardedFrom || from);
+  const titleFromHeader = forwarded?.found
+    ? stripForwardPrefixOnce(forwardedSubject || subject)
+    : (subject ? String(subject).trim() : null);
 
   if (content_type === 'correspondence') {
     // Step 3a: correspondence path (newsletter-style cleanup -> thread parsing -> signatures -> markdown)
