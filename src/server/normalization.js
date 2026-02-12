@@ -263,6 +263,14 @@ function normalizeNewlines(s) {
   return String(s || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 }
 
+function normalizeQuotedPrintableSoftBreaks(s) {
+  const text = normalizeNewlines(String(s || ''));
+  const softBreakCount = (text.match(/=\n/g) || []).length;
+  // Conservative: only repair when this looks like quoted-printable transport.
+  if (softBreakCount < 2) return text;
+  return text.replace(/=\n/g, '');
+}
+
 function decodeEntities(s) {
   return String(s || '')
     .replace(/&nbsp;/gi, ' ')
@@ -369,6 +377,16 @@ function dropTransportArtifactLines(text) {
     out.push(line);
   }
   return out.join('\n');
+}
+
+function sanitizeHeaderText(s) {
+  let t = String(s || '').trim();
+  if (!t) return null;
+  t = decodeEntities(t);
+  t = fixMojibakeGuarded(t).text;
+  t = stripInvisibleTransport(t);
+  t = t.replace(/\s+/g, ' ').trim();
+  return t || null;
 }
 
 function looksDecorativeDividerLine(line) {
@@ -839,6 +857,7 @@ function deriveAuthorFromTop(mdText) {
 
 function buildEmailNewsletterText(core_text) {
   let text = String(core_text || '');
+  text = normalizeQuotedPrintableSoftBreaks(text);
   const mojiText = fixMojibakeGuarded(text);
   text = mojiText.text;
   text = decodeEntities(text);
@@ -914,7 +933,14 @@ function parseOutlookBlocks(text) {
   const matches = [];
   let m;
   while ((m = re.exec(t)) !== null) {
-    matches.push({ idx: m.index, from: m[1], sent: m[2], to: m[3], subject: m[4] });
+    matches.push({
+      idx: m.index,
+      headerLen: String(m[0] || '').length,
+      from: m[1],
+      sent: m[2],
+      to: m[3],
+      subject: m[4],
+    });
   }
 
   if (matches.length === 0) return null;
@@ -922,7 +948,7 @@ function parseOutlookBlocks(text) {
   for (let i = 0; i < matches.length; i++) {
     const cur = matches[i];
     const nextIdx = (i + 1 < matches.length) ? matches[i + 1].idx : t.length;
-    const startBodyIdx = cur.idx + (t.slice(cur.idx).match(re)?.[0]?.length || 0);
+    const startBodyIdx = cur.idx + cur.headerLen;
     const body = t.slice(startBodyIdx, nextIdx).trim();
 
     blocks.push({
@@ -992,7 +1018,7 @@ function formatThreadMarkdown(blocks) {
 }
 
 function deriveAuthorFromFromHeader(fromRaw) {
-  const raw = String(fromRaw || '').trim();
+  const raw = sanitizeHeaderText(fromRaw);
   if (!raw) return null;
   const m = raw.match(/^\s*"?([^"<]+?)"?\s*<[^>]+>\s*$/);
   if (m && m[1]) return m[1].trim();
@@ -1000,7 +1026,7 @@ function deriveAuthorFromFromHeader(fromRaw) {
 }
 
 function stripForwardPrefixOnce(subject) {
-  const raw = String(subject || '').trim();
+  const raw = sanitizeHeaderText(subject);
   if (!raw) return null;
   return raw.replace(/^\s*(?:fwd?|fw|forward)\s*:\s*/i, '').trim();
 }
@@ -1210,6 +1236,7 @@ function normalizeEmailTransport(rawText) {
 
   const topStrip = stripTopHeaderBlockIfPresent(core_text_raw);
   core_text_raw = topStrip.text;
+  core_text_raw = normalizeQuotedPrintableSoftBreaks(core_text_raw);
 
   const coreMoji = fixMojibakeGuarded(core_text_raw);
   let core_text = stripInvisibleTransport(decodeEntities(coreMoji.text));
@@ -1239,6 +1266,27 @@ function decideEmailIntent(rawText) {
   return decideEmailIntentFromCore(core_text);
 }
 
+function buildEmailRetrieval({
+  capture_text,
+  content_type,
+  clean_text,
+  config,
+  url = null,
+  url_canonical = null,
+}) {
+  return buildRetrieval({
+    capture_text,
+    content_type,
+    extracted_text: '',
+    url_canonical,
+    url,
+    config,
+    excerpt_override: null,
+    excerpt_source: clean_text,
+    quality_source_text: clean_text,
+  });
+}
+
 async function normalizeEmailInternal({ raw_text, force_content_type, from, subject }) {
   if (raw_text === undefined || raw_text === null) {
     throw new Error('raw_text is required');
@@ -1254,6 +1302,7 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
 
   // Step 2: intent + content_type decision (note/newsletter/correspondence)
   const decision = decideEmailIntentFromCore(core_text);
+  const normalizedCoreText = decision.core_text;
   const content_type = force_content_type || decision.content_type;
   const intent = decision.intent;
   const forwardedFrom = forwarded?.found ? forwarded.headers?.from : null;
@@ -1265,7 +1314,7 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
 
   if (content_type === 'correspondence') {
     // Step 3a: correspondence path (newsletter-style cleanup -> thread parsing -> signatures -> markdown)
-    const { newsletter_text } = buildEmailNewsletterText(core_text);
+    const { newsletter_text } = buildEmailNewsletterText(normalizedCoreText);
     const corr_text = prepareCorrespondenceText(newsletter_text);
 
     const blocks = parseOutlookBlocks(corr_text) || [
@@ -1274,16 +1323,11 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
 
     const clean_text = formatThreadMarkdown(blocks);
 
-    const retrieval = buildRetrieval({
+    const retrieval = buildEmailRetrieval({
       capture_text,
       content_type: 'correspondence',
-      extracted_text: '',
-      url_canonical: null,
-      url: null,
+      clean_text,
       config,
-      excerpt_override: null,
-      excerpt_source: clean_text,
-      quality_source_text: clean_text,
     });
 
     return formatForInsert({
@@ -1302,17 +1346,12 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
 
   if (content_type === 'note') {
     // Step 3b: note fallback (preserve cleaned core_text)
-    const clean_text = collapseWhitespacePreserveNewlines(core_text);
-    const retrieval = buildRetrieval({
+    const clean_text = collapseWhitespacePreserveNewlines(normalizedCoreText);
+    const retrieval = buildEmailRetrieval({
       capture_text,
       content_type: 'note',
-      extracted_text: '',
-      url_canonical: null,
-      url: null,
+      clean_text,
       config,
-      excerpt_override: null,
-      excerpt_source: clean_text,
-      quality_source_text: clean_text,
     });
 
     return formatForInsert({
@@ -1330,10 +1369,10 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
   }
 
   // Step 3c: newsletter path (normalize -> markdown -> boilerplate removal)
-  const { newsletter_text } = buildEmailNewsletterText(core_text);
+  const { newsletter_text } = buildEmailNewsletterText(normalizedCoreText);
 
   const mdFromText = buildMdFromText(newsletter_text);
-  const coreFallback = buildMdFromText(core_text);
+  const coreFallback = buildMdFromText(normalizedCoreText);
 
   let newsletter_md = mdFromText.md;
   if (!newsletter_md && coreFallback.md) {
@@ -1360,7 +1399,7 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
   const viewOnline = tryExtractViewOnline(lines);
   let canonical_url = null;
   if (viewOnline.found && viewOnline.removed && viewOnline.url) {
-    canonical_url = viewOnline.url;
+    canonical_url = canonicalizeUrl(viewOnline.url);
   }
 
   lines = lines.filter((ln) => String(ln || '').trim() !== '');
@@ -1377,16 +1416,13 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
   const url_canonical = canonical_url || null;
   const url = url_canonical || null;
 
-  const retrieval = buildRetrieval({
+  const retrieval = buildEmailRetrieval({
     capture_text,
     content_type: 'newsletter',
-    extracted_text: '',
-    url_canonical,
-    url,
+    clean_text,
     config,
-    excerpt_override: null,
-    excerpt_source: clean_text,
-    quality_source_text: clean_text,
+    url,
+    url_canonical,
   });
 
   return formatForInsert({
