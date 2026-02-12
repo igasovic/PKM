@@ -12,6 +12,12 @@ const {
   decideEmailIntent,
 } = require('./normalization.js');
 const {
+  enrichTier1,
+  enqueueTier1Batch,
+  startTier1BatchWorker,
+  stopTier1BatchWorker,
+} = require('./tier1-enrichment.js');
+const {
   getBraintrustLogger,
   logError,
   logApiSuccess,
@@ -112,6 +118,37 @@ async function handleRequest(req, res) {
     }
   }
 
+  if (method === 'POST' && url.pathname === '/enrich/t1') {
+    try {
+      const raw = await readBody(req);
+      const body = raw ? JSON.parse(raw) : {};
+      const result = await enrichTier1({
+        title: body.title ?? null,
+        author: body.author ?? null,
+        clean_text: body.clean_text ?? null,
+      });
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/enrich/t1/batch') {
+    try {
+      const raw = await readBody(req);
+      const body = raw ? JSON.parse(raw) : {};
+      const result = await enqueueTier1Batch(body.items || [], {
+        metadata: body.metadata || undefined,
+        completion_window: body.completion_window || '24h',
+      });
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
   if (method === 'GET' && url.pathname === '/db/test-mode') {
     const state = await testModeService.getState();
     return json(res, 200, [{ is_test_mode: state }]);
@@ -190,11 +227,18 @@ function start() {
   const port = Number(process.env.PORT || 8080);
   // Hard-fail startup if Braintrust can't initialize.
   getBraintrustLogger();
+  startTier1BatchWorker();
   const server = createServer();
   server.listen(port, '0.0.0.0', () => {
     // eslint-disable-next-line no-console
     console.log(`server listening on :${port}`);
   });
+  const shutdown = () => {
+    stopTier1BatchWorker();
+    server.close(() => process.exit(0));
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }
 
 if (require.main === module) {

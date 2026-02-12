@@ -3,6 +3,25 @@
 const CONFIG_V1 = {
   version: 'v1',
 
+  topics: [
+    'productivity',
+    'product',
+    'entrepreneurship',
+    'consulting',
+    'marketing',
+    'finance',
+    'parenting',
+    'engineering',
+    'ai',
+    'home',
+    'leadership',
+    'cookbook',
+    'fitness',
+    'communication',
+    'other',
+    'health',
+    'travel',
+  ],
 
   db: {
     // Toggle-able: default off (production)

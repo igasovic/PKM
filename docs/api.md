@@ -149,6 +149,112 @@ Response:
 { "content_type": "newsletter" }
 ```
 
+## Enrichment
+
+### `POST /enrich/t1`
+Runs Tier‑1 enrichment (topics/keywords/gist) for a given clean text.
+
+Body:
+```json
+{
+  "title": "Optional title",
+  "author": "Optional author",
+  "clean_text": "Required clean text"
+}
+```
+
+Response:
+```json
+{
+  "topic_primary": "ai",
+  "topic_primary_confidence": 0.72,
+  "topic_secondary": "model evals",
+  "topic_secondary_confidence": 0.61,
+  "keywords": ["evals", "benchmarks", "alignment", "robustness", "bias"],
+  "gist": "One sentence summary.",
+  "flags": { "boilerplate_heavy": false, "low_signal": false }
+}
+```
+
+### `POST /enrich/t1/batch`
+Creates an OpenAI Batch job for Tier‑1 enrichment and persists mapping in Postgres.
+
+Body:
+```json
+{
+  "items": [
+    {
+      "custom_id": "entry_123",
+      "title": "Optional title",
+      "author": "Optional author",
+      "content_type": "newsletter",
+      "clean_text": "Required clean text"
+    }
+  ],
+  "completion_window": "24h",
+  "metadata": { "source": "n8n" }
+}
+```
+
+Response:
+```json
+{
+  "batch_id": "batch_abc123",
+  "status": "validating",
+  "schema": "pkm",
+  "request_count": 1
+}
+```
+
+Batch completion handling is internal to backend workers. External callers only enqueue via `/enrich/t1/batch`.
+
+Worker controls (optional env vars):
+- `T1_BATCH_WORKER_ENABLED` (`true` by default)
+- `T1_BATCH_SYNC_INTERVAL_MS` (`60000` default)
+- `T1_BATCH_SYNC_LIMIT` (`20` default)
+
+### Batch persistence tables
+Batch APIs require these tables in both schemas (`pkm` and `pkm_test`) so restart recovery works in test mode and prod mode.
+
+```sql
+CREATE TABLE IF NOT EXISTS pkm.t1_batches (
+  batch_id text PRIMARY KEY,
+  status text,
+  model text,
+  input_file_id text,
+  output_file_id text,
+  error_file_id text,
+  request_count int,
+  metadata jsonb,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS pkm.t1_batch_items (
+  batch_id text NOT NULL,
+  custom_id text NOT NULL,
+  title text,
+  author text,
+  content_type text,
+  prompt_mode text,
+  prompt text,
+  created_at timestamptz DEFAULT now(),
+  PRIMARY KEY (batch_id, custom_id)
+);
+
+CREATE TABLE IF NOT EXISTS pkm.t1_batch_item_results (
+  batch_id text NOT NULL,
+  custom_id text NOT NULL,
+  status text NOT NULL,
+  response_text text,
+  parsed jsonb,
+  error jsonb,
+  raw jsonb,
+  updated_at timestamptz DEFAULT now(),
+  created_at timestamptz DEFAULT now(),
+  PRIMARY KEY (batch_id, custom_id)
+);
+```
+
 ## Insert / Update
 
 ### `POST /db/insert`

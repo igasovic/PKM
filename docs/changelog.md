@@ -14,6 +14,8 @@
 - Added Telegram normalization API and extracted quality signals into `src/server/quality.js`.
 - Added unified email normalization endpoint (`/normalize/email`) using raw IMAP text/plain input.
 - Added email intent detection endpoint (`/normalize/email/intent`) returning `content_type`.
+- Added Tier‑1 enrichment endpoint (`/enrich/t1`) backed by OpenAI.
+- Added restart-safe Tier‑1 batch enqueue API (`/enrich/t1/batch`) with Postgres persistence and backend-owned OpenAI re-sync worker.
 - Moved test mode caching/logic into `src/server/test-mode.js` and removed it from config.
 - `/config` now returns only static config (no test mode state).
 - Moved shared libs to `src/libs` and updated server Dockerfile copy path.

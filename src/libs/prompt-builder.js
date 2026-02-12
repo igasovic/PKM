@@ -7,7 +7,13 @@
  */
 'use strict';
 
-const DEFAULT_TOPICS = '["other"]';
+const { getConfig } = require('./config.js');
+
+const CONFIG = getConfig();
+if (!CONFIG.topics || !Array.isArray(CONFIG.topics) || CONFIG.topics.length === 0) {
+  throw new Error('Tier-1 prompt: config.topics is required');
+}
+const DEFAULT_TOPICS = JSON.stringify(CONFIG.topics);
 
 /**
  * Normalize topics input into a JSON string list.
