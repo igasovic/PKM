@@ -131,3 +131,72 @@ Columns:
 
 Key used:
 - `is_test_mode` → boolean stored as jsonb
+
+---
+
+## Tier-1 Batch Persistence
+
+To support restart-safe OpenAI batch processing, backend persists queue/mapping/results in Postgres.
+
+### Table: `pkm.t1_batches`
+
+| Column | Type | Nullable | Default / Generated | Notes |
+|---|---|---:|---|---|
+| batch_id | text | no |  | primary key, OpenAI batch id |
+| status | text | yes |  | OpenAI batch status |
+| model | text | yes |  | model used for requests |
+| input_file_id | text | yes |  | OpenAI files API input id |
+| output_file_id | text | yes |  | OpenAI files API output id |
+| error_file_id | text | yes |  | OpenAI files API error id |
+| request_count | integer | yes |  | number of enqueued requests |
+| metadata | jsonb | yes |  | batch metadata |
+| created_at | timestamp with time zone | yes | `now()` | created timestamp |
+
+Indexes:
+- Primary key on `(batch_id)`
+- `idx_pkm_t1_batches_status_created_at` on `(status, created_at)`
+
+### Table: `pkm.t1_batch_items`
+
+| Column | Type | Nullable | Default / Generated | Notes |
+|---|---|---:|---|---|
+| batch_id | text | no |  | batch id |
+| custom_id | text | no |  | per-item id inside batch |
+| title | text | yes |  | prompt metadata |
+| author | text | yes |  | prompt metadata |
+| content_type | text | yes |  | prompt metadata |
+| prompt_mode | text | yes |  | `whole` / `sample` |
+| prompt | text | yes |  | rendered user prompt sent to OpenAI |
+| created_at | timestamp with time zone | yes | `now()` | created timestamp |
+
+Indexes:
+- Primary key on `(batch_id, custom_id)`
+- `idx_pkm_t1_batch_items_batch_id` on `(batch_id)`
+
+### Table: `pkm.t1_batch_item_results`
+
+| Column | Type | Nullable | Default / Generated | Notes |
+|---|---|---:|---|---|
+| batch_id | text | no |  | batch id |
+| custom_id | text | no |  | per-item id inside batch |
+| status | text | no |  | `ok` / `parse_error` / `error` |
+| response_text | text | yes |  | extracted model text |
+| parsed | jsonb | yes |  | parsed Tier-1 payload |
+| error | jsonb | yes |  | parsing / API error info |
+| raw | jsonb | yes |  | raw batch line payload |
+| updated_at | timestamp with time zone | yes | `now()` | last update timestamp |
+| created_at | timestamp with time zone | yes | `now()` | first insert timestamp |
+
+Indexes:
+- Primary key on `(batch_id, custom_id)`
+- `idx_pkm_t1_batch_results_batch_id_status` on `(batch_id, status)`
+- `idx_pkm_t1_batch_results_updated_at` on `(updated_at)`
+
+### Test schema mirror
+
+All Tier-1 batch tables/indexes above are mirrored in `pkm_test`:
+- `pkm_test.t1_batches`
+- `pkm_test.t1_batch_items`
+- `pkm_test.t1_batch_item_results`
+
+This allows worker dequeue/sync to continue across test-mode flips without orphaning jobs.
