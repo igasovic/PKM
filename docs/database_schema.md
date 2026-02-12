@@ -1,4 +1,4 @@
-# PKM Database Schema v2.1
+# PKM Database Schema v2.2
 
 Source: `\d+ pkm.entries` (plus `information_schema.columns`, constraints, triggers) as provided.
 
@@ -52,6 +52,9 @@ Source: `\d+ pkm.entries` (plus `information_schema.columns`, constraints, trigg
 | low_signal | boolean | yes |  | quality signals |
 | extraction_incomplete | boolean | yes |  | quality signals |
 | quality_score | real | yes |  | quality score (0..1) |
+| idempotency_policy_id | bigint | yes |  | FK → `pkm.idempotency_policies(policy_id)` (ON DELETE SET NULL) |
+| idempotency_key_primary | text | yes |  | durable dedupe key (tier-1) |
+| idempotency_key_secondary | text | yes |  | durable dedupe key (tier-2 fallback) |
 
 ### Indexes
 
@@ -71,12 +74,15 @@ Source: `\d+ pkm.entries` (plus `information_schema.columns`, constraints, trigg
 | entries_keywords_gin_idx | gin | `(keywords)` |
 | entries_people_gin_idx | gin | `(people)` |
 | entries_quality_good_created_at_idx | btree | `(created_at DESC)` **partial**: `WHERE boilerplate_heavy IS NOT TRUE AND low_signal IS NOT TRUE` |
+| pkm_entries_idem_primary_uidx | btree | UNIQUE **partial**: `(idempotency_policy_id, idempotency_key_primary)` where both are non-null |
+| pkm_entries_idem_secondary_uidx | btree | UNIQUE **partial**: `(idempotency_policy_id, idempotency_key_secondary)` where both are non-null |
 
 ### Constraints
 
 - **Primary key:** `entries_pkey` on `(id)`
 - **Unique:** `entries_entry_id_uidx` on `(entry_id)`
 - **Foreign key:** `entries_duplicate_of_fkey` — `duplicate_of` → `pkm.entries(id)` ON DELETE SET NULL
+- **Foreign key:** `entries_idempotency_policy_fk` — `idempotency_policy_id` → `pkm.idempotency_policies(policy_id)` ON DELETE SET NULL
 
 ### Triggers
 
@@ -115,6 +121,14 @@ This design guarantees:
 - No need for parallel Postgres instances or n8n deployments
 - Deterministic cleanup after test runs
 
+Idempotency-related mirrors in test schema:
+- `pkm_test.idempotency_policies`
+- `pkm_test.entries.idempotency_policy_id`
+- `pkm_test.entries.idempotency_key_primary`
+- `pkm_test.entries.idempotency_key_secondary`
+- `pkm_test_entries_idem_primary_uidx`
+- `pkm_test_entries_idem_secondary_uidx`
+
 ---
 
 ## Runtime Config (Persisted)
@@ -131,6 +145,55 @@ Columns:
 
 Key used:
 - `is_test_mode` → boolean stored as jsonb
+
+---
+
+## Idempotency Policies
+
+Backend deduplication/update behavior is policy-driven via Postgres.
+
+### Table: `pkm.idempotency_policies`
+
+| Column | Type | Nullable | Default / Generated | Notes |
+|---|---|---:|---|---|
+| policy_id | bigint | no | `bigserial` | primary key |
+| policy_key | text | no |  | unique stable policy key (e.g. `email_newsletter_v1`) |
+| source | text | no |  | source channel (`email`, `telegram`, etc.) |
+| content_type | text | no |  | semantic content type |
+| conflict_action | text | no |  | `skip` or `update` (CHECK constrained) |
+| update_fields | text[] | yes |  | NULL => update all incoming fields |
+| enabled | boolean | no | `true` | runtime toggle |
+| notes | text | yes |  | policy notes |
+| created_at | timestamptz | no | `now()` | created timestamp |
+| updated_at | timestamptz | no | `now()` | updated timestamp |
+
+Constraints:
+- Primary key on `(policy_id)`
+- Unique on `(policy_key)`
+- Check: `conflict_action IN ('skip','update')`
+
+### Seed policies (as migrated)
+
+- `telegram_thought_v1` (`telegram`, `thought`, `update`)
+- `telegram_link_v1` (`telegram`, `link`, `skip`)
+- `email_newsletter_v1` (`email`, `newsletter`, `skip`)
+- `email_correspondence_thread_v1` (`email`, `correspondence_thread`, `update`)
+
+### Test schema mirror
+
+`pkm_test.idempotency_policies` is created with `LIKE pkm.idempotency_policies INCLUDING ALL`.
+
+### Access control (as migrated)
+
+`pkm_ingest` grants:
+- `USAGE` on schemas `pkm`, `pkm_test`
+- `SELECT, INSERT, UPDATE, DELETE` on:
+  - `pkm.idempotency_policies`
+  - `pkm_test.idempotency_policies`
+- `USAGE, SELECT` on sequences:
+  - `pkm.idempotency_policies_policy_id_seq`
+  - `pkm_test.idempotency_policies_policy_id_seq`
+- default privileges in both schemas grant CRUD on future tables to `pkm_ingest`
 
 ---
 

@@ -16,6 +16,12 @@
 - Added email intent detection endpoint (`/normalize/email/intent`) returning `content_type`.
 - Added Tier‑1 enrichment endpoint (`/enrich/t1`) backed by OpenAI.
 - Added restart-safe Tier‑1 batch enqueue API (`/enrich/t1/batch`) with Postgres persistence and backend-owned OpenAI re-sync worker.
+- Added normalization-side idempotency key output for Telegram/Email using structured `source` payloads.
+- Added policy-driven idempotent `/db/insert` handling with conflict actions `skip`/`update` and result actions `inserted|skipped|updated`.
+- Added recursive JSON metadata merge behavior for idempotent `update` conflicts.
+- Hardened ingest to fail closed: normalization throws if idempotency keys cannot be derived, and `/db/insert` rejects `email`/`telegram` rows without idempotency fields.
+- Normalize APIs now infer source system by endpoint (`/normalize/email` vs `/normalize/telegram`), so callers do not need to pass `source.system`.
+- Fixed schema resolution drift in reads: `/db/read/last` and `/db/read/pull` now honor persisted test mode just like other DB methods.
 - Moved test mode caching/logic into `src/server/test-mode.js` and removed it from config.
 - `/config` now returns only static config (no test mode state).
 - Moved shared libs to `src/libs` and updated server Dockerfile copy path.

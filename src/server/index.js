@@ -82,7 +82,10 @@ async function handleRequest(req, res) {
     try {
       const raw = await readBody(req);
       const body = raw ? JSON.parse(raw) : {};
-      const normalized = await normalizeTelegram({ text: body.text });
+      const normalized = await normalizeTelegram({
+        text: body.text,
+        source: body.source,
+      });
       return json(res, 200, normalized);
     } catch (err) {
       logError(err, req);
@@ -110,6 +113,7 @@ async function handleRequest(req, res) {
         raw_text: body.raw_text,
         from: body.from,
         subject: body.subject,
+        source: body.source,
       });
       return json(res, 200, normalized);
     } catch (err) {

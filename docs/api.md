@@ -70,10 +70,18 @@ Response:
 
 ### `POST /normalize/telegram`
 Normalizes a Telegram capture into a `pkm.entries`-compatible payload.
+`source.system` is inferred by backend as `"telegram"` from this endpoint.
 
 Body:
 ```json
-{ "text": "raw telegram message" }
+{
+  "text": "raw telegram message",
+  "source": {
+    "chat_id": "123",
+    "message_id": "456",
+    "url": "https://example.com"
+  }
+}
 ```
 
 Response:
@@ -96,19 +104,30 @@ Response:
   "low_signal": false,
   "extraction_incomplete": false,
   "quality_score": 0.7,
+  "idempotency_policy_key": "telegram_thought_v1",
+  "idempotency_key_primary": "tg:123:456",
+  "idempotency_key_secondary": "f8a9...",
   "metadata": { "retrieval": { "version": "v1" } }
 }
 ```
 
 ### `POST /normalize/email`
 Normalizes a raw IMAP text/plain payload into a `pkm.entries`-compatible payload.
+`source.system` is inferred by backend as `"email"` from this endpoint.
 
 Body:
 ```json
 {
   "raw_text": "raw IMAP text/plain message",
   "from": "Sender Name <sender@example.com>",
-  "subject": "Email subject line"
+  "subject": "Email subject line",
+  "source": {
+    "message_id": "<abc@example.com>",
+    "from_addr": "forwarder@example.com",
+    "subject": "Fwd: Daily Brief",
+    "date": "2026-02-12T10:00:00Z",
+    "participants": ["me@example.com", "other@example.com"]
+  }
 }
 ```
 
@@ -132,6 +151,9 @@ Response:
   "low_signal": false,
   "extraction_incomplete": false,
   "quality_score": 0.7,
+  "idempotency_policy_key": "email_newsletter_v1",
+  "idempotency_key_primary": "<abc@example.com>",
+  "idempotency_key_secondary": "7c7d...",
   "metadata": { "retrieval": { "version": "v1" } }
 }
 ```
@@ -315,6 +337,18 @@ Body:
 You can also send the same fields at the top level (no `input` wrapper).
 Required fields: `source`, `capture_text`. Optional: any `pkm.entries` column (see `docs/database_schema.md`).
 For JSONB columns (`metadata`, `external_ref`), send either a JSON object or a JSON string; invalid JSON strings will be rejected.
+
+Idempotent ingest fields (optional but recommended):
+- `idempotency_policy_key`
+- `idempotency_key_primary`
+- `idempotency_key_secondary`
+
+For `source = "email"` and `source = "telegram"`, idempotency fields are required. Inserts without keys are rejected to prevent duplicate rows.
+
+When idempotency fields are provided, backend resolves policy in the active schema and returns per-row `action`:
+- `inserted`
+- `skipped` (policy conflict action = skip)
+- `updated` (policy conflict action = update)
 
 **Custom RETURNING**
 

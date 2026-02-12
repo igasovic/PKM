@@ -138,3 +138,21 @@ PKM supports a **global test mode** for safe experimentation.
 - Test data can be wiped safely using:
   ```sql
   TRUNCATE TABLE pkm_test.entries RESTART IDENTITY;
+  ```
+
+## Idempotency migration notes (2026-02)
+
+Applied migration adds:
+- `pkm.idempotency_policies`
+- `pkm_test.idempotency_policies`
+- `entries` columns in both schemas:
+  - `idempotency_policy_id`
+  - `idempotency_key_primary`
+  - `idempotency_key_secondary`
+- partial unique indexes for primary/secondary idempotency keys in both schemas.
+
+`pkm_ingest` privileges now include CRUD on policy tables plus sequence usage:
+- `GRANT SELECT, INSERT, UPDATE, DELETE ON ...idempotency_policies TO pkm_ingest`
+- `GRANT USAGE, SELECT ON SEQUENCE ...idempotency_policies_policy_id_seq TO pkm_ingest`
+- `ALTER DEFAULT PRIVILEGES IN SCHEMA pkm GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO pkm_ingest`
+- `ALTER DEFAULT PRIVILEGES IN SCHEMA pkm_test GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO pkm_ingest`

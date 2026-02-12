@@ -2,6 +2,10 @@
 
 const { getConfig } = require('../libs/config.js');
 const { buildRetrieval } = require('./quality.js');
+const {
+  buildIdempotencyForNormalized,
+  attachIdempotencyFields,
+} = require('./idempotency-normalization.js');
 
 function maybeUnescapeTelegramText(s) {
   const t = String(s ?? '');
@@ -175,17 +179,23 @@ function formatForInsert({
   return out;
 }
 
-async function normalizeTelegram({ text }) {
-  if (text === undefined || text === null) {
+async function normalizeTelegram({ text, source }) {
+  const src = source && typeof source === 'object' ? source : null;
+  const inputText = text !== undefined && text !== null
+    ? text
+    : (src ? (src.text || src.body || '') : '');
+  if (inputText === undefined || inputText === null || String(inputText).trim() === '') {
     throw new Error('text is required');
   }
+  // system is inferred by /normalize/telegram API handler.
+  const sourceForIdem = { ...(src || {}), system: 'telegram' };
 
   const config = getConfig();
   if (!config || !config.qualityThresholds) {
     throw new Error('config missing qualityThresholds');
   }
 
-  let capture_text = String(text || '');
+  let capture_text = String(inputText || '');
   capture_text = maybeUnescapeTelegramText(capture_text);
 
   const parsed = extractJsonObjectAndRemainder(capture_text);
@@ -208,7 +218,7 @@ async function normalizeTelegram({ text }) {
       excerpt_source: clean_text || capture_text,
     });
 
-    return formatForInsert({
+    const normalized = formatForInsert({
       source: 'telegram',
       intent: 'think',
       content_type: 'note',
@@ -220,6 +230,14 @@ async function normalizeTelegram({ text }) {
       url_canonical: null,
       retrieval,
     });
+    const idem = buildIdempotencyForNormalized({
+      source: sourceForIdem,
+      normalized,
+    });
+    if (!idem) {
+      throw new Error('unable to compute idempotency keys for telegram payload');
+    }
+    return attachIdempotencyFields(normalized, idem);
   }
 
   const match = capture_text.match(/https?:\/\/[^\s<>()]+/i);
@@ -245,7 +263,7 @@ async function normalizeTelegram({ text }) {
     excerpt_source: capture_text,
   });
 
-  return formatForInsert({
+  const normalized = formatForInsert({
     source: 'telegram',
     intent,
     content_type,
@@ -257,6 +275,14 @@ async function normalizeTelegram({ text }) {
     url_canonical,
     retrieval,
   });
+  const idem = buildIdempotencyForNormalized({
+    source: sourceForIdem,
+    normalized,
+  });
+  if (!idem) {
+    throw new Error('unable to compute idempotency keys for telegram payload');
+  }
+  return attachIdempotencyFields(normalized, idem);
 }
 
 function normalizeNewlines(s) {
@@ -1439,8 +1465,32 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
   });
 }
 
-async function normalizeEmail({ raw_text, from, subject }) {
-  return normalizeEmailInternal({ raw_text, from, subject });
+async function normalizeEmail({ raw_text, from, subject, source }) {
+  const src = source && typeof source === 'object' ? source : null;
+  const resolvedRawText = raw_text ?? (src ? (src.body || src.text || src.raw_text || src.capture_text) : null);
+  const resolvedFrom = from ?? (src ? (src.from_addr || src.from || src.sender) : null);
+  const resolvedSubject = subject ?? (src ? src.subject : null);
+  const normalized = await normalizeEmailInternal({
+    raw_text: resolvedRawText,
+    from: resolvedFrom,
+    subject: resolvedSubject,
+  });
+  // system is inferred by /normalize/email API handler.
+  const sourceForIdem = {
+    ...(src || {}),
+    system: 'email',
+    from_addr: (src && src.from_addr) ? src.from_addr : resolvedFrom,
+    subject: (src && src.subject) ? src.subject : resolvedSubject,
+    body: (src && src.body) ? src.body : resolvedRawText,
+  };
+  const idem = buildIdempotencyForNormalized({
+    source: sourceForIdem,
+    normalized,
+  });
+  if (!idem) {
+    throw new Error('unable to compute idempotency keys for email payload');
+  }
+  return attachIdempotencyFields(normalized, idem);
 }
 
 module.exports = {

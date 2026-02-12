@@ -5,12 +5,10 @@ const { getPool } = require('./db-pool.js');
 const { getConfig } = require('../libs/config.js');
 const { traceDb } = require('./observability.js');
 
-function getEntriesTable() {
-  const schema = process.env.PKM_DB_SCHEMA || 'pkm';
-  return sb.qualifiedTable(schema, 'entries');
-}
-
 const CONFIG_TABLE = sb.qualifiedTable(process.env.PKM_DB_SCHEMA || 'pkm', 'runtime_config');
+const IMMUTABLE_UPDATE_COLUMNS = new Set(['id', 'entry_id', 'created_at', 'tsv']);
+// For these ingest sources we fail closed unless idempotency keys are present.
+const IDEMPOTENCY_REQUIRED_SOURCES = new Set(['email', 'telegram']);
 
 function wrapConfigTableError(err) {
   if (!err) return err;
@@ -108,6 +106,9 @@ const COLUMN_TYPES = {
   low_signal: 'boolean',
   extraction_incomplete: 'boolean',
   quality_score: 'real',
+  idempotency_policy_id: 'bigint',
+  idempotency_key_primary: 'text',
+  idempotency_key_secondary: 'text',
   created_at: 'timestamptz',
 };
 
@@ -269,6 +270,192 @@ function buildGenericUpdatePayload(input, returningOverride) {
   return { set, where, returning };
 }
 
+function parseQualifiedTable(qualified) {
+  const raw = String(qualified || '').trim();
+  if (!raw) return null;
+
+  // Accept quoted schema-qualified identifiers used by SQL builder.
+  const mq = raw.match(/^"([^"]+)"\."([^"]+)"$/);
+  if (mq) return { schema: mq[1], table: mq[2] };
+
+  // Also accept unquoted schema.table form from callers.
+  const m = raw.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)$/);
+  if (m) return { schema: m[1], table: m[2] };
+
+  const singleQuoted = raw.match(/^"([^"]+)"$/);
+  if (singleQuoted) return { schema: null, table: singleQuoted[1] };
+
+  const single = raw.match(/^([a-zA-Z_][a-zA-Z0-9_]*)$/);
+  if (single) return { schema: null, table: single[1] };
+
+  return null;
+}
+
+function resolveSchemaFromConfig(config) {
+  const is_test_mode = !!(config && config.db && config.db.is_test_mode);
+  const candidate = is_test_mode
+    ? (config && config.db && config.db.schema_test)
+    : (config && config.db && config.db.schema_prod);
+  return sb.isValidIdent(candidate) ? candidate : 'pkm';
+}
+
+function wrapPolicyTableError(err, tableName) {
+  if (!err) return err;
+  if (err.code === '42P01' || err.code === '3F000') {
+    const wrapped = new Error(`idempotency policy table missing: create ${tableName}`);
+    wrapped.cause = err;
+    return wrapped;
+  }
+  return err;
+}
+
+function getDataObject(input) {
+  const data = (input && (input.input || input.data || input)) || {};
+  if (!data || typeof data !== 'object') {
+    throw new Error('insert requires JSON object input');
+  }
+  return data;
+}
+
+async function getPolicyByKey(schema, policyKey) {
+  const p = getPool();
+  const policiesTable = sb.qualifiedTable(schema, 'idempotency_policies');
+  try {
+    const res = await traceDb('idempotency_policy_get', { schema, table: policiesTable, policy_key: policyKey }, () =>
+      p.query(
+        `SELECT policy_id, policy_key, conflict_action, update_fields, enabled
+         FROM ${policiesTable}
+         WHERE policy_key = $1
+         LIMIT 1`,
+        [policyKey]
+      )
+    );
+    const row = res.rows && res.rows[0];
+    if (!row) {
+      throw new Error(`idempotency policy not found: ${policyKey}`);
+    }
+    if (!row.enabled) {
+      throw new Error(`idempotency policy disabled: ${policyKey}`);
+    }
+    return row;
+  } catch (err) {
+    throw wrapPolicyTableError(err, policiesTable);
+  }
+}
+
+function buildReturningSelectSql({ table, returning, id }) {
+  const fields = Array.isArray(returning) && returning.length ? returning.join(', ') : '*';
+  return `SELECT ${fields} FROM ${table} WHERE id = ${toSqlValue('uuid', id)} LIMIT 1`;
+}
+
+async function selectReturningById({ table, returning, id }) {
+  const sql = buildReturningSelectSql({ table, returning, id });
+  return exec(sql, { op: 'idempotency_select_returning', table });
+}
+
+function mergeJsonObjects(base, patch) {
+  if (Array.isArray(base) || Array.isArray(patch)) return patch;
+  if (!base || typeof base !== 'object') return patch;
+  if (!patch || typeof patch !== 'object') return patch;
+  const out = { ...base };
+  for (const key of Object.keys(patch)) {
+    const next = patch[key];
+    const prev = out[key];
+    if (
+      prev &&
+      next &&
+      typeof prev === 'object' &&
+      typeof next === 'object' &&
+      !Array.isArray(prev) &&
+      !Array.isArray(next)
+    ) {
+      out[key] = mergeJsonObjects(prev, next);
+    } else {
+      out[key] = next;
+    }
+  }
+  return out;
+}
+
+function isUniqueViolation(err) {
+  return !!(err && err.code === '23505');
+}
+
+function resolveIdempotencyRequest(data) {
+  const policyKey = data.idempotency_policy_key;
+  const keyPrimaryRaw = data.idempotency_key_primary;
+  const keySecondaryRaw = data.idempotency_key_secondary;
+  const keyPrimary = keyPrimaryRaw === null || keyPrimaryRaw === undefined
+    ? null
+    : String(keyPrimaryRaw).trim() || null;
+  const keySecondary = keySecondaryRaw === null || keySecondaryRaw === undefined
+    ? null
+    : String(keySecondaryRaw).trim() || null;
+  const hasKeys = !!(keyPrimary || keySecondary);
+  const hasPolicy = !!policyKey;
+  if (!hasKeys && !hasPolicy) return null;
+  if (hasKeys && !hasPolicy) {
+    throw new Error('idempotency requires idempotency_policy_key when keys are provided');
+  }
+  if (hasPolicy && !hasKeys) {
+    throw new Error('idempotency requires idempotency_key_primary or idempotency_key_secondary');
+  }
+  return {
+    policy_key: String(policyKey || '').trim(),
+    key_primary: keyPrimary,
+    key_secondary: keySecondary,
+  };
+}
+
+async function findExistingIdempotentRow({ table, policy_id, key_primary, key_secondary }) {
+  if (!policy_id) return null;
+  const p = getPool();
+  const res = await traceDb('idempotency_existing_find', { table, policy_id }, () =>
+    p.query(
+      `SELECT *
+       FROM ${table}
+       WHERE idempotency_policy_id = $1
+         AND (
+           ($2::text IS NOT NULL AND idempotency_key_primary = $2::text)
+           OR ($3::text IS NOT NULL AND idempotency_key_secondary = $3::text)
+         )
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [policy_id, key_primary || null, key_secondary || null]
+    )
+  );
+  return res.rows && res.rows[0] ? res.rows[0] : null;
+}
+
+function buildSetForIdempotentUpdate({ incoming, existing, policyUpdateFields }) {
+  const requested = Array.isArray(policyUpdateFields) && policyUpdateFields.length
+    ? policyUpdateFields
+    : Object.keys(incoming);
+  const set = [];
+  for (const key of requested) {
+    if (!Object.prototype.hasOwnProperty.call(incoming, key)) continue;
+    if (IMMUTABLE_UPDATE_COLUMNS.has(key)) continue;
+    if (key === 'idempotency_policy_key') continue;
+    const type = COLUMN_TYPES[key];
+    if (!type) continue;
+    let value = incoming[key];
+    if (
+      key === 'metadata' &&
+      existing &&
+      existing.metadata &&
+      value &&
+      typeof existing.metadata === 'object' &&
+      typeof value === 'object' &&
+      !Array.isArray(existing.metadata) &&
+      !Array.isArray(value)
+    ) {
+      value = mergeJsonObjects(existing.metadata, value);
+    }
+    set.push(`${key} = ${toSqlValue(type, value)}`);
+  }
+  return set;
+}
+
 async function insert(opts) {
   const config = await getConfigWithTestMode();
   const table = opts.table || await getEntriesTableFromConfig(config);
@@ -277,12 +464,122 @@ async function insert(opts) {
   let returning = opts.returning;
 
   if (!Array.isArray(columns) || !Array.isArray(values)) {
-    const data = opts.input || opts.data || opts || {};
+    const data = getDataObject(opts);
     const returningOverride = opts.returning || data.returning;
-    const built = buildGenericInsertPayload(data, returningOverride);
+    const idempotency = resolveIdempotencyRequest(data);
+    const parsedTable = parseQualifiedTable(table);
+    const activeSchema = (parsedTable && parsedTable.schema) ? parsedTable.schema : resolveSchemaFromConfig(config);
+    const isEntriesTable = !!(parsedTable && parsedTable.table === 'entries');
+    const sourceName = String(data.source || '').trim().toLowerCase();
+    const requireIdempotency = isEntriesTable && IDEMPOTENCY_REQUIRED_SOURCES.has(sourceName);
+
+    if (requireIdempotency && !idempotency) {
+      throw new Error(
+        `idempotency fields are required for source "${sourceName}" on ${table}: provide idempotency_policy_key and at least one idempotency key`
+      );
+    }
+
+    if (!idempotency || !isEntriesTable) {
+      const built = buildGenericInsertPayload(data, returningOverride);
+      columns = built.columns;
+      values = built.values;
+      returning = built.returning;
+      const sql = sb.buildInsert({
+        table,
+        columns,
+        values,
+        returning,
+      });
+      const result = await exec(sql, { op: 'insert', table });
+      return {
+        ...result,
+        rows: (result.rows || []).map((row) => ({ ...row, action: 'inserted' })),
+      };
+    }
+
+    // Resolve conflict behavior from persisted policy table (schema-specific).
+    const policy = await getPolicyByKey(activeSchema, idempotency.policy_key);
+    const incoming = {
+      ...data,
+      idempotency_policy_id: policy.policy_id,
+      idempotency_key_primary: idempotency.key_primary,
+      idempotency_key_secondary: idempotency.key_secondary,
+    };
+    delete incoming.idempotency_policy_key;
+    const built = buildGenericInsertPayload(incoming, returningOverride);
     columns = built.columns;
     values = built.values;
     returning = built.returning;
+
+    const insertSql = sb.buildInsert({
+      table,
+      columns,
+      values,
+      returning,
+    });
+
+    try {
+      const inserted = await exec(insertSql, { op: 'insert_idempotent', table, policy_key: policy.policy_key });
+      return {
+        ...inserted,
+        rows: (inserted.rows || []).map((row) => ({ ...row, action: 'inserted' })),
+      };
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err;
+      const existing = await findExistingIdempotentRow({
+        table,
+        policy_id: policy.policy_id,
+        key_primary: idempotency.key_primary,
+        key_secondary: idempotency.key_secondary,
+      });
+      if (!existing) throw err;
+
+      if (policy.conflict_action === 'skip') {
+        // Skip conflicts but return the existing row.
+        const selected = await selectReturningById({
+          table,
+          returning,
+          id: existing.id,
+        });
+        return {
+          ...selected,
+          rows: (selected.rows || []).map((row) => ({ ...row, action: 'skipped' })),
+        };
+      }
+
+      if (policy.conflict_action === 'update') {
+        // Update conflicts in-place based on policy.update_fields / denylist.
+        const set = buildSetForIdempotentUpdate({
+          incoming,
+          existing,
+          policyUpdateFields: policy.update_fields,
+        });
+        if (!set.length) {
+          const selected = await selectReturningById({
+            table,
+            returning,
+            id: existing.id,
+          });
+          return {
+            ...selected,
+            rows: (selected.rows || []).map((row) => ({ ...row, action: 'updated' })),
+          };
+        }
+        const updateSql = sb.buildUpdate({
+          table,
+          set,
+          where: `id = ${toSqlValue('uuid', existing.id)}`,
+          returning,
+        });
+        const updated = await exec(updateSql, { op: 'insert_idempotent_update', table, policy_key: policy.policy_key });
+        return {
+          ...updated,
+          rows: (updated.rows || []).map((row) => ({ ...row, action: 'updated' })),
+        };
+      }
+
+      throw new Error(`unsupported conflict_action: ${policy.conflict_action}`);
+    }
   }
 
   const sql = sb.buildInsert({
@@ -291,7 +588,11 @@ async function insert(opts) {
     values,
     returning,
   });
-  return exec(sql, { op: 'insert', table });
+  const result = await exec(sql, { op: 'insert', table });
+  return {
+    ...result,
+    rows: (result.rows || []).map((row) => ({ ...row, action: 'inserted' })),
+  };
 }
 
 async function update(opts) {
@@ -344,7 +645,7 @@ async function readFind(opts) {
 }
 
 async function readLast(opts) {
-  const config = getConfig();
+  const config = await getConfigWithTestMode();
   const sql = sb.buildReadLast({
     config,
     entries_table: await getEntriesTableFromConfig(config),
@@ -356,8 +657,9 @@ async function readLast(opts) {
 }
 
 async function readPull(opts) {
+  const config = await getConfigWithTestMode();
   const sql = sb.buildReadPull({
-    entries_table: await getEntriesTableFromConfig(),
+    entries_table: await getEntriesTableFromConfig(config),
     entry_id: opts.entry_id,
     shortN: opts.shortN,
     longN: opts.longN,
