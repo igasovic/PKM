@@ -7,6 +7,7 @@ const { normalizeEmail } = require('./normalization.js');
 const { enqueueTier1Batch } = require('./tier1-enrichment.js');
 const { getBraintrustLogger } = require('./observability.js');
 
+const IMPORT_ROOT = '/data';
 const DEFAULT_T1_BATCH_SIZE = 500;
 const MIN_T1_BATCH_SIZE = 500;
 const MAX_T1_BATCH_SIZE = 2000;
@@ -216,12 +217,13 @@ function parseInsertChunkSize(raw) {
 function resolveMboxPath(inputPath) {
   const raw = String(inputPath || '').trim();
   if (!raw) throw new Error('mbox_path is required');
-  if (!raw.toLowerCase().endsWith('.mbox')) {
+  const fileName = path.basename(raw);
+  if (!fileName.toLowerCase().endsWith('.mbox')) {
     throw new Error('mbox_path must point to a .mbox file');
   }
 
-  const absPath = path.resolve(raw);
-  const rootAbs = path.dirname(absPath);
+  const rootAbs = path.resolve(IMPORT_ROOT);
+  const absPath = path.resolve(rootAbs, fileName);
   return { rootAbs, absPath, inputPath: raw };
 }
 
