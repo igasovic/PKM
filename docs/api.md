@@ -78,11 +78,12 @@ Body:
   "text": "raw telegram message",
   "source": {
     "chat_id": "123",
-    "message_id": "456",
-    "url": "https://example.com"
+    "message_id": "456"
   }
 }
 ```
+
+`url` is optional in input. Normalization extracts links from `text` and computes canonical URL internally.
 
 Response:
 ```json
@@ -123,13 +124,14 @@ Body:
   "subject": "Email subject line",
   "source": {
     "message_id": "<abc@example.com>",
-    "from_addr": "forwarder@example.com",
-    "subject": "Fwd: Daily Brief",
-    "date": "2026-02-12T10:00:00Z",
-    "participants": ["me@example.com", "other@example.com"]
+    "date": "2026-02-12T10:00:00Z"
   }
 }
 ```
+
+Notes:
+- `from` and `subject` are read from top-level request fields.
+- Do not send `source.from_addr` or `source.subject` for `/normalize/email`.
 
 Response:
 ```json

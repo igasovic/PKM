@@ -88,19 +88,6 @@ function normalizeUrlForKey(urlValue) {
   return u.toString().replace(/\/$/, '');
 }
 
-function normalizeParticipants(list) {
-  if (!Array.isArray(list)) return [];
-  const seen = new Set();
-  const out = [];
-  for (const item of list) {
-    const email = normalizeEmailAddr(item);
-    if (!email || seen.has(email)) continue;
-    seen.add(email);
-    out.push(email);
-  }
-  return out.sort();
-}
-
 function buildTelegramIdempotency(source, normalized) {
   const src = source || {};
   const isLink = !!(normalized.url_canonical || normalized.url || src.url);
@@ -148,14 +135,14 @@ function buildEmailNewsletterIdempotency(source) {
   };
 }
 
-function buildEmailCorrespondenceIdempotency(source) {
+function buildEmailCorrespondenceIdempotency(source, normalized) {
   const src = source || {};
-  const participants = normalizeParticipants(src.participants);
-  const subjectBase = normalizeSubjectBase(src.subject);
-  if (!participants.length || !subjectBase) return null;
+  const norm = normalized || {};
+  const subjectBase = normalizeSubjectBase(src.subject || norm.title);
+  if (!subjectBase) return null;
   return {
     idempotency_policy_key: 'email_correspondence_thread_v1',
-    idempotency_key_primary: sha256([participants.join(','), subjectBase]),
+    idempotency_key_primary: sha256(subjectBase),
     idempotency_key_secondary: null,
   };
 }
@@ -174,7 +161,7 @@ function buildIdempotencyForNormalized({ source, normalized }) {
       return buildEmailNewsletterIdempotency(src);
     }
     if (norm.content_type === 'correspondence' || norm.content_type === 'correspondence_thread') {
-      return buildEmailCorrespondenceIdempotency(src);
+      return buildEmailCorrespondenceIdempotency(src, norm);
     }
   }
 
