@@ -52,7 +52,7 @@ Source: `\d+ pkm.entries` (plus `information_schema.columns`, constraints, trigg
 | low_signal | boolean | yes |  | quality signals |
 | extraction_incomplete | boolean | yes |  | quality signals |
 | quality_score | real | yes |  | quality score (0..1) |
-| idempotency_policy_id | bigint | yes |  | FK → `pkm.idempotency_policies(policy_id)` (ON DELETE SET NULL) |
+| idempotency_policy_key | text | yes |  | policy key stored directly on entry |
 | idempotency_key_primary | text | yes |  | durable dedupe key (tier-1) |
 | idempotency_key_secondary | text | yes |  | durable dedupe key (tier-2 fallback) |
 
@@ -74,15 +74,14 @@ Source: `\d+ pkm.entries` (plus `information_schema.columns`, constraints, trigg
 | entries_keywords_gin_idx | gin | `(keywords)` |
 | entries_people_gin_idx | gin | `(people)` |
 | entries_quality_good_created_at_idx | btree | `(created_at DESC)` **partial**: `WHERE boilerplate_heavy IS NOT TRUE AND low_signal IS NOT TRUE` |
-| pkm_entries_idem_primary_uidx | btree | UNIQUE **partial**: `(idempotency_policy_id, idempotency_key_primary)` where both are non-null |
-| pkm_entries_idem_secondary_uidx | btree | UNIQUE **partial**: `(idempotency_policy_id, idempotency_key_secondary)` where both are non-null |
+| pkm_entries_idem_primary_uidx | btree | UNIQUE **partial**: `(idempotency_policy_key, idempotency_key_primary)` where both are non-null |
+| pkm_entries_idem_secondary_uidx | btree | UNIQUE **partial**: `(idempotency_policy_key, idempotency_key_secondary)` where both are non-null |
 
 ### Constraints
 
 - **Primary key:** `entries_pkey` on `(id)`
 - **Unique:** `entries_entry_id_uidx` on `(entry_id)`
 - **Foreign key:** `entries_duplicate_of_fkey` — `duplicate_of` → `pkm.entries(id)` ON DELETE SET NULL
-- **Foreign key:** `entries_idempotency_policy_fk` — `idempotency_policy_id` → `pkm.idempotency_policies(policy_id)` ON DELETE SET NULL
 
 ### Triggers
 
@@ -123,7 +122,7 @@ This design guarantees:
 
 Idempotency-related mirrors in test schema:
 - `pkm_test.idempotency_policies`
-- `pkm_test.entries.idempotency_policy_id`
+- `pkm_test.entries.idempotency_policy_key`
 - `pkm_test.entries.idempotency_key_primary`
 - `pkm_test.entries.idempotency_key_secondary`
 - `pkm_test_entries_idem_primary_uidx`

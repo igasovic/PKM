@@ -106,7 +106,7 @@ const COLUMN_TYPES = {
   low_signal: 'boolean',
   extraction_incomplete: 'boolean',
   quality_score: 'real',
-  idempotency_policy_id: 'bigint',
+  idempotency_policy_key: 'text',
   idempotency_key_primary: 'text',
   idempotency_key_secondary: 'text',
   created_at: 'timestamptz',
@@ -323,7 +323,7 @@ async function getPolicyByKey(schema, policyKey) {
   try {
     const res = await traceDb('idempotency_policy_get', { schema, table: policiesTable, policy_key: policyKey }, () =>
       p.query(
-        `SELECT policy_id, policy_key, conflict_action, update_fields, enabled
+        `SELECT policy_key, conflict_action, update_fields, enabled
          FROM ${policiesTable}
          WHERE policy_key = $1
          LIMIT 1`,
@@ -407,21 +407,21 @@ function resolveIdempotencyRequest(data) {
   };
 }
 
-async function findExistingIdempotentRow({ table, policy_id, key_primary, key_secondary }) {
-  if (!policy_id) return null;
+async function findExistingIdempotentRow({ table, policy_key, key_primary, key_secondary }) {
+  if (!policy_key) return null;
   const p = getPool();
-  const res = await traceDb('idempotency_existing_find', { table, policy_id }, () =>
+  const res = await traceDb('idempotency_existing_find', { table, policy_key }, () =>
     p.query(
       `SELECT *
        FROM ${table}
-       WHERE idempotency_policy_id = $1
+       WHERE idempotency_policy_key = $1
          AND (
            ($2::text IS NOT NULL AND idempotency_key_primary = $2::text)
            OR ($3::text IS NOT NULL AND idempotency_key_secondary = $3::text)
          )
        ORDER BY created_at DESC
        LIMIT 1`,
-      [policy_id, key_primary || null, key_secondary || null]
+      [policy_key, key_primary || null, key_secondary || null]
     )
   );
   return res.rows && res.rows[0] ? res.rows[0] : null;
@@ -501,11 +501,10 @@ async function insert(opts) {
     const policy = await getPolicyByKey(activeSchema, idempotency.policy_key);
     const incoming = {
       ...data,
-      idempotency_policy_id: policy.policy_id,
+      idempotency_policy_key: policy.policy_key,
       idempotency_key_primary: idempotency.key_primary,
       idempotency_key_secondary: idempotency.key_secondary,
     };
-    delete incoming.idempotency_policy_key;
     const built = buildGenericInsertPayload(incoming, returningOverride);
     columns = built.columns;
     values = built.values;
@@ -528,7 +527,7 @@ async function insert(opts) {
       if (!isUniqueViolation(err)) throw err;
       const existing = await findExistingIdempotentRow({
         table,
-        policy_id: policy.policy_id,
+        policy_key: policy.policy_key,
         key_primary: idempotency.key_primary,
         key_secondary: idempotency.key_secondary,
       });

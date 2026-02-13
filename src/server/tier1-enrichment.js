@@ -501,14 +501,14 @@ async function runTier1BatchWorkerCycle() {
     const limitRaw = Number(process.env.T1_BATCH_SYNC_LIMIT || 20);
     const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 200) : 20;
     const result = await syncPendingTier1Batches({ limit });
-    // getBraintrustLogger().log({
-    //   input: { limit },
-    //   output: result,
-    //   metadata: {
-    //     source: 't1_batch_worker',
-    //     event: 'cycle',
-    //   },
-    //});
+    getBraintrustLogger().log({
+      input: { limit },
+      output: result,
+      metadata: {
+        source: 't1_batch_worker',
+        event: 'cycle',
+      },
+    });
     return result;
   } catch (err) {
     getBraintrustLogger().log({
@@ -535,7 +535,7 @@ function startTier1BatchWorker() {
   const enabled = String(process.env.T1_BATCH_WORKER_ENABLED || 'true').toLowerCase() !== 'false';
   if (!enabled) return;
 
-  const intervalRaw = Number(process.env.T1_BATCH_SYNC_INTERVAL_MS || 60_000);
+  const intervalRaw = Number(process.env.T1_BATCH_SYNC_INTERVAL_MS || 10*60_000);
   const intervalMs = Number.isFinite(intervalRaw) && intervalRaw >= 5_000 ? intervalRaw : 60_000;
 
   // Kick off an immediate cycle so restart recovery starts right away.

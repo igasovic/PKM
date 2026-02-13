@@ -86,14 +86,13 @@ Primary objective:
   - `policy_id`, `policy_key`, `source`, `content_type`, `conflict_action`, `update_fields`, `enabled`
 
 ### Entries columns (both schemas)
-- `idempotency_policy_id bigint`
+- `idempotency_policy_key text`
 - `idempotency_key_primary text`
 - `idempotency_key_secondary text`
 
 ### Constraints/indexes
-- FK: `entries.idempotency_policy_id -> idempotency_policies.policy_id`
-- unique partial index on `(idempotency_policy_id, idempotency_key_primary)` where primary not null
-- unique partial index on `(idempotency_policy_id, idempotency_key_secondary)` where secondary not null
+- unique partial index on `(idempotency_policy_key, idempotency_key_primary)` where primary not null
+- unique partial index on `(idempotency_policy_key, idempotency_key_secondary)` where secondary not null
 
 ## Conflict handling
 - `skip`:

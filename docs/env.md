@@ -146,7 +146,7 @@ Applied migration adds:
 - `pkm.idempotency_policies`
 - `pkm_test.idempotency_policies`
 - `entries` columns in both schemas:
-  - `idempotency_policy_id`
+  - `idempotency_policy_key`
   - `idempotency_key_primary`
   - `idempotency_key_secondary`
 - partial unique indexes for primary/secondary idempotency keys in both schemas.

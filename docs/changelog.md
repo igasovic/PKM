@@ -25,6 +25,7 @@
 - `/normalize/telegram` no longer expects input `url`; URL is extracted and canonicalized from message text during normalization.
 - `/normalize/email` now treats top-level `from` and `subject` as the canonical inputs for those fields (no fallback from `source.from_addr`/`source.subject`).
 - Normalization no longer derives/stores correspondence participants (`people`) as part of email normalization output.
+- Renamed entry idempotency policy column from `idempotency_policy_id` to `idempotency_policy_key` across backend logic and documentation.
 - Fixed schema resolution drift in reads: `/db/read/last` and `/db/read/pull` now honor persisted test mode just like other DB methods.
 - Moved test mode caching/logic into `src/server/test-mode.js` and removed it from config.
 - `/config` now returns only static config (no test mode state).
