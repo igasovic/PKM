@@ -167,6 +167,48 @@ Response:
 { "content_type": "newsletter" }
 ```
 
+### `POST /normalize/webpage`
+Normalizes extracted webpage/article text and recomputes retrieval excerpt + quality in one call.
+Designed for update flows where output can be sent directly to `/db/update`.
+
+Body:
+```json
+{
+  "text": "raw extracted webpage text",
+  "capture_text": "optional original capture text",
+  "content_type": "newsletter",
+  "url": "https://example.com/article",
+  "url_canonical": "https://example.com/article",
+  "excerpt": "optional excerpt override"
+}
+```
+
+Notes:
+- `text` is preferred input and is mapped to `extracted_text`.
+- If `clean_text` is provided instead, it is used as the cleaning input.
+- If cleaned text is empty, response includes `retrieval_update_skipped: true`.
+- If `excerpt` is provided, it is used as excerpt override.
+
+Response:
+```json
+{
+  "extracted_text": "...",
+  "extracted_len": 12000,
+  "clean_text": "...",
+  "clean_len": 9800,
+  "retrieval_excerpt": "...",
+  "clean_word_count": 1400,
+  "clean_char_count": 9800,
+  "extracted_char_count": 12000,
+  "link_count": 12,
+  "link_ratio": 0.008,
+  "boilerplate_heavy": false,
+  "low_signal": false,
+  "quality_score": 0.82,
+  "metadata": { "retrieval": { "version": "v1" } }
+}
+```
+
 ## Enrichment
 
 ### `POST /enrich/t1`

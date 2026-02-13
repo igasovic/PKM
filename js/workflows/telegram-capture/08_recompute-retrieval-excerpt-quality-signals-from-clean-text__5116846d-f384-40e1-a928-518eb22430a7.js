@@ -98,12 +98,10 @@ module.exports = async function run(ctx) {
 
   const quality_score = clamp01(signal - penalty);
 
-  // IMPORTANT: if this is a PKM JSON note and excerpt is supplied, keep it.
-  const is_pkm_json_note = $json._pkm_mode === 'pkm_json_note_v1';
   const supplied_excerpt = normWS($json.excerpt ?? '');
 
-  const excerpt = (is_pkm_json_note && supplied_excerpt)
-    ? buildExcerpt(supplied_excerpt, TH.excerpt_max_chars) // trim to max, keep user meaning
+  const excerpt = supplied_excerpt
+    ? buildExcerpt(supplied_excerpt, TH.excerpt_max_chars)
     : buildExcerpt(clean_text, TH.excerpt_max_chars);
 
   const retrieval = {

@@ -30,6 +30,8 @@
 - Moved test mode caching/logic into `src/server/test-mode.js` and removed it from config.
 - `/config` now returns only static config (no test mode state).
 - Moved shared libs to `src/libs` and updated server Dockerfile copy path.
+- Added `POST /normalize/webpage` for one-call webpage text cleaning plus retrieval/quality recomputation.
+- Consolidated retrieval excerpt + quality signal recompute flows behind `buildRetrievalForDb` in `src/server/quality.js` and reused it in normalization paths.
 
 ## 2026-02-10 — Backend config module + API endpoint
 

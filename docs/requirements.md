@@ -42,6 +42,23 @@ Primary objective:
 - `source.system` is inferred by normalization/API path as `email`
 - `source.from_addr` and `source.subject` are not used; top-level `from`/`subject` are canonical
 
+### `POST /normalize/webpage`
+- Purpose:
+  - normalize extracted webpage/article text
+  - compute retrieval excerpt + quality signals in a single backend call
+- Input:
+  - `text` preferred (mapped to `extracted_text`)
+  - optional `clean_text` (if already pre-cleaned)
+  - optional `capture_text`, `content_type`, `url`, `url_canonical`
+  - optional `excerpt` override
+- Output:
+  - `extracted_text`, `clean_text`
+  - promoted retrieval/quality fields (`retrieval_excerpt`, counts, ratios, quality flags/scores)
+  - `metadata.retrieval`
+- Empty-clean guard:
+  - if normalized clean text is empty, response sets `retrieval_update_skipped: true`
+  - caller should skip retrieval overwrite in that case
+
 ## Policy definitions
 
 ### `telegram_thought_v1`
@@ -137,6 +154,11 @@ Primary objective:
 - Branch by `action`:
   - `skipped`: stop enrichment/update pipeline
   - `inserted` / `updated`: continue downstream processing
+
+## Quality/retrieval computation requirements
+- Retrieval excerpt + quality signals must be generated through shared backend quality logic.
+- Normalization flows should call the quality module entrypoint instead of duplicating signal logic in workflow code.
+- Returned fields must be DB-ready for direct `/db/update` or `/db/insert` usage.
 
 ## Non-goals
 - No duplicate side-table tracking in place of uniqueness constraints.

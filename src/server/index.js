@@ -9,6 +9,7 @@ const { getConfig } = require('../libs/config.js');
 const {
   normalizeTelegram,
   normalizeEmail,
+  normalizeWebpage,
   decideEmailIntent,
 } = require('./normalization.js');
 const {
@@ -114,6 +115,27 @@ async function handleRequest(req, res) {
         from: body.from,
         subject: body.subject,
         source: body.source,
+      });
+      return json(res, 200, normalized);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/normalize/webpage') {
+    try {
+      const raw = await readBody(req);
+      const body = raw ? JSON.parse(raw) : {};
+      const normalized = await normalizeWebpage({
+        text: body.text,
+        extracted_text: body.extracted_text,
+        clean_text: body.clean_text,
+        capture_text: body.capture_text,
+        content_type: body.content_type,
+        url: body.url,
+        url_canonical: body.url_canonical,
+        excerpt: body.excerpt,
       });
       return json(res, 200, normalized);
     } catch (err) {

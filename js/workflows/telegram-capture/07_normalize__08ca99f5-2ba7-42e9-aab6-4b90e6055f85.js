@@ -135,8 +135,6 @@ module.exports = async function run(ctx) {
       {
         ...$json,
 
-        _pkm_mode: 'pkm_json_note_v1',
-
         // fixed fields for this flow
         source: 'telegram',
         intent: 'think',

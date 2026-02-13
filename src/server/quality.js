@@ -114,7 +114,28 @@ function buildRetrieval({
   };
 }
 
+// Single entrypoint for normalization: computes retrieval excerpt + quality
+// and returns DB-ready promoted fields plus metadata patch.
+function buildRetrievalForDb(opts) {
+  const retrieval = buildRetrieval(opts);
+  const quality = retrieval && retrieval.quality ? retrieval.quality : {};
+  return {
+    retrieval,
+    retrieval_excerpt: retrieval.excerpt ?? null,
+    clean_word_count: quality.clean_word_count ?? null,
+    clean_char_count: quality.clean_char_count ?? null,
+    extracted_char_count: quality.extracted_char_count ?? null,
+    link_count: quality.link_count ?? null,
+    link_ratio: quality.link_ratio ?? null,
+    boilerplate_heavy: quality.boilerplate_heavy ?? null,
+    low_signal: quality.low_signal ?? null,
+    quality_score: quality.quality_score ?? null,
+    metadata: { retrieval },
+  };
+}
+
 module.exports = {
   buildRetrieval,
+  buildRetrievalForDb,
   normWS,
 };

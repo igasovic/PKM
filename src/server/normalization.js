@@ -1,7 +1,7 @@
 'use strict';
 
 const { getConfig } = require('../libs/config.js');
-const { buildRetrieval } = require('./quality.js');
+const { buildRetrievalForDb } = require('./quality.js');
 const {
   buildIdempotencyForNormalized,
   attachIdempotencyFields,
@@ -149,9 +149,16 @@ function formatForInsert({
   clean_text,
   url,
   url_canonical,
-  retrieval,
+  retrieval_fields,
 }) {
-  const quality = retrieval.quality;
+  // Shared URL normalization fallback:
+  // if caller didn't provide canonical URL but did provide URL, derive it
+  // using the same canonicalizer used in Telegram normalization.
+  const resolved_url = url || null;
+  const resolved_url_canonical = (url_canonical && String(url_canonical).trim())
+    ? String(url_canonical).trim()
+    : canonicalizeUrl(resolved_url);
+
   const out = {
     source,
     intent,
@@ -160,20 +167,41 @@ function formatForInsert({
     author,
     capture_text,
     clean_text,
-    url,
-    url_canonical,
-    retrieval_excerpt: retrieval.excerpt,
-    clean_word_count: quality.clean_word_count,
-    clean_char_count: quality.clean_char_count,
-    extracted_char_count: quality.extracted_char_count,
-    link_count: quality.link_count,
-    link_ratio: quality.link_ratio,
-    boilerplate_heavy: quality.boilerplate_heavy,
-    low_signal: quality.low_signal,
-    quality_score: quality.quality_score,
-    metadata: { retrieval },
+    url: resolved_url,
+    url_canonical: resolved_url_canonical,
+    ...retrieval_fields,
   };
   return out;
+}
+
+function cleanWebpageExtractedText(s) {
+  if (!s) return '';
+
+  let t = String(s);
+
+  // Remove zero-width transport artifacts + BOM before downstream scoring.
+  t = t.replace(/[\u200B-\u200D\uFEFF]/g, '');
+  t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  t = t.replace(/\u00A0/g, ' ');
+
+  // Keep paragraph boundaries, but collapse repeated blank lines.
+  const lines = t.split('\n').map((line) => line.trim());
+  const out = [];
+  let prevBlank = false;
+  for (const line of lines) {
+    const blank = line.length === 0;
+    if (blank) {
+      if (!prevBlank) out.push('');
+      prevBlank = true;
+    } else {
+      out.push(line);
+      prevBlank = false;
+    }
+  }
+
+  t = out.join('\n').trim();
+  t = t.replace(/[ \t]+/g, ' ');
+  return t;
 }
 
 async function normalizeTelegram({ text, source }) {
@@ -201,7 +229,7 @@ async function normalizeTelegram({ text, source }) {
 
     const clean_text = String(parsed.after ?? '');
 
-    const retrieval = buildRetrieval({
+    const retrieval_fields = buildRetrievalForDb({
       capture_text,
       content_type: 'note',
       extracted_text: '',
@@ -222,7 +250,7 @@ async function normalizeTelegram({ text, source }) {
       clean_text,
       url: null,
       url_canonical: null,
-      retrieval,
+      retrieval_fields,
     });
     const idem = buildIdempotencyForNormalized({
       source: sourceForIdem,
@@ -246,7 +274,7 @@ async function normalizeTelegram({ text, source }) {
   const content_type = url ? 'newsletter' : 'note';
   const intent = content_type === 'newsletter' ? 'archive' : 'think';
 
-  const retrieval = buildRetrieval({
+  const retrieval_fields = buildRetrievalForDb({
     capture_text,
     content_type,
     extracted_text: '',
@@ -267,7 +295,7 @@ async function normalizeTelegram({ text, source }) {
     clean_text: null,
     url,
     url_canonical,
-    retrieval,
+    retrieval_fields,
   });
   const idem = buildIdempotencyForNormalized({
     source: sourceForIdem,
@@ -1294,7 +1322,7 @@ function buildEmailRetrieval({
   url = null,
   url_canonical = null,
 }) {
-  return buildRetrieval({
+  return buildRetrievalForDb({
     capture_text,
     content_type,
     extracted_text: '',
@@ -1343,7 +1371,7 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
 
     const clean_text = formatThreadMarkdown(blocks);
 
-    const retrieval = buildEmailRetrieval({
+    const retrieval_fields = buildEmailRetrieval({
       capture_text,
       content_type: 'correspondence',
       clean_text,
@@ -1360,14 +1388,14 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
       clean_text,
       url: null,
       url_canonical: null,
-      retrieval,
+      retrieval_fields,
     });
   }
 
   if (content_type === 'note') {
     // Step 3b: note fallback (preserve cleaned core_text)
     const clean_text = collapseWhitespacePreserveNewlines(normalizedCoreText);
-    const retrieval = buildEmailRetrieval({
+    const retrieval_fields = buildEmailRetrieval({
       capture_text,
       content_type: 'note',
       clean_text,
@@ -1384,7 +1412,7 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
       clean_text,
       url: null,
       url_canonical: null,
-      retrieval,
+      retrieval_fields,
     });
   }
 
@@ -1436,7 +1464,7 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
   const url_canonical = canonical_url || null;
   const url = url_canonical || null;
 
-  const retrieval = buildEmailRetrieval({
+  const retrieval_fields = buildEmailRetrieval({
     capture_text,
     content_type: 'newsletter',
     clean_text,
@@ -1455,7 +1483,7 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
     clean_text,
     url,
     url_canonical,
-    retrieval,
+    retrieval_fields,
   });
 }
 
@@ -1487,8 +1515,73 @@ async function normalizeEmail({ raw_text, from, subject, source }) {
   return attachIdempotencyFields(normalized, idem);
 }
 
+async function normalizeWebpage({
+  text,
+  extracted_text,
+  clean_text,
+  capture_text,
+  content_type,
+  url,
+  url_canonical,
+  excerpt,
+}) {
+  // Step 1: text-clean behavior from telegram-capture/09_text-clean.
+  const extracted = String(
+    text !== undefined && text !== null
+      ? text
+      : (extracted_text !== undefined && extracted_text !== null ? extracted_text : (clean_text || ''))
+  );
+  const cleaned = cleanWebpageExtractedText(
+    clean_text !== undefined && clean_text !== null ? clean_text : extracted
+  );
+
+  // Preserve node parity: if cleaned text is empty, do not force retrieval overwrite.
+  if (!cleaned) {
+    return {
+      extracted_text: extracted,
+      extracted_len: extracted.length,
+      clean_text: '',
+      clean_len: 0,
+      retrieval_update_skipped: true,
+    };
+  }
+
+  // Step 2: recompute retrieval excerpt + quality (node 08 behavior) via quality module.
+  const config = getConfig();
+  const effectiveUrl = url || null;
+  const effectiveCanonical = canonicalizeUrl(url_canonical || effectiveUrl);
+  const effectiveContentType = String(content_type || '').trim() || 'newsletter';
+  const effectiveCaptureText = (capture_text !== undefined && capture_text !== null)
+    ? String(capture_text)
+    : cleaned;
+  const excerptOverride = (excerpt !== undefined && excerpt !== null)
+    ? String(excerpt)
+    : null;
+
+  const retrieval_fields = buildRetrievalForDb({
+    capture_text: effectiveCaptureText,
+    content_type: effectiveContentType,
+    extracted_text: extracted,
+    url_canonical: effectiveCanonical,
+    url: effectiveUrl,
+    config,
+    excerpt_override: excerptOverride,
+    excerpt_source: cleaned,
+    quality_source_text: cleaned,
+  });
+
+  return {
+    extracted_text: extracted,
+    extracted_len: extracted.length,
+    clean_text: cleaned,
+    clean_len: cleaned.length,
+    ...retrieval_fields,
+  };
+}
+
 module.exports = {
   normalizeTelegram,
   normalizeEmail,
+  normalizeWebpage,
   decideEmailIntent,
 };
