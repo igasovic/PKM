@@ -508,7 +508,7 @@ async function runTier1BatchWorkerCycle() {
     //     source: 't1_batch_worker',
     //     event: 'cycle',
     //   },
-    });
+    //});
     return result;
   } catch (err) {
     getBraintrustLogger().log({
