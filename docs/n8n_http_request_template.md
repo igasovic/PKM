@@ -146,8 +146,6 @@ Always include a small returning list for debugging:
     url_canonical: $json.url_canonical ?? null,
     metadata: retrieval ? { retrieval } : null,
     retrieval_excerpt: retrieval?.excerpt ?? null,
-    retrieval_version: retrieval?.version ?? null,
-    source_domain: retrieval?.source_domain ?? null,
     clean_word_count: q.clean_word_count ?? null,
     clean_char_count: q.clean_char_count ?? null,
     quality_score: q.quality_score ?? null,

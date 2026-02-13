@@ -15,16 +15,6 @@ function linkCountFromText(text) {
   return matches.map(trimUrl).filter(Boolean).length;
 }
 
-function getDomain(rawUrl) {
-  const u = String(rawUrl || '').trim();
-  const m = u.match(/^https?:\/\/([^\/?#]+)/i);
-  if (!m) return null;
-  let host = m[1].toLowerCase();
-  host = host.replace(/:\d+$/, '');
-  host = host.replace(/^www\./, '');
-  return host || null;
-}
-
 function buildExcerpt(raw, maxChars) {
   const s = normWS(raw);
   if (!s) return '';
@@ -73,10 +63,6 @@ function buildRetrieval({
       link_ratio_high: cfg.boilerplate.link_ratio_high,
       link_count_high: cfg.boilerplate.link_count_high,
     },
-    extraction_incomplete: {
-      min_extracted_chars_to_consider: cfg.extraction_incomplete.min_extracted_chars_to_consider,
-      clean_vs_extracted_ratio_low: cfg.extraction_incomplete.clean_vs_extracted_ratio_low,
-    },
   };
 
   const qualityBase = (quality_source_text !== undefined && quality_source_text !== null)
@@ -98,23 +84,15 @@ function buildRetrieval({
     (link_ratio > TH.boilerplate.link_ratio_high) ||
     (link_count >= TH.boilerplate.link_count_high);
 
-  const extraction_incomplete =
-    (extracted_char_count >= TH.extraction_incomplete.min_extracted_chars_to_consider) &&
-    (clean_char_count / Math.max(1, extracted_char_count) < TH.extraction_incomplete.clean_vs_extracted_ratio_low);
-
   const signal =
     0.6 * Math.min(1, clean_word_count / 120) +
     0.4 * Math.min(1, clean_char_count / 1200);
 
   const penalty =
     (boilerplate_heavy ? 0.25 : 0) +
-    (low_signal ? 0.35 : 0) +
-    (extraction_incomplete ? 0.15 : 0);
+    (low_signal ? 0.35 : 0);
 
   const quality_score = clamp01Score(signal - penalty);
-
-  const url_for_domain = url_canonical || url || null;
-  const source_domain = getDomain(url_for_domain);
 
   const excerpt_text = excerpt_source || capture_text;
   const computed_excerpt = buildExcerpt(excerpt_text, TH.excerpt_max_chars);
@@ -123,7 +101,6 @@ function buildRetrieval({
   return {
     version: 'v1',
     excerpt,
-    source_domain,
     quality: {
       clean_word_count,
       clean_char_count,
@@ -132,7 +109,6 @@ function buildRetrieval({
       link_ratio,
       boilerplate_heavy,
       low_signal,
-      extraction_incomplete,
       quality_score,
     },
   };
@@ -141,5 +117,4 @@ function buildRetrieval({
 module.exports = {
   buildRetrieval,
   normWS,
-  getDomain,
 };

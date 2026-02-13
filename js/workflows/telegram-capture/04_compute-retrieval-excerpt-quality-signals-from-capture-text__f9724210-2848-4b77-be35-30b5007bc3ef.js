@@ -28,10 +28,6 @@ const TH = {
     link_ratio_high: cfg.boilerplate?.link_ratio_high ?? 0.18,
     link_count_high: cfg.boilerplate?.link_count_high ?? 25,
   },
-  extraction_incomplete: {
-    min_extracted_chars_to_consider: cfg.extraction_incomplete?.min_extracted_chars_to_consider ?? 800,
-    clean_vs_extracted_ratio_low: cfg.extraction_incomplete?.clean_vs_extracted_ratio_low ?? 0.25,
-  },
 };
 
 // Notes should NOT be penalized just because they're short.
@@ -53,16 +49,6 @@ function trimUrl(u) {
 function linkCountFromText(text) {
   const matches = String(text || '').match(/https?:\/\/[^\s<>()]+/gi) || [];
   return matches.map(trimUrl).filter(Boolean).length;
-}
-
-function getDomain(rawUrl) {
-  const u = String(rawUrl || '').trim();
-  const m = u.match(/^https?:\/\/([^\/?#]+)/i);
-  if (!m) return null;
-  let host = m[1].toLowerCase();
-  host = host.replace(/:\d+$/, '');      // drop port
-  host = host.replace(/^www\./, '');     // drop www
-  return host || null;
 }
 
 function buildExcerpt(raw, maxChars) {
@@ -109,10 +95,6 @@ const boilerplate_heavy =
   (link_ratio > TH.boilerplate.link_ratio_high) ||
   (link_count >= TH.boilerplate.link_count_high);
 
-const extraction_incomplete =
-  (extracted_char_count >= TH.extraction_incomplete.min_extracted_chars_to_consider) &&
-  (clean_char_count / Math.max(1, extracted_char_count) < TH.extraction_incomplete.clean_vs_extracted_ratio_low);
-
 // Optional quality_score (0..1). Only for sorting/penalties later; not used as “relevance”.
 const signal =
   0.6 * Math.min(1, clean_word_count / 120) +
@@ -120,20 +102,15 @@ const signal =
 
 const penalty =
   (boilerplate_heavy ? 0.25 : 0) +
-  (low_signal ? 0.35 : 0) +
-  (extraction_incomplete ? 0.15 : 0);
+  (low_signal ? 0.35 : 0);
 
 const quality_score = clamp01(signal - penalty);
-
-const url_for_domain = $json.url_canonical || $json.url || null;
-const source_domain = getDomain(url_for_domain);
 
 const excerpt = buildExcerpt(capture_text, TH.excerpt_max_chars);
 
 const retrieval = {
   version: 'v1',
   excerpt,
-  source_domain,
   quality: {
     clean_word_count,
     clean_char_count,
@@ -142,7 +119,6 @@ const retrieval = {
     link_ratio,
     boilerplate_heavy,
     low_signal,
-    extraction_incomplete,
     quality_score,
   },
 };

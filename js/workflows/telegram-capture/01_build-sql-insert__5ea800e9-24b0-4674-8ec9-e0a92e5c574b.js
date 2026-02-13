@@ -56,8 +56,6 @@ module.exports = async function run(ctx) {
 
   // promoted retrieval columns (WP2)
   const retrieval_excerpt = r?.excerpt ?? null;
-  const retrieval_version = r?.version ?? null;
-  const source_domain = r?.source_domain ?? null;
 
   const clean_word_count = q.clean_word_count ?? null;
   const clean_char_count = q.clean_char_count ?? null;
@@ -68,7 +66,6 @@ module.exports = async function run(ctx) {
 
   const boilerplate_heavy = q.boilerplate_heavy ?? null;
   const low_signal = q.low_signal ?? null;
-  const extraction_incomplete = q.extraction_incomplete ?? null;
 
   const quality_score = q.quality_score ?? null;
 
@@ -92,8 +89,6 @@ module.exports = async function run(ctx) {
       'gist',
       'metadata',
       'retrieval_excerpt',
-      'retrieval_version',
-      'source_domain',
       'clean_word_count',
       'clean_char_count',
       'extracted_char_count',
@@ -101,7 +96,6 @@ module.exports = async function run(ctx) {
       'link_ratio',
       'boilerplate_heavy',
       'low_signal',
-      'extraction_incomplete',
       'quality_score',
     ],
     values: [
@@ -122,8 +116,6 @@ module.exports = async function run(ctx) {
       `${sb.lit(gist)}::text`,
       `${sb.jsonbLit(metadata_patch, { dollarTag: 'pkmjson' })}`,
       `${sb.lit(retrieval_excerpt)}::text`,
-      `${sb.lit(retrieval_version)}::text`,
-      `${sb.lit(source_domain)}::text`,
       `${sb.intLit(clean_word_count)}::int`,
       `${sb.intLit(clean_char_count)}::int`,
       `${sb.intLit(extracted_char_count)}::int`,
@@ -131,7 +123,6 @@ module.exports = async function run(ctx) {
       `${sb.numLit(link_ratio)}::real`,
       `${sb.boolLit(boilerplate_heavy)}::boolean`,
       `${sb.boolLit(low_signal)}::boolean`,
-      `${sb.boolLit(extraction_incomplete)}::boolean`,
       `${sb.numLit(quality_score)}::real`,
     ],
     returning: [

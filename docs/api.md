@@ -94,8 +94,6 @@ Response:
   "capture_text": "...",
   "clean_text": "...",
   "retrieval_excerpt": "...",
-  "retrieval_version": "v1",
-  "source_domain": "...",
   "clean_word_count": 10,
   "clean_char_count": 200,
   "extracted_char_count": 0,
@@ -103,7 +101,6 @@ Response:
   "link_ratio": 0.1,
   "boilerplate_heavy": false,
   "low_signal": false,
-  "extraction_incomplete": false,
   "quality_score": 0.7,
   "idempotency_policy_key": "telegram_thought_v1",
   "idempotency_key_primary": "tg:123:456",
@@ -142,8 +139,6 @@ Response:
   "capture_text": "...",
   "clean_text": "...",
   "retrieval_excerpt": "...",
-  "retrieval_version": "v1",
-  "source_domain": "...",
   "clean_word_count": 10,
   "clean_char_count": 200,
   "extracted_char_count": 0,
@@ -151,7 +146,6 @@ Response:
   "link_ratio": 0.1,
   "boilerplate_heavy": false,
   "low_signal": false,
-  "extraction_incomplete": false,
   "quality_score": 0.7,
   "idempotency_policy_key": "email_newsletter_v1",
   "idempotency_key_primary": "<abc@example.com>",
@@ -318,7 +312,6 @@ Body:
       "retrieval": {
         "excerpt": "excerpt",
         "version": "v1",
-        "source_domain": "example.com",
         "quality": {
           "clean_word_count": 10,
           "clean_char_count": 20,
@@ -327,7 +320,6 @@ Body:
           "link_ratio": 0.2,
           "boilerplate_heavy": false,
           "low_signal": false,
-          "extraction_incomplete": false,
           "quality_score": 0.8
         }
       }

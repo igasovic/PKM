@@ -46,8 +46,6 @@ const r = $json.retrieval ?? metadata_patch?.retrieval ?? null;
 const q = r?.quality ?? {};
 
 const retrieval_excerpt = r?.excerpt ?? null;
-const retrieval_version = r?.version ?? null;
-const source_domain = r?.source_domain ?? null;
 
 const clean_word_count = q.clean_word_count ?? null;
 const clean_char_count = q.clean_char_count ?? null;
@@ -58,7 +56,6 @@ const link_ratio = q.link_ratio ?? null;
 
 const boilerplate_heavy = q.boilerplate_heavy ?? null;
 const low_signal = q.low_signal ?? null;
-const extraction_incomplete = q.extraction_incomplete ?? null;
 
 const quality_score = q.quality_score ?? null;
 
@@ -79,8 +76,6 @@ const sql = sb.buildInsert({
     'metadata',
     'enrichment_status',
     'retrieval_excerpt',
-    'retrieval_version',
-    'source_domain',
     'clean_word_count',
     'clean_char_count',
     'extracted_char_count',
@@ -88,7 +83,6 @@ const sql = sb.buildInsert({
     'link_ratio',
     'boilerplate_heavy',
     'low_signal',
-    'extraction_incomplete',
     'quality_score',
   ],
   values: [
@@ -106,8 +100,6 @@ const sql = sb.buildInsert({
     `${sb.jsonbLit(metadata_patch)}`,
     `'pending'`,
     `${sb.lit(retrieval_excerpt)}::text`,
-    `${sb.lit(retrieval_version)}::text`,
-    `${sb.lit(source_domain)}::text`,
     `${sb.intLit(clean_word_count)}::int`,
     `${sb.intLit(clean_char_count)}::int`,
     `${sb.intLit(extracted_char_count)}::int`,
@@ -115,7 +107,6 @@ const sql = sb.buildInsert({
     `${sb.numLit(link_ratio)}::real`,
     `${sb.boolLit(boilerplate_heavy)}::boolean`,
     `${sb.boolLit(low_signal)}::boolean`,
-    `${sb.boolLit(extraction_incomplete)}::boolean`,
     `${sb.numLit(quality_score)}::real`,
   ],
   returning: [

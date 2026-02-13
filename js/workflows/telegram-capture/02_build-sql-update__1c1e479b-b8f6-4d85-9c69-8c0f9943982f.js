@@ -51,8 +51,6 @@ const q = doMeta ? (retrieval.quality || {}) : {};
 
 // promoted retrieval columns (WP2)
 const retrieval_excerpt = doMeta ? (retrieval.excerpt ?? null) : null;
-const retrieval_version = doMeta ? (retrieval.version ?? null) : null;
-const source_domain = doMeta ? (retrieval.source_domain ?? null) : null;
 
 const clean_word_count = doMeta ? (q.clean_word_count ?? null) : null;
 const clean_char_count = doMeta ? (q.clean_char_count ?? null) : null;
@@ -63,7 +61,6 @@ const link_ratio = doMeta ? (q.link_ratio ?? null) : null;
 
 const boilerplate_heavy = doMeta ? (q.boilerplate_heavy ?? null) : null;
 const low_signal = doMeta ? (q.low_signal ?? null) : null;
-const extraction_incomplete = doMeta ? (q.extraction_incomplete ?? null) : null;
 
 const quality_score = doMeta ? (q.quality_score ?? null) : null;
 
@@ -91,8 +88,6 @@ const sql = sb.buildUpdate({
   END`,
     '-- WP2 promoted retrieval columns: update only when retrieval exists',
     `retrieval_excerpt = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.lit(retrieval_excerpt)}::text ELSE retrieval_excerpt END`,
-    `retrieval_version = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.lit(retrieval_version)}::text ELSE retrieval_version END`,
-    `source_domain = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.lit(source_domain)}::text ELSE source_domain END`,
     `clean_word_count = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.intLit(clean_word_count)}::int ELSE clean_word_count END`,
     `clean_char_count = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.intLit(clean_char_count)}::int ELSE clean_char_count END`,
     `extracted_char_count = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.intLit(extracted_char_count)}::int ELSE extracted_char_count END`,
@@ -100,7 +95,6 @@ const sql = sb.buildUpdate({
     `link_ratio = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.numLit(link_ratio)}::real ELSE link_ratio END`,
     `boilerplate_heavy = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.boolLit(boilerplate_heavy)}::boolean ELSE boilerplate_heavy END`,
     `low_signal = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.boolLit(low_signal)}::boolean ELSE low_signal END`,
-    `extraction_incomplete = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.boolLit(extraction_incomplete)}::boolean ELSE extraction_incomplete END`,
     `quality_score = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.numLit(quality_score)}::real ELSE quality_score END`,
     'content_hash = NULL',
   ],

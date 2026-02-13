@@ -163,8 +163,6 @@ function formatForInsert({
     url,
     url_canonical,
     retrieval_excerpt: retrieval.excerpt,
-    retrieval_version: retrieval.version,
-    source_domain: retrieval.source_domain,
     clean_word_count: quality.clean_word_count,
     clean_char_count: quality.clean_char_count,
     extracted_char_count: quality.extracted_char_count,
@@ -172,7 +170,6 @@ function formatForInsert({
     link_ratio: quality.link_ratio,
     boilerplate_heavy: quality.boilerplate_heavy,
     low_signal: quality.low_signal,
-    extraction_incomplete: quality.extraction_incomplete,
     quality_score: quality.quality_score,
     metadata: { retrieval },
   };

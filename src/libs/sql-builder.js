@@ -385,7 +385,6 @@ base AS (
     COALESCE(e.quality_score, 0.5) AS quality_score,
     COALESCE(e.boilerplate_heavy, false) AS boilerplate_heavy,
     COALESCE(e.low_signal, false) AS low_signal,
-    COALESCE(e.extraction_incomplete, false) AS extraction_incomplete,
     COALESCE(e.link_ratio, 0.0) AS link_ratio,
 
     p.qtext,
@@ -406,7 +405,6 @@ base AS (
   FROM ${entries_table} e, params p
   WHERE
     e.created_at >= (now() - (p.days || ' days')::interval)
-    AND e.duplicate_of IS NULL
 ),
 
 scored AS (
@@ -447,8 +445,7 @@ scored AS (
 
       (CASE WHEN b.boilerplate_heavy THEN ${Number(W.penalty_boilerplate_heavy || 0)} ELSE 0 END) -
       (CASE WHEN b.low_signal THEN ${Number(W.penalty_low_signal || 0)} ELSE 0 END) -
-      (CASE WHEN b.link_ratio > 0.18 THEN ${Number(W.penalty_link_ratio_high || 0)} ELSE 0 END) -
-      (CASE WHEN b.extraction_incomplete THEN ${Number(W.penalty_extraction_incomplete || 0)} ELSE 0 END)
+      (CASE WHEN b.link_ratio > 0.18 THEN ${Number(W.penalty_link_ratio_high || 0)} ELSE 0 END)
     ) AS score
   FROM base b
   JOIN ${entries_table} e ON e.id = b.id
@@ -617,7 +614,6 @@ hits AS (
   FROM ${entries_table} e, params p
   WHERE
     e.created_at >= (now() - (p.days || ' days')::interval)
-    AND e.duplicate_of IS NULL
     AND (
       COALESCE(e.clean_text,'') ILIKE '%' || p.needle || '%' ESCAPE '\\'
       OR COALESCE(e.capture_text,'') ILIKE '%' || p.needle || '%' ESCAPE '\\'
@@ -733,7 +729,6 @@ base AS (
     COALESCE(e.quality_score, 0.5) AS quality_score,
     COALESCE(e.boilerplate_heavy, false) AS boilerplate_heavy,
     COALESCE(e.low_signal, false) AS low_signal,
-    COALESCE(e.extraction_incomplete, false) AS extraction_incomplete,
     COALESCE(e.link_ratio, 0.0) AS link_ratio,
 
     p.qtext,
@@ -754,7 +749,6 @@ base AS (
   FROM ${entries_table} e, params p
   WHERE
     e.created_at >= (now() - (p.days || ' days')::interval)
-    AND e.duplicate_of IS NULL
 ),
 scored AS (
   SELECT
@@ -803,8 +797,7 @@ scored AS (
       -- penalties
       (CASE WHEN b.boilerplate_heavy THEN ${Number(W.penalty_boilerplate_heavy || 0)} ELSE 0 END) -
       (CASE WHEN b.low_signal THEN ${Number(W.penalty_low_signal || 0)} ELSE 0 END) -
-      (CASE WHEN b.link_ratio > 0.18 THEN ${Number(W.penalty_link_ratio_high || 0)} ELSE 0 END) -
-      (CASE WHEN b.extraction_incomplete THEN ${Number(W.penalty_extraction_incomplete || 0)} ELSE 0 END)
+      (CASE WHEN b.link_ratio > 0.18 THEN ${Number(W.penalty_link_ratio_high || 0)} ELSE 0 END)
     ) AS score
   FROM base b
   JOIN ${entries_table} e ON e.id = b.id

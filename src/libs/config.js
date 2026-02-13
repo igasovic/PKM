@@ -146,16 +146,10 @@ const CONFIG_V1 = {
     low_signal: { min_words: 35, min_chars: 220 },
 
     boilerplate: { link_ratio_high: 0.18, link_count_high: 25 },
-
-    extraction_incomplete: {
-      min_extracted_chars_to_consider: 800,
-      clean_vs_extracted_ratio_low: 0.25,
-    },
   },
 
   metadataPaths: {
     excerpt: ['retrieval', 'excerpt'],
-    sourceDomain: ['retrieval', 'source_domain'],
     quality: ['retrieval', 'quality'],
     version: ['retrieval', 'version'],
   },
