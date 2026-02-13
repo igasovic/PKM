@@ -13,23 +13,26 @@ module.exports = async function run(ctx) {
   const { $json, $items } = ctx;
 
   const s = (v) => (v ?? '').toString().trim();
+  // Escape markdown-sensitive chars to avoid Telegram parse errors
+  // when parse_mode is Markdown/MarkdownV2.
+  const escTelegram = (v) => s(v).replace(/\\/g, '\\\\').replace(/([_*[\]()`])/g, '\\$1');
 
   const config = getConfig();
   const isTestMode = !!(config && config.db && config.db.is_test_mode);
 
   const entryId = s($json.entry_id);
 
-  const url = s($json.url_canonical || $json.url);
-  const title = s($json.title);
-  const author = s($json.author);
+  const url = escTelegram($json.url_canonical || $json.url);
+  const title = escTelegram($json.title);
+  const author = escTelegram($json.author);
 
   // IMPORTANT: length should be based on clean_text (fallback to capture_text)
   const cleanText = s($json.clean_text || $json.clear_text || $json.capture_text);
   const cleanLen = cleanText.length;
 
-  const topicPrimary = s($json.topic_primary);
-  const topicSecondary = s($json.topic_secondary);
-  const gist = s($json.gist);
+  const topicPrimary = escTelegram($json.topic_primary);
+  const topicSecondary = escTelegram($json.topic_secondary);
+  const gist = escTelegram($json.gist);
 
   const labelBase = title || 'link';
   const label = author ? `${labelBase} — ${author}` : labelBase;
@@ -58,7 +61,7 @@ module.exports = async function run(ctx) {
   if (topicPrimary && topicSecondary) lines.push(`🏷️ ${topicPrimary} → ${topicSecondary}`);
   else if (topicPrimary) lines.push(`🏷️ ${topicPrimary}`);
 
-  if (gist) lines.push(`_${gist}_`);
+  if (gist) lines.push(gist);
 
   let msg = lines.join('\n');
 
