@@ -222,7 +222,7 @@ function resolveMboxPath(inputPath) {
 
   const absPath = path.resolve(raw);
   const rootAbs = path.dirname(absPath);
-  return { rootAbs, absPath };
+  return { rootAbs, absPath, inputPath: raw };
 }
 
 async function importEmailMbox(opts) {
@@ -233,10 +233,17 @@ async function importEmailMbox(opts) {
   const insert_chunk_size = parseInsertChunkSize(options.insert_chunk_size);
   const completion_window = options.completion_window || '24h';
   const max_emails = options.max_emails ? Number(options.max_emails) : null;
-  const { rootAbs, absPath } = resolveMboxPath(options.mbox_path || options.path);
+  const { rootAbs, absPath, inputPath } = resolveMboxPath(options.mbox_path || options.path);
   const relativePath = path.relative(rootAbs, absPath).replace(/\\/g, '/');
 
-  const st = await fs.stat(absPath);
+  let st;
+  try {
+    st = await fs.stat(absPath);
+  } catch (err) {
+    throw new Error(
+      `mbox file not found/readable; input_path="${inputPath}", resolved_path="${absPath}", cause="${err.message}"`
+    );
+  }
   if (!st.isFile()) {
     throw new Error('mbox_path must be a file');
   }
