@@ -114,6 +114,24 @@ Primary objective:
 - Idempotency lookup and policy resolution are schema-scoped.
 - Behavior and seed policies must exist in both schemas.
 
+### Test-mode requirements
+- Test mode state is persisted in Postgres runtime config (`runtime_config` table), key: `is_test_mode`.
+- State toggles must be atomic and immediately visible to subsequent requests.
+- DB methods that resolve active `entries` table must use persisted test-mode state, not static config defaults.
+- Batch workers must not depend on current test-mode flag for dequeue/sync coverage:
+  - worker must scan both configured schemas (`pkm` and `pkm_test`)
+  - pending jobs in either schema must continue to be processed across restarts and mode flips
+- API `/config` is static config only; test-mode state is retrieved via dedicated test-mode endpoints.
+
+### Caching requirements
+- Test-mode reads may be cached in backend service to reduce DB chatter.
+- Cache TTL is `10s` (default behavior in current implementation).
+- Cache invalidation rules:
+  - `toggle` and `set` operations must update cache immediately
+  - cache miss or expired entry must read from DB
+  - cache must not outlive process restart (in-memory cache only)
+- Cached value is an optimization only; Postgres remains source of truth.
+
 ## Integration expectations (n8n and other clients)
 - Call normalization first; do not hand-craft idempotency keys downstream.
 - Insert normalized payload directly to `/db/insert`.
@@ -125,4 +143,3 @@ Primary objective:
 - No duplicate side-table tracking in place of uniqueness constraints.
 - No client-side duplicate suppression as primary mechanism.
 - No dependence on participants for correspondence keying.
-

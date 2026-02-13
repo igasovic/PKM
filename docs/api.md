@@ -340,12 +340,12 @@ You can also send the same fields at the top level (no `input` wrapper).
 Required fields: `source`, `capture_text`. Optional: any `pkm.entries` column (see `docs/database_schema.md`).
 For JSONB columns (`metadata`, `external_ref`), send either a JSON object or a JSON string; invalid JSON strings will be rejected.
 
-Idempotent ingest fields (optional but recommended):
+Idempotent ingest fields (mandatory):
 - `idempotency_policy_key`
 - `idempotency_key_primary`
 - `idempotency_key_secondary`
 
-For `source = "email"` and `source = "telegram"`, idempotency fields are required. Inserts without keys are rejected to prevent duplicate rows.
+Inserts without idempotency fields are rejected to prevent duplicate rows.
 
 When idempotency fields are provided, backend resolves policy in the active schema and returns per-row `action`:
 - `inserted`
