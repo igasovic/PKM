@@ -8,6 +8,7 @@ const { enqueueTier1Batch } = require('./tier1-enrichment.js');
 const { getBraintrustLogger } = require('./observability.js');
 
 const DEFAULT_IMPORT_ROOT = process.env.EMAIL_IMPORT_ROOT || '/data';
+const FALLBACK_IMPORT_ROOTS = ['/data', '/files'];
 const DEFAULT_T1_BATCH_SIZE = 500;
 const MIN_T1_BATCH_SIZE = 500;
 const MAX_T1_BATCH_SIZE = 2000;
@@ -221,14 +222,26 @@ function resolveMboxPath(inputPath) {
     throw new Error('mbox_path must point to a .mbox file');
   }
 
-  const rootAbs = path.resolve(DEFAULT_IMPORT_ROOT);
+  const allowedRoots = Array.from(new Set(
+    [DEFAULT_IMPORT_ROOT, ...FALLBACK_IMPORT_ROOTS]
+      .map((x) => String(x || '').trim())
+      .filter(Boolean)
+      .map((x) => path.resolve(x))
+  ));
+
+  const isWithinRoot = (candidate, root) =>
+    candidate === root || candidate.startsWith(root + path.sep);
+
   const candidate = path.isAbsolute(raw)
     ? path.resolve(raw)
-    : path.resolve(rootAbs, raw);
-  if (candidate !== rootAbs && !candidate.startsWith(rootAbs + path.sep)) {
-    throw new Error(`mbox_path must be inside EMAIL_IMPORT_ROOT (${rootAbs})`);
+    : path.resolve(path.resolve(DEFAULT_IMPORT_ROOT), raw);
+
+  const matchedRoot = allowedRoots.find((root) => isWithinRoot(candidate, root));
+  if (!matchedRoot) {
+    throw new Error(`mbox_path must be inside one of: ${allowedRoots.join(', ')}`);
   }
-  return { rootAbs, absPath: candidate };
+
+  return { rootAbs: matchedRoot, absPath: candidate };
 }
 
 async function importEmailMbox(opts) {
@@ -412,4 +425,3 @@ async function importEmailMbox(opts) {
 module.exports = {
   importEmailMbox,
 };
-
