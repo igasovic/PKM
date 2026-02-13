@@ -13,7 +13,7 @@ Primary objective:
 - Idempotency keys are computed in normalization.
 - Conflict resolution is enforced in backend DB insert logic using DB unique constraints.
 - Behavior must be schema-consistent between `pkm` and `pkm_test`.
-- Email and Telegram inserts are fail-closed: if idempotency fields are missing, insert is rejected.
+- Email, email-batch, and Telegram inserts are fail-closed: if idempotency fields are missing, insert is rejected.
 
 ## Data flow
 1. Ingest sends structured input to normalization.
@@ -41,6 +41,22 @@ Primary objective:
   - `source.date` recommended (used for newsletter day bucket)
 - `source.system` is inferred by normalization/API path as `email`
 - `source.from_addr` and `source.subject` are not used; top-level `from`/`subject` are canonical
+
+### `POST /import/email/mbox`
+- Purpose:
+  - process large email backlogs (`*.mbox`) for WP4
+  - normalize each email synchronously with existing email normalization
+  - insert idempotently and enqueue Tier‑1 via Batch API
+- Input:
+  - `mbox_path` required (must be under `EMAIL_IMPORT_ROOT`)
+  - `batch_size` optional, must be `500..2000` (default `500`)
+  - `insert_chunk_size` optional (default `200`)
+  - `completion_window` optional (`24h` default)
+- Behavior:
+  - inserted rows use `source = "email-batch"`
+  - rows with DB action `skipped` are excluded from Tier‑1 enqueue
+  - partial failures are isolated per email and recorded in response
+  - reruns are safe because idempotency keys are still required/resolved
 
 ### `POST /normalize/webpage`
 - Purpose:
@@ -154,6 +170,14 @@ Primary objective:
 - Branch by `action`:
   - `skipped`: stop enrichment/update pipeline
   - `inserted` / `updated`: continue downstream processing
+- For backlog ingest, n8n should only trigger `/import/email/mbox`; batching and async Tier‑1 lifecycle stay in backend workers.
+
+## Batch CRUD requirements
+- `/db/insert` and `/db/update` support batch mode via `items: []`.
+- Batch mode must support `continue_on_error` with per-item status:
+  - success rows include `_batch_ok: true` and `_batch_index`
+  - failure rows include `_batch_ok: false`, `_batch_index`, and `error`
+- Batch operations must not abort the whole request when `continue_on_error = true`.
 
 ## Quality/retrieval computation requirements
 - Retrieval excerpt + quality signals must be generated through shared backend quality logic.

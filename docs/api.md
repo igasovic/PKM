@@ -268,6 +268,50 @@ Response:
 
 Batch completion handling is internal to backend workers. External callers only enqueue via `/enrich/t1/batch`.
 
+## Backlog Import
+
+### `POST /import/email/mbox`
+Imports a `.mbox` backlog file, normalizes each email synchronously, inserts idempotently, removes duplicate rows (`action = "skipped"`) from enrichment input, and enqueues the remaining rows to Tier‑1 Batch API.
+
+Body:
+```json
+{
+  "mbox_path": "backlog/emails_2026_02.mbox",
+  "batch_size": 500,
+  "insert_chunk_size": 200,
+  "completion_window": "24h",
+  "max_emails": 5000,
+  "metadata": { "source": "n8n-wp4" }
+}
+```
+
+Notes:
+- `mbox_path` is required and must point to a `.mbox` file under `EMAIL_IMPORT_ROOT` (default `/data`).
+- `batch_size` is Tier‑1 enqueue size and must be between `500` and `2000` (default `500`).
+- `insert_chunk_size` controls DB insert chunking (default `200`).
+- Source for inserted rows is set to `email-batch`.
+
+Response:
+```json
+{
+  "import_id": "email_backlog_1739420000000",
+  "mbox_path": "backlog/emails_2026_02.mbox",
+  "total_messages": 5000,
+  "normalized_ok": 4987,
+  "normalize_errors": 13,
+  "inserted": 3100,
+  "updated": 420,
+  "skipped": 1467,
+  "insert_errors": 0,
+  "tier1_candidates": 3520,
+  "tier1_batches": [
+    { "batch_id": "batch_abc", "status": "validating", "schema": "pkm", "request_count": 500 }
+  ],
+  "tier1_enqueued_items": 3520,
+  "errors": []
+}
+```
+
 Worker controls (optional env vars):
 - `T1_BATCH_WORKER_ENABLED` (`true` by default)
 - `T1_BATCH_SYNC_INTERVAL_MS` (`60000` default)
@@ -386,6 +430,39 @@ When idempotency fields are provided, backend resolves policy in the active sche
 - `skipped` (policy conflict action = skip)
 - `updated` (policy conflict action = update)
 
+**Batch insert**
+
+You can insert multiple rows in one request:
+
+```json
+{
+  "items": [
+    {
+      "source": "email-batch",
+      "capture_text": "raw",
+      "clean_text": "clean",
+      "idempotency_policy_key": "email_newsletter_v1",
+      "idempotency_key_primary": "<msg-1@example.com>",
+      "idempotency_key_secondary": "abc"
+    },
+    {
+      "source": "email-batch",
+      "capture_text": "raw2",
+      "clean_text": "clean2",
+      "idempotency_policy_key": "email_newsletter_v1",
+      "idempotency_key_primary": "<msg-2@example.com>",
+      "idempotency_key_secondary": "def"
+    }
+  ],
+  "continue_on_error": true
+}
+```
+
+Batch response returns per-item rows. Error rows include:
+- `_batch_index`
+- `_batch_ok: false`
+- `error`
+
 **Custom RETURNING**
 
 You can override the default `RETURNING` columns by adding `returning` at the top level or inside `input`:
@@ -429,6 +506,24 @@ You can also use a `where` object:
 {
   "where": { "entry_id": 123 },
   "gist": "Updated gist"
+}
+```
+
+**Batch update**
+
+```json
+{
+  "items": [
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "title": "Updated title 1"
+    },
+    {
+      "entry_id": 12345,
+      "title": "Updated title 2"
+    }
+  ],
+  "continue_on_error": true
 }
 ```
 
@@ -521,3 +616,4 @@ Optional:
 - `PKM_DB_SCHEMA` (default: `pkm`)
 - `PKM_DB_SSL` (default: `false`)
 - `PKM_DB_SSL_REJECT_UNAUTHORIZED` (default: `true`)
+- `EMAIL_IMPORT_ROOT` (default: `/data`; root directory for `/import/email/mbox` reads)

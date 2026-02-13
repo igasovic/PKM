@@ -8,7 +8,7 @@ const { traceDb } = require('./observability.js');
 const CONFIG_TABLE = sb.qualifiedTable(process.env.PKM_DB_SCHEMA || 'pkm', 'runtime_config');
 const IMMUTABLE_UPDATE_COLUMNS = new Set(['id', 'entry_id', 'created_at', 'tsv']);
 // For these ingest sources we fail closed unless idempotency keys are present.
-const IDEMPOTENCY_REQUIRED_SOURCES = new Set(['email', 'telegram']);
+const IDEMPOTENCY_REQUIRED_SOURCES = new Set(['email', 'email-batch', 'telegram']);
 
 function wrapConfigTableError(err) {
   if (!err) return err;
@@ -308,6 +308,126 @@ function getDataObject(input) {
   return data;
 }
 
+async function insertBatch(opts) {
+  const list = Array.isArray(opts && opts.items) ? opts.items : [];
+  if (!list.length) {
+    throw new Error('insert batch requires non-empty items');
+  }
+
+  const continueOnError = opts && opts.continue_on_error !== false;
+  const base = { ...(opts || {}) };
+  delete base.items;
+  delete base.continue_on_error;
+  // Reuse one resolved config/test-mode state for the whole batch.
+  base.__config = await getConfigWithTestMode();
+
+  const rows = [];
+  let okCount = 0;
+
+  for (let i = 0; i < list.length; i++) {
+    const item = list[i];
+    try {
+      let one;
+      const isObjectItem = item && typeof item === 'object' && !Array.isArray(item);
+      if (isObjectItem && (
+        Object.prototype.hasOwnProperty.call(item, 'input') ||
+        Object.prototype.hasOwnProperty.call(item, 'data') ||
+        Object.prototype.hasOwnProperty.call(item, 'columns') ||
+        Object.prototype.hasOwnProperty.call(item, 'values') ||
+        Object.prototype.hasOwnProperty.call(item, 'table') ||
+        Object.prototype.hasOwnProperty.call(item, 'returning')
+      )) {
+        one = { ...base, ...item };
+      } else {
+        one = { ...base, input: item };
+      }
+
+      const result = await insert(one);
+      const resultRows = Array.isArray(result && result.rows) ? result.rows : [];
+      if (!resultRows.length) {
+        rows.push({ _batch_index: i, _batch_ok: true, action: 'noop' });
+      } else {
+        for (const row of resultRows) {
+          rows.push({ ...row, _batch_index: i, _batch_ok: true });
+        }
+      }
+      okCount++;
+    } catch (err) {
+      if (!continueOnError) throw err;
+      rows.push({
+        _batch_index: i,
+        _batch_ok: false,
+        error: err && err.message ? err.message : String(err),
+      });
+    }
+  }
+
+  return {
+    rows,
+    rowCount: okCount,
+  };
+}
+
+async function updateBatch(opts) {
+  const list = Array.isArray(opts && opts.items) ? opts.items : [];
+  if (!list.length) {
+    throw new Error('update batch requires non-empty items');
+  }
+
+  const continueOnError = opts && opts.continue_on_error !== false;
+  const base = { ...(opts || {}) };
+  delete base.items;
+  delete base.continue_on_error;
+  // Reuse one resolved config/test-mode state for the whole batch.
+  base.__config = await getConfigWithTestMode();
+
+  const rows = [];
+  let okCount = 0;
+
+  for (let i = 0; i < list.length; i++) {
+    const item = list[i];
+    try {
+      let one;
+      const isObjectItem = item && typeof item === 'object' && !Array.isArray(item);
+      if (isObjectItem && (
+        Object.prototype.hasOwnProperty.call(item, 'input') ||
+        Object.prototype.hasOwnProperty.call(item, 'data') ||
+        Object.prototype.hasOwnProperty.call(item, 'set') ||
+        Object.prototype.hasOwnProperty.call(item, 'where') ||
+        Object.prototype.hasOwnProperty.call(item, 'table') ||
+        Object.prototype.hasOwnProperty.call(item, 'returning')
+      )) {
+        one = { ...base, ...item };
+      } else {
+        one = { ...base, input: item };
+      }
+
+      const result = await update(one);
+      const resultRows = Array.isArray(result && result.rows) ? result.rows : [];
+      if (!resultRows.length) {
+        rows.push({ _batch_index: i, _batch_ok: true, action: 'noop' });
+      } else {
+        for (const row of resultRows) {
+          rows.push({ ...row, _batch_index: i, _batch_ok: true });
+        }
+      }
+      okCount++;
+    } catch (err) {
+      if (!continueOnError) throw err;
+      rows.push({
+        _batch_index: i,
+        _batch_ok: false,
+        error: err && err.message ? err.message : String(err),
+      });
+    }
+  }
+
+  return {
+    rows,
+    rowCount: okCount,
+  };
+}
+
 async function getPolicyByKey(schema, policyKey) {
   const p = getPool();
   const policiesTable = sb.qualifiedTable(schema, 'idempotency_policies');
@@ -448,7 +568,11 @@ function buildSetForIdempotentUpdate({ incoming, existing, policyUpdateFields })
 }
 
 async function insert(opts) {
-  const config = await getConfigWithTestMode();
+  if (Array.isArray(opts && opts.items)) {
+    return insertBatch(opts);
+  }
+
+  const config = (opts && opts.__config) || await getConfigWithTestMode();
   const table = opts.table || await getEntriesTableFromConfig(config);
   let columns = opts.columns;
   let values = opts.values;
@@ -586,7 +710,11 @@ async function insert(opts) {
 }
 
 async function update(opts) {
-  const config = await getConfigWithTestMode();
+  if (Array.isArray(opts && opts.items)) {
+    return updateBatch(opts);
+  }
+
+  const config = (opts && opts.__config) || await getConfigWithTestMode();
   const table = await getEntriesTableFromConfig(config);
   let set = opts.set;
   let where = opts.where;

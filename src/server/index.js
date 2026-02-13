@@ -18,6 +18,7 @@ const {
   startTier1BatchWorker,
   stopTier1BatchWorker,
 } = require('./tier1-enrichment.js');
+const { importEmailMbox } = require('./email-importer.js');
 const {
   getBraintrustLogger,
   logError,
@@ -167,6 +168,25 @@ async function handleRequest(req, res) {
       const result = await enqueueTier1Batch(body.items || [], {
         metadata: body.metadata || undefined,
         completion_window: body.completion_window || '24h',
+      });
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/import/email/mbox') {
+    try {
+      const raw = await readBody(req);
+      const body = raw ? JSON.parse(raw) : {};
+      const result = await importEmailMbox({
+        mbox_path: body.mbox_path || body.path,
+        batch_size: body.batch_size,
+        insert_chunk_size: body.insert_chunk_size,
+        completion_window: body.completion_window,
+        max_emails: body.max_emails,
+        metadata: body.metadata || undefined,
       });
       return json(res, 200, result);
     } catch (err) {

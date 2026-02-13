@@ -32,6 +32,11 @@
 - Moved shared libs to `src/libs` and updated server Dockerfile copy path.
 - Added `POST /normalize/webpage` for one-call webpage text cleaning plus retrieval/quality recomputation.
 - Consolidated retrieval excerpt + quality signal recompute flows behind `buildRetrievalForDb` in `src/server/quality.js` and reused it in normalization paths.
+- Added `POST /import/email/mbox` for WP4 backlog ingest from `.mbox` files: normalize sync, idempotent insert, duplicate filtering (`skipped`), and Tier‑1 batch enqueue.
+- Added backend `email-importer` module with `.mbox` parsing, MIME plain-text extraction, and per-entry failure isolation.
+- Expanded `/db/insert` and `/db/update` to support batch payloads via `items` with optional `continue_on_error`.
+- Enforced idempotency fail-closed behavior for `source = email-batch` in insert path.
+- Optimized DB batch operations by reusing resolved test-mode config across per-item execution.
 
 ## 2026-02-10 — Backend config module + API endpoint
 
