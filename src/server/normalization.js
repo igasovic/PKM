@@ -145,7 +145,6 @@ function formatForInsert({
   content_type,
   title,
   author,
-  people,
   capture_text,
   clean_text,
   url,
@@ -159,7 +158,6 @@ function formatForInsert({
     content_type,
     title,
     author,
-    people: Array.isArray(people) && people.length ? people : null,
     capture_text,
     clean_text,
     url,
@@ -179,32 +177,6 @@ function formatForInsert({
     metadata: { retrieval },
   };
   return out;
-}
-
-function extractEmails(value) {
-  const text = String(value || '');
-  const matches = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig) || [];
-  return matches.map((x) => x.toLowerCase());
-}
-
-function collectCorrespondenceParticipants(blocks, fallbackFrom) {
-  const seen = new Set();
-  const out = [];
-  const add = (v) => {
-    const emails = extractEmails(v);
-    for (const email of emails) {
-      if (seen.has(email)) continue;
-      seen.add(email);
-      out.push(email);
-    }
-  };
-
-  for (const block of (Array.isArray(blocks) ? blocks : [])) {
-    add(block && block.from);
-    add(block && block.to);
-  }
-  add(fallbackFrom);
-  return out.sort();
 }
 
 async function normalizeTelegram({ text, source }) {
@@ -1371,7 +1343,6 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
     const blocks = parseOutlookBlocks(corr_text) || [
       { from: authorFromHeader || '', sent: '', to: '', subject: titleFromHeader || '', body: corr_text },
     ];
-    const people = collectCorrespondenceParticipants(blocks, from);
 
     const clean_text = formatThreadMarkdown(blocks);
 
@@ -1388,7 +1359,6 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
       content_type: 'correspondence',
       title: titleFromHeader || null,
       author: authorFromHeader || null,
-      people,
       capture_text,
       clean_text,
       url: null,
