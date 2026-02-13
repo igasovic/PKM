@@ -7,8 +7,7 @@ const { normalizeEmail } = require('./normalization.js');
 const { enqueueTier1Batch } = require('./tier1-enrichment.js');
 const { getBraintrustLogger } = require('./observability.js');
 
-const DEFAULT_IMPORT_ROOT = process.env.EMAIL_IMPORT_ROOT || '/data';
-const FALLBACK_IMPORT_ROOTS = ['/data', '/files'];
+const DEFAULT_IMPORT_ROOT = '/files';
 const DEFAULT_T1_BATCH_SIZE = 500;
 const MIN_T1_BATCH_SIZE = 500;
 const MAX_T1_BATCH_SIZE = 2000;
@@ -218,30 +217,14 @@ function parseInsertChunkSize(raw) {
 function resolveMboxPath(inputPath) {
   const raw = String(inputPath || '').trim();
   if (!raw) throw new Error('mbox_path is required');
-  if (!raw.toLowerCase().endsWith('.mbox')) {
+  const fileName = path.basename(raw);
+  if (!fileName.toLowerCase().endsWith('.mbox')) {
     throw new Error('mbox_path must point to a .mbox file');
   }
 
-  const allowedRoots = Array.from(new Set(
-    [DEFAULT_IMPORT_ROOT, ...FALLBACK_IMPORT_ROOTS]
-      .map((x) => String(x || '').trim())
-      .filter(Boolean)
-      .map((x) => path.resolve(x))
-  ));
-
-  const isWithinRoot = (candidate, root) =>
-    candidate === root || candidate.startsWith(root + path.sep);
-
-  const candidate = path.isAbsolute(raw)
-    ? path.resolve(raw)
-    : path.resolve(path.resolve(DEFAULT_IMPORT_ROOT), raw);
-
-  const matchedRoot = allowedRoots.find((root) => isWithinRoot(candidate, root));
-  if (!matchedRoot) {
-    throw new Error(`mbox_path must be inside one of: ${allowedRoots.join(', ')}`);
-  }
-
-  return { rootAbs: matchedRoot, absPath: candidate };
+  const rootAbs = path.resolve(DEFAULT_IMPORT_ROOT);
+  const absPath = path.resolve(rootAbs, fileName);
+  return { rootAbs, absPath };
 }
 
 async function importEmailMbox(opts) {
