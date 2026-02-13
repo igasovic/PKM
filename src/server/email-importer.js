@@ -224,6 +224,7 @@ function resolveMboxPath(inputPath) {
 
   const rootAbs = path.resolve(IMPORT_ROOT);
   const absPath = path.resolve(rootAbs, fileName);
+  console.log({ IMPORT_ROOT, raw, fileName, absPath });
   return { rootAbs, absPath, inputPath: raw };
 }
 
