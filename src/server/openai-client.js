@@ -63,6 +63,7 @@ function readUsage(response) {
 class OpenAIClient {
   constructor(opts) {
     const options = opts || {};
+    console.trace();
     this.apiKey = requireApiKey();
     this.baseUrl = options.baseUrl || 'https://api.openai.com/v1';
     this.model = options.model || 'gpt5nano';
