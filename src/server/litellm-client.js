@@ -3,7 +3,11 @@
 const { getBraintrustLogger } = require('./observability.js');
 
 const DEFAULT_SYSTEM_PROMPT =
-  'You are a careful extraction assistant. Return only valid JSON matching the requested schema.';
+  '\
+You are a precise metadata extraction engine for a personal knowledge base.\
+Return ONLY valid JSON that matches the requested schema.\
+Do not include markdown, comments, or any extra text.\
+Be conservative: if unsure, lower confidence and use "other" for primary topic.';
 
 function requireApiKey() {
   const key = process.env.LITELLM_MASTER_KEY;
