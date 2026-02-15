@@ -6,9 +6,9 @@ const DEFAULT_SYSTEM_PROMPT =
   'You are a careful extraction assistant. Return only valid JSON matching the requested schema.';
 
 function requireApiKey() {
-  const key = process.env.OPENAI_API_KEY;
+  const key = process.env.LITELLM_MASTER_KEY;
   if (!key || !String(key).trim()) {
-    throw new Error('OPENAI_API_KEY is required');
+    throw new Error('LITELLM_MASTER_KEY is required');
   }
   return key;
 }
@@ -63,10 +63,9 @@ function readUsage(response) {
 class OpenAIClient {
   constructor(opts) {
     const options = opts || {};
-    console.trace();
     this.apiKey = requireApiKey();
-    this.baseUrl = options.baseUrl || 'https://api.openai.com/v1';
-    this.model = options.model || 'gpt5nano';
+    this.baseUrl = options.baseUrl || process.env.OPENAI_BASE_URL || 'http://litellm:4000/v1';
+    this.model = options.model || process.env.T1_DEFAULT_MODEL || 't1-default';
     this.systemPrompt = options.systemPrompt || DEFAULT_SYSTEM_PROMPT;
     this.logger = getBraintrustLogger();
   }
@@ -84,13 +83,15 @@ class OpenAIClient {
 
     const body = {
       model,
-      instructions,
-      input,
+      messages: [
+        { role: 'system', content: instructions },
+        { role: 'user', content: input },
+      ],
     };
 
     const start = Date.now();
     try {
-      const res = await fetch(`${this.baseUrl}/responses`, {
+      const res = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +103,7 @@ class OpenAIClient {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         const msg = json && (json.error?.message || json.message || JSON.stringify(json));
-        throw new Error(`OpenAI error: ${msg}`);
+        throw new Error(`LiteLLM chat completion error: ${msg}`);
       }
 
       const text = extractResponseText(json);
@@ -110,7 +111,7 @@ class OpenAIClient {
       this.logger.log({
         input: { model, prompt },
         output: { text },
-        metadata: { source: 'openai', endpoint: 'responses' },
+        metadata: { source: 'litellm', endpoint: 'chat.completions' },
         metrics: {
           duration_ms,
           ...readUsage(json),
@@ -127,7 +128,7 @@ class OpenAIClient {
           message: err && err.message,
           stack: err && err.stack,
         },
-        metadata: { source: 'openai', endpoint: 'responses' },
+        metadata: { source: 'litellm', endpoint: 'chat.completions' },
         metrics: { duration_ms },
       });
       throw err;
@@ -137,10 +138,10 @@ class OpenAIClient {
   async createBatch(requests, opts) {
     const options = opts || {};
     if (!Array.isArray(requests) || requests.length === 0) {
-      throw new Error('OpenAI createBatch requires a non-empty requests array');
+      throw new Error('LiteLLM createBatch requires a non-empty requests array');
     }
 
-    const model = options.model || this.model;
+    const model = options.model || process.env.T1_BATCH_MODEL || this.model;
     const instructions = options.systemPrompt || this.systemPrompt;
     const completion_window = options.completion_window || '24h';
 
@@ -151,11 +152,13 @@ class OpenAIClient {
       return JSON.stringify({
         custom_id: r.custom_id,
         method: 'POST',
-        url: '/v1/responses',
+        url: '/v1/chat/completions',
         body: {
           model,
-          instructions,
-          input: r.prompt,
+          messages: [
+            { role: 'system', content: instructions },
+            { role: 'user', content: r.prompt },
+          ],
         },
       });
     }).join('\n');
@@ -175,7 +178,7 @@ class OpenAIClient {
     const uploadJson = await uploadRes.json().catch(() => ({}));
     if (!uploadRes.ok) {
       const msg = uploadJson && (uploadJson.error?.message || uploadJson.message || JSON.stringify(uploadJson));
-      throw new Error(`OpenAI file upload error: ${msg}`);
+      throw new Error(`LiteLLM file upload error: ${msg}`);
     }
     const fileId = uploadJson.id;
 
@@ -188,7 +191,7 @@ class OpenAIClient {
       },
       body: JSON.stringify({
         input_file_id: fileId,
-        endpoint: '/v1/responses',
+        endpoint: '/v1/chat/completions',
         completion_window,
         metadata: options.metadata || undefined,
       }),
@@ -196,13 +199,13 @@ class OpenAIClient {
     const batchJson = await batchRes.json().catch(() => ({}));
     if (!batchRes.ok) {
       const msg = batchJson && (batchJson.error?.message || batchJson.message || JSON.stringify(batchJson));
-      throw new Error(`OpenAI batch create error: ${msg}`);
+      throw new Error(`LiteLLM batch create error: ${msg}`);
     }
 
     this.logger.log({
       input: { model, request_count: requests.length },
       output: { batch_id: batchJson.id, input_file_id: fileId },
-      metadata: { source: 'openai', endpoint: 'batches' },
+      metadata: { source: 'litellm', endpoint: 'batches' },
       metrics: {
         upload_ms: Date.now() - uploadStart,
         batch_ms: Date.now() - batchStart,
@@ -214,7 +217,7 @@ class OpenAIClient {
 
   async retrieveBatch(batchId) {
     const id = String(batchId || '').trim();
-    if (!id) throw new Error('OpenAI retrieveBatch requires batchId');
+    if (!id) throw new Error('LiteLLM retrieveBatch requires batchId');
 
     const start = Date.now();
     try {
@@ -227,7 +230,7 @@ class OpenAIClient {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         const msg = json && (json.error?.message || json.message || JSON.stringify(json));
-        throw new Error(`OpenAI batch retrieve error: ${msg}`);
+        throw new Error(`LiteLLM batch retrieve error: ${msg}`);
       }
 
       this.logger.log({
@@ -238,7 +241,7 @@ class OpenAIClient {
           output_file_id: json.output_file_id || null,
           error_file_id: json.error_file_id || null,
         },
-        metadata: { source: 'openai', endpoint: 'batches.retrieve' },
+        metadata: { source: 'litellm', endpoint: 'batches.retrieve' },
         metrics: { duration_ms: Date.now() - start },
       });
       return json;
@@ -250,7 +253,7 @@ class OpenAIClient {
           message: err && err.message,
           stack: err && err.stack,
         },
-        metadata: { source: 'openai', endpoint: 'batches.retrieve' },
+        metadata: { source: 'litellm', endpoint: 'batches.retrieve' },
         metrics: { duration_ms: Date.now() - start },
       });
       throw err;
@@ -259,7 +262,7 @@ class OpenAIClient {
 
   async getFileContent(fileId) {
     const id = String(fileId || '').trim();
-    if (!id) throw new Error('OpenAI getFileContent requires fileId');
+    if (!id) throw new Error('LiteLLM getFileContent requires fileId');
 
     const start = Date.now();
     try {
@@ -271,13 +274,13 @@ class OpenAIClient {
       });
       const text = await res.text();
       if (!res.ok) {
-        throw new Error(`OpenAI file content error: ${text || 'unknown error'}`);
+        throw new Error(`LiteLLM file content error: ${text || 'unknown error'}`);
       }
 
       this.logger.log({
         input: { file_id: id },
         output: { bytes: Buffer.byteLength(text || '', 'utf8') },
-        metadata: { source: 'openai', endpoint: 'files.content' },
+        metadata: { source: 'litellm', endpoint: 'files.content' },
         metrics: { duration_ms: Date.now() - start },
       });
       return text;
@@ -289,7 +292,7 @@ class OpenAIClient {
           message: err && err.message,
           stack: err && err.stack,
         },
-        metadata: { source: 'openai', endpoint: 'files.content' },
+        metadata: { source: 'litellm', endpoint: 'files.content' },
         metrics: { duration_ms: Date.now() - start },
       });
       throw err;
