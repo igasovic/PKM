@@ -7,6 +7,7 @@ const { getBraintrustLogger, traceDb } = require('./observability.js');
 const { getTestModeStateFromDb } = require('./db.js');
 const { buildSampledPrompt, buildWholePrompt } = require('../libs/prompt-builder.js');
 const { LiteLLMClient, extractResponseText } = require('./litellm-client.js');
+const { buildRetrievalForDb } = require('./quality.js');
 
 const CLEAN_TEXT_SAMPLE_LIMIT = 4000;
 const TERMINAL_BATCH_STATUSES = new Set(['completed', 'failed', 'expired', 'cancelled']);
@@ -114,7 +115,8 @@ function buildTier1Prompt(input) {
   return buildWholePrompt(input);
 }
 
-function toTier1Response(t1) {
+function toTier1Response(t1, quality) {
+  const q = quality || {};
   return {
     topic_primary: t1.topic_primary,
     topic_primary_confidence: t1.topic_primary_confidence ?? null,
@@ -122,7 +124,16 @@ function toTier1Response(t1) {
     topic_secondary_confidence: t1.topic_secondary_confidence ?? null,
     keywords: t1.keywords,
     gist: t1.gist,
-    flags: t1.flags || null,
+    flags: {
+      boilerplate_heavy: !!q.boilerplate_heavy,
+      low_signal: !!q.low_signal,
+    },
+    quality_score: q.quality_score ?? null,
+    clean_word_count: q.clean_word_count ?? null,
+    clean_char_count: q.clean_char_count ?? null,
+    link_count: q.link_count ?? null,
+    link_ratio: q.link_ratio ?? null,
+    retrieval_excerpt: q.retrieval_excerpt ?? null,
   };
 }
 
@@ -572,7 +583,22 @@ async function enrichTier1(input) {
   const { response } = await client.sendMessage(promptBuilt.prompt);
   const text = extractResponseText(response);
   const t1 = parseTier1Json(text);
-  return toTier1Response(t1);
+
+  // Reevaluate retrieval-quality from canonical clean_text after Tier-1 parse.
+  const config = getConfig();
+  const quality = buildRetrievalForDb({
+    capture_text: clean_text,
+    content_type: payload.content_type ?? 'other',
+    extracted_text: '',
+    url_canonical: null,
+    url: null,
+    config,
+    excerpt_override: null,
+    excerpt_source: clean_text,
+    quality_source_text: clean_text,
+  });
+
+  return toTier1Response(t1, quality);
 }
 
 async function enqueueTier1Batch(items, opts) {
