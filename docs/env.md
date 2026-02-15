@@ -1,6 +1,6 @@
 # env.md — PKM DEV Raspberry Pi stack environment
-Version: 2026.02.08-backend-bootstrap
-Updated: 2026-02-08
+Version: 2026.02.14-litellm-proxy
+Updated: 2026-02-14
 Host (SSH): igasovic@192.168.5.4
 
 ## Storage and boot
@@ -44,6 +44,7 @@ Services (current):
 - n8n: docker.n8n.io/n8nio/n8n:latest
 - homeassistant: ghcr.io/home-assistant/home-assistant:stable
 - cloudflared: cloudflare/cloudflared:latest
+- litellm: docker.litellm.ai/berriai/litellm:main-stable
 - matter-server: ghcr.io/home-assistant-libs/python-matter-server:stable
 - pkm-server: custom Node.js backend (Docker build)
   - Purpose: backend bootstrap for PKM API (currently basic health/echo endpoints; later will host Postgres + OpenAI endpoints)
@@ -58,6 +59,75 @@ Services (current):
     - GET  /ready   -> 200 OK
     - GET  /version -> 200 OK
     - POST /echo    -> 200 OK (expects JSON body)
+
+
+### LiteLLM (Local LLM Proxy / Router)
+    Purpose:
+    - Provide a single **local OpenAI-compatible base URL** for all LLM calls.
+    - Centralize model routing using **logical model names** (e.g. `t1-default`, `t1-cheap`, `t1-batch`).
+    - Ensure **no code path** in n8n or pkm-server calls OpenAI directly (everything goes through LiteLLM).
+
+    Service:
+    - service name: `litellm`
+    - container name: `litellm`
+    - port: 4000 (OpenAI-compatible endpoints under `/v1/*`)
+      - Host URL (if port is published): http://192.168.5.4:4000/v1
+      - Docker-internal URL (recommended for services): http://litellm:4000/v1
+
+    Config files:
+    - LiteLLM config:
+      - /home/igasovic/stack/litellm/config.yaml
+      - Mounted into container as /app/config.yaml
+    - Example model routing in config.yaml:
+      - `t1-default` -> upstream `gpt-4o-mini` (OpenAI)
+      - `t1-cheap`   -> upstream `gpt-4o-mini` (OpenAI)
+      - `t1-batch`   -> upstream `gpt-4o-mini` (OpenAI)
+
+    Secrets / env:
+    - Stored in: /home/igasovic/stack/.env (DO NOT COMMIT)
+    - Required:
+      - OPENAI_API_KEY=...         (upstream provider key)
+      - LITELLM_MASTER_KEY=sk-...  (local proxy key used by internal clients)
+
+    Auth model:
+    - Clients call LiteLLM with:
+      - `Authorization: Bearer ${LITELLM_MASTER_KEY}`
+    - LiteLLM uses OPENAI_API_KEY only for upstream requests.
+
+    Smoke tests (from Pi host):
+    ```bash
+    export LITELLM_MASTER_KEY="$(
+      sed -n 's/^LITELLM_MASTER_KEY=//p' /home/igasovic/stack/.env | head -n1 | tr -d ''
+    )"
+
+    curl -s http://localhost:4000/v1/models       -H "Authorization: Bearer ${LITELLM_MASTER_KEY}" | head
+
+    curl -s http://localhost:4000/v1/chat/completions       -H "Authorization: Bearer ${LITELLM_MASTER_KEY}"       -H "Content-Type: application/json"       -d '{"model":"t1-default","messages":[{"role":"user","content":"ping"}]}' | head
+    ```
+
+    Operational commands:
+    ```bash
+    cd /home/igasovic/stack
+    docker compose restart litellm
+    docker logs -n 100 litellm
+    docker compose ps litellm
+    ```
+
+    ### PKM Server LLM Routing (via LiteLLM)
+    Goal:
+    - pkm-server should never call OpenAI directly.
+    - pkm-server should call LiteLLM via OpenAI-compatible base URL.
+
+    Recommended env wiring in compose for pkm-server:
+    - OPENAI_BASE_URL=http://litellm:4000/v1
+    - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
+    - T1_DEFAULT_MODEL=t1-default
+
+    Notes:
+    - This means the OpenAI SDK in pkm-server uses:
+      - baseURL = LiteLLM
+      - apiKey  = LiteLLM master key
+    - Model names become logical routes (LiteLLM decides upstream provider/model).
 
 ### Matter (Home Assistant Container)
 Context:
