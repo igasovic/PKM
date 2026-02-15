@@ -64,6 +64,30 @@ function readUsage(response) {
   };
 }
 
+function formatFetchError(err, url, method) {
+  const cause = err && err.cause ? err.cause : null;
+  const code = cause && cause.code ? cause.code : null;
+  const errno = cause && cause.errno ? cause.errno : null;
+  const address = cause && cause.address ? cause.address : null;
+  const port = cause && cause.port ? cause.port : null;
+  const details = [
+    `method=${method}`,
+    `url=${url}`,
+    code ? `code=${code}` : null,
+    errno ? `errno=${errno}` : null,
+    address ? `address=${address}` : null,
+    port ? `port=${port}` : null,
+    err && err.message ? `message=${err.message}` : null,
+  ].filter(Boolean).join(', ');
+  return new Error(`LiteLLM request failed (${details})`);
+}
+
+function requestTimeoutMs() {
+  const raw = Number(process.env.LITELLM_TIMEOUT_MS || 60_000);
+  if (!Number.isFinite(raw) || raw < 1000) return 60_000;
+  return raw;
+}
+
 class LiteLLMClient {
   constructor(opts) {
     const options = opts || {};
@@ -78,7 +102,7 @@ class LiteLLMClient {
     const options = opts || {};
     const prompt = String(userPrompt || '');
     if (!prompt.trim()) {
-      throw new Error('OpenAI sendMessage requires non-empty prompt');
+      throw new Error('LiteLLM sendMessage requires non-empty prompt');
     }
 
     const model = options.model || this.model;
@@ -95,14 +119,21 @@ class LiteLLMClient {
 
     const start = Date.now();
     try {
-      const res = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify(body),
-      });
+      const endpoint = `${this.baseUrl}/chat/completions`;
+      let res;
+      try {
+        res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(requestTimeoutMs()),
+        });
+      } catch (fetchErr) {
+        throw formatFetchError(fetchErr, endpoint, 'POST');
+      }
 
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -172,13 +203,20 @@ class LiteLLMClient {
     form.append('file', new Blob([jsonl], { type: 'application/jsonl' }), 'batch.jsonl');
 
     const uploadStart = Date.now();
-    const uploadRes = await fetch(`${this.baseUrl}/files`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-      body: form,
-    });
+    const uploadUrl = `${this.baseUrl}/files`;
+    let uploadRes;
+    try {
+      uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: form,
+        signal: AbortSignal.timeout(requestTimeoutMs()),
+      });
+    } catch (fetchErr) {
+      throw formatFetchError(fetchErr, uploadUrl, 'POST');
+    }
     const uploadJson = await uploadRes.json().catch(() => ({}));
     if (!uploadRes.ok) {
       const msg = uploadJson && (uploadJson.error?.message || uploadJson.message || JSON.stringify(uploadJson));
@@ -187,19 +225,26 @@ class LiteLLMClient {
     const fileId = uploadJson.id;
 
     const batchStart = Date.now();
-    const batchRes = await fetch(`${this.baseUrl}/batches`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        input_file_id: fileId,
-        endpoint: '/v1/chat/completions',
-        completion_window,
-        metadata: options.metadata || undefined,
-      }),
-    });
+    const batchUrl = `${this.baseUrl}/batches`;
+    let batchRes;
+    try {
+      batchRes = await fetch(batchUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          input_file_id: fileId,
+          endpoint: '/v1/chat/completions',
+          completion_window,
+          metadata: options.metadata || undefined,
+        }),
+        signal: AbortSignal.timeout(requestTimeoutMs()),
+      });
+    } catch (fetchErr) {
+      throw formatFetchError(fetchErr, batchUrl, 'POST');
+    }
     const batchJson = await batchRes.json().catch(() => ({}));
     if (!batchRes.ok) {
       const msg = batchJson && (batchJson.error?.message || batchJson.message || JSON.stringify(batchJson));
@@ -225,12 +270,19 @@ class LiteLLMClient {
 
     const start = Date.now();
     try {
-      const res = await fetch(`${this.baseUrl}/batches/${encodeURIComponent(id)}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-      });
+      const endpoint = `${this.baseUrl}/batches/${encodeURIComponent(id)}`;
+      let res;
+      try {
+        res = await fetch(endpoint, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          signal: AbortSignal.timeout(requestTimeoutMs()),
+        });
+      } catch (fetchErr) {
+        throw formatFetchError(fetchErr, endpoint, 'GET');
+      }
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         const msg = json && (json.error?.message || json.message || JSON.stringify(json));
@@ -270,12 +322,19 @@ class LiteLLMClient {
 
     const start = Date.now();
     try {
-      const res = await fetch(`${this.baseUrl}/files/${encodeURIComponent(id)}/content`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-      });
+      const endpoint = `${this.baseUrl}/files/${encodeURIComponent(id)}/content`;
+      let res;
+      try {
+        res = await fetch(endpoint, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          signal: AbortSignal.timeout(requestTimeoutMs()),
+        });
+      } catch (fetchErr) {
+        throw formatFetchError(fetchErr, endpoint, 'GET');
+      }
       const text = await res.text();
       if (!res.ok) {
         throw new Error(`LiteLLM file content error: ${text || 'unknown error'}`);
