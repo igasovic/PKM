@@ -107,6 +107,25 @@ function requestTimeoutMs() {
   return raw;
 }
 
+function normalizeReasoningEffort(value) {
+  const v = String(value || '').trim().toLowerCase();
+  if (v === 'minimal' || v === 'low' || v === 'medium' || v === 'high') return v;
+  return null;
+}
+
+function getReasoningEffort() {
+  return normalizeReasoningEffort(process.env.T1_REASONING_EFFORT) || 'minimal';
+}
+
+function isReasoningEffortValidationError(msg) {
+  const s = String(msg || '').toLowerCase();
+  return (
+    s.includes('reasoning') &&
+    s.includes('effort') &&
+    (s.includes('invalid') || s.includes('unsupported') || s.includes('not allowed') || s.includes('must be'))
+  );
+}
+
 class LiteLLMClient {
   constructor(opts) {
     const options = opts || {};
@@ -127,52 +146,72 @@ class LiteLLMClient {
     const model = options.model || this.model;
     const instructions = options.systemPrompt || this.systemPrompt;
     const input = prompt;
+    const defaultReasoningEffort = getReasoningEffort();
 
-    const body = {
+    const makeBody = (reasoningEffort) => ({
       model,
       messages: [
         { role: 'system', content: instructions },
         { role: 'user', content: input },
       ],
-    };
+      reasoning: { effort: reasoningEffort },
+    });
 
     const start = Date.now();
     try {
       const endpoint = `${this.baseUrl}/chat/completions`;
-      let res;
-      try {
-        res = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(requestTimeoutMs()),
-        });
-      } catch (fetchErr) {
-        throw formatFetchError(fetchErr, endpoint, 'POST');
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiKey}`,
+      };
+      const fetchJson = async (reasoningEffort) => {
+        let res;
+        try {
+          res = await fetch(endpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(makeBody(reasoningEffort)),
+            signal: AbortSignal.timeout(requestTimeoutMs()),
+          });
+        } catch (fetchErr) {
+          throw formatFetchError(fetchErr, endpoint, 'POST');
+        }
+        const json = await res.json().catch(() => ({}));
+        return { res, json, reasoningEffort };
+      };
+
+      let attempt = await fetchJson(defaultReasoningEffort);
+      if (!attempt.res.ok) {
+        const msg = attempt.json && (attempt.json.error?.message || attempt.json.message || JSON.stringify(attempt.json));
+        // Fallback path: some stacks reject "minimal"; retry once with "low".
+        if (attempt.reasoningEffort === 'minimal' && isReasoningEffortValidationError(msg)) {
+          attempt = await fetchJson('low');
+        }
       }
 
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const msg = json && (json.error?.message || json.message || JSON.stringify(json));
+      if (!attempt.res.ok) {
+        const msg = attempt.json && (attempt.json.error?.message || attempt.json.message || JSON.stringify(attempt.json));
         throw new Error(`LiteLLM chat completion error: ${msg}`);
       }
 
-      const text = extractResponseText(json);
+      const text = extractResponseText(attempt.json);
       const duration_ms = Date.now() - start;
       this.logger.log({
         input: { model, prompt },
         output: { text },
-        metadata: { source: 'litellm', endpoint: 'chat.completions', model },
+        metadata: {
+          source: 'litellm',
+          endpoint: 'chat.completions',
+          model,
+          reasoning_effort: attempt.reasoningEffort,
+        },
         metrics: {
           duration_ms,
-          ...readUsage(json),
+          ...readUsage(attempt.json),
         },
       });
 
-      return { response: json, text };
+      return { response: attempt.json, text };
     } catch (err) {
       const duration_ms = Date.now() - start;
       this.logger.log({
@@ -198,6 +237,7 @@ class LiteLLMClient {
     const model = options.model || process.env.T1_BATCH_MODEL || this.model;
     const instructions = options.systemPrompt || this.systemPrompt;
     const completion_window = options.completion_window || '24h';
+    const reasoningEffort = getReasoningEffort();
 
     const jsonl = requests.map((r) => {
       if (!r || !r.custom_id || !r.prompt) {
@@ -213,6 +253,7 @@ class LiteLLMClient {
             { role: 'system', content: instructions },
             { role: 'user', content: r.prompt },
           ],
+          reasoning: { effort: reasoningEffort },
         },
       });
     }).join('\n');
@@ -273,7 +314,7 @@ class LiteLLMClient {
     this.logger.log({
       input: { model, request_count: requests.length },
       output: { batch_id: batchJson.id, input_file_id: fileId },
-      metadata: { source: 'litellm', endpoint: 'batches' },
+      metadata: { source: 'litellm', endpoint: 'batches', reasoning_effort: reasoningEffort },
       metrics: {
         upload_ms: Date.now() - uploadStart,
         batch_ms: Date.now() - batchStart,
