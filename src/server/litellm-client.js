@@ -120,8 +120,7 @@ function getReasoningEffort() {
 function isReasoningEffortValidationError(msg) {
   const s = String(msg || '').toLowerCase();
   return (
-    s.includes('reasoning') &&
-    s.includes('effort') &&
+    (s.includes('reasoning') || s.includes('reasoning_effort')) &&
     (s.includes('invalid') || s.includes('unsupported') || s.includes('not allowed') || s.includes('must be'))
   );
 }
@@ -154,7 +153,7 @@ class LiteLLMClient {
         { role: 'system', content: instructions },
         { role: 'user', content: input },
       ],
-      reasoning: { effort: reasoningEffort },
+      reasoning_effort: reasoningEffort,
     });
 
     const start = Date.now();
@@ -253,7 +252,7 @@ class LiteLLMClient {
             { role: 'system', content: instructions },
             { role: 'user', content: r.prompt },
           ],
-          reasoning: { effort: reasoningEffort },
+          reasoning_effort: reasoningEffort,
         },
       });
     }).join('\n');
