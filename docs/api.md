@@ -237,7 +237,7 @@ Response:
 ```
 
 ### `POST /enrich/t1/batch`
-Creates an OpenAI Batch job for Tier‑1 enrichment and persists mapping in Postgres.
+Creates a LiteLLM/OpenAI-compatible Batch job for Tier‑1 enrichment and persists mapping in Postgres.
 
 Body:
 ```json
@@ -617,3 +617,9 @@ Optional:
 - `PKM_DB_SSL` (default: `false`)
 - `PKM_DB_SSL_REJECT_UNAUTHORIZED` (default: `true`)
 - `EMAIL_IMPORT_ROOT` (default: `/data`; root directory for `/import/email/mbox` reads)
+- `OPENAI_BASE_URL` (recommended: `http://litellm:4000/v1`)
+- `T1_DEFAULT_MODEL` (recommended: `t1-default`)
+- `T1_BATCH_MODEL` (recommended: `t1-batch`)
+
+LLM auth:
+- `LITELLM_MASTER_KEY` (required; used as Bearer token for LiteLLM)

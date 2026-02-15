@@ -60,7 +60,7 @@ function readUsage(response) {
   };
 }
 
-class OpenAIClient {
+class LiteLLMClient {
   constructor(opts) {
     const options = opts || {};
     this.apiKey = requireApiKey();
@@ -301,7 +301,7 @@ class OpenAIClient {
 }
 
 module.exports = {
-  OpenAIClient,
+  LiteLLMClient,
   DEFAULT_SYSTEM_PROMPT,
   extractResponseText,
 };

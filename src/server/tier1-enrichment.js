@@ -6,19 +6,19 @@ const { getPool } = require('./db-pool.js');
 const { getBraintrustLogger, traceDb } = require('./observability.js');
 const { getTestModeStateFromDb } = require('./db.js');
 const { buildSampledPrompt, buildWholePrompt } = require('../libs/prompt-builder.js');
-const { OpenAIClient, extractResponseText } = require('./openai-client.js');
+const { LiteLLMClient, extractResponseText } = require('./litellm-client.js');
 
 const CLEAN_TEXT_SAMPLE_LIMIT = 4000;
 const TERMINAL_BATCH_STATUSES = new Set(['completed', 'failed', 'expired', 'cancelled']);
 
-let openaiClient = null;
+let litellmClient = null;
 let workerTimer = null;
 let workerActive = false;
 
-function getOpenAIClient() {
-  if (openaiClient) return openaiClient;
-  openaiClient = new OpenAIClient({});
-  return openaiClient;
+function getLiteLLMClient() {
+  if (litellmClient) return litellmClient;
+  litellmClient = new LiteLLMClient({});
+  return litellmClient;
 }
 
 function isMissingRelationError(err) {
@@ -396,7 +396,7 @@ async function syncTier1Batch(batchId) {
   }
 
   const { schema, batch: localBatch } = found;
-  const client = getOpenAIClient();
+  const client = getLiteLLMClient();
   const remoteBatch = await client.retrieveBatch(batchId);
 
   await upsertBatchRow(
@@ -568,7 +568,7 @@ async function enrichTier1(input) {
     clean_text,
   });
 
-  const client = getOpenAIClient();
+  const client = getLiteLLMClient();
   const { response } = await client.sendMessage(promptBuilt.prompt);
   const text = extractResponseText(response);
   const t1 = parseTier1Json(text);
@@ -577,7 +577,7 @@ async function enrichTier1(input) {
 
 async function enqueueTier1Batch(items, opts) {
   const requests = buildBatchRequests(items);
-  const client = getOpenAIClient();
+  const client = getLiteLLMClient();
   const { batch } = await client.createBatch(requests, opts);
   const schema = await getActiveSchema();
 

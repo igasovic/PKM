@@ -37,6 +37,9 @@
 - Expanded `/db/insert` and `/db/update` to support batch payloads via `items` with optional `continue_on_error`.
 - Enforced idempotency fail-closed behavior for `source = email-batch` in insert path.
 - Optimized DB batch operations by reusing resolved test-mode config across per-item execution.
+- Switched Tier‑1 LLM client from OpenAI Responses routing to LiteLLM chat-completions routing.
+- Renamed `src/server/openai-client.js` to `src/server/litellm-client.js` and updated enrichment imports/usages.
+- LLM auth is now strict `LITELLM_MASTER_KEY` (no `OPENAI_API_KEY` fallback).
 
 ## 2026-02-10 — Backend config module + API endpoint
 

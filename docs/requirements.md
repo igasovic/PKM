@@ -184,6 +184,18 @@ Primary objective:
 - Normalization flows should call the quality module entrypoint instead of duplicating signal logic in workflow code.
 - Returned fields must be DB-ready for direct `/db/update` or `/db/insert` usage.
 
+## Tier-1 LiteLLM client requirements
+- Tier‑1 enrichment must route through LiteLLM, not direct provider APIs.
+- Backend client must use OpenAI-compatible LiteLLM endpoints:
+  - sync calls: `/v1/chat/completions`
+  - batch calls: `/v1/files`, `/v1/batches`, `/v1/files/{id}/content`
+- Authentication must use `LITELLM_MASTER_KEY` only.
+- Base URL must be configurable via `OPENAI_BASE_URL` (recommended: `http://litellm:4000/v1`).
+- Model selection must use LiteLLM logical routes:
+  - `T1_DEFAULT_MODEL` for sync enrichment
+  - `T1_BATCH_MODEL` for batch enrichment
+- n8n and other clients should call backend APIs only; LiteLLM orchestration stays inside backend.
+
 ## Non-goals
 - No duplicate side-table tracking in place of uniqueness constraints.
 - No client-side duplicate suppression as primary mechanism.
