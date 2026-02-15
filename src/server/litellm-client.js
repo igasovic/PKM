@@ -57,10 +57,23 @@ function extractResponseText(response) {
 function readUsage(response) {
   const usage = response && response.usage;
   if (!usage || typeof usage !== 'object') return {};
+  const prompt_tokens = Number(
+    usage.prompt_tokens ?? usage.input_tokens ?? 0
+  );
+  const completion_tokens = Number(
+    usage.completion_tokens ?? usage.output_tokens ?? 0
+  );
+  const tokensRaw = usage.tokens ?? usage.total_tokens;
+  const tokens = Number(
+    tokensRaw ?? (Number.isFinite(prompt_tokens) && Number.isFinite(completion_tokens)
+      ? prompt_tokens + completion_tokens
+      : 0)
+  );
   return {
-    prompt_tokens: usage.prompt_tokens,
-    completion_tokens: usage.completion_tokens,
-    total_tokens: usage.total_tokens,
+    prompt_tokens: Number.isFinite(prompt_tokens) ? prompt_tokens : undefined,
+    completion_tokens: Number.isFinite(completion_tokens) ? completion_tokens : undefined,
+    tokens: Number.isFinite(tokens) ? tokens : undefined,
+    total_tokens: Number.isFinite(tokens) ? tokens : undefined,
   };
 }
 
@@ -146,7 +159,7 @@ class LiteLLMClient {
       this.logger.log({
         input: { model, prompt },
         output: { text },
-        metadata: { source: 'litellm', endpoint: 'chat.completions' },
+        metadata: { source: 'litellm', endpoint: 'chat.completions', model },
         metrics: {
           duration_ms,
           ...readUsage(json),
