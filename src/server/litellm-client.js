@@ -69,9 +69,15 @@ function readUsage(response) {
       ? prompt_tokens + completion_tokens
       : 0)
   );
+  const reasoningRaw =
+    usage.reasoning_tokens ??
+    (usage.completion_tokens_details && usage.completion_tokens_details.reasoning_tokens) ??
+    (usage.output_tokens_details && usage.output_tokens_details.reasoning_tokens);
+  const reasoning_tokens = Number(reasoningRaw ?? 0);
   return {
     prompt_tokens: Number.isFinite(prompt_tokens) ? prompt_tokens : undefined,
     completion_tokens: Number.isFinite(completion_tokens) ? completion_tokens : undefined,
+    reasoning_tokens: Number.isFinite(reasoning_tokens) ? reasoning_tokens : undefined,
     tokens: Number.isFinite(tokens) ? tokens : undefined,
     total_tokens: Number.isFinite(tokens) ? tokens : undefined,
   };
