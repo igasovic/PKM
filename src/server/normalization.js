@@ -1081,7 +1081,7 @@ function stripForwardPrefixOnce(subject) {
 
 function parseMiniHeaderBlock(lines, startIdx, opts) {
   const maxLines = (opts && opts.maxLines) || 30;
-  const keys = /^(From|To|Subject|Date|Sent|Cc|Bcc|Reply-To):\s*(.*)\s*$/i;
+  const keys = /^(From|To|Subject|Date|Sent|Cc|Bcc|Reply-To|Message-ID):\s*(.*)\s*$/i;
 
   let i = startIdx;
   let skipped = 0;
@@ -1107,7 +1107,7 @@ function parseMiniHeaderBlock(lines, startIdx, opts) {
 
     const hm = line.match(keys);
     if (hm) {
-      lastKey = hm[1].toLowerCase().replace('-', '_');
+      lastKey = hm[1].toLowerCase().replace(/-/g, '_');
       const val = String(hm[2] || '').trim();
       headers[lastKey] = headers[lastKey] ? `${headers[lastKey]} ${val}`.trim() : val;
       continue;
@@ -1492,6 +1492,15 @@ async function normalizeEmail({ raw_text, from, subject, source }) {
   const resolvedRawText = raw_text ?? (src ? (src.body || src.text || src.raw_text || src.capture_text) : null);
   const resolvedFrom = from ?? null;
   const resolvedSubject = subject ?? null;
+  const transport = normalizeEmailTransport(resolvedRawText);
+  const fwd = transport && transport.forwarded ? transport.forwarded : { found: false, headers: {} };
+  const fwdHeaders = (fwd && fwd.headers && typeof fwd.headers === 'object') ? fwd.headers : {};
+  const forwardedFrom = sanitizeHeaderText(fwdHeaders.from);
+  const forwardedSubjectRaw = sanitizeHeaderText(fwdHeaders.subject);
+  const forwardedSubject = forwardedSubjectRaw ? stripForwardPrefixOnce(forwardedSubjectRaw) : null;
+  const forwardedDate = sanitizeHeaderText(fwdHeaders.date || fwdHeaders.sent);
+  const forwardedMessageId = sanitizeHeaderText(fwdHeaders.message_id);
+
   const normalized = await normalizeEmailInternal({
     raw_text: resolvedRawText,
     from: resolvedFrom,
@@ -1501,8 +1510,10 @@ async function normalizeEmail({ raw_text, from, subject, source }) {
   const sourceForIdem = {
     ...(src || {}),
     system: 'email',
-    from_addr: resolvedFrom,
-    subject: resolvedSubject,
+    from_addr: (fwd.found && forwardedFrom) ? forwardedFrom : resolvedFrom,
+    subject: (fwd.found && forwardedSubject) ? forwardedSubject : resolvedSubject,
+    date: (fwd.found && forwardedDate) ? forwardedDate : (src && src.date ? src.date : null),
+    message_id: (fwd.found && forwardedMessageId) ? forwardedMessageId : (src && src.message_id ? src.message_id : null),
     body: (src && src.body) ? src.body : resolvedRawText,
   };
   const idem = buildIdempotencyForNormalized({
