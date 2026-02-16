@@ -147,25 +147,64 @@ function buildEmailCorrespondenceIdempotency(source, normalized) {
   };
 }
 
+function safeJson(value) {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '[unserializable]';
+  }
+}
+
+function buildIdempotencyError(reason, source, normalized) {
+  const err = new Error(
+    `idempotency normalization failed: ${reason}; source=${safeJson(source)}; norm=${safeJson(normalized)}`
+  );
+  err.reason = reason;
+  err.source_data = source;
+  err.norm_data = normalized;
+  return err;
+}
+
 function buildIdempotencyForNormalized({ source, normalized }) {
   const src = source || {};
   const norm = normalized || {};
   const system = String(src.system || '').toLowerCase();
 
   if (system === 'telegram') {
-    return buildTelegramIdempotency(src, norm);
+    const out = buildTelegramIdempotency(src, norm);
+    if (!out) {
+      throw buildIdempotencyError('telegram keys could not be derived', src, norm);
+    }
+    return out;
   }
 
   if (system === 'email') {
     if (norm.content_type === 'newsletter') {
-      return buildEmailNewsletterIdempotency(src);
+      const out = buildEmailNewsletterIdempotency(src);
+      if (!out) {
+        throw buildIdempotencyError('email newsletter keys could not be derived', src, norm);
+      }
+      return out;
     }
     if (norm.content_type === 'correspondence' || norm.content_type === 'correspondence_thread') {
-      return buildEmailCorrespondenceIdempotency(src, norm);
+      const out = buildEmailCorrespondenceIdempotency(src, norm);
+      if (!out) {
+        throw buildIdempotencyError('email correspondence keys could not be derived', src, norm);
+      }
+      return out;
     }
+    throw buildIdempotencyError(
+      `unsupported email content_type: ${String(norm.content_type || '') || '(empty)'}`,
+      src,
+      norm
+    );
   }
 
-  return null;
+  throw buildIdempotencyError(
+    `unsupported source.system: ${String(src.system || '') || '(empty)'}`,
+    src,
+    norm
+  );
 }
 
 function attachIdempotencyFields(normalized, idempotency) {
