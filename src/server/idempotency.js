@@ -20,85 +20,48 @@ function normalizeEmailAddr(s) {
   return m ? m[1] : raw;
 }
 
-function normalizeSubjectBase(subject) {
-  let s = normalizeWhitespace(subject).toLowerCase();
-  if (!s) return null;
+function toDateBucketYYYYMMDD(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
 
-  // Drop list tags like "[List Name]" at the beginning.
-  while (/^\[[^\]]+\]\s*/.test(s)) {
-    s = s.replace(/^\[[^\]]+\]\s*/, '');
+  // Prefer explicit date component from the incoming value (ignore timezone).
+  let m = raw.match(/\b(\d{4})[-/](\d{2})[-/](\d{2})\b/);
+  if (m) return `${m[1]}${m[2]}${m[3]}`;
+  m = raw.match(/\b(\d{4})(\d{2})(\d{2})\b/);
+  if (m) return `${m[1]}${m[2]}${m[3]}`;
+
+  const tryParse = (input) => {
+    const d = new Date(input);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
+  let d = tryParse(raw);
+  if (!d) {
+    const cleaned = raw.replace(/\bat\b/gi, ' ').replace(/\s+/g, ' ').trim();
+    d = tryParse(cleaned);
   }
-
-  // Drop common reply/forward prefixes.
-  while (/^(re|fw|fwd)\s*:\s*/i.test(s)) {
-    s = s.replace(/^(re|fw|fwd)\s*:\s*/i, '');
+  if (!d) {
+    const noWeekday = raw.replace(/^[A-Za-z]{3,9},\s*/, '').trim();
+    d = tryParse(noWeekday);
   }
+  if (!d) return null;
 
-  s = normalizeWhitespace(s);
-  return s || null;
-}
-
-function toChicagoDateBucket(value) {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Chicago',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(d);
-}
-
-function normalizeUrlForKey(urlValue) {
-  const input = normalizeWhitespace(urlValue);
-  if (!input) return null;
-  let u;
-  try {
-    u = new URL(input.startsWith('http') ? input : `https://${input}`);
-  } catch {
-    return input.toLowerCase();
-  }
-
-  u.protocol = u.protocol.toLowerCase();
-  u.hostname = u.hostname.toLowerCase();
-  u.hash = '';
-
-  // Remove common tracking query params.
-  const drop = new Set([
-    'fbclid',
-    'gclid',
-    'dclid',
-    'msclkid',
-    'igshid',
-    'mc_cid',
-    'mc_eid',
-    'mkt_tok',
-    'oly_anon_id',
-    'oly_enc_id',
-  ]);
-  const next = new URLSearchParams();
-  for (const [k, v] of u.searchParams.entries()) {
-    const key = String(k || '').toLowerCase();
-    if (key.startsWith('utm_')) continue;
-    if (drop.has(key)) continue;
-    next.append(k, v);
-  }
-  const query = next.toString();
-  u.search = query ? `?${query}` : '';
-  return u.toString().replace(/\/$/, '');
+  const y = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}${mm}${dd}`;
 }
 
 function buildTelegramIdempotency(source, normalized) {
   const src = source || {};
-  const isLink = !!(normalized.url_canonical || normalized.url || src.url);
+  const canonicalFromNorm = normalizeWhitespace(normalized.url_canonical || '');
+  const isLink = !!canonicalFromNorm;
 
   if (isLink) {
-    const canonical = normalizeUrlForKey(normalized.url_canonical || normalized.url || src.url);
-    if (!canonical) return null;
     return {
       idempotency_policy_key: 'telegram_link_v1',
-      idempotency_key_primary: canonical,
-      idempotency_key_secondary: sha256(canonical),
+      idempotency_key_primary: canonicalFromNorm,
+      idempotency_key_secondary: sha256(canonicalFromNorm),
     };
   }
 
@@ -119,8 +82,11 @@ function buildTelegramIdempotency(source, normalized) {
 function buildEmailNewsletterIdempotency(source) {
   const src = source || {};
   const fromAddr = normalizeEmailAddr(src.from_addr || src.from || src.sender);
-  const subjectBase = normalizeSubjectBase(src.subject);
-  const dateBucket = toChicagoDateBucket(src.date);
+  if (src.subject === undefined || src.subject === null) {
+    throw buildIdempotencyError('email newsletter subject is required', src, null);
+  }
+  const subjectBase = normalizeWhitespace(src.subject).toLowerCase();
+  const dateBucket = toDateBucketYYYYMMDD(src.date);
   const messageId = normalizeWhitespace(src.message_id);
 
   const secondary = (fromAddr && subjectBase && dateBucket)
@@ -138,7 +104,11 @@ function buildEmailNewsletterIdempotency(source) {
 function buildEmailCorrespondenceIdempotency(source, normalized) {
   const src = source || {};
   const norm = normalized || {};
-  const subjectBase = normalizeSubjectBase(src.subject || norm.title);
+  const rawSubject = (src.subject !== undefined && src.subject !== null) ? src.subject : norm.title;
+  if (rawSubject === undefined || rawSubject === null) {
+    throw buildIdempotencyError('email correspondence subject is required', src, norm);
+  }
+  const subjectBase = normalizeWhitespace(rawSubject).toLowerCase();
   if (!subjectBase) return null;
   return {
     idempotency_policy_key: 'email_correspondence_thread_v1',
@@ -218,8 +188,7 @@ function attachIdempotencyFields(normalized, idempotency) {
 }
 
 module.exports = {
-  normalizeSubjectBase,
-  toChicagoDateBucket,
+  toDateBucketYYYYMMDD,
   buildIdempotencyForNormalized,
   attachIdempotencyFields,
 };

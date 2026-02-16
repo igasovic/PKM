@@ -5,7 +5,7 @@ const { buildRetrievalForDb } = require('./quality.js');
 const {
   buildIdempotencyForNormalized,
   attachIdempotencyFields,
-} = require('./idempotency-normalization.js');
+} = require('./idempotency.js');
 
 function maybeUnescapeTelegramText(s) {
   const t = String(s ?? '');
@@ -1079,6 +1079,18 @@ function stripForwardPrefixOnce(subject) {
   return raw.replace(/^\s*(?:fwd?|fw|forward)\s*:\s*/i, '').trim();
 }
 
+function normalizeIdemFromHeader(fromValue) {
+  return sanitizeHeaderText(fromValue);
+}
+
+function normalizeIdemSubject(subjectValue) {
+  const base = stripForwardPrefixOnce(subjectValue);
+  if (!base) return null;
+  // Keep idempotency subject stable by removing decorative leading symbols/emojis.
+  const cleaned = base.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+  return cleaned || null;
+}
+
 function parseMiniHeaderBlock(lines, startIdx, opts) {
   const maxLines = (opts && opts.maxLines) || 30;
   const keys = /^(From|To|Subject|Date|Sent|Cc|Bcc|Reply-To|Message-ID):\s*(.*)\s*$/i;
@@ -1490,17 +1502,16 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
 async function normalizeEmail({ raw_text, from, subject, source }) {
   const src = source && typeof source === 'object' ? source : null;
   const resolvedRawText = raw_text ?? (src ? (src.body || src.text || src.raw_text || src.capture_text) : null);
-  const resolvedFrom = from ?? null;
-  const resolvedSubject = subject ?? null;
+  const resolvedFrom = normalizeIdemFromHeader(from ?? null);
+  const resolvedSubject = normalizeIdemSubject(subject ?? null);
   const transport = normalizeEmailTransport(resolvedRawText);
   const fwd = transport && transport.forwarded ? transport.forwarded : { found: false, headers: {} };
   const fwdHeaders = (fwd && fwd.headers && typeof fwd.headers === 'object') ? fwd.headers : {};
-  const forwardedFrom = sanitizeHeaderText(fwdHeaders.from);
+  const forwardedFrom = normalizeIdemFromHeader(fwdHeaders.from);
   const forwardedSubjectRaw = sanitizeHeaderText(fwdHeaders.subject);
-  const forwardedSubject = forwardedSubjectRaw ? stripForwardPrefixOnce(forwardedSubjectRaw) : null;
+  const forwardedSubject = forwardedSubjectRaw ? normalizeIdemSubject(forwardedSubjectRaw) : null;
   const forwardedDate = sanitizeHeaderText(fwdHeaders.date || fwdHeaders.sent);
   const forwardedMessageId = sanitizeHeaderText(fwdHeaders.message_id);
-
   const normalized = await normalizeEmailInternal({
     raw_text: resolvedRawText,
     from: resolvedFrom,
@@ -1520,9 +1531,6 @@ async function normalizeEmail({ raw_text, from, subject, source }) {
     source: sourceForIdem,
     normalized,
   });
-  if (!idem) {
-    throw new Error('unable to compute idempotency keys for email payload');
-  }
   return attachIdempotencyFields(normalized, idem);
 }
 
