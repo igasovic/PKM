@@ -196,6 +196,21 @@ Primary objective:
   - `T1_BATCH_MODEL` for batch enrichment
 - n8n and other clients should call backend APIs only; LiteLLM orchestration stays inside backend.
 
+## Tier-1 orchestration requirements
+- Tier‑1 orchestration must be graph-driven via LangGraph.
+- `src/server/index.js` must keep API contracts unchanged and delegate Tier‑1 orchestration to LangGraph-backed service functions.
+- Graphs required:
+  - sync enrichment
+  - batch schedule
+  - batch collect
+- Node order must stay explicit and extensible as:
+  - `load -> prompt -> llm -> parse -> write`
+- Domain logic must be reusable across flows:
+  - sync enrichment and batch collect must share the same parsing logic for Tier‑1 JSON interpretation.
+- Observability policy:
+  - LiteLLM client must emit full call instrumentation for all LLM/proxy interactions.
+  - Non-LLM graph nodes should emit logs only on errors.
+
 ## Non-goals
 - No duplicate side-table tracking in place of uniqueness constraints.
 - No client-side duplicate suppression as primary mechanism.

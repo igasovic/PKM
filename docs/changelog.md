@@ -1,4 +1,29 @@
 # changelog
+## 2026-02-16 — Tier-1 LangGraph orchestration refactor
+
+### What changed
+- Added LangGraph dependencies to backend server package (`@langchain/langgraph`, `@langchain/core`).
+- Refactored Tier‑1 orchestration into reusable modules under `src/server/tier1/`:
+  - shared domain logic (`prompt`, parse, batch result mapping)
+  - shared batch persistence/store helpers
+  - LangGraph graph definitions and execution wrappers
+- Implemented three LangGraph flows with explicit node stages `load -> prompt -> llm -> parse -> write`:
+  - sync enrichment
+  - batch schedule
+  - batch collect
+- Kept external API contracts unchanged for:
+  - `POST /enrich/t1`
+  - `POST /enrich/t1/batch`
+  - worker-driven batch collection behavior
+- Updated `src/server/tier1-enrichment.js` to a thin facade over LangGraph execution, preserving exported function names used by API handlers/importers.
+- Refactored `src/server/litellm-client.js` instrumentation to provide consistent structured logging for all LiteLLM operations:
+  - chat completions attempts and resolved call
+  - files upload
+  - batch creation
+  - batch retrieval
+  - file content fetch
+- Constrained non-LLM orchestration logging to error-only node logs.
+
 ## 2026-02-11 — Config-driven read defaults
 
 ### What changed

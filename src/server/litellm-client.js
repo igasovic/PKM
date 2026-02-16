@@ -65,9 +65,10 @@ function readUsage(response) {
   );
   const tokensRaw = usage.tokens ?? usage.total_tokens;
   const tokens = Number(
-    tokensRaw ?? (Number.isFinite(prompt_tokens) && Number.isFinite(completion_tokens)
-      ? prompt_tokens + completion_tokens
-      : 0)
+    tokensRaw ??
+      (Number.isFinite(prompt_tokens) && Number.isFinite(completion_tokens)
+        ? prompt_tokens + completion_tokens
+        : 0)
   );
   const reasoningRaw =
     usage.reasoning_tokens ??
@@ -125,6 +126,37 @@ function isReasoningEffortValidationError(msg) {
   );
 }
 
+function safeJsonParse(text) {
+  if (!String(text || '').trim()) return {};
+  try {
+    return JSON.parse(text);
+  } catch (_err) {
+    return {};
+  }
+}
+
+function extractErrorMessage(json, fallbackText) {
+  const fromJson = json && (json.error?.message || json.message || null);
+  const fallback = String(fallbackText || '').trim();
+  if (fromJson && String(fromJson).trim()) return String(fromJson).trim();
+  if (fallback) return fallback;
+  return 'unknown error';
+}
+
+function truncate(value, max) {
+  const s = String(value || '');
+  if (s.length <= max) return s;
+  return `${s.slice(0, max)}...`;
+}
+
+function errorDetails(err) {
+  return {
+    name: err && err.name,
+    message: err && err.message,
+    stack: err && err.stack,
+  };
+}
+
 class LiteLLMClient {
   constructor(opts) {
     const options = opts || {};
@@ -133,6 +165,73 @@ class LiteLLMClient {
     this.model = options.model || process.env.T1_DEFAULT_MODEL || 't1-default';
     this.systemPrompt = options.systemPrompt || DEFAULT_SYSTEM_PROMPT;
     this.logger = getBraintrustLogger();
+  }
+
+  logSuccess(op, input, output, metadata, metrics) {
+    this.logger.log({
+      input,
+      output,
+      metadata: {
+        source: 'litellm',
+        op,
+        ...(metadata || {}),
+      },
+      metrics: metrics || undefined,
+    });
+  }
+
+  logError(op, input, err, metadata, metrics) {
+    this.logger.log({
+      input,
+      error: errorDetails(err),
+      metadata: {
+        source: 'litellm',
+        op,
+        ...(metadata || {}),
+      },
+      metrics: metrics || undefined,
+    });
+  }
+
+  async fetchJson(endpoint, fetchOptions) {
+    const start = Date.now();
+    let res;
+    try {
+      res = await fetch(endpoint, {
+        ...fetchOptions,
+        signal: AbortSignal.timeout(requestTimeoutMs()),
+      });
+    } catch (fetchErr) {
+      throw formatFetchError(fetchErr, endpoint, fetchOptions && fetchOptions.method ? fetchOptions.method : 'GET');
+    }
+
+    const text = await res.text();
+    return {
+      res,
+      text,
+      json: safeJsonParse(text),
+      duration_ms: Date.now() - start,
+    };
+  }
+
+  async fetchText(endpoint, fetchOptions) {
+    const start = Date.now();
+    let res;
+    try {
+      res = await fetch(endpoint, {
+        ...fetchOptions,
+        signal: AbortSignal.timeout(requestTimeoutMs()),
+      });
+    } catch (fetchErr) {
+      throw formatFetchError(fetchErr, endpoint, fetchOptions && fetchOptions.method ? fetchOptions.method : 'GET');
+    }
+
+    const text = await res.text();
+    return {
+      res,
+      text,
+      duration_ms: Date.now() - start,
+    };
   }
 
   async sendMessage(userPrompt, opts) {
@@ -144,85 +243,160 @@ class LiteLLMClient {
 
     const model = options.model || this.model;
     const instructions = options.systemPrompt || this.systemPrompt;
-    const input = prompt;
+    const endpoint = `${this.baseUrl}/chat/completions`;
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${this.apiKey}`,
+    };
     const defaultReasoningEffort = getReasoningEffort();
+    const methodStart = Date.now();
 
     const makeBody = (reasoningEffort) => ({
       model,
       messages: [
         { role: 'system', content: instructions },
-        { role: 'user', content: input },
+        { role: 'user', content: prompt },
       ],
       reasoning_effort: reasoningEffort,
     });
 
-    const start = Date.now();
-    try {
-      const endpoint = `${this.baseUrl}/chat/completions`;
-      const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
-      };
-      const fetchJson = async (reasoningEffort) => {
-        let res;
-        try {
-          res = await fetch(endpoint, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(makeBody(reasoningEffort)),
-            signal: AbortSignal.timeout(requestTimeoutMs()),
-          });
-        } catch (fetchErr) {
-          throw formatFetchError(fetchErr, endpoint, 'POST');
-        }
-        const json = await res.json().catch(() => ({}));
-        return { res, json, reasoningEffort };
-      };
-
-      let attempt = await fetchJson(defaultReasoningEffort);
-      if (!attempt.res.ok) {
-        const msg = attempt.json && (attempt.json.error?.message || attempt.json.message || JSON.stringify(attempt.json));
-        // Fallback path: some stacks reject "minimal"; retry once with "low".
-        if (attempt.reasoningEffort === 'minimal' && isReasoningEffortValidationError(msg)) {
-          attempt = await fetchJson('low');
-        }
+    const attempt = async (reasoningEffort, attemptIndex) => {
+      const body = makeBody(reasoningEffort);
+      let fetchResult;
+      try {
+        fetchResult = await this.fetchJson(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+      } catch (err) {
+        this.logError(
+          'chat.completions.attempt',
+          {
+            model,
+            attempt: attemptIndex,
+            reasoning_effort: reasoningEffort,
+            prompt_chars: prompt.length,
+          },
+          err,
+          {
+            endpoint: 'chat.completions',
+          }
+        );
+        throw err;
       }
 
-      if (!attempt.res.ok) {
-        const msg = attempt.json && (attempt.json.error?.message || attempt.json.message || JSON.stringify(attempt.json));
-        throw new Error(`LiteLLM chat completion error: ${msg}`);
+      const { res, json, text, duration_ms } = fetchResult;
+      const usage = readUsage(json);
+      const msg = extractErrorMessage(json, text);
+
+      if (!res.ok) {
+        const err = new Error(`LiteLLM chat completion error: ${msg}`);
+        this.logError(
+          'chat.completions.attempt',
+          {
+            model,
+            attempt: attemptIndex,
+            reasoning_effort: reasoningEffort,
+            prompt_chars: prompt.length,
+          },
+          err,
+          {
+            endpoint: 'chat.completions',
+            status_code: res.status,
+            response_preview: truncate(msg, 350),
+          },
+          {
+            duration_ms,
+          }
+        );
+        return {
+          ok: false,
+          error: err,
+          message: msg,
+          status_code: res.status,
+          json,
+        };
       }
 
-      const text = extractResponseText(attempt.json);
-      const duration_ms = Date.now() - start;
-      this.logger.log({
-        input: { model, prompt },
-        output: { text },
-        metadata: {
-          source: 'litellm',
-          endpoint: 'chat.completions',
+      const responseText = extractResponseText(json);
+      this.logSuccess(
+        'chat.completions.attempt',
+        {
           model,
-          reasoning_effort: attempt.reasoningEffort,
+          attempt: attemptIndex,
+          reasoning_effort: reasoningEffort,
+          prompt_chars: prompt.length,
         },
-        metrics: {
+        {
+          response_chars: String(responseText || '').length,
+        },
+        {
+          endpoint: 'chat.completions',
+          status_code: res.status,
+        },
+        {
           duration_ms,
-          ...readUsage(attempt.json),
-        },
-      });
+          ...usage,
+        }
+      );
 
-      return { response: attempt.json, text };
-    } catch (err) {
-      const duration_ms = Date.now() - start;
-      this.logger.log({
-        input: { model, prompt },
-        error: {
-          name: err && err.name,
-          message: err && err.message,
-          stack: err && err.stack,
+      return {
+        ok: true,
+        json,
+        text: responseText,
+        reasoning_effort: reasoningEffort,
+        usage,
+      };
+    };
+
+    try {
+      let result = await attempt(defaultReasoningEffort, 1);
+      if (!result.ok) {
+        if (defaultReasoningEffort === 'minimal' && isReasoningEffortValidationError(result.message)) {
+          result = await attempt('low', 2);
+        }
+      }
+
+      if (!result.ok) {
+        throw result.error;
+      }
+
+      this.logSuccess(
+        'chat.completions',
+        {
+          model,
+          prompt_chars: prompt.length,
         },
-        metadata: { source: 'litellm', endpoint: 'chat.completions' },
-        metrics: { duration_ms },
-      });
+        {
+          response_chars: String(result.text || '').length,
+        },
+        {
+          endpoint: 'chat.completions',
+          reasoning_effort: result.reasoning_effort,
+        },
+        {
+          duration_ms: Date.now() - methodStart,
+          ...result.usage,
+        }
+      );
+
+      return { response: result.json, text: result.text };
+    } catch (err) {
+      this.logError(
+        'chat.completions',
+        {
+          model,
+          prompt_chars: prompt.length,
+        },
+        err,
+        {
+          endpoint: 'chat.completions',
+        },
+        {
+          duration_ms: Date.now() - methodStart,
+        }
+      );
       throw err;
     }
   }
@@ -237,6 +411,7 @@ class LiteLLMClient {
     const instructions = options.systemPrompt || this.systemPrompt;
     const completion_window = options.completion_window || '24h';
     const reasoningEffort = getReasoningEffort();
+    const methodStart = Date.now();
 
     const jsonl = requests.map((r) => {
       if (!r || !r.custom_id || !r.prompt) {
@@ -261,33 +436,79 @@ class LiteLLMClient {
     form.append('purpose', 'batch');
     form.append('file', new Blob([jsonl], { type: 'application/jsonl' }), 'batch.jsonl');
 
-    const uploadStart = Date.now();
     const uploadUrl = `${this.baseUrl}/files`;
-    let uploadRes;
+    let upload;
     try {
-      uploadRes = await fetch(uploadUrl, {
+      upload = await this.fetchJson(uploadUrl, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: form,
-        signal: AbortSignal.timeout(requestTimeoutMs()),
       });
-    } catch (fetchErr) {
-      throw formatFetchError(fetchErr, uploadUrl, 'POST');
+    } catch (err) {
+      this.logError(
+        'files.upload',
+        {
+          model,
+          request_count: requests.length,
+          completion_window,
+        },
+        err,
+        {
+          endpoint: 'files',
+        }
+      );
+      throw err;
     }
-    const uploadJson = await uploadRes.json().catch(() => ({}));
-    if (!uploadRes.ok) {
-      const msg = uploadJson && (uploadJson.error?.message || uploadJson.message || JSON.stringify(uploadJson));
-      throw new Error(`LiteLLM file upload error: ${msg}`);
-    }
-    const fileId = uploadJson.id;
 
-    const batchStart = Date.now();
+    if (!upload.res.ok) {
+      const msg = extractErrorMessage(upload.json, upload.text);
+      const err = new Error(`LiteLLM file upload error: ${msg}`);
+      this.logError(
+        'files.upload',
+        {
+          model,
+          request_count: requests.length,
+          completion_window,
+        },
+        err,
+        {
+          endpoint: 'files',
+          status_code: upload.res.status,
+          response_preview: truncate(msg, 350),
+        },
+        {
+          duration_ms: upload.duration_ms,
+        }
+      );
+      throw err;
+    }
+
+    const fileId = upload.json && upload.json.id;
+    this.logSuccess(
+      'files.upload',
+      {
+        model,
+        request_count: requests.length,
+      },
+      {
+        file_id: fileId || null,
+      },
+      {
+        endpoint: 'files',
+        status_code: upload.res.status,
+      },
+      {
+        duration_ms: upload.duration_ms,
+        input_jsonl_bytes: Buffer.byteLength(jsonl, 'utf8'),
+      }
+    );
+
     const batchUrl = `${this.baseUrl}/batches`;
-    let batchRes;
+    let batchCreate;
     try {
-      batchRes = await fetch(batchUrl, {
+      batchCreate = await this.fetchJson(batchUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -299,126 +520,234 @@ class LiteLLMClient {
           completion_window,
           metadata: options.metadata || undefined,
         }),
-        signal: AbortSignal.timeout(requestTimeoutMs()),
       });
-    } catch (fetchErr) {
-      throw formatFetchError(fetchErr, batchUrl, 'POST');
-    }
-    const batchJson = await batchRes.json().catch(() => ({}));
-    if (!batchRes.ok) {
-      const msg = batchJson && (batchJson.error?.message || batchJson.message || JSON.stringify(batchJson));
-      throw new Error(`LiteLLM batch create error: ${msg}`);
+    } catch (err) {
+      this.logError(
+        'batches.create',
+        {
+          model,
+          request_count: requests.length,
+          input_file_id: fileId,
+          completion_window,
+        },
+        err,
+        {
+          endpoint: 'batches',
+        }
+      );
+      throw err;
     }
 
-    this.logger.log({
-      input: { model, request_count: requests.length },
-      output: { batch_id: batchJson.id, input_file_id: fileId },
-      metadata: { source: 'litellm', endpoint: 'batches', reasoning_effort: reasoningEffort },
-      metrics: {
-        upload_ms: Date.now() - uploadStart,
-        batch_ms: Date.now() - batchStart,
+    if (!batchCreate.res.ok) {
+      const msg = extractErrorMessage(batchCreate.json, batchCreate.text);
+      const err = new Error(`LiteLLM batch create error: ${msg}`);
+      this.logError(
+        'batches.create',
+        {
+          model,
+          request_count: requests.length,
+          input_file_id: fileId,
+          completion_window,
+        },
+        err,
+        {
+          endpoint: 'batches',
+          status_code: batchCreate.res.status,
+          response_preview: truncate(msg, 350),
+        },
+        {
+          duration_ms: batchCreate.duration_ms,
+        }
+      );
+      throw err;
+    }
+
+    const batch = batchCreate.json || {};
+    this.logSuccess(
+      'batches.create',
+      {
+        model,
+        request_count: requests.length,
+        input_file_id: fileId,
+        completion_window,
       },
-    });
+      {
+        batch_id: batch.id || null,
+        status: batch.status || null,
+      },
+      {
+        endpoint: 'batches',
+        status_code: batchCreate.res.status,
+        reasoning_effort: reasoningEffort,
+      },
+      {
+        duration_ms: batchCreate.duration_ms,
+      }
+    );
 
-    return { batch: batchJson, input_file_id: fileId };
+    this.logSuccess(
+      'createBatch',
+      {
+        model,
+        request_count: requests.length,
+      },
+      {
+        batch_id: batch.id || null,
+        input_file_id: fileId || null,
+      },
+      {
+        endpoint: 'files+batches',
+      },
+      {
+        duration_ms: Date.now() - methodStart,
+      }
+    );
+
+    return { batch, input_file_id: fileId };
   }
 
   async retrieveBatch(batchId) {
     const id = String(batchId || '').trim();
     if (!id) throw new Error('LiteLLM retrieveBatch requires batchId');
 
-    const start = Date.now();
-    try {
-      const endpoint = `${this.baseUrl}/batches/${encodeURIComponent(id)}`;
-      let res;
-      try {
-        res = await fetch(endpoint, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-          signal: AbortSignal.timeout(requestTimeoutMs()),
-        });
-      } catch (fetchErr) {
-        throw formatFetchError(fetchErr, endpoint, 'GET');
-      }
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const msg = json && (json.error?.message || json.message || JSON.stringify(json));
-        throw new Error(`LiteLLM batch retrieve error: ${msg}`);
-      }
+    const endpoint = `${this.baseUrl}/batches/${encodeURIComponent(id)}`;
+    const methodStart = Date.now();
 
-      this.logger.log({
-        input: { batch_id: id },
-        output: {
-          batch_id: json.id,
-          status: json.status,
-          output_file_id: json.output_file_id || null,
-          error_file_id: json.error_file_id || null,
+    let fetchResult;
+    try {
+      fetchResult = await this.fetchJson(endpoint, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
         },
-        metadata: { source: 'litellm', endpoint: 'batches.retrieve' },
-        metrics: { duration_ms: Date.now() - start },
       });
-      return json;
     } catch (err) {
-      this.logger.log({
-        input: { batch_id: id },
-        error: {
-          name: err && err.name,
-          message: err && err.message,
-          stack: err && err.stack,
+      this.logError(
+        'batches.retrieve',
+        {
+          batch_id: id,
         },
-        metadata: { source: 'litellm', endpoint: 'batches.retrieve' },
-        metrics: { duration_ms: Date.now() - start },
-      });
+        err,
+        {
+          endpoint: 'batches.retrieve',
+        }
+      );
       throw err;
     }
+
+    if (!fetchResult.res.ok) {
+      const msg = extractErrorMessage(fetchResult.json, fetchResult.text);
+      const err = new Error(`LiteLLM batch retrieve error: ${msg}`);
+      this.logError(
+        'batches.retrieve',
+        {
+          batch_id: id,
+        },
+        err,
+        {
+          endpoint: 'batches.retrieve',
+          status_code: fetchResult.res.status,
+          response_preview: truncate(msg, 350),
+        },
+        {
+          duration_ms: fetchResult.duration_ms,
+        }
+      );
+      throw err;
+    }
+
+    const batch = fetchResult.json || {};
+    this.logSuccess(
+      'batches.retrieve',
+      {
+        batch_id: id,
+      },
+      {
+        batch_id: batch.id || null,
+        status: batch.status || null,
+        output_file_id: batch.output_file_id || null,
+        error_file_id: batch.error_file_id || null,
+      },
+      {
+        endpoint: 'batches.retrieve',
+        status_code: fetchResult.res.status,
+      },
+      {
+        duration_ms: Date.now() - methodStart,
+      }
+    );
+
+    return batch;
   }
 
   async getFileContent(fileId) {
     const id = String(fileId || '').trim();
     if (!id) throw new Error('LiteLLM getFileContent requires fileId');
 
-    const start = Date.now();
-    try {
-      const endpoint = `${this.baseUrl}/files/${encodeURIComponent(id)}/content`;
-      let res;
-      try {
-        res = await fetch(endpoint, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-          signal: AbortSignal.timeout(requestTimeoutMs()),
-        });
-      } catch (fetchErr) {
-        throw formatFetchError(fetchErr, endpoint, 'GET');
-      }
-      const text = await res.text();
-      if (!res.ok) {
-        throw new Error(`LiteLLM file content error: ${text || 'unknown error'}`);
-      }
+    const endpoint = `${this.baseUrl}/files/${encodeURIComponent(id)}/content`;
+    const methodStart = Date.now();
 
-      this.logger.log({
-        input: { file_id: id },
-        output: { bytes: Buffer.byteLength(text || '', 'utf8') },
-        metadata: { source: 'litellm', endpoint: 'files.content' },
-        metrics: { duration_ms: Date.now() - start },
-      });
-      return text;
-    } catch (err) {
-      this.logger.log({
-        input: { file_id: id },
-        error: {
-          name: err && err.name,
-          message: err && err.message,
-          stack: err && err.stack,
+    let fetchResult;
+    try {
+      fetchResult = await this.fetchText(endpoint, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
         },
-        metadata: { source: 'litellm', endpoint: 'files.content' },
-        metrics: { duration_ms: Date.now() - start },
       });
+    } catch (err) {
+      this.logError(
+        'files.content',
+        {
+          file_id: id,
+        },
+        err,
+        {
+          endpoint: 'files.content',
+        }
+      );
       throw err;
     }
+
+    if (!fetchResult.res.ok) {
+      const msg = String(fetchResult.text || '').trim() || 'unknown error';
+      const err = new Error(`LiteLLM file content error: ${msg}`);
+      this.logError(
+        'files.content',
+        {
+          file_id: id,
+        },
+        err,
+        {
+          endpoint: 'files.content',
+          status_code: fetchResult.res.status,
+          response_preview: truncate(msg, 350),
+        },
+        {
+          duration_ms: fetchResult.duration_ms,
+        }
+      );
+      throw err;
+    }
+
+    this.logSuccess(
+      'files.content',
+      {
+        file_id: id,
+      },
+      {
+        bytes: Buffer.byteLength(fetchResult.text || '', 'utf8'),
+      },
+      {
+        endpoint: 'files.content',
+        status_code: fetchResult.res.status,
+      },
+      {
+        duration_ms: Date.now() - methodStart,
+      }
+    );
+
+    return fetchResult.text;
   }
 }
 
