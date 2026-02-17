@@ -135,7 +135,8 @@ if [[ "$MODE" == "daily" ]]; then
   sha256sum "$n8n_dump" > "${n8n_dump}.sha256"
 
   # quick sanity: list archive contents (fails if corrupt)
-  docker exec -u postgres "$POSTGRES_CONTAINER" sh -lc "pg_restore -l /dev/stdin >/dev/null" < "$pkm_dump"
+  docker exec -i -u postgres "$POSTGRES_CONTAINER" sh -lc "pg_restore -l /dev/stdin >/dev/null" < "$pkm_dump"
+
 
   make_bundle "daily" "$globals" "$pkm_dump" "$n8n_dump"
   log "Daily backup done."
