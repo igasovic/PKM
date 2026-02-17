@@ -9,10 +9,7 @@ BACKUP_ROOT="${BACKUP_ROOT:-/home/igasovic/backup/postgres}"
 NIGHTLY_DIR="$BACKUP_ROOT/nightly"
 WEEKLY_DIR="$BACKUP_ROOT/weekly"
 MONTHLY_DIR="$BACKUP_ROOT/monthly"
-ONEDRIVE_DIR="$BACKUP_ROOT/onedrive"
-
-# n8n OneDrive node simple upload limit is 4MB; keep margin
-MAX_UPLOAD_BYTES="${MAX_UPLOAD_BYTES:-3900000}"
+UPLOADS_DIR="$BACKUP_ROOT/uploads" # for off-site backups (e.g. rclone to Google Drive)
 
 HOST="$(hostname -s)"
 TS="$(date +'%Y%m%d_%H%M%S')"
@@ -36,7 +33,7 @@ MODE="${1:-}"
 [[ -z "$MODE" ]] && usage
 [[ "$MODE" != "daily" && "$MODE" != "weekly" && "$MODE" != "monthly" ]] && usage
 
-mkdir -p "$NIGHTLY_DIR" "$WEEKLY_DIR" "$MONTHLY_DIR" "$ONEDRIVE_DIR"
+mkdir -p "$NIGHTLY_DIR" "$WEEKLY_DIR" "$MONTHLY_DIR" "$UPLOADS_DIR"
 
 LOCKFILE="/tmp/pkm_pg_backup.lock"
 exec 9>"$LOCKFILE"
@@ -83,17 +80,12 @@ source_pkm=$(basename "$pkm_dump")
 source_n8n=$(basename "$n8n_dump")
 EOF
 
-  local out_tmp="$ONEDRIVE_DIR/.pkm_backup_${label}.tgz.tmp"
-  local out_final="$ONEDRIVE_DIR/pkm_backup_${label}.tgz"
+  local out_tmp="$UPLOADS_DIR/.pkm_backup_${label}.tgz.tmp"
+  local out_final="$UPLOADS_DIR/pkm_backup_${label}.tgz"
 
   tar -C "$tmpdir" -czf "$out_tmp" .
 
   local sz; sz="$(stat -c%s "$out_tmp")"
-  if (( sz > MAX_UPLOAD_BYTES )); then
-    rm -f "$out_tmp"
-    echo "Bundle too large (${sz} bytes) for OneDrive simple upload. Limit=${MAX_UPLOAD_BYTES}."
-    exit 3
-  fi
 
   mv -f "$out_tmp" "$out_final"
   sha256sum "$out_final" > "${out_final}.sha256"
