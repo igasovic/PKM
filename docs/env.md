@@ -1,228 +1,334 @@
-# env.md — PKM DEV Raspberry Pi stack environment
-Version: 2026.02.14-litellm-proxy
-Updated: 2026-02-14
-Host (SSH): igasovic@192.168.5.4
+# env.md — PKM stack environment (Raspberry Pi)
 
-## Storage and boot
-- Booted from SSD
-  - SSD device: /dev/sda (Crucial BX500 240GB, model CT240BX500SSD1)
-  - Boot partition: /dev/sda1 (vfat) mounted at /boot/firmware
-  - Root partition: /dev/sda2 (ext4) mounted at /
+**Purpose:** quick human review + enough context for agents to safely operate / extend the stack (what runs where, how to connect, what can break, and what not to touch).
 
-SSD PARTUUIDs (for recovery/troubleshooting):
-- /dev/sda1 PARTUUID: 22c916e3-aea2-4920-9080-ba0e5f51412d
-- /dev/sda2 PARTUUID: 7cc91410-0a0e-43c7-a27b-f739c21dec3f
+**Last verified:** 2026-02-17  
+**Host:** `pi` (LAN: `192.168.5.4`)  
+**OS:** Debian GNU/Linux 13 (trixie) aarch64 • kernel `6.12.62+rpt-rpi-v8`  
+**Docker:** 29.1.4 • **Docker Compose:** v5.0.1
+
+---
+
+## 0) Quick start (most common ops)
+
+```bash
+# SSH in
+ssh pi
+
+# stack status
+cd /home/igasovic/stack
+docker compose ps
+docker ps --format 'table {{.Names}}	{{.Image}}	{{.Ports}}	{{.Status}}'
+
+# restart one service
+docker compose restart n8n
+
+# tail logs
+docker logs -n 200 n8n
+```
+
+---
+
+## 1) Access paths
+
+### LAN entrypoints (Pi)
+| Service | URL (LAN) | Notes |
+|---|---|---|
+| PKM server | http://192.168.5.4:3010 | Published on all interfaces |
+| LiteLLM | http://192.168.5.4:4000/v1 | Published on all interfaces (auth via master key) |
+| Home Assistant | http://192.168.5.4:8123 | Host networking |
+| Matter Server UI | http://192.168.5.4:5580 | Host networking |
+| n8n (local-only) | http://127.0.0.1:5678 | Bound to loopback on the Pi host |
+
+### Mac → Pi SSH shortcuts (current ~/.ssh/config)
+- `ssh pi` connects directly to `igasovic@192.168.5.4`
+- `ssh n8n` sets up a port forward:
+  - `localhost:5680` (Mac) → `127.0.0.1:5678` (Pi)
+
+Example:
+```bash
+ssh n8n
+# then open on Mac: http://localhost:5680
+```
+
+### Public entrypoints (Cloudflare Tunnel)
+Published application routes (Cloudflare Zero Trust → Tunnels → Public Hostnames):
+
+| Hostname | Service (origin) | Notes |
+|---|---|---|
+| `ha.gasovic.com` | `http://localhost:8123` | Home Assistant |
+| `n8n-hook.gasovic.com` | `http://localhost:5678` | n8n webhooks (base URL) |
+| `n8n.gasovic.com` | `http://localhost:5678` | n8n editor/UI |
+
+---
+
+## 2) Host baseline
+
+### Hardware + capacity (current)
+- **CPU:** 4× ARM Cortex-A72 @ 1.5GHz  
+- **RAM:** 3.7GiB total; ~2.0GiB available at time of capture  
+- **Swap:** 2.0GiB zram swap in use (plus a loop swap device may exist)  
+- **Disk:** 219G ext4 root (`/dev/sda2`); ~190G free
+
+### Boot / storage assumptions (SSD)
+This stack expects root filesystem on `/dev/sda2`.
 
 Expected mount state:
-- / -> /dev/sda2 (rw, noatime)
-- /boot/firmware -> /dev/sda1 (rw)
+- `/` on `/dev/sda2` (ext4, `rw`, typically `noatime`)
+- `/boot/firmware` on `/dev/sda1` (vfat)
 
-Baseline /etc/fstab (SSD):
-proc            /proc           proc    defaults          0       0
-PARTUUID=7cc91410-0a0e-43c7-a27b-f739c21dec3f  /               ext4    defaults,noatime  0       1
-PARTUUID=22c916e3-aea2-4920-9080-ba0e5f51412d  /boot/firmware  vfat    defaults          0       2
+(Keep these in env.md so an agent can recover a broken boot quickly.)
 
-cmdline root pointer:
-- /boot/firmware/cmdline.txt must include:
-  - root=PARTUUID=7cc91410-0a0e-43c7-a27b-f739c21dec3f
-- Root must not be forced read-only (no standalone 'ro' flag).
+---
 
-## Docker stack
-Stack directory:
-- /home/igasovic/stack
-Compose file:
-- /home/igasovic/stack/docker-compose.yml
+## 3) Stack layout on disk
 
-Services (current):
-- postgres: postgres:16-alpine
-  - Container name: postgres
-  - Container init env:
-    - POSTGRES_USER=pgadmin
-    - POSTGRES_DB=postgres
-  - Connect from host (example):
-    - docker exec -it postgres psql -U pgadmin -d postgres
-- n8n: docker.n8n.io/n8nio/n8n:latest
-- homeassistant: ghcr.io/home-assistant/home-assistant:stable
-- cloudflared: cloudflare/cloudflared:latest
-- litellm: docker.litellm.ai/berriai/litellm:main-stable
-- matter-server: ghcr.io/home-assistant-libs/python-matter-server:stable
-- pkm-server: custom Node.js backend (Docker build)
-  - Purpose: backend bootstrap for PKM API (currently basic health/echo endpoints; later will host Postgres + OpenAI endpoints)
-  - Source code (repo): /home/igasovic/repos/n8n-workflows/src/server
-  - Built/managed via compose from: /home/igasovic/stack/docker-compose.yml
-  - Runtime port:
-    - Container listens on: 8080 (default in code: `process.env.PORT || 8080`)
-    - Host port mapping (current): 3010 -> 8080
-      - Base URL (LAN/host): http://192.168.5.4:3010
-  - Endpoints (validated):
-    - GET  /health  -> 200 OK
-    - GET  /ready   -> 200 OK
-    - GET  /version -> 200 OK
-    - POST /echo    -> 200 OK (expects JSON body)
+**Compose project:** `stack`  
+**Stack root:** `/home/igasovic/stack`  
+- `docker-compose.yml`
+- `.env` (secrets; not committed)
+- `postgres/` (data dir)
+- `postgres-init/` (init scripts)
+- `n8n/` (n8n home)
+- `litellm/config.yaml`
+- `homeassistant/` (HA config)
 
+**Source repos (Pi):**
+- n8n workflows repo: `/home/igasovic/repos/n8n-workflows`
+  - includes `src/server` (PKM server code + Dockerfile)
 
-### LiteLLM (Local LLM Proxy / Router)
-    Purpose:
-    - Provide a single **local OpenAI-compatible base URL** for all LLM calls.
-    - Centralize model routing using **logical model names** (e.g. `t1-default`, `t1-cheap`, `t1-batch`).
-    - Ensure **no code path** in n8n or pkm-server calls OpenAI directly (everything goes through LiteLLM).
+---
 
-    Service:
-    - service name: `litellm`
-    - container name: `litellm`
-    - port: 4000 (OpenAI-compatible endpoints under `/v1/*`)
-      - Host URL (if port is published): http://192.168.5.4:4000/v1
-      - Docker-internal URL (recommended for services): http://litellm:4000/v1
+## 4) How the stack starts
 
-    Config files:
-    - LiteLLM config:
-      - /home/igasovic/stack/litellm/config.yaml
-      - Mounted into container as /app/config.yaml
-    - Example model routing in config.yaml:
-      - `t1-default` -> upstream `gpt-4o-mini` (OpenAI)
-      - `t1-cheap`   -> upstream `gpt-4o-mini` (OpenAI)
-      - `t1-batch`   -> upstream `gpt-4o-mini` (OpenAI)
+There is **no separate systemd unit** that runs `docker compose up` at boot.
 
-    Secrets / env:
-    - Stored in: /home/igasovic/stack/.env (DO NOT COMMIT)
-    - Required:
-      - OPENAI_API_KEY=...         (upstream provider key)
-      - LITELLM_MASTER_KEY=sk-...  (local proxy key used by internal clients)
+Instead:
+- `docker.service` is enabled
+- each container uses `restart: unless-stopped`
+- on reboot, Docker brings containers back automatically.
 
-    Auth model:
-    - Clients call LiteLLM with:
-      - `Authorization: Bearer ${LITELLM_MASTER_KEY}`
-    - LiteLLM uses OPENAI_API_KEY only for upstream requests.
+---
 
-    Smoke tests (from Pi host):
-    ```bash
-    export LITELLM_MASTER_KEY="$(
-      sed -n 's/^LITELLM_MASTER_KEY=//p' /home/igasovic/stack/.env | head -n1 | tr -d ''
-    )"
+## 5) Docker services (what runs, ports, networks, mounts)
 
-    curl -s http://localhost:4000/v1/models       -H "Authorization: Bearer ${LITELLM_MASTER_KEY}" | head
+### Networks
+- `internal` bridge network for: `postgres`, `n8n`, `litellm`, `pkm-server`
+- host networking for: `homeassistant`, `matter-server`, `cloudflared`
 
-    curl -s http://localhost:4000/v1/chat/completions       -H "Authorization: Bearer ${LITELLM_MASTER_KEY}"       -H "Content-Type: application/json"       -d '{"model":"t1-default","messages":[{"role":"user","content":"ping"}]}' | head
-    ```
+### Containers (as observed)
+| Container | Image | Restart | Published ports | Network mode |
+|---|---|---|---|---|
+| `postgres` | `postgres:16-alpine` | unless-stopped | none (internal only) | `stack_internal` |
+| `n8n` | `docker.n8n.io/n8nio/n8n:latest` | unless-stopped | `127.0.0.1:5678->5678` | `stack_internal` |
+| `litellm` | `docker.litellm.ai/berriai/litellm:main-stable` | unless-stopped | `0.0.0.0:4000->4000` | `stack_internal` |
+| `stack-pkm-server-1` | `stack-pkm-server` (built) | unless-stopped | `0.0.0.0:3010->8080` | `stack_internal` |
+| `homeassistant` | `ghcr.io/home-assistant/home-assistant:stable` | unless-stopped | `0.0.0.0:8123` | host |
+| `matter-server` | `ghcr.io/home-assistant-libs/python-matter-server:stable` | unless-stopped | `0.0.0.0:5580` | host |
+| `cloudflared` | `cloudflare/cloudflared:latest` | unless-stopped | (tunnel) | host |
 
-    Operational commands:
-    ```bash
-    cd /home/igasovic/stack
-    docker compose restart litellm
-    docker logs -n 100 litellm
-    docker compose ps litellm
-    ```
+### Volumes / persistence (confirmed)
+- Postgres:
+  - `/home/igasovic/stack/postgres` → `/var/lib/postgresql/data`
+  - `/home/igasovic/stack/postgres-init` → `/docker-entrypoint-initdb.d`
+- n8n:
+  - `/home/igasovic/stack/n8n` → `/home/node/.n8n`
+  - `/home/igasovic/repos/n8n-workflows` → `/data` (read-only)
+  - `/home/igasovic/pkm-import` → `/files` (used for file imports/backfills)
+- LiteLLM:
+  - `/home/igasovic/stack/litellm/config.yaml` → `/app/config.yaml` (read-only)
+- PKM server:
+  - `/home/igasovic/pkm-import` → `/data` (read-write)
+- Home Assistant:
+  - `/home/igasovic/stack/homeassistant` → `/config`
+  - `/etc/localtime` → `/etc/localtime` (read-only)
+- Matter server:
+  - docker named volume mapped to `/data` (not a bind mount)
 
-    ### PKM Server LLM Routing (via LiteLLM)
-    Goal:
-    - pkm-server should never call OpenAI directly.
-    - pkm-server should call LiteLLM via OpenAI-compatible base URL.
+---
 
-    Recommended env wiring in compose for pkm-server:
-    - OPENAI_BASE_URL=http://litellm:4000/v1
-    - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
-    - T1_DEFAULT_MODEL=t1-default
+## 6) Postgres (DB roles, schemas, prod/test)
 
-    Notes:
-    - This means the OpenAI SDK in pkm-server uses:
-      - baseURL = LiteLLM
-      - apiKey  = LiteLLM master key
-    - Model names become logical routes (LiteLLM decides upstream provider/model).
+**Primary app DB used by PKM:** `pkm`  
+**n8n DB:** separate `n8n` database.
 
-### Matter (Home Assistant Container)
-Context:
-- Home Assistant is running as a Docker container (not HA OS / not Add-ons).
-- Matter support requires a separate **Matter Server** container.
-- The Matter integration in HA should point to the server via WebSocket URL (do NOT rely on `localhost` inside the HA container unless you intentionally share network namespaces).
+**Where DB lives (host):**
+- `/home/igasovic/stack/postgres`
 
-Expected compose service (minimal):
-- service name: `matter-server`
-- image: `ghcr.io/home-assistant-libs/python-matter-server:stable`
-- `network_mode: host` (recommended on Pi for discovery / mDNS stability)
+**Connecting (host → container):**
+```bash
+docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d postgres
+docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
+```
 
-Endpoints (LAN):
-- Matter Server UI: http://192.168.5.4:5580
-- Matter Server WebSocket: ws://192.168.5.4:5580/ws
-- Home Assistant Matter integration should use: ws://192.168.5.4:5580/ws
+### Prod vs test
+- Production schema: `pkm`
+- Test schema: `pkm_test`
+- Global “test mode” flag lives in `pkm.runtime_config` (`key=is_test_mode`, JSON boolean).
 
-Pairing rule of thumb:
-- Pair Matter devices in **Home Assistant** (controller).
-- Matter Server is a backend; you generally don’t “add devices” in the Matter Server UI.
+**Authoritative schema details**
+- See: `database_schema.md` (repo / docs). It documents:
+  - tables in each schema
+  - roles and grants
+  - idempotency policies
+  - batch tables used for LLM batch processing
 
-Thread / Eero note:
-- Eero 6 can act as a Thread Border Router (infrastructure). You typically **do not** add Eero itself to HA/Matter.
-- If pairing/discovery is flaky, suspect multicast/mDNS handling; host networking for Matter Server is the first lever.
+---
 
-Persistence (bind mounts):
-- Postgres data (host): /home/igasovic/stack/postgres  -> /var/lib/postgresql/data
-- n8n home (host): /home/igasovic/stack/n8n          -> /home/node/.n8n
+## 7) n8n
 
-n8n external JS mount:
-- Host repo path: /home/igasovic/repos/n8n-workflows/js
-- Container mount path: /data/js
-- Expected inside container: /data/js/workflows/* exists
+**Container:** `n8n`  
+**DB:** uses Postgres via `DB_TYPE=postgresdb` and `DB_POSTGRESDB_HOST=postgres`
 
-Databases validated:
-- n8n (owner: n8n)
-- pkm (owner: pgadmin)
-Roles validated (examples): pgadmin (superuser), n8n, pkm_ingest, pkm_read
+**Security:**
+- Basic Auth is enabled (`N8N_BASIC_AUTH_ACTIVE=true`)
+- n8n UI is loopback-only on the Pi host (`127.0.0.1:5678`)
+- Public access is through Cloudflare (`n8n.gasovic.com`, `n8n-hook.gasovic.com`)
 
-## Cloudflared (observed)
-Ingress targets observed in logs:
-- ha.gasovic.com -> http://localhost:8123
-- n8n.gasovic.com -> http://localhost:5678
-- n8n-hook.gasovic.com -> http://localhost:5678
+**Key runtime env (observed):**
+- `N8N_HOST=n8n.gasovic.com`
+- `N8N_PROTOCOL=https`
+- `N8N_EDITOR_BASE_URL=https://n8n.gasovic.com`
+- `WEBHOOK_URL=https://n8n-hook.gasovic.com`
+- `TZ=America/Chicago`
 
-Notes:
-- pkm-server is currently exposed on LAN at http://192.168.5.4:3010.
-- If remote access is desired later, add a new Cloudflared ingress mapping (example):
-  - pkm-api.gasovic.com -> http://localhost:3010
+**Externalized workflow code & GitOps**
+- Repo root: `/home/igasovic/repos/n8n-workflows`
+- Mount: repo → `/data` (read-only)
+- Canonical docs (in this project):
+  - `n8n_to_git.md` (export workflow changes back to repo)
+  - `git_to_n8n.md` (import changes from repo into n8n)
 
-External checks:
-- n8n.gasovic.com returns 302 to Cloudflare Access login (expected)
-- ha.gasovic.com may return 405 for HEAD; validate with GET.
+---
 
-## Migration backups (created)
-Pi backup dir:
-- /home/igasovic/backup
-Mac backup dir:
-- ~/pi-ssd-migration/backup
+## 8) PKM server
 
-Files copied to Mac:
-- postgres_dumpall.sql.gz (pg_dumpall of cluster)
-- pi_backup_bundle.tgz (includes /home/igasovic/stack, repo, and /home/igasovic/.ssh)
+**Purpose:** lightweight API service used by n8n and future clients.  
+**Container:** `stack-pkm-server-1` (service `pkm-server`)  
+**LAN URL:** http://192.168.5.4:3010
 
-## PKM Test Mode (Global)
-PKM supports a **global test mode** for safe experimentation.
+**Health endpoints (validated):**
+- `GET /health` → `{"status":"ok"}`
+- `GET /ready` → `{"status":"ready"}`
 
-- Test mode is controlled by the **`PKM Config`** sub-workflow in n8n.
-- When enabled, all workflows write to and read from:
-  - `pkm_test.entries`
-- When disabled (default), workflows use:
-  - `pkm.entries`
+**Build context / Dockerfile**
+- Context: `/home/igasovic/repos/n8n-workflows`
+- Dockerfile: `src/server/Dockerfile`
 
-### Operational rules
-- Test mode is **off by default**.
-- Test mode must only be enabled intentionally (via workflow toggle).
-- Telegram and email responses visibly display a **TEST MODE banner** when active.
-- Test data can be wiped safely using:
-  ```sql
-  TRUNCATE TABLE pkm_test.entries RESTART IDENTITY;
-  ```
+**DB connectivity**
+- `PKM_DB_HOST=postgres`
+- `PKM_DB_PORT=5432`
+- `PKM_DB_NAME=pkm`
+- `PKM_DB_SCHEMA=pkm`
+- `PKM_DB_SSL=false`
 
-## Idempotency migration notes (2026-02)
+**LLM routing**
+Current compose passes `OPENAI_API_KEY` into the service.
+Recommended wiring (so **pkm-server never calls OpenAI directly**):
+- `OPENAI_BASE_URL=http://litellm:4000/v1`
+- `OPENAI_API_KEY=${LITELLM_MASTER_KEY}`
+- `T1_DEFAULT_MODEL=t1-default`
 
-Applied migration adds:
-- `pkm.idempotency_policies`
-- `pkm_test.idempotency_policies`
-- `entries` columns in both schemas:
-  - `idempotency_policy_key`
-  - `idempotency_key_primary`
-  - `idempotency_key_secondary`
-- partial unique indexes for primary/secondary idempotency keys in both schemas.
+---
 
-`pkm_ingest` privileges now include CRUD on policy tables plus sequence usage:
-- `GRANT SELECT, INSERT, UPDATE, DELETE ON ...idempotency_policies TO pkm_ingest`
-- `GRANT USAGE, SELECT ON SEQUENCE ...idempotency_policies_policy_id_seq TO pkm_ingest`
-- `ALTER DEFAULT PRIVILEGES IN SCHEMA pkm GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO pkm_ingest`
-- `ALTER DEFAULT PRIVILEGES IN SCHEMA pkm_test GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO pkm_ingest`
+## 9) LiteLLM (OpenAI-compatible proxy/router)
+
+**Container:** `litellm`  
+**LAN URL:** http://192.168.5.4:4000/v1  
+**Internal URL for other containers:** http://litellm:4000/v1
+
+**Auth model**
+- Clients call LiteLLM with: `Authorization: Bearer ${LITELLM_MASTER_KEY}`
+- LiteLLM uses `OPENAI_API_KEY` only to talk to upstream OpenAI.
+
+**Config**
+- File: `/home/igasovic/stack/litellm/config.yaml`
+- Observed routing:
+  - `t1-default` → `gpt-5-nano` with `reasoning_effort: minimal` and `allowed_openai_params: ["reasoning_effort"]`
+  - `t1-cheap` → `gpt-5-nano`
+  - `t1-batch` → `gpt-5-nano`
+
+---
+
+## 10) Home Assistant + Matter
+
+**Home Assistant**
+- Container: `homeassistant`
+- Host networking
+- URL: http://192.168.5.4:8123
+- Persistence: `/home/igasovic/stack/homeassistant` → `/config`
+
+**Matter Server**
+- Container: `matter-server`
+- Host networking (recommended for discovery/mDNS on Pi)
+- UI: http://192.168.5.4:5580
+- WebSocket: ws://192.168.5.4:5580/ws
+- In HA: Matter integration should point to `ws://192.168.5.4:5580/ws`
+
+Rule of thumb:
+- pair devices via Home Assistant (controller)
+- Matter Server is a backend; you generally do not “add devices” in the Matter Server UI
+
+---
+
+## 11) Cloudflared (Cloudflare Tunnel)
+
+**Container:** `cloudflared`  
+**Network mode:** host  
+**How it runs:** token-based `tunnel run`
+
+Important:
+- The image is minimal and **does not include a shell** (`sh`/`bash`); use:
+  - `docker exec cloudflared cloudflared ...`
+- No bind-mounted `/etc/cloudflared/config.yml`; routing is managed in Cloudflare UI.
+- The tunnel token is currently embedded in `docker-compose.yml` (move it to `.env` or secrets).
+
+Observed version:
+- `cloudflared version 2025.11.1` (logs recommend upgrading)
+
+---
+
+## 12) Secrets / environment variables
+
+All secrets live in:
+- `/home/igasovic/stack/.env`  (**DO NOT COMMIT**)
+
+Observed keys (names only):
+- `OPENAI_API_KEY`, `LITELLM_MASTER_KEY`, `BRAINTRUST_API_KEY`
+- n8n: `N8N_BASIC_AUTH_*`, `N8N_DB_*`, `N8N_HOST`, `N8N_PROTOCOL`, `N8N_EDITOR_BASE_URL`, `WEBHOOK_URL`
+- PKM DB: `PKM_DB_*`, `PKM_INGEST_*`, `PKM_READ_*`
+- Postgres admin: `POSTGRES_ADMIN_*`
+- `TZ`
+
+---
+
+## 13) Backups
+
+Currently present (created during SSD migration / snapshotting):
+- `/home/igasovic/backup/pi_backup_bundle.tgz` (root-owned bundle)
+- `/home/igasovic/backup/postgres_dumpall.sql.gz`
+
+Scheduled timers observed: only default system timers (apt, logrotate, fstrim, etc.).  
+**No dedicated backup timer** is currently configured.
+
+Recommendation (future):
+- add a simple scheduled job (systemd timer) to produce:
+  - `pg_dumpall` (or per-db dumps), plus
+  - tar of `/home/igasovic/stack` *excluding* secrets (or storing secrets separately)
+
+---
+
+## 14) Open questions / TODOs (for agents)
+
+These are the remaining decisions/gaps that should be made explicit to avoid “agent guessing”:
+
+1) **Exposure intent**
+   - Is LiteLLM (`:4000`) intended to be reachable on the LAN, or should it be internal-only?
+   - Is PKM server (`:3010`) intended to be reachable on the LAN, or should it be internal-only / tunnel-only?
+
+2) **Cloudflare Access posture**
+   - Which of the public hostnames are protected by Cloudflare Access policies (and which aren’t)?
+   - Document expected auth layers for each public hostname.
+
+3) **Tighten secrets hygiene**
+   - Move the Cloudflared tunnel token out of `docker-compose.yml` and into `.env` (or Docker secrets).
