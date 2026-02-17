@@ -115,6 +115,8 @@ async function handleRequest(req, res) {
         raw_text: body.raw_text,
         from: body.from,
         subject: body.subject,
+        date: body.date,
+        message_id: body.message_id,
         source: body.source,
       });
       return json(res, 200, normalized);

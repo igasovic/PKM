@@ -1,252 +1,369 @@
-# PKM Database Schema v2.2
+# PKM Database Schema v2.3 (Observed)
 
-Source: `\d+ pkm.entries` (plus `information_schema.columns`, constraints, triggers) as provided.
+**Observed on:** 2026-02-17 (from `psql` introspection against database `pkm`).
 
-## Table: `pkm.entries`
+This file is meant to be a **human + agent** reference:
+- what exists (schemas/tables)
+- how prod vs test works
+- what each DB role can do
+- column/index/constraint details per table
+- operational notes that affect `/db/delete` and `/db/move`
 
-### Columns
+---
 
-| Column | Type | Nullable | Default / Generated | Notes |
-|---|---|---:|---|---|
-| id | uuid | no | `gen_random_uuid()` | primary key |
-| created_at | timestamp with time zone | no | `now()` |  |
-| source | text | no |  |  |
-| intent | text | no | `'archive'::text` |  |
-| capture_text | text | no |  |  |
-| url | text | yes |  |  |
-| url_canonical | text | yes |  |  |
-| extracted_text | text | yes |  |  |
-| clean_text | text | yes |  |  |
-| content_hash | text | yes |  |  |
-| external_ref | jsonb | yes |  |  |
-| metadata | jsonb | yes |  |  |
-| tsv | tsvector | yes | generated stored | generated always as: `setweight(to_tsvector('english', COALESCE(clean_text,'')), 'A') || setweight(to_tsvector('english', COALESCE(extracted_text,'')), 'B') || setweight(to_tsvector('english', COALESCE(capture_text,'')), 'C')` |
-| content_type | text | yes |  |  |
-| title | text | yes |  |  |
-| author | text | yes |  |  |
-| topic_primary | text | yes |  | Tier-1 |
-| topic_primary_confidence | real | yes |  | Tier-1 |
-| topic_secondary | text | yes |  | Tier-1 |
-| topic_secondary_confidence | real | yes |  | Tier-1 |
-| keywords | text[] | yes |  | Tier-1 |
-| enrichment_status | text | yes | `'pending'::text` | Tier-1 pipeline state |
-| enrichment_model | text | yes |  | Tier-1 pipeline info |
-| prompt_version | text | yes |  | Tier-1 pipeline info |
-| gist | text | yes |  | Tier-1 |
-| entry_id | bigint | no | identity | human-facing id, UNIQUE |
-| retrieval_excerpt | text | yes |  | retrieval v1 excerpt (also mirrored in `metadata.retrieval.excerpt`) |
-| clean_word_count | integer | yes |  | quality signals |
-| clean_char_count | integer | yes |  | quality signals |
-| extracted_char_count | integer | yes |  | quality signals |
-| link_count | integer | yes |  | quality signals |
-| link_ratio | real | yes |  | quality signals |
-| boilerplate_heavy | boolean | yes |  | quality signals |
-| low_signal | boolean | yes |  | quality signals |
-| quality_score | real | yes |  | quality score (0..1) |
-| idempotency_policy_key | text | yes |  | policy key stored directly on entry |
-| idempotency_key_primary | text | yes |  | durable dedupe key (tier-1) |
-| idempotency_key_secondary | text | yes |  | durable dedupe key (tier-2 fallback) |
+## Users
 
-### Indexes
+### Roles
 
-| Name | Type | Definition / Notes |
+| Role | Purpose | Notes |
 |---|---|---|
-| entries_pkey | btree | PRIMARY KEY `(id)` |
-| entries_entry_id_uidx | btree | UNIQUE `(entry_id)` |
-| entries_created_at_idx | btree | `(created_at DESC)` |
-| entries_source_created_at_idx | btree | `(source, created_at DESC)` |
-| entries_intent_created_at_idx | btree | `(intent, created_at DESC)` |
-| entries_content_type_created_at_idx | btree | `(content_type, created_at DESC)` |
-| entries_topic_primary_created_at_idx | btree | `(topic_primary, created_at DESC)` |
-| entries_topic_secondary_created_at_idx | btree | `(topic_secondary, created_at DESC)` |
-| entries_content_hash_idx | btree | `(content_hash)` |
-| entries_tsv_gin_idx | gin | `(tsv)` |
-| entries_keywords_gin_idx | gin | `(keywords)` |
-| entries_quality_good_created_at_idx | btree | `(created_at DESC)` **partial**: `WHERE boilerplate_heavy IS NOT TRUE AND low_signal IS NOT TRUE` |
-| pkm_entries_idem_primary_uidx | btree | UNIQUE **partial**: `(idempotency_policy_key, idempotency_key_primary)` where both are non-null |
-| pkm_entries_idem_secondary_uidx | btree | UNIQUE **partial**: `(idempotency_policy_key, idempotency_key_secondary)` where both are non-null |
+| `pgadmin` | DB owner / superuser | Owns schemas `pkm`, `pkm_test` and all objects. |
+| `pkm_ingest` | Application write role | Has broad CRUD on most tables (incl. Tier-1 batch tables), but **does not have DELETE on `pkm.entries`** (prod). Has DELETE on `pkm_test.entries` (test). |
+| `pkm_read` | Read-only role | Has `SELECT` on `pkm.entries`, `pkm_test.entries`, and `pkm.runtime_config`. No access to Tier-1 batch tables or idempotency tables (as currently granted). |
+| `n8n` | n8n DB role | Has `USAGE` on schema `pkm` and `SELECT` on `pkm.runtime_config` only. No access to entries tables. |
 
-### Constraints
+### Database-level access (database `pkm`)
 
-- **Primary key:** `entries_pkey` on `(id)`
-- **Unique:** `entries_entry_id_uidx` on `(entry_id)`
-
-### Triggers
-
-- None (0 user triggers reported).
+- `pkm` is owned by `pgadmin`.
+- `pkm_ingest` and `pkm_read` have **CONNECT** on database `pkm`.
+- Database-level ACL also shows `PUBLIC` has TEMP/CONNECT (shown as `=Tc/pgadmin`).
 
 ---
 
-## Test / Production Database Fork (Schema-level)
+## Database
 
-To support safe experimentation without polluting production data, the PKM database uses **schema-level isolation**:
+### Extensions
 
-- **Production schema:** `pkm`
-- **Test schema:** `pkm_test`
+| Extension | Version | Schema | Why it matters |
+|---|---:|---|---|
+| `pgcrypto` | 1.3 | `public` | Provides `gen_random_uuid()` used as default for `entries.id`. |
+| `plpgsql` | 1.0 | `pg_catalog` | Default procedural language. |
 
-Both schemas contain an identical `entries` table (structure, indexes, constraints).
-All workflows **select the target schema at runtime**.
+### Schemas
 
-### How schema selection works
-- Every workflow starts by invoking the **`PKM Config`** sub-workflow.
-- `PKM Config` returns a `config.db` object that includes:
-  - `is_test_mode` (boolean)
-  - `schema_prod = "pkm"`
-  - `schema_test = "pkm_test"`
-- SQL and JS builders **must read config exclusively from the `PKM Config` node output**.
-- When `is_test_mode = true`, all writes and reads go to `pkm_test.entries`.
-- When `is_test_mode = false`, all writes and reads go to `pkm.entries`.
+| Schema | Owner | Purpose |
+|---|---|---|
+| `pkm` | `pgadmin` | Production data (default). |
+| `pkm_test` | `pgadmin` | Test/experimentation data. |
 
-### Cleanup of test data
-Test data is never mixed with production. To reset test state:
-```sql
-TRUNCATE TABLE pkm_test.entries RESTART IDENTITY;
-```
+Schema grants (current):
+- `pkm_ingest`: `USAGE` on `pkm`, `pkm_test`
+- `pkm_read`: `USAGE` on `pkm`, `pkm_test`
+- `n8n`: `USAGE` on `pkm` only
 
-This design guarantees:
-- Zero production data contamination
-- No need for parallel Postgres instances or n8n deployments
-- Deterministic cleanup after test runs
+### Tables
 
-Idempotency-related mirrors in test schema:
-- `pkm_test.idempotency_policies`
-- `pkm_test.entries.idempotency_policy_key`
-- `pkm_test.entries.idempotency_key_primary`
-- `pkm_test.entries.idempotency_key_secondary`
-- `pkm_test_entries_idem_primary_uidx`
-- `pkm_test_entries_idem_secondary_uidx`
+#### Inventory (with approximate sizes)
+
+**Production (`pkm`)**
+- `entries` (~1232 kB)
+- `idempotency_policies` (~16 kB)
+- `runtime_config` (~16 kB)
+- `t1_batches` (~16 kB)
+- `t1_batch_items` (~80 kB)
+- `t1_batch_item_results` (~8192 bytes)
+
+**Test (`pkm_test`)**
+- `entries` (~488 kB)
+- `idempotency_policies` (~16 kB)
+- `t1_batches` (~8192 bytes)
+- `t1_batch_items` (~8192 bytes)
+- `t1_batch_item_results` (~8192 bytes)
+
+### User access per table (current grants)
+
+Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
+
+#### Production (`pkm.*`)
+
+| Table | pgadmin | pkm_ingest | pkm_read | n8n |
+|---|---|---|---|---|
+| `pkm.entries` | RIUD + TRUNCATE/REF/… | **RIU (no D)** | R | — |
+| `pkm.runtime_config` | full | RIUD | R | R |
+| `pkm.idempotency_policies` | full | RIUD | — | — |
+| `pkm.t1_batches` | full | RIUD | — | — |
+| `pkm.t1_batch_items` | full | RIUD | — | — |
+| `pkm.t1_batch_item_results` | full | RIUD | — | — |
+
+#### Test (`pkm_test.*`)
+
+| Table | pgadmin | pkm_ingest | pkm_read |
+|---|---|---|---|
+| `pkm_test.entries` | full | RIUD | R |
+| `pkm_test.idempotency_policies` | full | RIUD | — |
+| `pkm_test.t1_batches` | full | RIUD | — |
+| `pkm_test.t1_batch_items` | full | RIUD | — |
+| `pkm_test.t1_batch_item_results` | full | RIUD | — |
+
+### Sequences and identity
+
+- `entries.entry_id` is **`GENERATED BY DEFAULT AS IDENTITY`** in both schemas.
+- Sequences:
+  - `pkm.entries_entry_id_seq`
+  - `pkm_test.entries_entry_id_seq`
+
+Current sequence grants:
+- `pkm_ingest`: `USAGE` + `SELECT` on both `entries_entry_id_seq` sequences.
+- `pgadmin`: `USAGE`/`SELECT`/`UPDATE` on both.
+
+**Important nuance (idempotency_policies):**
+- `pkm.idempotency_policies.policy_id` defaults to `nextval('..._policy_id_seq')`.
+- As observed, `pkm_ingest` does **NOT** have explicit grants on `pkm.idempotency_policies_policy_id_seq` (same for `pkm_test`).
+  - This is fine if the app never inserts into `idempotency_policies`.
+  - If the app *does* insert without specifying `policy_id`, it will fail unless sequence grants are added.
+
+### Default privileges
+
+Observed default privileges (created by owner `pgadmin`):
+- In schema `pkm`: future **tables** default grant `pkm_ingest=arwd` (SELECT/INSERT/UPDATE/DELETE).
+- In schema `pkm_test`: future **tables** default grant `pkm_ingest=arwd`.
+- In schema `public`: future **tables** default grant `pkm_ingest=aw` and `pkm_read=r`.
+
+### Triggers and RLS
+
+- No user-defined triggers in `pkm` or `pkm_test`.
+- No Row Level Security (RLS) policies in `pkm` or `pkm_test`.
 
 ---
 
-## Runtime Config (Persisted)
+## Test vs prod + mirroring
 
-Test mode is persisted in Postgres so backend and workflows can share state.
+### Core idea
 
-Table:
-- `pkm.runtime_config`
+Production and test are separated by schema:
+- **Prod:** `pkm`
+- **Test:** `pkm_test`
 
-Columns:
-- `key` (text, primary key)
-- `value` (jsonb)
-- `updated_at` (timestamptz)
+Most tables are mirrored in both schemas to allow safe experimentation.
 
-Key used:
-- `is_test_mode` → boolean stored as jsonb
+### What is mirrored
+
+Mirrored between `pkm` and `pkm_test`:
+- `entries`
+- `idempotency_policies`
+- `t1_batches`
+- `t1_batch_items`
+- `t1_batch_item_results`
+
+### What is NOT mirrored
+
+- `pkm.runtime_config` exists **only in prod**.
+  - It currently contains `is_test_mode = false` (jsonb boolean).
+
+### Practical consequences for `/db/delete` and `/db/move`
+
+- Because `pkm_ingest` **cannot DELETE from `pkm.entries`**, backend endpoints that delete/move **prod entries** must either:
+  - use a DB role with DELETE on `pkm.entries`, or
+  - use SECURITY DEFINER functions owned by `pgadmin` (preferred), or
+  - adjust grants (not recommended without care).
+
+- In test, `pkm_ingest` **can** delete (`pkm_test.entries` has RIUD).
 
 ---
 
-## Idempotency Policies
+## Tables
 
-Backend deduplication/update behavior is policy-driven via Postgres.
+### `pkm.entries` / `pkm_test.entries`
 
-### Table: `pkm.idempotency_policies`
+**Purpose**
+Primary storage for captured items (email, telegram, etc.) and Tier-1 enrichment outputs.
+
+**Columns** (same structure in prod and test)
 
 | Column | Type | Nullable | Default / Generated | Notes |
 |---|---|---:|---|---|
-| policy_id | bigint | no | `bigserial` | primary key |
-| policy_key | text | no |  | unique stable policy key (e.g. `email_newsletter_v1`) |
-| source | text | no |  | source channel (`email`, `telegram`, etc.) |
-| content_type | text | no |  | semantic content type |
-| conflict_action | text | no |  | `skip` or `update` (CHECK constrained) |
-| update_fields | text[] | yes |  | NULL => update all incoming fields |
-| enabled | boolean | no | `true` | runtime toggle |
-| notes | text | yes |  | policy notes |
-| created_at | timestamptz | no | `now()` | created timestamp |
-| updated_at | timestamptz | no | `now()` | updated timestamp |
+| `id` | uuid | no | `gen_random_uuid()` | PK (stable across moves if you preserve it) |
+| `created_at` | timestamptz | no | `now()` | ingestion time |
+| `source` | text | no |  | e.g. `email`, `telegram` |
+| `intent` | text | no | `'archive'` | |
+| `capture_text` | text | no |  | raw-ish capture |
+| `url` | text | yes |  | |
+| `url_canonical` | text | yes |  | |
+| `extracted_text` | text | yes |  | |
+| `clean_text` | text | yes |  | |
+| `content_hash` | text | yes |  | |
+| `external_ref` | jsonb | yes |  | stable external ids / provenance |
+| `metadata` | jsonb | yes |  | enrichment payloads |
+| `tsv` | tsvector | yes | **generated stored** | weighted full-text vector from clean/extracted/capture text |
+| `content_type` | text | yes |  | e.g. `newsletter`, `thought` |
+| `title` | text | yes |  | |
+| `author` | text | yes |  | |
+| `topic_primary` | text | yes |  | Tier-1 classification |
+| `topic_primary_confidence` | real | yes |  | |
+| `topic_secondary` | text | yes |  | Tier-1 classification |
+| `topic_secondary_confidence` | real | yes |  | |
+| `keywords` | text[] | yes |  | Tier-1 |
+| `enrichment_status` | text | yes | `'pending'` | pipeline state |
+| `enrichment_model` | text | yes |  | pipeline info |
+| `prompt_version` | text | yes |  | pipeline info |
+| `gist` | text | yes |  | Tier-1 |
+| `entry_id` | bigint | no | identity | human-facing id, UNIQUE per schema |
+| `retrieval_excerpt` | text | yes |  | |
+| `clean_word_count` | int | yes |  | quality signals |
+| `clean_char_count` | int | yes |  | quality signals |
+| `extracted_char_count` | int | yes |  | quality signals |
+| `link_count` | int | yes |  | quality signals |
+| `link_ratio` | real | yes |  | quality signals |
+| `boilerplate_heavy` | bool | yes |  | quality signals |
+| `low_signal` | bool | yes |  | quality signals |
+| `quality_score` | real | yes |  | 0..1 |
+| `idempotency_policy_key` | text | yes |  | FK to policy key |
+| `idempotency_key_primary` | text | yes |  | durable dedupe key |
+| `idempotency_key_secondary` | text | yes |  | fallback dedupe key |
 
-Constraints:
-- Primary key on `(policy_id)`
-- Unique on `(policy_key)`
+**Constraints**
+- PK: `(id)`
+- Unique: `(entry_id)`
+- FK: `idempotency_policy_key` → `idempotency_policies(policy_key)` with `ON DELETE SET NULL`
+
+**Indexes (prod)**
+- PK: `entries_pkey` on `(id)`
+- `entries_entry_id_uidx` UNIQUE on `(entry_id)`
+- `entries_created_at_idx` on `(created_at DESC)`
+- `entries_source_created_at_idx` on `(source, created_at DESC)`
+- `entries_intent_created_at_idx` on `(intent, created_at DESC)`
+- `entries_content_type_created_at_idx` on `(content_type, created_at DESC)`
+- `entries_topic_primary_created_at_idx` on `(topic_primary, created_at DESC)`
+- `entries_topic_secondary_created_at_idx` on `(topic_secondary, created_at DESC)`
+- `entries_content_hash_idx` on `(content_hash)`
+- `entries_tsv_gin_idx` GIN on `(tsv)`
+- `entries_keywords_gin_idx` GIN on `(keywords)`
+- `entries_quality_good_created_at_idx` partial on `(created_at DESC)` WHERE `boilerplate_heavy IS NOT TRUE AND low_signal IS NOT TRUE`
+- `pkm_entries_idem_primary_uidx` UNIQUE partial on `(idempotency_policy_key, idempotency_key_primary)`
+- `pkm_entries_idem_secondary_uidx` UNIQUE partial on `(idempotency_policy_key, idempotency_key_secondary)`
+
+**Indexes (test)**
+Same intent as prod, but names differ slightly:
+- Unique `(entry_id)` index is `entries_entry_id_idx`
+- Partial “quality good” index is `entries_created_at_idx1`
+- Full-text index name is `entries_tsv_idx`
+- Keywords GIN index name is `entries_keywords_idx`
+
+---
+
+### `pkm.idempotency_policies` / `pkm_test.idempotency_policies`
+
+**Purpose**
+Defines idempotency/deduplication behavior per `(source, content_type)` and stable `policy_key`.
+
+**Columns**
+- `policy_id` bigint PK (default `nextval(...)`)
+- `policy_key` text UNIQUE
+- `source` text
+- `content_type` text
+- `conflict_action` text CHECK in `{skip, update}`
+- `update_fields` text[] (optional)
+- `enabled` boolean default true
+- `notes` text (optional)
+- `created_at` timestamptz default now()
+- `updated_at` timestamptz default now()
+
+**Constraints / indexes**
+- PK `(policy_id)`
+- Unique `(policy_key)`
 - Check: `conflict_action IN ('skip','update')`
 
-### Seed policies (as migrated)
-
-- `telegram_thought_v1` (`telegram`, `thought`, `update`)
-- `telegram_link_v1` (`telegram`, `link`, `skip`)
-- `email_newsletter_v1` (`email`, `newsletter`, `skip`)
-- `email_correspondence_thread_v1` (`email`, `correspondence_thread`, `update`)
-
-### Test schema mirror
-
-`pkm_test.idempotency_policies` is created with `LIKE pkm.idempotency_policies INCLUDING ALL`.
-
-### Access control (as migrated)
-
-`pkm_ingest` grants:
-- `USAGE` on schemas `pkm`, `pkm_test`
-- `SELECT, INSERT, UPDATE, DELETE` on:
-  - `pkm.idempotency_policies`
-  - `pkm_test.idempotency_policies`
-- `USAGE, SELECT` on sequences:
-  - `pkm.idempotency_policies_policy_id_seq`
-  - `pkm_test.idempotency_policies_policy_id_seq`
-- default privileges in both schemas grant CRUD on future tables to `pkm_ingest`
+**Seed policies (current)**
+- `telegram_thought_v1` (telegram / thought / update)
+- `telegram_link_v1` (telegram / link / skip)
+- `email_newsletter_v1` (email / newsletter / skip)
+- `email_correspondence_message_v1` (email / correspondence_message / skip)
+- `email_correspondence_thread_v1` (email / correspondence_thread / update)
+- `email_backfill_newsletter_v1` (email / newsletter / skip)
 
 ---
 
-## Tier-1 Batch Persistence
+### `pkm.runtime_config`
 
-To support restart-safe OpenAI batch processing, backend persists queue/mapping/results in Postgres.
+**Purpose**
+Small shared key/value store for runtime toggles used by backend and workflows.
 
-### Table: `pkm.t1_batches`
+**Columns**
+- `key` text PK
+- `value` jsonb NOT NULL
+- `updated_at` timestamptz default now()
 
-| Column | Type | Nullable | Default / Generated | Notes |
-|---|---|---:|---|---|
-| batch_id | text | no |  | primary key, OpenAI batch id |
-| status | text | yes |  | OpenAI batch status |
-| model | text | yes |  | model used for requests |
-| input_file_id | text | yes |  | OpenAI files API input id |
-| output_file_id | text | yes |  | OpenAI files API output id |
-| error_file_id | text | yes |  | OpenAI files API error id |
-| request_count | integer | yes |  | number of enqueued requests |
-| metadata | jsonb | yes |  | batch metadata |
-| created_at | timestamp with time zone | yes | `now()` | created timestamp |
+**Current keys**
+- `is_test_mode`: `false`
 
-Indexes:
-- Primary key on `(batch_id)`
-- `idx_pkm_t1_batches_status_created_at` on `(status, created_at)`
+**Access**
+- `pkm_ingest`: RIUD
+- `pkm_read`: R
+- `n8n`: R
 
-### Table: `pkm.t1_batch_items`
+---
 
-| Column | Type | Nullable | Default / Generated | Notes |
-|---|---|---:|---|---|
-| batch_id | text | no |  | batch id |
-| custom_id | text | no |  | per-item id inside batch |
-| title | text | yes |  | prompt metadata |
-| author | text | yes |  | prompt metadata |
-| content_type | text | yes |  | prompt metadata |
-| prompt_mode | text | yes |  | `whole` / `sample` |
-| prompt | text | yes |  | rendered user prompt sent to OpenAI |
-| created_at | timestamp with time zone | yes | `now()` | created timestamp |
+### Tier-1 Batch Persistence
 
-Indexes:
-- Primary key on `(batch_id, custom_id)`
-- `idx_pkm_t1_batch_items_batch_id` on `(batch_id)`
+These tables support restart-safe OpenAI batch processing.
 
-### Table: `pkm.t1_batch_item_results`
+#### `pkm.t1_batches` / `pkm_test.t1_batches`
 
-| Column | Type | Nullable | Default / Generated | Notes |
-|---|---|---:|---|---|
-| batch_id | text | no |  | batch id |
-| custom_id | text | no |  | per-item id inside batch |
-| status | text | no |  | `ok` / `parse_error` / `error` |
-| response_text | text | yes |  | extracted model text |
-| parsed | jsonb | yes |  | parsed Tier-1 payload |
-| error | jsonb | yes |  | parsing / API error info |
-| raw | jsonb | yes |  | raw batch line payload |
-| updated_at | timestamp with time zone | yes | `now()` | last update timestamp |
-| created_at | timestamp with time zone | yes | `now()` | first insert timestamp |
+- `batch_id` text PK
+- `status` text
+- `model` text
+- `input_file_id` text
+- `output_file_id` text
+- `error_file_id` text
+- `request_count` int
+- `metadata` jsonb
+- `created_at` timestamptz default now()
 
 Indexes:
-- Primary key on `(batch_id, custom_id)`
-- `idx_pkm_t1_batch_results_batch_id_status` on `(batch_id, status)`
-- `idx_pkm_t1_batch_results_updated_at` on `(updated_at)`
+- PK `(batch_id)`
+- `(status, created_at)` (`idx_pkm_*_t1_batches_status_created_at`)
 
-### Test schema mirror
+#### `pkm.t1_batch_items` / `pkm_test.t1_batch_items`
 
-All Tier-1 batch tables/indexes above are mirrored in `pkm_test`:
-- `pkm_test.t1_batches`
-- `pkm_test.t1_batch_items`
-- `pkm_test.t1_batch_item_results`
+- `batch_id` text
+- `custom_id` text
+- `title` text
+- `author` text
+- `content_type` text
+- `prompt_mode` text
+- `prompt` text
+- `created_at` timestamptz default now()
 
-This allows worker dequeue/sync to continue across test-mode flips without orphaning jobs.
+Indexes:
+- PK `(batch_id, custom_id)`
+- `(batch_id)`
+
+#### `pkm.t1_batch_item_results` / `pkm_test.t1_batch_item_results`
+
+- `batch_id` text
+- `custom_id` text
+- `status` text NOT NULL
+- `response_text` text
+- `parsed` jsonb
+- `error` jsonb
+- `raw` jsonb
+- `updated_at` timestamptz default now()
+- `created_at` timestamptz default now()
+
+Indexes:
+- PK `(batch_id, custom_id)`
+- `(batch_id, status)`
+- `(updated_at)`
+
+---
+
+## What else is useful (recommended additions)
+
+If you want this schema doc to be maximally helpful for agents, consider adding:
+
+1. **Operational invariants**
+   - which columns are considered canonical vs derived
+   - how “idempotency keys” are constructed (where they live in metadata/external_ref)
+
+2. **Admin operations contract**
+   - the exact semantics for `/db/delete` and `/db/move` (what is preserved, what is re-assigned)
+   - validation rules (max ranges, dry-run requirement, explicit schema requirement)
+
+3. **Data lifecycle**
+   - when to truncate `pkm_test.*`
+   - whether `pkm` ever gets truncated (ideally never)
+
+4. **Perf expectations**
+   - common query patterns and which indexes support them
+   - when to VACUUM/ANALYZE (if you see bloat)
+

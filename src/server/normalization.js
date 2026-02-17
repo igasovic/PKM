@@ -1499,11 +1499,13 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
   });
 }
 
-async function normalizeEmail({ raw_text, from, subject, source }) {
+async function normalizeEmail({ raw_text, from, subject, date, message_id, source }) {
   const src = source && typeof source === 'object' ? source : null;
   const resolvedRawText = raw_text ?? (src ? (src.body || src.text || src.raw_text || src.capture_text) : null);
   const resolvedFrom = normalizeIdemFromHeader(from ?? null);
   const resolvedSubject = normalizeIdemSubject(subject ?? null);
+  const resolvedDate = sanitizeHeaderText(date ?? null);
+  const resolvedMessageId = sanitizeHeaderText(message_id ?? null);
   const transport = normalizeEmailTransport(resolvedRawText);
   const fwd = transport && transport.forwarded ? transport.forwarded : { found: false, headers: {} };
   const fwdHeaders = (fwd && fwd.headers && typeof fwd.headers === 'object') ? fwd.headers : {};
@@ -1521,10 +1523,18 @@ async function normalizeEmail({ raw_text, from, subject, source }) {
   const sourceForIdem = {
     ...(src || {}),
     system: 'email',
-    from_addr: (fwd.found && forwardedFrom) ? forwardedFrom : resolvedFrom,
-    subject: (fwd.found && forwardedSubject) ? forwardedSubject : resolvedSubject,
-    date: (fwd.found && forwardedDate) ? forwardedDate : (src && src.date ? src.date : null),
-    message_id: (fwd.found && forwardedMessageId) ? forwardedMessageId : (src && src.message_id ? src.message_id : null),
+    from_addr: (fwd.found && forwardedFrom)
+      ? forwardedFrom
+      : (resolvedFrom || (src && (src.from_addr || src.from || src.sender) ? (src.from_addr || src.from || src.sender) : null)),
+    subject: (fwd.found && forwardedSubject)
+      ? forwardedSubject
+      : (resolvedSubject || (src && src.subject ? src.subject : null)),
+    date: (fwd.found && forwardedDate)
+      ? forwardedDate
+      : (resolvedDate || (src && src.date ? src.date : null)),
+    message_id: (fwd.found && forwardedMessageId)
+      ? forwardedMessageId
+      : (resolvedMessageId || (src && src.message_id ? src.message_id : null)),
     body: (src && src.body) ? src.body : resolvedRawText,
   };
   const idem = buildIdempotencyForNormalized({
