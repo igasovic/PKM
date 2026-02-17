@@ -60,6 +60,40 @@ Published application routes (Cloudflare Zero Trust → Tunnels → Public Hostn
 | `n8n-hook.gasovic.com` | `http://localhost:5678` | n8n webhooks (base URL) |
 | `n8n.gasovic.com` | `http://localhost:5678` | n8n editor/UI |
 
+
+### Service dependency graph (overview)
+
+> For the detailed version, see `Service_dependancy_graph.md`.
+
+```mermaid
+flowchart LR
+  %% Public publishing (only HA + n8n)
+  CF[Cloudflare Edge] --> CFT[cloudflared]
+  CFT --> HAHost[ha.gasovic.com]
+  CFT --> N8NUI[n8n.gasovic.com]
+  CFT --> N8NHook[n8n-hook.gasovic.com]
+
+  HAHost --> HA[Home Assistant :8123]
+  N8NUI --> N8NPort[localhost:5678]
+  N8NHook --> N8NPort
+  N8NPort --> N8N[n8n]
+
+  %% n8n integrations
+  TG[Telegram] --> N8N
+  IMAP[Gmail IMAP] --> N8N
+  N8N --> TR[Trafilatura (HTTP)]
+  N8N --> OD[OneDrive (backups)]
+
+  %% PKM path
+  N8N --> PKM[pkm-server :3010]
+  PKM --> PG[(Postgres)]
+  PKM --> LLM[LiteLLM :4000]
+  LLM --> OAI[(OpenAI API)]
+  PKM --> BT[Braintrust]
+
+  %% Note: PKM + LiteLLM are LAN-only (not published via Cloudflare)
+```
+
 ---
 
 ## 2) Host baseline
