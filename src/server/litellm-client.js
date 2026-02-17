@@ -143,6 +143,18 @@ function extractErrorMessage(json, fallbackText) {
   return 'unknown error';
 }
 
+function withBatchFilesHint(msg, baseUrl) {
+  const raw = String(msg || '').trim();
+  const lower = raw.toLowerCase();
+  if (!lower.includes('files_settings is not set')) return raw;
+  const hint = [
+    raw,
+    `LiteLLM batch prerequisites missing: enable file storage in LiteLLM config.yaml (files_settings) and restart LiteLLM.`,
+    `request_target=${baseUrl}/files`,
+  ].join(' ');
+  return hint;
+}
+
 function truncate(value, max) {
   const s = String(value || '');
   if (s.length <= max) return s;
@@ -463,7 +475,10 @@ class LiteLLMClient {
     }
 
     if (!upload.res.ok) {
-      const msg = extractErrorMessage(upload.json, upload.text);
+      const msg = withBatchFilesHint(
+        extractErrorMessage(upload.json, upload.text),
+        this.baseUrl
+      );
       const err = new Error(`LiteLLM file upload error: ${msg}`);
       this.logError(
         'files.upload',

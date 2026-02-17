@@ -94,22 +94,11 @@ async function upsertBatchRow(schema, batch, requestCountHint, metadataExtra) {
   ];
 
   try {
+    const sql = sb.buildT1BatchUpsert({ batchesTable });
     await runQuery(
       't1_batch_upsert',
       { schema, table: batchesTable },
-      `INSERT INTO ${batchesTable} (batch_id, status, model, input_file_id, output_file_id, error_file_id, request_count, metadata, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, now())
-       ON CONFLICT (batch_id) DO UPDATE SET
-         status = EXCLUDED.status,
-         model = COALESCE(EXCLUDED.model, ${batchesTable}.model),
-         input_file_id = COALESCE(EXCLUDED.input_file_id, ${batchesTable}.input_file_id),
-         output_file_id = COALESCE(EXCLUDED.output_file_id, ${batchesTable}.output_file_id),
-         error_file_id = COALESCE(EXCLUDED.error_file_id, ${batchesTable}.error_file_id),
-         request_count = CASE
-           WHEN EXCLUDED.request_count > 0 THEN EXCLUDED.request_count
-           ELSE ${batchesTable}.request_count
-         END,
-         metadata = COALESCE(EXCLUDED.metadata, ${batchesTable}.metadata)`,
+      sql,
       params
     );
   } catch (err) {
@@ -121,11 +110,8 @@ async function upsertBatchItems(schema, batchId, requests) {
   if (!requests.length) return;
 
   const itemsTable = tableName(schema, 't1_batch_items');
-  const values = [];
   const params = [];
-  let idx = 1;
   for (const r of requests) {
-    values.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, now())`);
     params.push(
       batchId,
       r.custom_id,
@@ -138,12 +124,11 @@ async function upsertBatchItems(schema, batchId, requests) {
   }
 
   try {
+    const sql = sb.buildT1BatchItemsInsert({ itemsTable, rowCount: requests.length });
     await runQuery(
       't1_batch_items_upsert',
       { schema, table: itemsTable, rowCount: requests.length },
-      `INSERT INTO ${itemsTable} (batch_id, custom_id, title, author, content_type, prompt_mode, prompt, created_at)
-       VALUES ${values.join(', ')}
-       ON CONFLICT (batch_id, custom_id) DO NOTHING`,
+      sql,
       params
     );
   } catch (err) {
@@ -155,11 +140,8 @@ async function upsertBatchResults(schema, batchId, rows) {
   if (!rows.length) return 0;
   const resultsTable = tableName(schema, 't1_batch_item_results');
 
-  const values = [];
   const params = [];
-  let idx = 1;
   for (const r of rows) {
-    values.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}::jsonb, $${idx++}::jsonb, $${idx++}::jsonb, now(), now())`);
     params.push(
       batchId,
       r.custom_id,
@@ -172,19 +154,11 @@ async function upsertBatchResults(schema, batchId, rows) {
   }
 
   try {
+    const sql = sb.buildT1BatchResultsUpsert({ resultsTable, rowCount: rows.length });
     await runQuery(
       't1_batch_results_upsert',
       { schema, table: resultsTable, rowCount: rows.length },
-      `INSERT INTO ${resultsTable}
-       (batch_id, custom_id, status, response_text, parsed, error, raw, updated_at, created_at)
-       VALUES ${values.join(', ')}
-       ON CONFLICT (batch_id, custom_id) DO UPDATE SET
-         status = EXCLUDED.status,
-         response_text = EXCLUDED.response_text,
-         parsed = EXCLUDED.parsed,
-         error = EXCLUDED.error,
-         raw = EXCLUDED.raw,
-         updated_at = now()`,
+      sql,
       params
     );
   } catch (err) {
@@ -197,16 +171,11 @@ async function upsertBatchResults(schema, batchId, rows) {
 async function readBatchSummary(schema, batchId) {
   const resultsTable = tableName(schema, 't1_batch_item_results');
   try {
+    const sql = sb.buildT1BatchSummary({ resultsTable });
     const res = await runQuery(
       't1_batch_summary',
       { schema, table: resultsTable },
-      `SELECT
-         COUNT(*)::int AS total,
-         COUNT(*) FILTER (WHERE status = 'ok')::int AS ok_count,
-         COUNT(*) FILTER (WHERE status = 'parse_error')::int AS parse_error_count,
-         COUNT(*) FILTER (WHERE status = 'error')::int AS error_count
-       FROM ${resultsTable}
-       WHERE batch_id = $1`,
+      sql,
       [batchId]
     );
     return res.rows && res.rows[0]
@@ -225,10 +194,11 @@ async function findBatchRecord(batchId) {
   for (const schema of schemas) {
     const batchesTable = tableName(schema, 't1_batches');
     try {
+      const sql = sb.buildT1BatchFind({ batchesTable });
       const res = await runQuery(
         't1_batch_find',
         { schema, table: batchesTable },
-        `SELECT * FROM ${batchesTable} WHERE batch_id = $1 LIMIT 1`,
+        sql,
         [id]
       );
       if (res.rows && res.rows[0]) return { schema, batch: res.rows[0] };
@@ -253,16 +223,11 @@ async function listPendingBatchIds(limit) {
     const batchesTable = tableName(schema, 't1_batches');
     try {
       const remaining = take - out.length;
+      const sql = sb.buildT1BatchListPending({ batchesTable });
       const res = await runQuery(
         't1_batch_list_pending',
         { schema, table: batchesTable },
-        `SELECT batch_id
-         FROM ${batchesTable}
-         WHERE status IS NULL
-            OR status = ''
-            OR status <> ALL($1::text[])
-         ORDER BY created_at ASC
-         LIMIT $2`,
+        sql,
         [Array.from(TERMINAL_BATCH_STATUSES), remaining]
       );
       for (const row of res.rows || []) {

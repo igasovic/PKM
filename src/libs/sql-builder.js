@@ -219,7 +219,144 @@ module.exports = {
   buildReadFind,
   buildReadLast,
   buildReadPull,
+  buildT1BatchUpsert,
+  buildT1BatchItemsInsert,
+  buildT1BatchResultsUpsert,
+  buildT1BatchSummary,
+  buildT1BatchFind,
+  buildT1BatchListPending,
 };
+
+/**
+ * Build upsert SQL for Tier-1 batch envelope row.
+ * @param {{ batchesTable: string }} opts
+ * @returns {string}
+ */
+function buildT1BatchUpsert(opts) {
+  const batchesTable = opts && opts.batchesTable;
+  if (!batchesTable || typeof batchesTable !== 'string') {
+    throw new Error('buildT1BatchUpsert: batchesTable must be a non-empty string');
+  }
+  return `INSERT INTO ${batchesTable} (batch_id, status, model, input_file_id, output_file_id, error_file_id, request_count, metadata, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, now())
+ON CONFLICT (batch_id) DO UPDATE SET
+  status = EXCLUDED.status,
+  model = COALESCE(EXCLUDED.model, ${batchesTable}.model),
+  input_file_id = COALESCE(EXCLUDED.input_file_id, ${batchesTable}.input_file_id),
+  output_file_id = COALESCE(EXCLUDED.output_file_id, ${batchesTable}.output_file_id),
+  error_file_id = COALESCE(EXCLUDED.error_file_id, ${batchesTable}.error_file_id),
+  request_count = CASE
+    WHEN EXCLUDED.request_count > 0 THEN EXCLUDED.request_count
+    ELSE ${batchesTable}.request_count
+  END,
+  metadata = COALESCE(EXCLUDED.metadata, ${batchesTable}.metadata)`;
+}
+
+/**
+ * Build bulk insert SQL for Tier-1 batch request items.
+ * @param {{ itemsTable: string, rowCount: number }} opts
+ * @returns {string}
+ */
+function buildT1BatchItemsInsert(opts) {
+  const itemsTable = opts && opts.itemsTable;
+  const rowCount = Number(opts && opts.rowCount);
+  if (!itemsTable || typeof itemsTable !== 'string') {
+    throw new Error('buildT1BatchItemsInsert: itemsTable must be a non-empty string');
+  }
+  if (!Number.isInteger(rowCount) || rowCount <= 0) {
+    throw new Error('buildT1BatchItemsInsert: rowCount must be a positive integer');
+  }
+  const values = [];
+  let idx = 1;
+  for (let i = 0; i < rowCount; i++) {
+    values.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, now())`);
+  }
+  return `INSERT INTO ${itemsTable} (batch_id, custom_id, title, author, content_type, prompt_mode, prompt, created_at)
+VALUES ${values.join(', ')}
+ON CONFLICT (batch_id, custom_id) DO NOTHING`;
+}
+
+/**
+ * Build bulk upsert SQL for Tier-1 batch item results.
+ * @param {{ resultsTable: string, rowCount: number }} opts
+ * @returns {string}
+ */
+function buildT1BatchResultsUpsert(opts) {
+  const resultsTable = opts && opts.resultsTable;
+  const rowCount = Number(opts && opts.rowCount);
+  if (!resultsTable || typeof resultsTable !== 'string') {
+    throw new Error('buildT1BatchResultsUpsert: resultsTable must be a non-empty string');
+  }
+  if (!Number.isInteger(rowCount) || rowCount <= 0) {
+    throw new Error('buildT1BatchResultsUpsert: rowCount must be a positive integer');
+  }
+  const values = [];
+  let idx = 1;
+  for (let i = 0; i < rowCount; i++) {
+    values.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}::jsonb, $${idx++}::jsonb, $${idx++}::jsonb, now(), now())`);
+  }
+  return `INSERT INTO ${resultsTable}
+  (batch_id, custom_id, status, response_text, parsed, error, raw, updated_at, created_at)
+VALUES ${values.join(', ')}
+ON CONFLICT (batch_id, custom_id) DO UPDATE SET
+  status = EXCLUDED.status,
+  response_text = EXCLUDED.response_text,
+  parsed = EXCLUDED.parsed,
+  error = EXCLUDED.error,
+  raw = EXCLUDED.raw,
+  updated_at = now()`;
+}
+
+/**
+ * Build SQL for Tier-1 batch result summary counters.
+ * @param {{ resultsTable: string }} opts
+ * @returns {string}
+ */
+function buildT1BatchSummary(opts) {
+  const resultsTable = opts && opts.resultsTable;
+  if (!resultsTable || typeof resultsTable !== 'string') {
+    throw new Error('buildT1BatchSummary: resultsTable must be a non-empty string');
+  }
+  return `SELECT
+  COUNT(*)::int AS total,
+  COUNT(*) FILTER (WHERE status = 'ok')::int AS ok_count,
+  COUNT(*) FILTER (WHERE status = 'parse_error')::int AS parse_error_count,
+  COUNT(*) FILTER (WHERE status = 'error')::int AS error_count
+FROM ${resultsTable}
+WHERE batch_id = $1`;
+}
+
+/**
+ * Build SQL for finding one Tier-1 batch by id.
+ * @param {{ batchesTable: string }} opts
+ * @returns {string}
+ */
+function buildT1BatchFind(opts) {
+  const batchesTable = opts && opts.batchesTable;
+  if (!batchesTable || typeof batchesTable !== 'string') {
+    throw new Error('buildT1BatchFind: batchesTable must be a non-empty string');
+  }
+  return `SELECT * FROM ${batchesTable} WHERE batch_id = $1 LIMIT 1`;
+}
+
+/**
+ * Build SQL for listing pending Tier-1 batch ids.
+ * @param {{ batchesTable: string }} opts
+ * @returns {string}
+ */
+function buildT1BatchListPending(opts) {
+  const batchesTable = opts && opts.batchesTable;
+  if (!batchesTable || typeof batchesTable !== 'string') {
+    throw new Error('buildT1BatchListPending: batchesTable must be a non-empty string');
+  }
+  return `SELECT batch_id
+FROM ${batchesTable}
+WHERE status IS NULL
+   OR status = ''
+   OR status <> ALL($1::text[])
+ORDER BY created_at ASC
+LIMIT $2`;
+}
 
 /**
  * Build a parameter-free INSERT statement with explicit column/value lists.
