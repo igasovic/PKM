@@ -49,6 +49,34 @@ function parseBoolParam(value, fallback = false) {
   return v === '1' || v === 'true' || v === 'yes' || v === 'on';
 }
 
+function readAdminSecret(req) {
+  const fromHeader = req.headers['x-pkm-admin-secret'] || req.headers['x-admin-secret'];
+  if (typeof fromHeader === 'string' && fromHeader.trim()) {
+    return fromHeader.trim();
+  }
+  const auth = req.headers.authorization;
+  if (typeof auth === 'string') {
+    const m = auth.match(/^Bearer\s+(.+)$/i);
+    if (m && m[1] && m[1].trim()) return m[1].trim();
+  }
+  return '';
+}
+
+function requireAdminSecret(req) {
+  const expected = String(process.env.PKM_ADMIN_SECRET || '').trim();
+  if (!expected) {
+    const err = new Error('admin secret is not configured');
+    err.statusCode = 500;
+    throw err;
+  }
+  const provided = readAdminSecret(req);
+  if (!provided || provided !== expected) {
+    const err = new Error('forbidden');
+    err.statusCode = 403;
+    throw err;
+  }
+}
+
 async function readBody(req, limitBytes = 1024 * 1024) {
   return new Promise((resolve, reject) => {
     let total = 0;
@@ -277,10 +305,18 @@ async function handleRequest(req, res) {
       meta.input = body;
       let result;
 
+      if (url.pathname === '/db/delete' || url.pathname === '/db/move') {
+        requireAdminSecret(req);
+      }
+
       if (url.pathname === '/db/insert') {
         result = await db.insert(body);
       } else if (url.pathname === '/db/update') {
         result = await db.update(body);
+      } else if (url.pathname === '/db/delete') {
+        result = await db.delete(body);
+      } else if (url.pathname === '/db/move') {
+        result = await db.move(body);
       } else if (url.pathname === '/db/read/continue') {
         result = await db.readContinue(body);
       } else if (url.pathname === '/db/read/find') {
@@ -302,7 +338,14 @@ async function handleRequest(req, res) {
     } catch (err) {
       logApiError(meta, err, { duration_ms: Date.now() - start });
       logError(err, req);
-      return json(res, 400, { error: 'bad_request', message: err.message });
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      const errorCode = status === 403
+        ? 'forbidden'
+        : status >= 500
+          ? 'internal_error'
+          : 'bad_request';
+      return json(res, status, { error: errorCode, message: err.message });
     }
   }
 

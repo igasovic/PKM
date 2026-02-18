@@ -623,6 +623,54 @@ You can also use a `where` object:
 }
 ```
 
+### `POST /db/delete`
+Deletes entries using explicit selectors in an explicit schema.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Body:
+```json
+{
+  "schema": "pkm",
+  "entry_ids": [101, 102],
+  "range": { "from": 200, "to": 220 },
+  "dry_run": false,
+  "force": false
+}
+```
+
+Rules:
+- `schema` is required (`pkm` or `pkm_test`).
+- At least one selector is required: `entry_ids` and/or `range`.
+- All IDs must be positive integers.
+- `range.from <= range.to`.
+- Selector size max is `200` unless `force = true`.
+
+### `POST /db/move`
+Moves entries from one schema to another in a single transaction.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Body:
+```json
+{
+  "from_schema": "pkm",
+  "to_schema": "pkm_test",
+  "entry_ids": [101],
+  "range": { "from": 200, "to": 205 },
+  "dry_run": false,
+  "force": false
+}
+```
+
+Rules:
+- `from_schema` and `to_schema` are required and must differ.
+- Selector/validation/max-size rules are the same as `/db/delete`.
+- Move preserves `id` and reassigns destination `entry_id`.
+- Move annotates migration provenance in `metadata` and `external_ref`.
+
 ## Read
 
 ### `POST /db/read/last`
@@ -712,6 +760,8 @@ Optional:
 - `PKM_DB_SCHEMA` (default: `pkm`)
 - `PKM_DB_SSL` (default: `false`)
 - `PKM_DB_SSL_REJECT_UNAUTHORIZED` (default: `true`)
+- `PKM_ADMIN_SECRET` (required for `/db/delete` and `/db/move`)
+- `PKM_DB_ADMIN_ROLE` (optional; used via `SET LOCAL ROLE` for admin DB operations)
 - `EMAIL_IMPORT_ROOT` (default: `/data`; root directory for `/import/email/mbox` reads)
 - `OPENAI_BASE_URL` (recommended: `http://litellm:4000/v1`)
 - `T1_DEFAULT_MODEL` (recommended: `t1-default`)

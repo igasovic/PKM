@@ -31,6 +31,8 @@ const defaults = {
   continue: { days: 90, limit: 10 },
   with: { days: 90, limit: 10 },
   pull: { days: null, limit: null },   // <-- NEW
+  delete: { days: null, limit: null },
+  move: { days: null, limit: null },
   status: { days: null, limit: null },
   help: { days: null, limit: null },
 };
@@ -51,6 +53,8 @@ if (!defaults[cmd]) {
         `/find "needle" [--days N] [--limit M]\n` +
         `/continue topic [--days N] [--limit M]\n` +
         `/with person topic [--days N] [--limit M]\n` +
+        `/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
+        `/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
         `/status`
     }
   }];
@@ -84,6 +88,146 @@ if (cmd === 'pull') {
       cmd,
       entry_id,
       want_excerpt,
+      chat_id
+    }
+  }];
+}
+
+function parseSchemaValue(raw) {
+  const v = String(raw || '').trim().toLowerCase();
+  if (v === 'p' || v === 'prod' || v === 'production' || v === 'pkm') return 'pkm';
+  if (v === 't' || v === 'test' || v === 'pkm_test') return 'pkm_test';
+  return null;
+}
+
+function parseSelectorSpec(rest) {
+  const tokens = String(rest || '')
+    .split(/[,\s]+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+  const entry_ids = [];
+  let range = null;
+
+  for (const token of tokens) {
+    const idMatch = token.match(/^\d+$/);
+    if (idMatch) {
+      if (idMatch[0] !== '0') entry_ids.push(idMatch[0]);
+      continue;
+    }
+    const rangeMatch = token.match(/^(\d+)(?:\.\.|-)(\d+)$/);
+    if (rangeMatch) {
+      if (range) {
+        return { error: 'Only one range is supported.' };
+      }
+      const from = rangeMatch[1];
+      const to = rangeMatch[2];
+      if (from === '0' || to === '0') {
+        return { error: 'Range values must be > 0.' };
+      }
+      if (BigInt(from) > BigInt(to)) {
+        return { error: 'Range must satisfy from <= to.' };
+      }
+      range = { from, to };
+      continue;
+    }
+    return { error: `Invalid selector token: ${token}` };
+  }
+
+  const deduped = Array.from(new Set(entry_ids));
+  if (!deduped.length && !range) {
+    return { error: 'Provide at least one selector: id, id list, or range.' };
+  }
+  return {
+    entry_ids: deduped,
+    range,
+  };
+}
+
+if (cmd === 'delete' || cmd === 'move') {
+  const dry_run = /--dry-run\b/i.test(text);
+  const force = /--force\b/i.test(text);
+
+  if (cmd === 'delete') {
+    const rest0 = text.replace(/^\/\w+/i, '').trim();
+    const m = rest0.match(/^(\S+)\s+([\s\S]+)$/);
+    const schema = parseSchemaValue(m && m[1]);
+    if (!schema) {
+      return [{
+        json: {
+          _reply_now: true,
+          chat_id,
+          telegram_message: `Usage:\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]`
+        }
+      }];
+    }
+
+    const rest = String((m && m[2]) || '')
+      .replace(/--dry-run\b/ig, '')
+      .replace(/--force\b/ig, '')
+      .trim();
+    const parsed = parseSelectorSpec(rest);
+    if (parsed.error) {
+      return [{
+        json: {
+          _reply_now: true,
+          chat_id,
+          telegram_message: parsed.error
+        }
+      }];
+    }
+
+    return [{
+      json: {
+        cmd,
+        schema,
+        entry_ids: parsed.entry_ids,
+        range: parsed.range || null,
+        dry_run,
+        force,
+        chat_id
+      }
+    }];
+  }
+
+  const rest0 = text.replace(/^\/\w+/i, '').trim();
+  const m = rest0.match(/^(\S+)\s+(\S+)\s+([\s\S]+)$/);
+  const from_schema = parseSchemaValue(m && m[1]);
+  const to_schema = parseSchemaValue(m && m[2]);
+  if (!from_schema || !to_schema || from_schema === to_schema) {
+    return [{
+      json: {
+        _reply_now: true,
+        chat_id,
+        telegram_message: `Usage:\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]`
+      }
+    }];
+  }
+
+  const rest = String((m && m[3]) || '')
+    .replace(/--dry-run\b/ig, '')
+    .replace(/--force\b/ig, '')
+    .trim();
+  const parsed = parseSelectorSpec(rest);
+  if (parsed.error) {
+    return [{
+      json: {
+        _reply_now: true,
+        chat_id,
+        telegram_message: parsed.error
+      }
+    }];
+  }
+
+  return [{
+    json: {
+      cmd,
+      from_schema,
+      to_schema,
+      entry_ids: parsed.entry_ids,
+      range: parsed.range || null,
+      dry_run,
+      force,
       chat_id
     }
   }];

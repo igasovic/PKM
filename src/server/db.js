@@ -9,6 +9,12 @@ const CONFIG_TABLE = sb.qualifiedTable(process.env.PKM_DB_SCHEMA || 'pkm', 'runt
 const IMMUTABLE_UPDATE_COLUMNS = new Set(['id', 'entry_id', 'created_at', 'tsv']);
 // For these ingest sources we fail closed unless idempotency keys are present.
 const IDEMPOTENCY_REQUIRED_SOURCES = new Set(['email', 'email-batch', 'telegram']);
+const ADMIN_SCHEMAS = new Set(['pkm', 'pkm_test']);
+const DELETE_MOVE_MAX_BATCH = (() => {
+  const raw = Number(process.env.DB_DELETE_MOVE_MAX_BATCH || 200);
+  return Number.isFinite(raw) && raw > 0 ? Math.trunc(raw) : 200;
+})();
+const PREVIEW_LIMIT = 20;
 
 function wrapConfigTableError(err) {
   if (!err) return err;
@@ -288,6 +294,160 @@ function resolveSchemaFromConfig(config) {
     ? (config && config.db && config.db.schema_test)
     : (config && config.db && config.db.schema_prod);
   return sb.isValidIdent(candidate) ? candidate : 'pkm';
+}
+
+function requireSchemaExplicit(value, fieldName) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    throw new Error(`${fieldName} is required`);
+  }
+  if (!ADMIN_SCHEMAS.has(raw)) {
+    throw new Error(`${fieldName} must be one of: pkm, pkm_test`);
+  }
+  return raw;
+}
+
+function parseBooleanStrict(value, fieldName, fallback) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  const v = String(value).trim().toLowerCase();
+  if (v === '1' || v === 'true' || v === 'yes' || v === 'on') return true;
+  if (v === '0' || v === 'false' || v === 'no' || v === 'off') return false;
+  throw new Error(`${fieldName} must be boolean`);
+}
+
+function parsePositiveBigintString(value, fieldName) {
+  const s = String(value === undefined || value === null ? '' : value).trim();
+  if (!/^\d+$/.test(s)) {
+    throw new Error(`${fieldName} must be a positive integer`);
+  }
+  if (s === '0') {
+    throw new Error(`${fieldName} must be > 0`);
+  }
+  return s;
+}
+
+function parseEntryIds(value) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw new Error('entry_ids must be an array of positive integers');
+  }
+  const out = [];
+  const seen = new Set();
+  for (let i = 0; i < value.length; i++) {
+    const id = parsePositiveBigintString(value[i], `entry_ids[${i}]`);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
+function parseRange(range) {
+  if (range === undefined || range === null) return null;
+  if (typeof range !== 'object' || Array.isArray(range)) {
+    throw new Error('range must be an object: { from, to }');
+  }
+  const from = parsePositiveBigintString(range.from, 'range.from');
+  const to = parsePositiveBigintString(range.to, 'range.to');
+  const fromBig = BigInt(from);
+  const toBig = BigInt(to);
+  if (fromBig > toBig) {
+    throw new Error('range.from must be <= range.to');
+  }
+  return {
+    from,
+    to,
+    span: (toBig - fromBig) + 1n,
+  };
+}
+
+function resolveSelectors(input) {
+  const entry_ids = parseEntryIds(input && input.entry_ids);
+  const range = parseRange(input && input.range);
+  if (!entry_ids.length && !range) {
+    throw new Error('at least one selector is required: entry_ids or range');
+  }
+  return { entry_ids, range };
+}
+
+function enforceSelectorMax({ entry_ids, range, force }) {
+  const max = BigInt(DELETE_MOVE_MAX_BATCH);
+  let size = BigInt(entry_ids.length);
+  if (range) size += range.span;
+  if (!force && size > max) {
+    throw new Error(`selector size ${size.toString()} exceeds max ${max.toString()} (set force=true to override)`);
+  }
+  return size;
+}
+
+function buildSelectorWhere(selectors) {
+  const clauses = [];
+  if (selectors.entry_ids && selectors.entry_ids.length) {
+    const list = selectors.entry_ids.map((id) => `${sb.bigIntLit(id)}::bigint`).join(', ');
+    clauses.push(`entry_id = ANY(ARRAY[${list}]::bigint[])`);
+  }
+  if (selectors.range) {
+    clauses.push(
+      `entry_id BETWEEN ${sb.bigIntLit(selectors.range.from)}::bigint AND ${sb.bigIntLit(selectors.range.to)}::bigint`
+    );
+  }
+  if (!clauses.length) {
+    throw new Error('at least one selector is required');
+  }
+  return clauses.length === 1 ? clauses[0] : `(${clauses.join(' OR ')})`;
+}
+
+function withAdminRoleSql(client) {
+  const role = String(process.env.PKM_DB_ADMIN_ROLE || '').trim();
+  if (!role) return Promise.resolve();
+  if (!sb.isValidIdent(role)) {
+    throw new Error('PKM_DB_ADMIN_ROLE must be a valid SQL identifier');
+  }
+  return client.query(`SET LOCAL ROLE "${role}"`);
+}
+
+async function runInTransaction(op, meta, fn) {
+  const p = getPool();
+  const client = await p.connect();
+  try {
+    await traceDb(op, { ...meta, stage: 'begin' }, () => client.query('BEGIN'));
+    await traceDb(op, { ...meta, stage: 'set_role' }, () => withAdminRoleSql(client));
+    const out = await fn(client);
+    await traceDb(op, { ...meta, stage: 'commit' }, () => client.query('COMMIT'));
+    return out;
+  } catch (err) {
+    try {
+      await traceDb(op, { ...meta, stage: 'rollback' }, () => client.query('ROLLBACK'));
+    } catch (_rollbackErr) {
+      // Ignore rollback failure and surface original error.
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+function buildPreviewSelectSql(table, whereSql) {
+  return `SELECT entry_id, id, source, content_type, title, created_at
+FROM ${table}
+WHERE ${whereSql}
+ORDER BY entry_id ASC
+LIMIT ${PREVIEW_LIMIT}`;
+}
+
+function buildCountSql(table, whereSql) {
+  return `SELECT COUNT(*)::int AS count FROM ${table} WHERE ${whereSql}`;
+}
+
+function movableInsertColumns() {
+  const out = ['id'];
+  for (const col of Object.keys(COLUMN_TYPES)) {
+    if (col === 'entry_id' || col === 'tsv') continue;
+    out.push(col);
+  }
+  return out;
 }
 
 function wrapPolicyTableError(err, tableName) {
@@ -738,6 +898,158 @@ async function update(opts) {
   return exec(sql, { op: 'update', table });
 }
 
+async function deleteEntries(opts) {
+  const data = (opts && (opts.input || opts.data || opts)) || {};
+  if (!data || typeof data !== 'object') {
+    throw new Error('delete requires JSON object input');
+  }
+
+  const schema = requireSchemaExplicit(data.schema, 'schema');
+  const dry_run = parseBooleanStrict(data.dry_run, 'dry_run', false);
+  const force = parseBooleanStrict(data.force, 'force', false);
+  const selectors = resolveSelectors(data);
+  const selector_size = enforceSelectorMax({ ...selectors, force });
+  const table = sb.qualifiedTable(schema, 'entries');
+  const whereSql = buildSelectorWhere(selectors);
+  const previewSql = buildPreviewSelectSql(table, whereSql);
+  const countSql = buildCountSql(table, whereSql);
+
+  if (dry_run) {
+    const countRes = await traceDb('delete_dry_run_count', { schema, table }, () => getPool().query(countSql));
+    const previewRes = await traceDb('delete_dry_run_preview', { schema, table }, () => getPool().query(previewSql));
+    const matched_count = Number((countRes.rows && countRes.rows[0] && countRes.rows[0].count) || 0);
+    return {
+      rows: [{
+        dry_run: true,
+        schema,
+        selector_size: selector_size.toString(),
+        matched_count,
+        deleted_count: 0,
+        preview: previewRes.rows || [],
+      }],
+      rowCount: 1,
+    };
+  }
+
+  return runInTransaction('delete', { schema, table }, async (client) => {
+    const previewRes = await traceDb('delete_preview', { schema, table }, () => client.query(previewSql));
+    const deleteSql = `DELETE FROM ${table} WHERE ${whereSql} RETURNING entry_id, id`;
+    const deletedRes = await traceDb('delete_exec', { schema, table }, () => client.query(deleteSql));
+    return {
+      rows: [{
+        dry_run: false,
+        schema,
+        selector_size: selector_size.toString(),
+        matched_count: deletedRes.rowCount || 0,
+        deleted_count: deletedRes.rowCount || 0,
+        preview: previewRes.rows || [],
+      }],
+      rowCount: 1,
+    };
+  });
+}
+
+async function moveEntries(opts) {
+  const data = (opts && (opts.input || opts.data || opts)) || {};
+  if (!data || typeof data !== 'object') {
+    throw new Error('move requires JSON object input');
+  }
+
+  const from_schema = requireSchemaExplicit(data.from_schema, 'from_schema');
+  const to_schema = requireSchemaExplicit(data.to_schema, 'to_schema');
+  if (from_schema === to_schema) {
+    throw new Error('to_schema must differ from from_schema');
+  }
+
+  const dry_run = parseBooleanStrict(data.dry_run, 'dry_run', false);
+  const force = parseBooleanStrict(data.force, 'force', false);
+  const selectors = resolveSelectors(data);
+  const selector_size = enforceSelectorMax({ ...selectors, force });
+
+  const fromTable = sb.qualifiedTable(from_schema, 'entries');
+  const toTable = sb.qualifiedTable(to_schema, 'entries');
+  const whereSql = buildSelectorWhere(selectors);
+  const previewSql = buildPreviewSelectSql(fromTable, whereSql);
+  const countSql = buildCountSql(fromTable, whereSql);
+
+  if (dry_run) {
+    const countRes = await traceDb('move_dry_run_count', { from_schema, to_schema }, () => getPool().query(countSql));
+    const previewRes = await traceDb('move_dry_run_preview', { from_schema, to_schema }, () => getPool().query(previewSql));
+    const matched_count = Number((countRes.rows && countRes.rows[0] && countRes.rows[0].count) || 0);
+    return {
+      rows: [{
+        dry_run: true,
+        from_schema,
+        to_schema,
+        selector_size: selector_size.toString(),
+        matched_count,
+        moved_count: 0,
+        preview: previewRes.rows || [],
+        mapping: [],
+      }],
+      rowCount: 1,
+    };
+  }
+
+  return runInTransaction('move', { from_schema, to_schema }, async (client) => {
+    const previewRes = await traceDb('move_preview', { from_schema, to_schema }, () => client.query(previewSql));
+    const insertColumns = movableInsertColumns();
+    const returningColumns = ['entry_id AS from_entry_id', ...insertColumns];
+    const commandValue = String(data.command || '/move').trim() || '/move';
+    const commandLit = sb.lit(commandValue);
+    const provenanceExpr = `jsonb_build_object(
+      'from_schema', ${sb.lit(from_schema)}::text,
+      'from_entry_id', d.from_entry_id,
+      'moved_at', now(),
+      'command', ${commandLit}::text
+    )`;
+
+    const selectExprs = insertColumns.map((col) => {
+      if (col === 'metadata') {
+        return `COALESCE(d.metadata, '{}'::jsonb) || jsonb_build_object('migration', ${provenanceExpr})`;
+      }
+      if (col === 'external_ref') {
+        return `COALESCE(d.external_ref, '{}'::jsonb) || jsonb_build_object('migration', ${provenanceExpr})`;
+      }
+      return `d.${col}`;
+    });
+
+    const moveSql = `WITH moved AS (
+  DELETE FROM ${fromTable}
+  WHERE ${whereSql}
+  RETURNING ${returningColumns.join(', ')}
+),
+inserted AS (
+  INSERT INTO ${toTable} (${insertColumns.join(', ')})
+  SELECT ${selectExprs.join(', ')}
+  FROM moved d
+  RETURNING id, entry_id AS to_entry_id
+)
+SELECT
+  m.from_entry_id,
+  i.to_entry_id,
+  i.id
+FROM inserted i
+JOIN moved m ON m.id = i.id
+ORDER BY m.from_entry_id ASC`;
+
+    const movedRes = await traceDb('move_exec', { from_schema, to_schema }, () => client.query(moveSql));
+    return {
+      rows: [{
+        dry_run: false,
+        from_schema,
+        to_schema,
+        selector_size: selector_size.toString(),
+        matched_count: movedRes.rowCount || 0,
+        moved_count: movedRes.rowCount || 0,
+        preview: previewRes.rows || [],
+        mapping: movedRes.rows || [],
+      }],
+      rowCount: 1,
+    };
+  });
+}
+
 async function readContinue(opts) {
   const config = await getConfigWithTestMode();
   const sql = sb.buildReadContinue({
@@ -799,6 +1111,8 @@ module.exports = {
   getPool,
   insert,
   update,
+  delete: deleteEntries,
+  move: moveEntries,
   readContinue,
   readFind,
   readLast,

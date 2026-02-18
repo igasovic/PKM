@@ -28,6 +28,11 @@
   - `GET /status/t1/batch/:batch_id`
 - Added backend status aggregation for Tier‑1 jobs (counts for `total_items`, `processed`, `pending`, `ok`, `parse_error`, `error`) with optional per-item status listing.
 - Status scanning supports both `pkm` and `pkm_test` schemas independently of current test mode.
+- Added admin-only DB mutation APIs:
+  - `POST /db/delete`
+  - `POST /db/move`
+- Added strict selector/schema validation for delete/move at the backend DB boundary (no implicit schema or direction).
+- Added n8n read command parser support for `/delete` and `/move`.
 
 ## 2026-02-11 — Config-driven read defaults
 
