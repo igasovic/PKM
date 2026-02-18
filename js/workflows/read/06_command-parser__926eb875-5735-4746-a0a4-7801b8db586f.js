@@ -31,6 +31,7 @@ const defaults = {
   continue: { days: 90, limit: 10 },
   with: { days: 90, limit: 10 },
   pull: { days: null, limit: null },   // <-- NEW
+  status: { days: null, limit: null },
   help: { days: null, limit: null },
 };
 
@@ -49,7 +50,8 @@ if (!defaults[cmd]) {
         `/last "phrase" [--days N] [--limit M]\n` +
         `/find "needle" [--days N] [--limit M]\n` +
         `/continue topic [--days N] [--limit M]\n` +
-        `/with person topic [--days N] [--limit M]`
+        `/with person topic [--days N] [--limit M]\n` +
+        `/status`
     }
   }];
 }
