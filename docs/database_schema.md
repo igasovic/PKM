@@ -18,7 +18,7 @@ This file is meant to be a **human + agent** reference:
 | Role | Purpose | Notes |
 |---|---|---|
 | `pgadmin` | DB owner / superuser | Owns schemas `pkm`, `pkm_test` and all objects. |
-| `pkm_ingest` | Application write role | Has broad CRUD on most tables (incl. Tier-1 batch tables), but **does not have DELETE on `pkm.entries`** (prod). Has DELETE on `pkm_test.entries` (test). |
+| `pkm_ingest` | Application write role | Has broad CRUD on most tables (including `entries` in both schemas and Tier-1 batch tables). |
 | `pkm_read` | Read-only role | Has `SELECT` on `pkm.entries`, `pkm_test.entries`, and `pkm.runtime_config`. No access to Tier-1 batch tables or idempotency tables (as currently granted). |
 | `n8n` | n8n DB role | Has `USAGE` on schema `pkm` and `SELECT` on `pkm.runtime_config` only. No access to entries tables. |
 
@@ -78,7 +78,7 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 
 | Table | pgadmin | pkm_ingest | pkm_read | n8n |
 |---|---|---|---|---|
-| `pkm.entries` | RIUD + TRUNCATE/REF/… | **RIU (no D)** | R | — |
+| `pkm.entries` | RIUD + TRUNCATE/REF/… | RIUD | R | — |
 | `pkm.runtime_config` | full | RIUD | R | R |
 | `pkm.idempotency_policies` | full | RIUD | — | — |
 | `pkm.t1_batches` | full | RIUD | — | — |
@@ -152,12 +152,8 @@ Mirrored between `pkm` and `pkm_test`:
 
 ### Practical consequences for `/db/delete` and `/db/move`
 
-- Because `pkm_ingest` **cannot DELETE from `pkm.entries`**, backend endpoints that delete/move **prod entries** must either:
-  - use a DB role with DELETE on `pkm.entries`, or
-  - use SECURITY DEFINER functions owned by `pgadmin` (preferred), or
-  - adjust grants (not recommended without care).
-
-- In test, `pkm_ingest` **can** delete (`pkm_test.entries` has RIUD).
+- `pkm_ingest` now has RIUD on both `pkm.entries` and `pkm_test.entries`, so `/db/delete` and `/db/move` can run directly under app role permissions.
+- API edge still enforces admin authentication (`PKM_ADMIN_SECRET`) for these operations.
 
 ---
 
@@ -444,4 +440,3 @@ If you want this schema doc to be maximally helpful for agents, consider adding:
 4. **Perf expectations**
    - common query patterns and which indexes support them
    - when to VACUUM/ANALYZE (if you see bloat)
-
