@@ -211,6 +211,18 @@ Primary objective:
   - LiteLLM client must emit full call instrumentation for all LLM/proxy interactions.
   - Non-LLM graph nodes should emit logs only on errors.
 
+## Tier-1 batch visibility requirements
+- Backend must expose read-only status APIs for current Tier‑1 batch jobs.
+- Status APIs must report aggregate counts per batch:
+  - total items
+  - processed
+  - pending
+  - ok
+  - parse_error
+  - error
+- Status queries must support both schemas (`pkm`, `pkm_test`) regardless of current test-mode setting.
+- Detailed status API must support item-level status listing for one batch with bounded limit.
+
 ## Non-goals
 - No duplicate side-table tracking in place of uniqueness constraints.
 - No client-side duplicate suppression as primary mechanism.

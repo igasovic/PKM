@@ -23,6 +23,11 @@
   - batch retrieval
   - file content fetch
 - Constrained non-LLM orchestration logging to error-only node logs.
+- Added Tier‑1 batch visibility APIs:
+  - `GET /status/t1/batch`
+  - `GET /status/t1/batch/:batch_id`
+- Added backend status aggregation for Tier‑1 jobs (counts for `total_items`, `processed`, `pending`, `ok`, `parse_error`, `error`) with optional per-item status listing.
+- Status scanning supports both `pkm` and `pkm_test` schemas independently of current test mode.
 
 ## 2026-02-11 — Config-driven read defaults
 

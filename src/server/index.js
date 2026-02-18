@@ -15,6 +15,8 @@ const {
 const {
   enrichTier1,
   enqueueTier1Batch,
+  getTier1BatchStatusList,
+  getTier1BatchStatus,
   startTier1BatchWorker,
   stopTier1BatchWorker,
 } = require('./tier1-enrichment.js');
@@ -39,6 +41,12 @@ function json(res, status, payload) {
 
 function notFound(res) {
   json(res, 404, { error: 'not_found' });
+}
+
+function parseBoolParam(value, fallback = false) {
+  if (value === null || value === undefined || value === '') return fallback;
+  const v = String(value).trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
 }
 
 async function readBody(req, limitBytes = 1024 * 1024) {
@@ -171,6 +179,45 @@ async function handleRequest(req, res) {
         metadata: body.metadata || undefined,
         completion_window: body.completion_window || '24h',
       });
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'GET' && url.pathname === '/status/t1/batch') {
+    try {
+      const limit = Number(url.searchParams.get('limit') || 50);
+      const schema = url.searchParams.get('schema') || undefined;
+      const include_terminal = parseBoolParam(url.searchParams.get('include_terminal'), false);
+      const result = await getTier1BatchStatusList({
+        limit,
+        schema,
+        include_terminal,
+      });
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  const batchStatusMatch = (method === 'GET')
+    ? url.pathname.match(/^\/status\/t1\/batch\/([^/]+)$/)
+    : null;
+  if (batchStatusMatch) {
+    try {
+      const batch_id = decodeURIComponent(batchStatusMatch[1]);
+      const schema = url.searchParams.get('schema') || undefined;
+      const include_items = parseBoolParam(url.searchParams.get('include_items'), false);
+      const items_limit = Number(url.searchParams.get('items_limit') || 200);
+      const result = await getTier1BatchStatus(batch_id, {
+        schema,
+        include_items,
+        items_limit,
+      });
+      if (!result) return notFound(res);
       return json(res, 200, result);
     } catch (err) {
       logError(err, req);

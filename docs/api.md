@@ -268,6 +268,102 @@ Response:
 
 Batch completion handling is internal to backend workers. External callers only enqueue via `/enrich/t1/batch`.
 
+### `GET /status/t1/batch`
+Returns current Tier‑1 batch job status (supports both `pkm` and `pkm_test`).
+
+Query params:
+- `limit` optional, default `50`, max `200`
+- `schema` optional (`pkm` or `pkm_test`); if omitted, both are scanned
+- `include_terminal` optional boolean, default `false`
+
+Response:
+```json
+{
+  "summary": {
+    "jobs": 2,
+    "in_progress": 1,
+    "terminal": 1,
+    "total_items": 1000,
+    "processed": 700,
+    "pending": 300,
+    "ok": 650,
+    "parse_error": 30,
+    "error": 20
+  },
+  "jobs": [
+    {
+      "schema": "pkm",
+      "batch_id": "batch_abc123",
+      "status": "in_progress",
+      "is_terminal": false,
+      "model": "t1-batch",
+      "request_count": 500,
+      "counts": {
+        "total_items": 500,
+        "processed": 320,
+        "ok": 300,
+        "parse_error": 10,
+        "error": 10,
+        "pending": 180
+      },
+      "input_file_id": "file_in_123",
+      "output_file_id": "file_out_123",
+      "error_file_id": null,
+      "metadata": {},
+      "created_at": "2026-02-18T10:00:00.000Z",
+      "updated_at": "2026-02-18T10:05:00.000Z"
+    }
+  ]
+}
+```
+
+### `GET /status/t1/batch/:batch_id`
+Returns one Tier‑1 batch with aggregate counters; can include item-level statuses.
+
+Query params:
+- `schema` optional (`pkm` or `pkm_test`)
+- `include_items` optional boolean, default `false`
+- `items_limit` optional, default `200`, max `1000` (used only when `include_items=true`)
+
+Response:
+```json
+{
+  "schema": "pkm",
+  "batch_id": "batch_abc123",
+  "status": "in_progress",
+  "is_terminal": false,
+  "model": "t1-batch",
+  "request_count": 500,
+  "counts": {
+    "total_items": 500,
+    "processed": 320,
+    "ok": 300,
+    "parse_error": 10,
+    "error": 10,
+    "pending": 180
+  },
+  "input_file_id": "file_in_123",
+  "output_file_id": "file_out_123",
+  "error_file_id": null,
+  "metadata": {},
+  "created_at": "2026-02-18T10:00:00.000Z",
+  "updated_at": "2026-02-18T10:05:00.000Z",
+  "items": [
+    {
+      "custom_id": "entry_1",
+      "status": "ok",
+      "title": "Sample",
+      "author": "Author",
+      "content_type": "newsletter",
+      "prompt_mode": "sampled",
+      "has_error": false,
+      "created_at": "2026-02-18T10:00:10.000Z",
+      "updated_at": "2026-02-18T10:03:10.000Z"
+    }
+  ]
+}
+```
+
 ## Backlog Import
 
 ### `POST /import/email/mbox`

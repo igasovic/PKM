@@ -225,6 +225,9 @@ module.exports = {
   buildT1BatchSummary,
   buildT1BatchFind,
   buildT1BatchListPending,
+  buildT1BatchStatusList,
+  buildT1BatchStatusById,
+  buildT1BatchItemStatusList,
 };
 
 /**
@@ -355,6 +358,157 @@ WHERE status IS NULL
    OR status = ''
    OR status <> ALL($1::text[])
 ORDER BY created_at ASC
+LIMIT $2`;
+}
+
+/**
+ * Build SQL for listing batch status rows with item/result counters.
+ * @param {{ batchesTable: string, itemsTable: string, resultsTable: string, includeTerminal?: boolean }} opts
+ * @returns {string}
+ */
+function buildT1BatchStatusList(opts) {
+  const batchesTable = opts && opts.batchesTable;
+  const itemsTable = opts && opts.itemsTable;
+  const resultsTable = opts && opts.resultsTable;
+  const includeTerminal = !!(opts && opts.includeTerminal);
+  if (!batchesTable || typeof batchesTable !== 'string') {
+    throw new Error('buildT1BatchStatusList: batchesTable must be a non-empty string');
+  }
+  if (!itemsTable || typeof itemsTable !== 'string') {
+    throw new Error('buildT1BatchStatusList: itemsTable must be a non-empty string');
+  }
+  if (!resultsTable || typeof resultsTable !== 'string') {
+    throw new Error('buildT1BatchStatusList: resultsTable must be a non-empty string');
+  }
+  const filter = includeTerminal
+    ? ''
+    : `WHERE b.status IS NULL
+   OR b.status = ''
+   OR b.status <> ALL($1::text[])`;
+  const limitRef = includeTerminal ? '$1' : '$2';
+  return `SELECT
+  b.batch_id,
+  b.status,
+  b.model,
+  b.input_file_id,
+  b.output_file_id,
+  b.error_file_id,
+  b.request_count,
+  b.metadata,
+  b.created_at,
+  b.updated_at,
+  COALESCE(i.total_items, 0)::int AS total_items,
+  COALESCE(r.processed_count, 0)::int AS processed_count,
+  COALESCE(r.ok_count, 0)::int AS ok_count,
+  COALESCE(r.parse_error_count, 0)::int AS parse_error_count,
+  COALESCE(r.error_count, 0)::int AS error_count,
+  GREATEST(COALESCE(i.total_items, 0) - COALESCE(r.processed_count, 0), 0)::int AS pending_count
+FROM ${batchesTable} b
+LEFT JOIN (
+  SELECT batch_id, COUNT(*)::int AS total_items
+  FROM ${itemsTable}
+  GROUP BY batch_id
+) i ON i.batch_id = b.batch_id
+LEFT JOIN (
+  SELECT
+    batch_id,
+    COUNT(*)::int AS processed_count,
+    COUNT(*) FILTER (WHERE status = 'ok')::int AS ok_count,
+    COUNT(*) FILTER (WHERE status = 'parse_error')::int AS parse_error_count,
+    COUNT(*) FILTER (WHERE status = 'error')::int AS error_count
+  FROM ${resultsTable}
+  GROUP BY batch_id
+) r ON r.batch_id = b.batch_id
+${filter}
+ORDER BY b.created_at DESC
+LIMIT ${limitRef}`;
+}
+
+/**
+ * Build SQL for one batch status row with item/result counters.
+ * @param {{ batchesTable: string, itemsTable: string, resultsTable: string }} opts
+ * @returns {string}
+ */
+function buildT1BatchStatusById(opts) {
+  const batchesTable = opts && opts.batchesTable;
+  const itemsTable = opts && opts.itemsTable;
+  const resultsTable = opts && opts.resultsTable;
+  if (!batchesTable || typeof batchesTable !== 'string') {
+    throw new Error('buildT1BatchStatusById: batchesTable must be a non-empty string');
+  }
+  if (!itemsTable || typeof itemsTable !== 'string') {
+    throw new Error('buildT1BatchStatusById: itemsTable must be a non-empty string');
+  }
+  if (!resultsTable || typeof resultsTable !== 'string') {
+    throw new Error('buildT1BatchStatusById: resultsTable must be a non-empty string');
+  }
+  return `SELECT
+  b.batch_id,
+  b.status,
+  b.model,
+  b.input_file_id,
+  b.output_file_id,
+  b.error_file_id,
+  b.request_count,
+  b.metadata,
+  b.created_at,
+  b.updated_at,
+  COALESCE(i.total_items, 0)::int AS total_items,
+  COALESCE(r.processed_count, 0)::int AS processed_count,
+  COALESCE(r.ok_count, 0)::int AS ok_count,
+  COALESCE(r.parse_error_count, 0)::int AS parse_error_count,
+  COALESCE(r.error_count, 0)::int AS error_count,
+  GREATEST(COALESCE(i.total_items, 0) - COALESCE(r.processed_count, 0), 0)::int AS pending_count
+FROM ${batchesTable} b
+LEFT JOIN (
+  SELECT batch_id, COUNT(*)::int AS total_items
+  FROM ${itemsTable}
+  GROUP BY batch_id
+) i ON i.batch_id = b.batch_id
+LEFT JOIN (
+  SELECT
+    batch_id,
+    COUNT(*)::int AS processed_count,
+    COUNT(*) FILTER (WHERE status = 'ok')::int AS ok_count,
+    COUNT(*) FILTER (WHERE status = 'parse_error')::int AS parse_error_count,
+    COUNT(*) FILTER (WHERE status = 'error')::int AS error_count
+  FROM ${resultsTable}
+  GROUP BY batch_id
+) r ON r.batch_id = b.batch_id
+WHERE b.batch_id = $1
+LIMIT 1`;
+}
+
+/**
+ * Build SQL for item-level statuses within one batch.
+ * @param {{ itemsTable: string, resultsTable: string }} opts
+ * @returns {string}
+ */
+function buildT1BatchItemStatusList(opts) {
+  const itemsTable = opts && opts.itemsTable;
+  const resultsTable = opts && opts.resultsTable;
+  if (!itemsTable || typeof itemsTable !== 'string') {
+    throw new Error('buildT1BatchItemStatusList: itemsTable must be a non-empty string');
+  }
+  if (!resultsTable || typeof resultsTable !== 'string') {
+    throw new Error('buildT1BatchItemStatusList: resultsTable must be a non-empty string');
+  }
+  return `SELECT
+  i.custom_id,
+  i.title,
+  i.author,
+  i.content_type,
+  i.prompt_mode,
+  i.created_at,
+  COALESCE(r.status, 'pending') AS status,
+  r.updated_at,
+  (r.error IS NOT NULL) AS has_error
+FROM ${itemsTable} i
+LEFT JOIN ${resultsTable} r
+  ON r.batch_id = i.batch_id
+ AND r.custom_id = i.custom_id
+WHERE i.batch_id = $1
+ORDER BY i.created_at ASC
 LIMIT $2`;
 }
 

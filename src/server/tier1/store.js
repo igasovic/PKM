@@ -244,6 +244,153 @@ async function listPendingBatchIds(limit) {
   return out;
 }
 
+function toStatusPayload(schema, row) {
+  const status = String((row && row.status) || '').trim();
+  const is_terminal = TERMINAL_BATCH_STATUSES.has(status.toLowerCase());
+  return {
+    schema,
+    batch_id: row.batch_id,
+    status: status || null,
+    is_terminal,
+    model: row.model || null,
+    input_file_id: row.input_file_id || null,
+    output_file_id: row.output_file_id || null,
+    error_file_id: row.error_file_id || null,
+    request_count: Number(row.request_count || 0),
+    counts: {
+      total_items: Number(row.total_items || 0),
+      processed: Number(row.processed_count || 0),
+      ok: Number(row.ok_count || 0),
+      parse_error: Number(row.parse_error_count || 0),
+      error: Number(row.error_count || 0),
+      pending: Number(row.pending_count || 0),
+    },
+    metadata: row.metadata || {},
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+async function listBatchStatuses(opts) {
+  const options = opts || {};
+  const includeTerminal = !!options.include_terminal;
+  const max = Number(options.limit || 50);
+  const take = Number.isFinite(max) && max > 0 ? Math.min(max, 200) : 50;
+  const rawSchema = options.schema ? String(options.schema).trim() : '';
+  if (rawSchema && !sb.isValidIdent(rawSchema)) {
+    throw new Error(`invalid schema: ${rawSchema}`);
+  }
+  const schemas = rawSchema
+    ? [rawSchema]
+    : getConfiguredSchemas();
+
+  const out = [];
+  for (const schema of schemas) {
+    if (out.length >= take) break;
+    const remaining = take - out.length;
+    const batchesTable = tableName(schema, 't1_batches');
+    const itemsTable = tableName(schema, 't1_batch_items');
+    const resultsTable = tableName(schema, 't1_batch_item_results');
+    try {
+      const sql = sb.buildT1BatchStatusList({
+        batchesTable,
+        itemsTable,
+        resultsTable,
+        includeTerminal,
+      });
+      const params = includeTerminal
+        ? [remaining]
+        : [Array.from(TERMINAL_BATCH_STATUSES), remaining];
+      const res = await runQuery(
+        't1_batch_status_list',
+        { schema, table: batchesTable, includeTerminal, limit: remaining },
+        sql,
+        params
+      );
+      for (const row of res.rows || []) {
+        out.push(toStatusPayload(schema, row));
+      }
+    } catch (err) {
+      if (isMissingRelationError(err)) {
+        continue;
+      }
+      throw err;
+    }
+  }
+  return out;
+}
+
+async function getBatchStatus(batchId, opts) {
+  const id = String(batchId || '').trim();
+  if (!id) throw new Error('batch_id is required');
+  const options = opts || {};
+  const includeItems = !!options.include_items;
+  const rawSchema = options.schema ? String(options.schema).trim() : '';
+  if (rawSchema && !sb.isValidIdent(rawSchema)) {
+    throw new Error(`invalid schema: ${rawSchema}`);
+  }
+  const schemas = rawSchema
+    ? [rawSchema]
+    : getConfiguredSchemas();
+
+  for (const schema of schemas) {
+    const batchesTable = tableName(schema, 't1_batches');
+    const itemsTable = tableName(schema, 't1_batch_items');
+    const resultsTable = tableName(schema, 't1_batch_item_results');
+    try {
+      const sql = sb.buildT1BatchStatusById({
+        batchesTable,
+        itemsTable,
+        resultsTable,
+      });
+      const res = await runQuery(
+        't1_batch_status_get',
+        { schema, table: batchesTable, batch_id: id },
+        sql,
+        [id]
+      );
+      const row = res.rows && res.rows[0];
+      if (!row) continue;
+
+      const out = {
+        ...toStatusPayload(schema, row),
+      };
+
+      if (includeItems) {
+        const max = Number(options.items_limit || 200);
+        const itemsLimit = Number.isFinite(max) && max > 0 ? Math.min(max, 1000) : 200;
+        const itemsSql = sb.buildT1BatchItemStatusList({ itemsTable, resultsTable });
+        const itemsRes = await runQuery(
+          't1_batch_items_status_list',
+          { schema, table: itemsTable, batch_id: id, items_limit: itemsLimit },
+          itemsSql,
+          [id, itemsLimit]
+        );
+        out.items = (itemsRes.rows || []).map((item) => ({
+          custom_id: item.custom_id,
+          status: item.status || 'pending',
+          title: item.title || null,
+          author: item.author || null,
+          content_type: item.content_type || null,
+          prompt_mode: item.prompt_mode || null,
+          has_error: !!item.has_error,
+          created_at: item.created_at || null,
+          updated_at: item.updated_at || null,
+        }));
+      }
+
+      return out;
+    } catch (err) {
+      if (isMissingRelationError(err)) {
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  return null;
+}
+
 module.exports = {
   TERMINAL_BATCH_STATUSES,
   getActiveSchema,
@@ -255,4 +402,6 @@ module.exports = {
   readBatchSummary,
   findBatchRecord,
   listPendingBatchIds,
+  listBatchStatuses,
+  getBatchStatus,
 };
