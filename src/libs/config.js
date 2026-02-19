@@ -29,6 +29,12 @@ const CONFIG_V1 = {
     schema_prod: 'pkm',
     schema_test: 'pkm_test',
   },
+  t1: {
+    batch: {
+      verbose_logging: true,
+      verbose_log_path: '/data/t1.log',
+    },
+  },
   scoring: {
     ordering: ['score_desc', 'created_at_desc'],
 
