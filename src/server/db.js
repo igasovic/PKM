@@ -3,7 +3,7 @@
 const sb = require('../../src/libs/sql-builder.js');
 const { getPool } = require('./db-pool.js');
 const { getConfig } = require('../libs/config.js');
-const { traceDb } = require('./observability.js');
+const { traceDb, getBraintrustLogger } = require('./observability.js');
 
 const CONFIG_TABLE = sb.qualifiedTable(process.env.PKM_DB_SCHEMA || 'pkm', 'runtime_config');
 const IMMUTABLE_UPDATE_COLUMNS = new Set(['id', 'entry_id', 'created_at', 'tsv']);
@@ -468,6 +468,115 @@ function getDataObject(input) {
   return data;
 }
 
+function hasCustomInsertShape(item) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+  return (
+    Object.prototype.hasOwnProperty.call(item, 'columns') ||
+    Object.prototype.hasOwnProperty.call(item, 'values') ||
+    Object.prototype.hasOwnProperty.call(item, 'table') ||
+    Object.prototype.hasOwnProperty.call(item, 'returning')
+  );
+}
+
+function returningIsSimpleIdentifierList(returning) {
+  if (!Array.isArray(returning) || returning.length === 0) return false;
+  for (const col of returning) {
+    if (!sb.isValidIdent(col)) return false;
+  }
+  return true;
+}
+
+function mapInsertResultRowsForBatch(result, batchIndex) {
+  const resultRows = Array.isArray(result && result.rows) ? result.rows : [];
+  if (!resultRows.length) {
+    return [{ _batch_index: batchIndex, _batch_ok: true, action: 'noop' }];
+  }
+  return resultRows.map((row) => ({ ...row, _batch_index: batchIndex, _batch_ok: true }));
+}
+
+function buildBulkIdempotentSkipSql({ table, columns, returning, rows }) {
+  const valuesSql = rows.map((row) => {
+    const vals = row.values.map((v) => String(v).trim());
+    return `(${Number(row.batch_index)}, ${vals.join(', ')})`;
+  }).join(',\n       ');
+  const inputCols = ['batch_index', ...columns].join(', ');
+  const returningSql = returning.map((col) => `t.${col}`).join(', ');
+
+  return `WITH input_rows (${inputCols}) AS (
+  VALUES
+       ${valuesSql}
+),
+inserted AS (
+  INSERT INTO ${table} (${columns.join(', ')})
+  SELECT ${columns.join(', ')}
+  FROM input_rows
+  ON CONFLICT DO NOTHING
+  RETURNING
+    id,
+    idempotency_policy_key,
+    idempotency_key_primary,
+    idempotency_key_secondary
+),
+resolved AS (
+  SELECT
+    i.batch_index,
+    COALESCE(ins.id, ex.id) AS id,
+    CASE WHEN ins.id IS NOT NULL THEN 'inserted' ELSE 'skipped' END AS action
+  FROM input_rows i
+  LEFT JOIN inserted ins
+    ON ins.idempotency_policy_key = i.idempotency_policy_key
+   AND (
+     (i.idempotency_key_primary IS NOT NULL AND ins.idempotency_key_primary = i.idempotency_key_primary)
+     OR
+     (i.idempotency_key_secondary IS NOT NULL AND ins.idempotency_key_secondary = i.idempotency_key_secondary)
+   )
+  LEFT JOIN LATERAL (
+    SELECT e.id
+    FROM ${table} e
+    WHERE e.idempotency_policy_key = i.idempotency_policy_key
+      AND (
+        (i.idempotency_key_primary IS NOT NULL AND e.idempotency_key_primary = i.idempotency_key_primary)
+        OR
+        (i.idempotency_key_secondary IS NOT NULL AND e.idempotency_key_secondary = i.idempotency_key_secondary)
+      )
+    ORDER BY e.created_at DESC
+    LIMIT 1
+  ) ex ON ins.id IS NULL
+)
+SELECT
+  r.batch_index,
+  ${returningSql},
+  r.action
+FROM resolved r
+JOIN ${table} t ON t.id = r.id
+ORDER BY r.batch_index ASC;`;
+}
+
+function logInsertBatchSuccess(rows, totalInput) {
+  try {
+    const insertedRows = (Array.isArray(rows) ? rows : []).filter((row) => row && row._batch_ok === true && row.action === 'inserted');
+    const insertedEntryIds = insertedRows
+      .map((row) => row.entry_id)
+      .filter((v) => v !== null && v !== undefined);
+    getBraintrustLogger().log({
+      input: {
+        op: 'insert_batch_bulk',
+        total_input: Number(totalInput || 0),
+      },
+      output: {
+        inserted_count: insertedRows.length,
+        inserted_entry_ids: insertedEntryIds,
+      },
+      metadata: {
+        source: 'db',
+        event: 'insert_batch_success',
+      },
+    });
+  } catch (_err) {
+    // Logging must never break insert path.
+  }
+}
+
 async function insertBatch(opts) {
   const list = Array.isArray(opts && opts.items) ? opts.items : [];
   if (!list.length) {
@@ -483,8 +592,11 @@ async function insertBatch(opts) {
 
   const rows = [];
   let okCount = 0;
+  const policyCache = new Map();
+  const bulkEligible = [];
+  const fallback = [];
 
-  for (let i = 0; i < list.length; i++) {
+  for (let i = 0; i < list.length; i += 1) {
     const item = list[i];
     try {
       let one;
@@ -502,16 +614,63 @@ async function insertBatch(opts) {
         one = { ...base, input: item };
       }
 
-      const result = await insert(one);
-      const resultRows = Array.isArray(result && result.rows) ? result.rows : [];
-      if (!resultRows.length) {
-        rows.push({ _batch_index: i, _batch_ok: true, action: 'noop' });
-      } else {
-        for (const row of resultRows) {
-          rows.push({ ...row, _batch_index: i, _batch_ok: true });
-        }
+      if (hasCustomInsertShape(one)) {
+        fallback.push({ one, index: i });
+        continue;
       }
-      okCount++;
+
+      const config = one.__config || await getConfigWithTestMode();
+      const table = one.table || await getEntriesTableFromConfig(config);
+      const data = getDataObject(one);
+      const returningOverride = one.returning || data.returning;
+      const idempotency = resolveIdempotencyRequest(data);
+      const parsedTable = parseQualifiedTable(table);
+      const activeSchema = (parsedTable && parsedTable.schema) ? parsedTable.schema : resolveSchemaFromConfig(config);
+      const isEntriesTable = !!(parsedTable && parsedTable.table === 'entries');
+      const sourceName = String(data.source || '').trim().toLowerCase();
+      const requireIdempotency = isEntriesTable && IDEMPOTENCY_REQUIRED_SOURCES.has(sourceName);
+
+      if (requireIdempotency && !idempotency) {
+        throw new Error(
+          `idempotency fields are required for source "${sourceName}" on ${table}: provide idempotency_policy_key and at least one idempotency key`
+        );
+      }
+
+      if (!idempotency || !isEntriesTable) {
+        fallback.push({ one, index: i });
+        continue;
+      }
+
+      const policyCacheKey = `${activeSchema}::${idempotency.policy_key}`;
+      let policy = policyCache.get(policyCacheKey);
+      if (!policy) {
+        policy = await getPolicyByKey(activeSchema, idempotency.policy_key);
+        policyCache.set(policyCacheKey, policy);
+      }
+      if (policy.conflict_action !== 'skip') {
+        fallback.push({ one, index: i });
+        continue;
+      }
+
+      const incoming = {
+        ...data,
+        idempotency_policy_key: policy.policy_key,
+        idempotency_key_primary: idempotency.key_primary,
+        idempotency_key_secondary: idempotency.key_secondary,
+      };
+      const built = buildGenericInsertPayload(incoming, returningOverride);
+      if (!returningIsSimpleIdentifierList(built.returning)) {
+        fallback.push({ one, index: i });
+        continue;
+      }
+      bulkEligible.push({
+        one,
+        index: i,
+        table,
+        returning: built.returning,
+        columns: built.columns,
+        values: built.values,
+      });
     } catch (err) {
       if (!continueOnError) throw err;
       rows.push({
@@ -521,6 +680,94 @@ async function insertBatch(opts) {
       });
     }
   }
+
+  const bulkGroups = new Map();
+  for (const item of bulkEligible) {
+    const key = [
+      item.table,
+      item.columns.join('|'),
+      item.returning.join('|'),
+    ].join('::');
+    if (!bulkGroups.has(key)) {
+      bulkGroups.set(key, {
+        table: item.table,
+        columns: item.columns,
+        returning: item.returning,
+        rows: [],
+      });
+    }
+    bulkGroups.get(key).rows.push({
+      one: item.one,
+      batch_index: item.index,
+      values: item.values,
+    });
+  }
+
+  for (const group of bulkGroups.values()) {
+    try {
+      const sql = buildBulkIdempotentSkipSql({
+        table: group.table,
+        columns: group.columns,
+        returning: group.returning,
+        rows: group.rows,
+      });
+      const result = await exec(sql, {
+        op: 'insert_batch_idempotent_skip_bulk',
+        table: group.table,
+        rowCount: group.rows.length,
+      });
+      const resultRows = Array.isArray(result && result.rows) ? result.rows : [];
+      if (resultRows.length !== group.rows.length) {
+        throw new Error(`bulk insert result mismatch: expected ${group.rows.length}, got ${resultRows.length}`);
+      }
+      for (const row of resultRows) {
+        const batchIdx = Number(row.batch_index);
+        const out = { ...row };
+        delete out.batch_index;
+        rows.push({ ...out, _batch_index: batchIdx, _batch_ok: true });
+        okCount += 1;
+      }
+    } catch (err) {
+      if (!continueOnError) throw err;
+      for (const row of group.rows) {
+        try {
+          const result = await insert(row.one);
+          rows.push(...mapInsertResultRowsForBatch(result, row.batch_index));
+          okCount += 1;
+        } catch (itemErr) {
+          rows.push({
+            _batch_index: row.batch_index,
+            _batch_ok: false,
+            error: itemErr && itemErr.message ? itemErr.message : String(itemErr),
+          });
+        }
+      }
+    }
+  }
+
+  for (const item of fallback) {
+    try {
+      const result = await insert(item.one);
+      rows.push(...mapInsertResultRowsForBatch(result, item.index));
+      okCount += 1;
+    } catch (err) {
+      if (!continueOnError) throw err;
+      rows.push({
+        _batch_index: item.index,
+        _batch_ok: false,
+        error: err && err.message ? err.message : String(err),
+      });
+    }
+  }
+
+  rows.sort((a, b) => {
+    const ai = Number.isFinite(Number(a && a._batch_index)) ? Number(a._batch_index) : Number.MAX_SAFE_INTEGER;
+    const bi = Number.isFinite(Number(b && b._batch_index)) ? Number(b._batch_index) : Number.MAX_SAFE_INTEGER;
+    if (ai === bi) return 0;
+    return ai - bi;
+  });
+
+  logInsertBatchSuccess(rows, list.length);
 
   return {
     rows,
