@@ -1,10 +1,9 @@
 'use strict';
-
-const fs = require('fs/promises');
 const { getConfig } = require('../../libs/config.js');
 const { LiteLLMClient, extractResponseText } = require('../litellm-client.js');
 const { buildRetrievalForDb } = require('../quality.js');
 const { getBraintrustLogger } = require('../observability.js');
+const { getVerbossLogger } = require('./verboss-logger.js');
 const {
   parseTier1Json,
   buildTier1Prompt,
@@ -86,38 +85,16 @@ function withNodeErrorLogging(graphName, nodeName, fn) {
   };
 }
 
-function toBatchVerboseRows(rows) {
-  const list = Array.isArray(rows) ? rows : [];
-  return list.map((row) => {
-    const custom_id = String((row && row.custom_id) || '');
-    const m = custom_id.match(/^entry_(\d+)$/);
-    const entry_id = m ? m[1] : null;
-    const gist = row && row.parsed && typeof row.parsed.gist === 'string'
-      ? row.parsed.gist
+function toEntitySecondaryTopicPairs(rows) {
+  return (Array.isArray(rows) ? rows : []).map((row) => {
+    const customId = String((row && row.custom_id) || '').trim();
+    const match = customId.match(/^entry_(\d+)$/);
+    const entityId = match ? match[1] : customId || null;
+    const topicSecondary = row && row.parsed && row.parsed.topic_secondary
+      ? String(row.parsed.topic_secondary)
       : null;
-    return {
-      custom_id: custom_id || null,
-      entry_id,
-      status: row && row.status ? String(row.status) : null,
-      gist,
-    };
+    return [entityId, topicSecondary];
   });
-}
-
-async function appendBatchVerboseLog({ batch_id, schema, rows }) {
-  const cfg = getConfig();
-  const enabled = !!(cfg && cfg.t1 && cfg.t1.batch && cfg.t1.batch.verbose_logging);
-  if (!enabled) return;
-  const targetPath = String(
-    (cfg && cfg.t1 && cfg.t1.batch && cfg.t1.batch.verbose_log_path) || '/data/t1.log'
-  ).trim();
-  const record = {
-    ts: new Date().toISOString(),
-    batch_id,
-    schema,
-    processed: toBatchVerboseRows(rows),
-  };
-  await fs.appendFile(targetPath, `${JSON.stringify(record)}\n`, 'utf8');
 }
 
 function syncLoadNode(state) {
@@ -345,11 +322,11 @@ async function batchCollectWriteNode(state) {
   const updated_items = await upsertBatchResults(schema, batchId, state.parsed.rows || []);
   const summary = await readBatchSummary(schema, batchId);
   try {
-    // Batch-only verbose audit log written after DB upsert succeeds.
-    await appendBatchVerboseLog({
+    await getVerbossLogger().logConsumeEntry({
       batch_id: batchId,
-      schema,
-      rows: state.parsed.rows || [],
+      timestamp: new Date().toISOString(),
+      result: remoteBatch.status || null,
+      entries: toEntitySecondaryTopicPairs(state.parsed.rows || []),
     });
   } catch (err) {
     getBraintrustLogger().log({
@@ -359,7 +336,8 @@ async function batchCollectWriteNode(state) {
       },
       error: nodeErrorInfo(err),
       metadata: {
-        source: 't1_batch_verbose_log',
+        source: 'verboss_logger',
+        event: 'consume_entry_log_failed',
       },
     });
   }
