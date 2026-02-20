@@ -155,6 +155,24 @@ function withBatchFilesHint(msg, baseUrl) {
   return hint;
 }
 
+function getDefaultBatchModel(defaultModel) {
+  return (
+    process.env.T1_BATCH_MODEL ||
+    process.env.T1_BATCH_DEFAULT_MODEL ||
+    't1-batch' ||
+    defaultModel
+  );
+}
+
+function isBatchModelUnsupportedMessage(msg) {
+  const s = String(msg || '').toLowerCase();
+  return (
+    s.includes('model_not_found') ||
+    s.includes('not supported by the batch api') ||
+    (s.includes('provided model') && s.includes('batch'))
+  );
+}
+
 function truncate(value, max) {
   const s = String(value || '');
   if (s.length <= max) return s;
@@ -419,191 +437,236 @@ class LiteLLMClient {
       throw new Error('LiteLLM createBatch requires a non-empty requests array');
     }
 
-    const model = options.model || process.env.T1_BATCH_MODEL || this.model;
+    const model = options.model || getDefaultBatchModel(this.model);
     const instructions = options.systemPrompt || this.systemPrompt;
     const completion_window = options.completion_window || '24h';
     const reasoningEffort = getReasoningEffort();
     const methodStart = Date.now();
 
-    const jsonl = requests.map((r) => {
+    for (const r of requests) {
       if (!r || !r.custom_id || !r.prompt) {
         throw new Error('Batch request requires custom_id and prompt');
       }
-      return JSON.stringify({
+    }
+
+    const createAttempt = async (modelName, attemptIndex) => {
+      const jsonl = requests.map((r) => JSON.stringify({
         custom_id: r.custom_id,
         method: 'POST',
         url: '/v1/chat/completions',
         body: {
-          model,
+          model: modelName,
           messages: [
             { role: 'system', content: instructions },
             { role: 'user', content: r.prompt },
           ],
           reasoning_effort: reasoningEffort,
         },
-      });
-    }).join('\n');
+      })).join('\n');
 
-    const form = new FormData();
-    form.append('purpose', 'batch');
-    form.append('file', new Blob([jsonl], { type: 'application/jsonl' }), 'batch.jsonl');
+      const form = new FormData();
+      form.append('purpose', 'batch');
+      form.append('file', new Blob([jsonl], { type: 'application/jsonl' }), 'batch.jsonl');
 
-    const uploadUrl = `${this.baseUrl}/files`;
-    let upload;
-    try {
-      upload = await this.fetchJson(uploadUrl, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: form,
-      });
-    } catch (err) {
-      this.logError(
+      const uploadUrl = `${this.baseUrl}/files`;
+      let upload;
+      try {
+        upload = await this.fetchJson(uploadUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: form,
+        });
+      } catch (err) {
+        this.logError(
+          'files.upload',
+          {
+            model: modelName,
+            attempt: attemptIndex,
+            request_count: requests.length,
+            completion_window,
+          },
+          err,
+          {
+            endpoint: 'files',
+          }
+        );
+        throw err;
+      }
+
+      if (!upload.res.ok) {
+        const msg = withBatchFilesHint(
+          extractErrorMessage(upload.json, upload.text),
+          this.baseUrl
+        );
+        const err = new Error(`LiteLLM file upload error: ${msg}`);
+        this.logError(
+          'files.upload',
+          {
+            model: modelName,
+            attempt: attemptIndex,
+            request_count: requests.length,
+            completion_window,
+          },
+          err,
+          {
+            endpoint: 'files',
+            status_code: upload.res.status,
+            response_preview: truncate(msg, 350),
+          },
+          {
+            duration_ms: upload.duration_ms,
+          }
+        );
+        throw err;
+      }
+
+      const fileId = upload.json && upload.json.id;
+      this.logSuccess(
         'files.upload',
         {
-          model,
+          model: modelName,
+          attempt: attemptIndex,
           request_count: requests.length,
-          completion_window,
         },
-        err,
         {
-          endpoint: 'files',
-        }
-      );
-      throw err;
-    }
-
-    if (!upload.res.ok) {
-      const msg = withBatchFilesHint(
-        extractErrorMessage(upload.json, upload.text),
-        this.baseUrl
-      );
-      const err = new Error(`LiteLLM file upload error: ${msg}`);
-      this.logError(
-        'files.upload',
-        {
-          model,
-          request_count: requests.length,
-          completion_window,
+          file_id: fileId || null,
         },
-        err,
         {
           endpoint: 'files',
           status_code: upload.res.status,
-          response_preview: truncate(msg, 350),
         },
         {
           duration_ms: upload.duration_ms,
+          input_jsonl_bytes: Buffer.byteLength(jsonl, 'utf8'),
         }
       );
-      throw err;
-    }
 
-    const fileId = upload.json && upload.json.id;
-    this.logSuccess(
-      'files.upload',
-      {
-        model,
-        request_count: requests.length,
-      },
-      {
-        file_id: fileId || null,
-      },
-      {
-        endpoint: 'files',
-        status_code: upload.res.status,
-      },
-      {
-        duration_ms: upload.duration_ms,
-        input_jsonl_bytes: Buffer.byteLength(jsonl, 'utf8'),
+      const batchUrl = `${this.baseUrl}/batches`;
+      let batchCreate;
+      try {
+        batchCreate = await this.fetchJson(batchUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify({
+            input_file_id: fileId,
+            endpoint: '/v1/chat/completions',
+            completion_window,
+            metadata: options.metadata || undefined,
+          }),
+        });
+      } catch (err) {
+        this.logError(
+          'batches.create',
+          {
+            model: modelName,
+            attempt: attemptIndex,
+            request_count: requests.length,
+            input_file_id: fileId,
+            completion_window,
+          },
+          err,
+          {
+            endpoint: 'batches',
+          }
+        );
+        throw err;
       }
-    );
 
-    const batchUrl = `${this.baseUrl}/batches`;
-    let batchCreate;
-    try {
-      batchCreate = await this.fetchJson(batchUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          input_file_id: fileId,
-          endpoint: '/v1/chat/completions',
-          completion_window,
-          metadata: options.metadata || undefined,
-        }),
-      });
-    } catch (err) {
-      this.logError(
+      if (!batchCreate.res.ok) {
+        const msg = extractErrorMessage(batchCreate.json, batchCreate.text);
+        const err = new Error(`LiteLLM batch create error: ${msg}`);
+        this.logError(
+          'batches.create',
+          {
+            model: modelName,
+            attempt: attemptIndex,
+            request_count: requests.length,
+            input_file_id: fileId,
+            completion_window,
+          },
+          err,
+          {
+            endpoint: 'batches',
+            status_code: batchCreate.res.status,
+            response_preview: truncate(msg, 350),
+          },
+          {
+            duration_ms: batchCreate.duration_ms,
+          }
+        );
+        throw err;
+      }
+
+      const batch = batchCreate.json || {};
+      this.logSuccess(
         'batches.create',
         {
-          model,
+          model: modelName,
+          attempt: attemptIndex,
           request_count: requests.length,
           input_file_id: fileId,
           completion_window,
         },
-        err,
         {
-          endpoint: 'batches',
-        }
-      );
-      throw err;
-    }
-
-    if (!batchCreate.res.ok) {
-      const msg = extractErrorMessage(batchCreate.json, batchCreate.text);
-      const err = new Error(`LiteLLM batch create error: ${msg}`);
-      this.logError(
-        'batches.create',
-        {
-          model,
-          request_count: requests.length,
-          input_file_id: fileId,
-          completion_window,
+          batch_id: batch.id || null,
+          status: batch.status || null,
         },
-        err,
         {
           endpoint: 'batches',
           status_code: batchCreate.res.status,
-          response_preview: truncate(msg, 350),
+          reasoning_effort: reasoningEffort,
         },
         {
           duration_ms: batchCreate.duration_ms,
         }
       );
-      throw err;
+
+      return {
+        batch,
+        input_file_id: fileId,
+        model_used: modelName,
+      };
+    };
+
+    let attempt;
+    try {
+      attempt = await createAttempt(model, 1);
+    } catch (err) {
+      const fallbackModel = getDefaultBatchModel(this.model);
+      const shouldRetryWithBatchModel =
+        model !== fallbackModel &&
+        isBatchModelUnsupportedMessage(err && err.message);
+      if (!shouldRetryWithBatchModel) throw err;
+      this.logSuccess(
+        'batches.create.model_fallback',
+        {
+          model_initial: model,
+          model_fallback: fallbackModel,
+          request_count: requests.length,
+        },
+        {
+          reason: 'initial_model_not_batch_supported',
+        },
+        {
+          endpoint: 'batches',
+        }
+      );
+      attempt = await createAttempt(fallbackModel, 2);
     }
 
-    const batch = batchCreate.json || {};
-    this.logSuccess(
-      'batches.create',
-      {
-        model,
-        request_count: requests.length,
-        input_file_id: fileId,
-        completion_window,
-      },
-      {
-        batch_id: batch.id || null,
-        status: batch.status || null,
-      },
-      {
-        endpoint: 'batches',
-        status_code: batchCreate.res.status,
-        reasoning_effort: reasoningEffort,
-      },
-      {
-        duration_ms: batchCreate.duration_ms,
-      }
-    );
+    const batch = attempt.batch;
+    const fileId = attempt.input_file_id;
+    const finalModel = attempt.model_used;
 
     this.logSuccess(
       'createBatch',
       {
-        model,
+        model: finalModel,
         request_count: requests.length,
       },
       {
