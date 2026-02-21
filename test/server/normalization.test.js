@@ -35,8 +35,8 @@ describe('normalization', () => {
     expect(out.source).toBe('email');
     expect(out.capture_text).toContain('Hello there');
     expect(out.__idempotency_source.system).toBe('email');
-    expect(out.__idempotency_source.from_addr).toBe('sender@example.com');
-    expect(out.__idempotency_source.subject).toBe('weekly update');
+    expect(out.__idempotency_source.from_addr).toBe('Sender <sender@example.com>');
+    expect(out.__idempotency_source.subject).toBe('Weekly Update');
     expect(out.__idempotency_source.date).toBe('Tue, 17 Feb 2026 14:00:43 +0000');
     expect(out.idempotency_policy_key).toBeUndefined();
     expect(out.retrieval_excerpt).toBeUndefined();
