@@ -7,3 +7,4 @@
 
 # import artifacts
 /workflows_import/
+src/server/node_modules/
