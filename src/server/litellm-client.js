@@ -223,6 +223,14 @@ function getDefaultBatchModel() {
   );
 }
 
+function getDefaultBatchRequestModel(fallback) {
+  return (
+    process.env.T1_BATCH_REQUEST_MODEL ||
+    process.env.T1_BATCH_PROVIDER_MODEL ||
+    fallback
+  );
+}
+
 function isBatchModelUnsupportedMessage(msg) {
   const s = String(msg || '').toLowerCase();
   return (
@@ -498,6 +506,7 @@ class LiteLLMClient {
     }
 
     const model = options.model || getDefaultBatchModel();
+    const requestModel = options.request_model || getDefaultBatchRequestModel(model);
     const instructions = options.systemPrompt || this.systemPrompt;
     const completion_window = options.completion_window || '24h';
     const reasoningEffort = getReasoningEffort();
@@ -515,7 +524,7 @@ class LiteLLMClient {
         method: 'POST',
         url: '/v1/chat/completions',
         body: {
-          model: modelName,
+          model: requestModel,
           messages: [
             { role: 'system', content: instructions },
             { role: 'user', content: r.prompt },
@@ -535,6 +544,7 @@ class LiteLLMClient {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${this.apiKey}`,
+            'x-litellm-model': modelName,
           },
           body: form,
         });
@@ -543,6 +553,7 @@ class LiteLLMClient {
           'files.upload',
           {
             model: modelName,
+            request_model: requestModel,
             attempt: attemptIndex,
             request_count: requests.length,
             completion_window,
@@ -565,6 +576,7 @@ class LiteLLMClient {
           'files.upload',
           {
             model: modelName,
+            request_model: requestModel,
             attempt: attemptIndex,
             request_count: requests.length,
             completion_window,
@@ -588,6 +600,7 @@ class LiteLLMClient {
         'files.upload',
         {
           model: modelName,
+          request_model: requestModel,
           attempt: attemptIndex,
           request_count: requests.length,
         },
@@ -613,6 +626,7 @@ class LiteLLMClient {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${this.apiKey}`,
+            'x-litellm-model': modelName,
           },
           body: JSON.stringify({
             input_file_id: fileId,
@@ -626,6 +640,7 @@ class LiteLLMClient {
           'batches.create',
           {
             model: modelName,
+            request_model: requestModel,
             attempt: attemptIndex,
             request_count: requests.length,
             input_file_id: fileId,
@@ -646,6 +661,7 @@ class LiteLLMClient {
           'batches.create',
           {
             model: modelName,
+            request_model: requestModel,
             attempt: attemptIndex,
             request_count: requests.length,
             input_file_id: fileId,
@@ -670,6 +686,7 @@ class LiteLLMClient {
         'batches.create',
         {
           model: modelName,
+          request_model: requestModel,
           attempt: attemptIndex,
           request_count: requests.length,
           input_file_id: fileId,
@@ -694,6 +711,7 @@ class LiteLLMClient {
         batch,
         input_file_id: fileId,
         model_used: modelName,
+        request_model_used: requestModel,
       };
     };
 
@@ -713,8 +731,10 @@ class LiteLLMClient {
           {
             endpoint: 'batches',
             requested_batch_model: model,
+            requested_provider_model: requestModel,
             t1_batch_model: process.env.T1_BATCH_MODEL || null,
             t1_batch_default_model: process.env.T1_BATCH_DEFAULT_MODEL || null,
+            t1_batch_request_model: process.env.T1_BATCH_REQUEST_MODEL || null,
           }
         );
       }
@@ -724,11 +744,13 @@ class LiteLLMClient {
     const batch = attempt.batch;
     const fileId = attempt.input_file_id;
     const finalModel = attempt.model_used;
+    const finalRequestModel = attempt.request_model_used;
 
     this.logSuccess(
       'createBatch',
       {
         model: finalModel,
+        request_model: finalRequestModel,
         request_count: requests.length,
       },
       {
