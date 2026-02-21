@@ -215,11 +215,10 @@ function withBatchFilesHint(msg, baseUrl) {
   return hint;
 }
 
-function getDefaultBatchModel(defaultModel) {
+function getDefaultBatchModel() {
   return (
     process.env.T1_BATCH_MODEL ||
     process.env.T1_BATCH_DEFAULT_MODEL ||
-    defaultModel ||
     't1-batch'
   );
 }
@@ -498,7 +497,7 @@ class LiteLLMClient {
       throw new Error('LiteLLM createBatch requires a non-empty requests array');
     }
 
-    const model = options.model || getDefaultBatchModel(this.model);
+    const model = options.model || getDefaultBatchModel();
     const instructions = options.systemPrompt || this.systemPrompt;
     const completion_window = options.completion_window || '24h';
     const reasoningEffort = getReasoningEffort();
@@ -703,31 +702,23 @@ class LiteLLMClient {
       attempt = await createAttempt(model, 1);
     } catch (err) {
       const isBatchUnsupported = isBatchModelUnsupportedMessage(err && err.message);
-      if (!isBatchUnsupported) throw err;
-
-      const fallbackCandidates = [
-        process.env.T1_DEFAULT_MODEL,
-        this.model,
-        process.env.T1_BATCH_FALLBACK_MODEL,
-      ].map((x) => String(x || '').trim()).filter(Boolean);
-      const fallbackModel = fallbackCandidates.find((x) => x !== model);
-      if (!fallbackModel) throw err;
-
-      this.logSuccess(
-        'batches.create.model_fallback',
-        {
-          model_initial: model,
-          model_fallback: fallbackModel,
-          request_count: requests.length,
-        },
-        {
-          reason: 'initial_model_not_batch_supported',
-        },
-        {
-          endpoint: 'batches',
-        }
-      );
-      attempt = await createAttempt(fallbackModel, 2);
+      if (isBatchUnsupported) {
+        this.logError(
+          'batches.create.model_unsupported',
+          {
+            model,
+            request_count: requests.length,
+          },
+          err,
+          {
+            endpoint: 'batches',
+            requested_batch_model: model,
+            t1_batch_model: process.env.T1_BATCH_MODEL || null,
+            t1_batch_default_model: process.env.T1_BATCH_DEFAULT_MODEL || null,
+          }
+        );
+      }
+      throw err;
     }
 
     const batch = attempt.batch;
