@@ -1317,7 +1317,7 @@ function decideEmailIntentFromCore(core_text) {
   const intent = thinkApplied.intent;
   const content_type = intent === 'think'
     ? 'note'
-    : (looksLikeThread(thinkApplied.text) ? 'correspondence' : 'newsletter');
+    : 'newsletter';
   return { intent, content_type, core_text: thinkApplied.text };
 }
 

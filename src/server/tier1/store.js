@@ -212,6 +212,34 @@ async function findBatchRecord(batchId) {
   return null;
 }
 
+async function getBatchItemRequests(schema, batchId) {
+  const id = String(batchId || '').trim();
+  if (!id) throw new Error('batch_id is required');
+  const itemsTable = tableName(schema, 't1_batch_items');
+  try {
+    const sql = `SELECT custom_id, prompt, prompt_mode, title, author, content_type
+FROM ${itemsTable}
+WHERE batch_id = $1
+ORDER BY created_at ASC`;
+    const res = await runQuery(
+      't1_batch_items_get_requests',
+      { schema, table: itemsTable, batch_id: id },
+      sql,
+      [id]
+    );
+    return (res.rows || []).map((row) => ({
+      custom_id: row.custom_id,
+      prompt: row.prompt,
+      prompt_mode: row.prompt_mode || null,
+      title: row.title || null,
+      author: row.author || null,
+      content_type: row.content_type || null,
+    }));
+  } catch (err) {
+    throw wrapBatchTableError(err, itemsTable);
+  }
+}
+
 async function listPendingBatchIds(limit) {
   const max = Number(limit || 20);
   const take = Number.isFinite(max) && max > 0 ? Math.min(max, 100) : 20;
@@ -401,6 +429,7 @@ module.exports = {
   upsertBatchResults,
   readBatchSummary,
   findBatchRecord,
+  getBatchItemRequests,
   listPendingBatchIds,
   listBatchStatuses,
   getBatchStatus,

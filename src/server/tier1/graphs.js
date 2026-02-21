@@ -21,6 +21,7 @@ const {
   upsertBatchResults,
   readBatchSummary,
   findBatchRecord,
+  getBatchItemRequests,
 } = require('./store.js');
 
 let litellmClient = null;
@@ -82,6 +83,19 @@ function withNodeErrorLogging(graphName, nodeName, fn) {
       logNodeError(graphName, nodeName, state || {}, err);
       throw err;
     }
+  };
+}
+
+function toBatchFailureInfo(remoteBatch) {
+  if (!remoteBatch || typeof remoteBatch !== 'object') return null;
+  return {
+    status: remoteBatch.status || null,
+    errors: remoteBatch.errors || null,
+    error: remoteBatch.error || null,
+    failed_at: remoteBatch.failed_at || null,
+    completed_at: remoteBatch.completed_at || null,
+    output_file_id: remoteBatch.output_file_id || null,
+    error_file_id: remoteBatch.error_file_id || null,
   };
 }
 
@@ -311,16 +325,103 @@ async function batchCollectWriteNode(state) {
   const batchId = state.loaded.batch_id;
   const remoteBatch = state.llm.remote_batch;
   const localBatch = state.loaded.local_batch || {};
+  const localMetadata = (
+    localBatch &&
+    localBatch.metadata &&
+    typeof localBatch.metadata === 'object' &&
+    !Array.isArray(localBatch.metadata)
+  )
+    ? localBatch.metadata
+    : {};
+  let retryInfo = null;
 
   await upsertBatchRow(
     schema,
     remoteBatch,
     localBatch.request_count || 0,
-    localBatch.metadata || {}
+    localMetadata
   );
+
+  const normalizedStatus = String(remoteBatch.status || '').trim().toLowerCase();
+  const isFailed = normalizedStatus === 'failed';
+  if (isFailed) {
+    const alreadyRetried = !!localMetadata.auto_retry_spawned_batch_id;
+    if (!alreadyRetried) {
+      try {
+        const requests = await getBatchItemRequests(schema, batchId);
+        if (requests.length > 0) {
+          const client = getLiteLLMClient();
+          const { batch: retryBatch } = await client.createBatch(requests, {
+            completion_window: '24h',
+            metadata: {
+              retry_of_batch_id: batchId,
+              retry_source: 'batch_collect_auto_retry',
+            },
+          });
+          const retryMetadata = {
+            ...localMetadata,
+            auto_retry_spawned_batch_id: retryBatch.id,
+            auto_retry_spawned_at: new Date().toISOString(),
+          };
+          await upsertBatchRow(
+            schema,
+            remoteBatch,
+            localBatch.request_count || requests.length,
+            retryMetadata
+          );
+          await upsertBatchRow(
+            schema,
+            retryBatch,
+            requests.length,
+            {
+              request_count: requests.length,
+              created_via: 'auto_retry',
+              retry_of_batch_id: batchId,
+            }
+          );
+          await upsertBatchItems(schema, retryBatch.id, requests);
+          retryInfo = {
+            spawned: true,
+            retry_batch_id: retryBatch.id,
+            request_count: requests.length,
+          };
+        }
+      } catch (retryErr) {
+        getBraintrustLogger().log({
+          input: {
+            batch_id: batchId,
+            schema,
+          },
+          error: nodeErrorInfo(retryErr),
+          metadata: {
+            source: 't1_batch_collect',
+            event: 'auto_retry_failed',
+          },
+        });
+      }
+    }
+  }
 
   const updated_items = await upsertBatchResults(schema, batchId, state.parsed.rows || []);
   const summary = await readBatchSummary(schema, batchId);
+  getBraintrustLogger().log({
+    input: {
+      batch_id: batchId,
+      schema,
+    },
+    output: {
+      status: remoteBatch.status || null,
+      updated_items,
+      summary,
+      retry: retryInfo,
+      failure: isFailed ? toBatchFailureInfo(remoteBatch) : null,
+      consumed_entries: toEntitySecondaryTopicPairs(state.parsed.rows || []),
+    },
+    metadata: {
+      source: 't1_batch_collect',
+      event: isFailed ? 'consume_failed' : 'consume',
+    },
+  });
   try {
     await getVerbossLogger().logConsumeEntry({
       batch_id: batchId,
@@ -350,6 +451,7 @@ async function batchCollectWriteNode(state) {
       terminal: TERMINAL_BATCH_STATUSES.has(String(remoteBatch.status || '').toLowerCase()),
       updated_items,
       summary,
+      retry: retryInfo,
     },
   };
 }
