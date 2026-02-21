@@ -1,12 +1,5 @@
 'use strict';
 
-const { getConfig } = require('../libs/config.js');
-const { buildRetrievalForDb } = require('./quality.js');
-const {
-  buildIdempotencyForNormalized,
-  attachIdempotencyFields,
-} = require('./idempotency.js');
-
 function maybeUnescapeTelegramText(s) {
   const t = String(s ?? '');
 
@@ -212,10 +205,6 @@ async function normalizeTelegram({ text, source }) {
   if (inputText === undefined || inputText === null || String(inputText).trim() === '') {
     throw new Error('text is required');
   }
-  // system is inferred by /normalize/telegram API handler.
-  const sourceForIdem = { ...(src || {}), system: 'telegram' };
-
-  const config = getConfig();
 
   let capture_text = String(inputText || '');
   capture_text = maybeUnescapeTelegramText(capture_text);
@@ -225,20 +214,7 @@ async function normalizeTelegram({ text, source }) {
   if (parsed && parsed.obj) {
     const j = parsed.obj;
     const title = (j.title ?? null);
-    const explicit_excerpt = (j.excerpt ?? null);
-
     const clean_text = String(parsed.after ?? '');
-
-    const retrieval_fields = buildRetrievalForDb({
-      capture_text,
-      content_type: 'note',
-      extracted_text: '',
-      url_canonical: null,
-      url: null,
-      config,
-      excerpt_override: explicit_excerpt,
-      excerpt_source: clean_text || capture_text,
-    });
 
     const normalized = formatForInsert({
       source: 'telegram',
@@ -250,16 +226,12 @@ async function normalizeTelegram({ text, source }) {
       clean_text,
       url: null,
       url_canonical: null,
-      retrieval_fields,
+      retrieval_fields: null,
     });
-    const idem = buildIdempotencyForNormalized({
-      source: sourceForIdem,
-      normalized,
-    });
-    if (!idem) {
-      throw new Error('unable to compute idempotency keys for telegram payload');
-    }
-    return attachIdempotencyFields(normalized, idem);
+    return {
+      ...normalized,
+      __idempotency_source: { ...(src || {}), system: 'telegram' },
+    };
   }
 
   const match = capture_text.match(/https?:\/\/[^\s<>()]+/i);
@@ -274,17 +246,6 @@ async function normalizeTelegram({ text, source }) {
   const content_type = url ? 'newsletter' : 'note';
   const intent = content_type === 'newsletter' ? 'archive' : 'think';
 
-  const retrieval_fields = buildRetrievalForDb({
-    capture_text,
-    content_type,
-    extracted_text: '',
-    url_canonical,
-    url,
-    config,
-    excerpt_override: null,
-    excerpt_source: capture_text,
-  });
-
   const normalized = formatForInsert({
     source: 'telegram',
     intent,
@@ -295,16 +256,12 @@ async function normalizeTelegram({ text, source }) {
     clean_text: null,
     url,
     url_canonical,
-    retrieval_fields,
+    retrieval_fields: null,
   });
-  const idem = buildIdempotencyForNormalized({
-    source: sourceForIdem,
-    normalized,
-  });
-  if (!idem) {
-    throw new Error('unable to compute idempotency keys for telegram payload');
-  }
-  return attachIdempotencyFields(normalized, idem);
+  return {
+    ...normalized,
+    __idempotency_source: { ...(src || {}), system: 'telegram' },
+  };
 }
 
 function normalizeNewlines(s) {
@@ -1326,35 +1283,9 @@ function decideEmailIntent(rawText) {
   return decideEmailIntentFromCore(core_text);
 }
 
-function buildEmailRetrieval({
-  capture_text,
-  content_type,
-  clean_text,
-  config,
-  url = null,
-  url_canonical = null,
-}) {
-  return buildRetrievalForDb({
-    capture_text,
-    content_type,
-    extracted_text: '',
-    url_canonical,
-    url,
-    config,
-    excerpt_override: null,
-    excerpt_source: clean_text,
-    quality_source_text: clean_text,
-  });
-}
-
 async function normalizeEmailInternal({ raw_text, force_content_type, from, subject }) {
   if (raw_text === undefined || raw_text === null) {
     throw new Error('raw_text is required');
-  }
-
-  const config = getConfig();
-  if (!config || !config.qualityThresholds) {
-    throw new Error('config missing qualityThresholds');
   }
 
   // Step 1: transport-level cleanup (forwarded wrappers, mojibake, invisibles)
@@ -1383,13 +1314,6 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
 
     const clean_text = formatThreadMarkdown(blocks);
 
-    const retrieval_fields = buildEmailRetrieval({
-      capture_text,
-      content_type: 'correspondence',
-      clean_text,
-      config,
-    });
-
     return formatForInsert({
       source: 'email',
       intent,
@@ -1400,20 +1324,13 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
       clean_text,
       url: null,
       url_canonical: null,
-      retrieval_fields,
+      retrieval_fields: null,
     });
   }
 
   if (content_type === 'note') {
     // Step 3b: note fallback (preserve cleaned core_text)
     const clean_text = collapseWhitespacePreserveNewlines(normalizedCoreText);
-    const retrieval_fields = buildEmailRetrieval({
-      capture_text,
-      content_type: 'note',
-      clean_text,
-      config,
-    });
-
     return formatForInsert({
       source: 'email',
       intent,
@@ -1424,7 +1341,7 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
       clean_text,
       url: null,
       url_canonical: null,
-      retrieval_fields,
+      retrieval_fields: null,
     });
   }
 
@@ -1476,15 +1393,6 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
   const url_canonical = canonical_url || null;
   const url = url_canonical || null;
 
-  const retrieval_fields = buildEmailRetrieval({
-    capture_text,
-    content_type: 'newsletter',
-    clean_text,
-    config,
-    url,
-    url_canonical,
-  });
-
   return formatForInsert({
     source: 'email',
     intent,
@@ -1495,7 +1403,7 @@ async function normalizeEmailInternal({ raw_text, force_content_type, from, subj
     clean_text,
     url,
     url_canonical,
-    retrieval_fields,
+    retrieval_fields: null,
   });
 }
 
@@ -1519,7 +1427,6 @@ async function normalizeEmail({ raw_text, from, subject, date, message_id, sourc
     from: resolvedFrom,
     subject: resolvedSubject,
   });
-  // system is inferred by /normalize/email API handler.
   const sourceForIdem = {
     ...(src || {}),
     system: 'email',
@@ -1537,11 +1444,10 @@ async function normalizeEmail({ raw_text, from, subject, date, message_id, sourc
       : (resolvedMessageId || (src && src.message_id ? src.message_id : null)),
     body: (src && src.body) ? src.body : resolvedRawText,
   };
-  const idem = buildIdempotencyForNormalized({
-    source: sourceForIdem,
-    normalized,
-  });
-  return attachIdempotencyFields(normalized, idem);
+  return {
+    ...normalized,
+    __idempotency_source: sourceForIdem,
+  };
 }
 
 async function normalizeWebpage({
@@ -1575,36 +1481,23 @@ async function normalizeWebpage({
     };
   }
 
-  // Step 2: recompute retrieval excerpt + quality (node 08 behavior) via quality module.
-  const config = getConfig();
+  // Step 2: return normalized webpage fields; quality/idempotency are orchestrated upstream.
   const effectiveUrl = url || null;
   const effectiveCanonical = canonicalizeUrl(url_canonical || effectiveUrl);
-  const effectiveContentType = String(content_type || '').trim() || 'newsletter';
   const effectiveCaptureText = (capture_text !== undefined && capture_text !== null)
     ? String(capture_text)
     : cleaned;
-  const excerptOverride = (excerpt !== undefined && excerpt !== null)
-    ? String(excerpt)
-    : null;
-
-  const retrieval_fields = buildRetrievalForDb({
-    capture_text: effectiveCaptureText,
-    content_type: effectiveContentType,
-    extracted_text: extracted,
-    url_canonical: effectiveCanonical,
-    url: effectiveUrl,
-    config,
-    excerpt_override: excerptOverride,
-    excerpt_source: cleaned,
-    quality_source_text: cleaned,
-  });
 
   return {
     extracted_text: extracted,
     extracted_len: extracted.length,
     clean_text: cleaned,
     clean_len: cleaned.length,
-    ...retrieval_fields,
+    capture_text: effectiveCaptureText,
+    content_type: String(content_type || '').trim() || 'newsletter',
+    url: effectiveUrl,
+    url_canonical: effectiveCanonical,
+    excerpt: excerpt !== undefined && excerpt !== null ? String(excerpt) : null,
   };
 }
 

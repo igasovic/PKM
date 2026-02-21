@@ -16,6 +16,14 @@ function ensureObject(value) {
   return value && typeof value === 'object' ? value : {};
 }
 
+function stripInternalFields(payload) {
+  if (!payload || typeof payload !== 'object') return payload;
+  const out = { ...payload };
+  delete out.__idempotency_source;
+  delete out.excerpt;
+  return out;
+}
+
 // Orchestration-only: normalize payload, then enrich with quality + idempotency.
 function applyQualityFields(normalized, opts = {}) {
   if (!normalized || normalized.retrieval_update_skipped) return normalized;
@@ -37,7 +45,7 @@ function applyQualityFields(normalized, opts = {}) {
     url_canonical: normalized.url_canonical || null,
     url: normalized.url || null,
     config,
-    excerpt_override: opts.excerpt_override ?? null,
+    excerpt_override: opts.excerpt_override ?? normalized.excerpt ?? null,
     excerpt_source: clean_text || capture_text,
     quality_source_text: clean_text || capture_text,
   });
@@ -58,7 +66,7 @@ function applyIdempotencyFields(normalized, source) {
     return normalized;
   }
   const idem = buildIdempotencyForNormalized({
-    source,
+    source: normalized.__idempotency_source || source,
     normalized,
   });
   return attachIdempotencyFields(normalized, idem);
@@ -68,10 +76,11 @@ async function runTelegramIngestionPipeline({ text, source }) {
   const src = ensureObject(source);
   const normalized = await normalizeTelegram({ text, source: src });
   const withQuality = applyQualityFields(normalized);
-  return applyIdempotencyFields(withQuality, {
+  const withIdempotency = applyIdempotencyFields(withQuality, {
     ...src,
     system: 'telegram',
   });
+  return stripInternalFields(withIdempotency);
 }
 
 async function runEmailIngestionPipeline({ raw_text, from, subject, date, message_id, source }) {
@@ -85,7 +94,7 @@ async function runEmailIngestionPipeline({ raw_text, from, subject, date, messag
     source: src,
   });
   const withQuality = applyQualityFields(normalized);
-  return applyIdempotencyFields(withQuality, {
+  const withIdempotency = applyIdempotencyFields(withQuality, {
     ...src,
     system: 'email',
     from_addr: src.from_addr || src.from || src.sender || from || null,
@@ -94,6 +103,7 @@ async function runEmailIngestionPipeline({ raw_text, from, subject, date, messag
     message_id: src.message_id || message_id || null,
     body: src.body || raw_text || null,
   });
+  return stripInternalFields(withIdempotency);
 }
 
 async function runWebpageIngestionPipeline({
@@ -117,10 +127,11 @@ async function runWebpageIngestionPipeline({
     excerpt,
   });
 
-  return applyQualityFields(normalized, {
+  const withQuality = applyQualityFields(normalized, {
     content_type,
     excerpt_override: excerpt ?? null,
   });
+  return stripInternalFields(withQuality);
 }
 
 module.exports = {

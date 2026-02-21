@@ -3,7 +3,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const db = require('./db.js');
-const { normalizeEmail } = require('./normalization.js');
+const { runEmailIngestionPipeline } = require('./ingestion-pipeline.js');
 const { enqueueTier1Batch } = require('./tier1-enrichment.js');
 const { getBraintrustLogger } = require('./observability.js');
 const { getVerbossLogger } = require('./tier1/verboss-logger.js');
@@ -421,10 +421,12 @@ async function importEmailMbox(opts) {
           [env.from || null, env.subject || null, env.date || null],
         ]);
       });
-      const normalized = await normalizeEmail({
+      const normalized = await runEmailIngestionPipeline({
         raw_text: env.textPlain,
         from: env.from,
         subject: env.subject,
+        date: env.date,
+        message_id: env.message_id,
         source: {
           message_id: env.message_id,
           date: env.date,
