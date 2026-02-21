@@ -54,6 +54,7 @@ Primary objective:
   - `completion_window` optional (`24h` default)
 - Behavior:
   - inserted rows use `source = "email-batch"`
+  - idempotency treats `email-batch` the same as `email` (same policy/key evaluation rules)
   - rows with DB action `skipped` are excluded from Tier‑1 enqueue
   - partial failures are isolated per email and recorded in response
   - reruns are safe because idempotency keys are still required/resolved

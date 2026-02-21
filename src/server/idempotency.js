@@ -138,7 +138,8 @@ function buildIdempotencyError(reason, source, normalized) {
 function buildIdempotencyForNormalized({ source, normalized }) {
   const src = source || {};
   const norm = normalized || {};
-  const system = String(src.system || '').toLowerCase();
+  const systemRaw = String(src.system || '').toLowerCase();
+  const system = systemRaw === 'email-batch' ? 'email' : systemRaw;
 
   if (system === 'telegram') {
     const out = buildTelegramIdempotency(src, norm);
