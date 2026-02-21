@@ -84,6 +84,66 @@ function readUsage(response) {
   };
 }
 
+function readNumberCandidate(values) {
+  for (const v of values) {
+    const n = Number(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return undefined;
+}
+
+function readTtftMs(response) {
+  return readNumberCandidate([
+    response && response.ttft_ms,
+    response && response.ttft,
+    response && response.timings && response.timings.ttft_ms,
+    response && response.timings && response.timings.ttft,
+    response && response.usage && response.usage.ttft_ms,
+    response && response.usage && response.usage.ttft,
+    response && response._hidden_params && response._hidden_params.ttft_ms,
+    response && response._hidden_params && response._hidden_params.ttft,
+  ]);
+}
+
+function readEstimatedCostUsd(response, usage) {
+  const direct = readNumberCandidate([
+    response && response.response_cost,
+    response && response.cost,
+    response && response._response_cost,
+    response && response._hidden_params && response._hidden_params.response_cost,
+    response && response._hidden_params && response._hidden_params.cost,
+    usage && usage.estimated_cost_usd,
+    usage && usage.estimated_cost,
+    usage && usage.cost,
+  ]);
+  if (direct !== undefined) return direct;
+
+  const promptTokens = Number(usage && usage.prompt_tokens);
+  const completionTokens = Number(usage && usage.completion_tokens);
+  if (!Number.isFinite(promptTokens) && !Number.isFinite(completionTokens)) return undefined;
+
+  const inputPerM = Number(process.env.LLM_INPUT_COST_PER_1M_USD);
+  const outputPerM = Number(process.env.LLM_OUTPUT_COST_PER_1M_USD);
+  if (!Number.isFinite(inputPerM) || !Number.isFinite(outputPerM)) return undefined;
+
+  const inCost = Number.isFinite(promptTokens) ? (promptTokens / 1_000_000) * inputPerM : 0;
+  const outCost = Number.isFinite(completionTokens) ? (completionTokens / 1_000_000) * outputPerM : 0;
+  const total = inCost + outCost;
+  return Number.isFinite(total) ? total : undefined;
+}
+
+function buildLlmMetrics(response, durationMs, usage) {
+  const metrics = {
+    llm_duration_ms: durationMs,
+    duration_ms: durationMs,
+  };
+  const ttftMs = readTtftMs(response);
+  if (Number.isFinite(ttftMs)) metrics.ttft_ms = ttftMs;
+  const estimatedCostUsd = readEstimatedCostUsd(response, usage);
+  if (Number.isFinite(estimatedCostUsd)) metrics.estimated_cost_usd = estimatedCostUsd;
+  return metrics;
+}
+
 function formatFetchError(err, url, method) {
   const cause = err && err.cause ? err.cause : null;
   const code = cause && cause.code ? cause.code : null;
@@ -159,8 +219,8 @@ function getDefaultBatchModel(defaultModel) {
   return (
     process.env.T1_BATCH_MODEL ||
     process.env.T1_BATCH_DEFAULT_MODEL ||
-    't1-batch' ||
-    defaultModel
+    defaultModel ||
+    't1-batch'
   );
 }
 
@@ -366,7 +426,7 @@ class LiteLLMClient {
           status_code: res.status,
         },
         {
-          duration_ms,
+          ...buildLlmMetrics(json, duration_ms, usage),
           ...usage,
         }
       );
@@ -406,7 +466,7 @@ class LiteLLMClient {
           reasoning_effort: result.reasoning_effort,
         },
         {
-          duration_ms: Date.now() - methodStart,
+          ...buildLlmMetrics(result.json, Date.now() - methodStart, result.usage),
           ...result.usage,
         }
       );
@@ -424,6 +484,7 @@ class LiteLLMClient {
           endpoint: 'chat.completions',
         },
         {
+          llm_duration_ms: Date.now() - methodStart,
           duration_ms: Date.now() - methodStart,
         }
       );
@@ -516,6 +577,7 @@ class LiteLLMClient {
             response_preview: truncate(msg, 350),
           },
           {
+            llm_duration_ms: upload.duration_ms,
             duration_ms: upload.duration_ms,
           }
         );
@@ -538,6 +600,7 @@ class LiteLLMClient {
           status_code: upload.res.status,
         },
         {
+          llm_duration_ms: upload.duration_ms,
           duration_ms: upload.duration_ms,
           input_jsonl_bytes: Buffer.byteLength(jsonl, 'utf8'),
         }
@@ -596,6 +659,7 @@ class LiteLLMClient {
             response_preview: truncate(msg, 350),
           },
           {
+            llm_duration_ms: batchCreate.duration_ms,
             duration_ms: batchCreate.duration_ms,
           }
         );
@@ -622,6 +686,7 @@ class LiteLLMClient {
           reasoning_effort: reasoningEffort,
         },
         {
+          llm_duration_ms: batchCreate.duration_ms,
           duration_ms: batchCreate.duration_ms,
         }
       );
@@ -637,11 +702,17 @@ class LiteLLMClient {
     try {
       attempt = await createAttempt(model, 1);
     } catch (err) {
-      const fallbackModel = getDefaultBatchModel(this.model);
-      const shouldRetryWithBatchModel =
-        model !== fallbackModel &&
-        isBatchModelUnsupportedMessage(err && err.message);
-      if (!shouldRetryWithBatchModel) throw err;
+      const isBatchUnsupported = isBatchModelUnsupportedMessage(err && err.message);
+      if (!isBatchUnsupported) throw err;
+
+      const fallbackCandidates = [
+        process.env.T1_DEFAULT_MODEL,
+        this.model,
+        process.env.T1_BATCH_FALLBACK_MODEL,
+      ].map((x) => String(x || '').trim()).filter(Boolean);
+      const fallbackModel = fallbackCandidates.find((x) => x !== model);
+      if (!fallbackModel) throw err;
+
       this.logSuccess(
         'batches.create.model_fallback',
         {
@@ -677,6 +748,7 @@ class LiteLLMClient {
         endpoint: 'files+batches',
       },
       {
+        llm_duration_ms: Date.now() - methodStart,
         duration_ms: Date.now() - methodStart,
       }
     );
@@ -728,6 +800,7 @@ class LiteLLMClient {
           response_preview: truncate(msg, 350),
         },
         {
+          llm_duration_ms: fetchResult.duration_ms,
           duration_ms: fetchResult.duration_ms,
         }
       );
@@ -751,6 +824,7 @@ class LiteLLMClient {
         status_code: fetchResult.res.status,
       },
       {
+        llm_duration_ms: Date.now() - methodStart,
         duration_ms: Date.now() - methodStart,
       }
     );
@@ -802,6 +876,7 @@ class LiteLLMClient {
           response_preview: truncate(msg, 350),
         },
         {
+          llm_duration_ms: fetchResult.duration_ms,
           duration_ms: fetchResult.duration_ms,
         }
       );
@@ -821,6 +896,7 @@ class LiteLLMClient {
         status_code: fetchResult.res.status,
       },
       {
+        llm_duration_ms: Date.now() - methodStart,
         duration_ms: Date.now() - methodStart,
       }
     );
