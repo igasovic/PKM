@@ -6,12 +6,12 @@ const pkg = require('./package.json');
 const db = require('./db.js');
 const { TestModeService } = require('./test-mode.js');
 const { getConfig } = require('../libs/config.js');
+const { decideEmailIntent } = require('./normalization.js');
 const {
-  normalizeTelegram,
-  normalizeEmail,
-  normalizeWebpage,
-  decideEmailIntent,
-} = require('./normalization.js');
+  runTelegramIngestionPipeline,
+  runEmailIngestionPipeline,
+  runWebpageIngestionPipeline,
+} = require('./ingestion-pipeline.js');
 const {
   enrichTier1,
   enqueueTier1Batch,
@@ -120,7 +120,7 @@ async function handleRequest(req, res) {
     try {
       const raw = await readBody(req);
       const body = raw ? JSON.parse(raw) : {};
-      const normalized = await normalizeTelegram({
+      const normalized = await runTelegramIngestionPipeline({
         text: body.text,
         source: body.source,
       });
@@ -147,7 +147,7 @@ async function handleRequest(req, res) {
     try {
       const raw = await readBody(req);
       const body = raw ? JSON.parse(raw) : {};
-      const normalized = await normalizeEmail({
+      const normalized = await runEmailIngestionPipeline({
         raw_text: body.raw_text,
         from: body.from,
         subject: body.subject,
@@ -166,7 +166,7 @@ async function handleRequest(req, res) {
     try {
       const raw = await readBody(req);
       const body = raw ? JSON.parse(raw) : {};
-      const normalized = await normalizeWebpage({
+      const normalized = await runWebpageIngestionPipeline({
         text: body.text,
         extracted_text: body.extracted_text,
         clean_text: body.clean_text,
