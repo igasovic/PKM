@@ -2,6 +2,24 @@
 
 let braintrustLogger = null;
 
+function scrubCaptureText(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => scrubCaptureText(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  const out = {};
+  for (const key of Object.keys(value)) {
+    if (key === 'capture_text') {
+      out[key] = '[redacted]';
+      continue;
+    }
+    out[key] = scrubCaptureText(value[key]);
+  }
+  return out;
+}
+
 function getBraintrustLogger() {
   if (braintrustLogger !== null) return braintrustLogger;
   if (!process.env.BRAINTRUST_API_KEY) {
@@ -47,9 +65,9 @@ function logError(err, req) {
 function logApiSuccess(meta, output, metrics) {
   const logger = getBraintrustLogger();
   logger.log({
-    input: {
+    input: scrubCaptureText({
       ...meta,
-    },
+    }),
     output,
     metadata: {
       source: 'api',
