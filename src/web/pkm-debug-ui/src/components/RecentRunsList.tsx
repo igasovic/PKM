@@ -92,13 +92,12 @@ export function RecentRunsList(props: RecentRunsListProps) {
               <th className="px-2 py-2 text-left font-medium">Ended</th>
               <th className="px-2 py-2 text-left font-medium">Dur</th>
               <th className="px-2 py-2 text-left font-medium">Events</th>
-              <th className="px-2 py-2 text-left font-medium"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/80">
             {rows.length === 0 && (
               <tr>
-                <td className="px-2 py-3 text-slate-400" colSpan={6}>
+                <td className="px-2 py-3 text-slate-400" colSpan={5}>
                   {loading ? 'Loading recent runs…' : 'No runs found.'}
                 </td>
               </tr>
@@ -106,7 +105,12 @@ export function RecentRunsList(props: RecentRunsListProps) {
             {rows.map((row) => {
               const status = statusForRow(row);
               return (
-                <tr key={`${row.run_id}|${row.ended_at || 'na'}`} className="hover:bg-slate-800/50">
+                <tr
+                  key={`${row.run_id}|${row.ended_at || 'na'}`}
+                  className="cursor-pointer hover:bg-slate-800/50"
+                  onClick={() => onLoadRun(row.run_id)}
+                  title={`Load run ${row.run_id}`}
+                >
                   <td className="max-w-[20rem] truncate px-2 py-2 text-slate-100" title={row.run_id}>{row.run_id}</td>
                   <td className="px-2 py-2">
                     <span className={`rounded px-2 py-0.5 ${statusBadge(status)}`}>{status}</span>
@@ -114,15 +118,6 @@ export function RecentRunsList(props: RecentRunsListProps) {
                   <td className="whitespace-nowrap px-2 py-2 text-slate-400">{fmtTs(row.ended_at)}</td>
                   <td className="px-2 py-2 text-slate-300">{fmtDuration(row.total_ms)}</td>
                   <td className="px-2 py-2 text-slate-300">{row.event_count}</td>
-                  <td className="px-2 py-2">
-                    <button
-                      type="button"
-                      className="rounded border border-emerald-500 bg-emerald-500/15 px-2 py-1 text-xs text-emerald-300 hover:bg-emerald-500/25"
-                      onClick={() => onLoadRun(row.run_id)}
-                    >
-                      Load
-                    </button>
-                  </td>
                 </tr>
               );
             })}
