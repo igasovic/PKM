@@ -8,3 +8,5 @@
 # import artifacts
 /workflows_import/
 src/server/node_modules/
+src/web/pkm-debug-ui/node_modules/
+src/web/pkm-debug-ui/dist/

@@ -263,6 +263,10 @@ Recommended wiring (so **pkm-server never calls OpenAI directly**):
 - `OPENAI_API_KEY=${LITELLM_MASTER_KEY}`
 - `T1_DEFAULT_MODEL=t1-default`
 
+**Admin-protected debug endpoints**
+- `/debug/*` currently requires header `x-pkm-admin-secret: <PKM_ADMIN_SECRET>`.
+- If the header is missing or wrong, PKM returns `403 forbidden`.
+
 ---
 
 ## 9) LiteLLM (OpenAI-compatible proxy/router)
@@ -331,8 +335,24 @@ Observed keys (names only):
 - `OPENAI_API_KEY`, `LITELLM_MASTER_KEY`, `BRAINTRUST_API_KEY`
 - n8n: `N8N_BASIC_AUTH_*`, `N8N_DB_*`, `N8N_HOST`, `N8N_PROTOCOL`, `N8N_EDITOR_BASE_URL`, `WEBHOOK_URL`
 - PKM DB: `PKM_DB_*`, `PKM_INGEST_*`, `PKM_READ_*`
+- PKM admin: `PKM_ADMIN_SECRET` (used by `/debug/*`, `/db/delete`, `/db/move`)
 - Postgres admin: `POSTGRES_ADMIN_*`
 - `TZ`
+
+### Mac debug UI access (fixes `forbidden`)
+1. On Pi, ensure `PKM_ADMIN_SECRET` is set in `/home/igasovic/stack/.env`.
+2. Ensure `pkm-server` gets that env (via compose), then restart:
+   - `cd /home/igasovic/stack && docker compose up -d pkm-server`
+3. Verify inside container:
+   - `docker exec -it stack-pkm-server-1 sh -lc 'echo ${PKM_ADMIN_SECRET:+set}'`
+4. On Mac UI (`src/web/pkm-debug-ui/.env`), set:
+   - `VITE_PKM_ORIGIN=http://192.168.5.4:3010`
+   - `PKM_ADMIN_SECRET=<same secret>`
+5. Start UI with `npm run dev`.
+
+Notes:
+- The UI does not send admin secret from browser code.
+- Vite dev proxy injects `x-pkm-admin-secret` server-side for `/debug/*`.
 
 ---
 
