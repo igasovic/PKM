@@ -33,6 +33,7 @@ const defaults = {
   pull: { days: null, limit: null },   // <-- NEW
   delete: { days: null, limit: null },
   move: { days: null, limit: null },
+  debug: { days: null, limit: null },
   status: { days: null, limit: null },
   help: { days: null, limit: null },
 };
@@ -55,6 +56,7 @@ if (!defaults[cmd]) {
         `/with person topic [--days N] [--limit M]\n` +
         `/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
         `/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
+        `/debug <run_id|last>\n` +
         `/status`
     }
   }];
@@ -88,6 +90,46 @@ if (cmd === 'pull') {
       cmd,
       entry_id,
       want_excerpt,
+      chat_id
+    }
+  }];
+}
+
+// Special case: /debug <run_id|last>
+if (cmd === 'debug') {
+  const rest = text.replace(/^\/\w+/i, '').trim();
+  if (!rest) {
+    return [{
+      json: {
+        _reply_now: true,
+        chat_id,
+        telegram_message: `Usage:\n/debug <run_id|last>\nExamples:\n/debug last\n/debug n8n-123456`
+      }
+    }];
+  }
+
+  const token = String(rest).split(/\s+/)[0].trim();
+  if (!token) {
+    return [{
+      json: {
+        _reply_now: true,
+        chat_id,
+        telegram_message: `Usage:\n/debug <run_id|last>`
+      }
+    }];
+  }
+
+  const isLast = token.toLowerCase() === 'last';
+  return [{
+    json: {
+      cmd,
+      run_id: isLast ? null : token,
+      debug_last: isLast,
+      // Precomputed backend path for HTTP Request node convenience.
+      debug_path: isLast
+        ? '/debug/run/last'
+        : `/debug/run/${encodeURIComponent(token)}`,
+      debug_method: 'GET',
       chat_id
     }
   }];

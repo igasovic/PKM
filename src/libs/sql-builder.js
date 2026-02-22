@@ -230,6 +230,7 @@ module.exports = {
   buildT1BatchItemStatusList,
   buildInsertPipelineEvent,
   buildGetPipelineEventsByRunId,
+  buildGetLastPipelineRunId,
   buildPrunePipelineEvents,
 };
 
@@ -545,6 +546,23 @@ FROM ${eventsTable}
 WHERE run_id = $1
 ORDER BY seq ASC, ts ASC
 LIMIT $2`;
+}
+
+/**
+ * Build SQL for retrieving the most recent run id.
+ * @param {{ eventsTable: string }} opts
+ * @returns {string}
+ */
+function buildGetLastPipelineRunId(opts) {
+  const eventsTable = opts && opts.eventsTable;
+  if (!eventsTable || typeof eventsTable !== 'string') {
+    throw new Error('buildGetLastPipelineRunId: eventsTable must be a non-empty string');
+  }
+  return `SELECT run_id
+FROM ${eventsTable}
+GROUP BY run_id
+ORDER BY MAX(ts) DESC
+LIMIT 1`;
 }
 
 /**

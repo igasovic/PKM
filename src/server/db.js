@@ -1437,6 +1437,18 @@ async function getPipelineRun(run_id, opts) {
   };
 }
 
+async function getLastPipelineRun(opts) {
+  const options = opts || {};
+  const limit = parsePositiveInt(options.limit, 5000);
+  const latestSql = sb.buildGetLastPipelineRunId({ eventsTable: PIPELINE_EVENTS_TABLE });
+  const latest = await getPool().query(latestSql);
+  const run_id = latest.rows && latest.rows[0] ? latest.rows[0].run_id : null;
+  if (!run_id) {
+    return { run_id: null, rows: [] };
+  }
+  return getPipelineRun(run_id, { limit });
+}
+
 async function prunePipelineEvents(days) {
   const keepDays = parsePositiveInt(days, 30);
   const sql = sb.buildPrunePipelineEvents({ eventsTable: PIPELINE_EVENTS_TABLE });
@@ -1463,6 +1475,7 @@ module.exports = {
   setTestModeStateInDb,
   insertPipelineEvent,
   getPipelineRun,
+  getLastPipelineRun,
   prunePipelineEvents,
   buildGenericInsertPayload,
   buildGenericUpdatePayload,

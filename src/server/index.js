@@ -336,6 +336,22 @@ async function handleRequest(req, res) {
     }
   }
 
+  if (method === 'GET' && url.pathname === '/debug/run/last') {
+    try {
+      requireAdminSecret(req);
+      const limit = Number(url.searchParams.get('limit') || 5000);
+      const result = await logger.step(
+        'api.debug.run.last',
+        async () => db.getLastPipelineRun({ limit }),
+        { input: { limit }, output: (out) => ({ run_id: out.run_id, rows: out.rows }), meta: { route: url.pathname } }
+      );
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
   const debugRunMatch = (method === 'GET')
     ? url.pathname.match(/^\/debug\/run\/([^/]+)$/)
     : null;

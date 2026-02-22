@@ -99,6 +99,15 @@ Response:
   ]
 }
 ```
+
+### `GET /debug/run/last`
+Returns events for the most recent `run_id` (same payload shape as `/debug/run/:run_id`).
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Query params:
+- `limit` (optional, default `5000`)
 ```
 
 ## Normalization
