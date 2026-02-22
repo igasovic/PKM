@@ -1,7 +1,10 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig(({ mode }) => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const env = loadEnv(mode, process.cwd(), '');
   const target = env.VITE_PKM_ORIGIN || 'http://192.168.5.4:3010';
   const adminSecret = env.PKM_ADMIN_SECRET || '';
@@ -69,10 +72,18 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), readProxyPlugin],
+    resolve: {
+      alias: {
+        '@shared': path.resolve(__dirname, '../../libs'),
+      },
+    },
     server: {
       host: '0.0.0.0',
       port: 5173,
       strictPort: true,
+      fs: {
+        allow: [path.resolve(__dirname, '../../')],
+      },
       proxy: {
         '^/debug(/|$)': {
           target,

@@ -258,6 +258,30 @@ Primary objective:
   - timeline inspection in table view and call-stack tree view
   - paired span health states (`ok`, `error`, `missing_end`, `orphan_end`, `orphan_error`)
   - detail drawer for event/span with JSON copy actions
+
+## Read context pack requirements
+- Context pack generation must be centralized in `src/libs/context-pack-builder.js`.
+- Both UI (`src/web/pkm-debug-ui`) and n8n read workflow context-pack node must use this shared builder.
+- Output variants:
+  - UI: regular Markdown
+  - n8n Telegram: MarkdownV2-safe (escaped)
+- Context pack template is fixed:
+  - `CONTEXT PACK`
+  - `Retrieval: <method> q="<query>" | days=<days|default> | limit=<limit|default>`
+  - `Top matches (most relevant first):`
+  - `- <entry_id> | <content type> | <Author> | <Title> | <date YYYY-MM-DD>`
+  - `  - Topic: <primary topic> -> <secondary topic>`
+  - `  - Keywords: <keyword1>, <keyword2>, ...`
+  - `  - Content: <content>`
+  - `END CONTEXT PACK`
+- `run_id` must not be included inside context-pack text.
+- Content selection priority is mandatory:
+  - `gist`
+  - `retrieval_excerpt`
+  - `snippet`
+  - `clean_text` (snipped)
+  - `capture_text` (snipped)
+  - fallback `JSON keys: ...`
   - deterministic “investigation bundle” copy with stable key ordering
 - UI must handle payload variants:
   - `{ run_id, rows }`

@@ -1,4 +1,5 @@
 import type { ReadItem } from '../types';
+import contextPackBuilder from '@shared/context-pack-builder.js';
 
 interface NormalizeOptions {
   snippetLength?: number;
@@ -31,20 +32,10 @@ function snip(value: string, maxLen: number): string {
 }
 
 function excerptForRow(obj: Record<string, unknown>, maxLen: number): string {
-  const retrieval = pick(obj, ['retrieval_excerpt']);
-  if (retrieval) return snip(retrieval, maxLen);
-
-  const gist = pick(obj, ['gist']);
-  if (gist) return snip(gist, maxLen);
-
-  const clean = pick(obj, ['clean_text']);
-  if (clean) return snip(clean, maxLen);
-
-  const capture = pick(obj, ['capture_text']);
-  if (capture) return snip(capture, maxLen);
-
-  const keys = Object.keys(obj).sort();
-  return keys.length > 0 ? `JSON keys: ${keys.join(', ')}` : 'No textual content';
+  const helper = contextPackBuilder as {
+    deriveExcerptFromRecord: (record: Record<string, unknown>, opts?: { maxLen?: number }) => string;
+  };
+  return helper.deriveExcerptFromRecord(obj, { maxLen });
 }
 
 export function normalizeReadRows(rows: unknown[], options: NormalizeOptions = {}): ReadItem[] {

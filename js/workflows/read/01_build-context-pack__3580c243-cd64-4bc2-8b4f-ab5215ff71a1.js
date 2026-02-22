@@ -14,98 +14,32 @@
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
-
-/**
- * Build Telegram Context Pack from Postgres UNION result:
- * - One meta row: is_meta=true
- * - N hit rows:  is_meta=false
- *
- * Expected meta fields:
- * - query_text, days, limit, hits
- * - cmd (optional; /find and /continue already include this in your SQL; /last may not)
- *
- * Expected hit fields:
- * - entry_id (bigint)
- * - id (uuid)
- * - created_at, source, intent
- * - url, url_canonical
- * - title
- * - text_len
- * - snippet
- *
- * Output:
- * - telegram_message (<= ~3500 chars safety cap)
- */
+  const { buildContextPackMarkdown } = require('../../../src/libs/context-pack-builder.js');
 
 const rows = $input.all().map(i => i.json);
-const mdv2 = (value) => String(value ?? '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
+const meta = rows.find((r) => r.is_meta === true) || {};
+const hitsRows = rows.filter((r) => r.is_meta === false && r.id);
+const method = String(meta.cmd || 'last').toLowerCase();
+const query = String(meta.query_text || '').trim();
 
-// meta row is always present
-const meta = rows.find(r => r.is_meta === true) || {};
-
-// cmd handling:
-// - /find and /continue meta already include cmd in your SQL
-// - /last meta currently does NOT; default to 'last'
-const cmd = String(meta.cmd || 'last').toLowerCase();
-
-const q = String(meta.query_text || '').trim();
-const days = meta.days ?? '';
-const limit = meta.limit ?? '';
-const hits = meta.hits ?? 0;
-
-// hit rows
-const hitsRows = rows.filter(r => r.is_meta === false && r.id);
-
-// No hits
-if (!hitsRows.length) {
-  const msg =
-    `*Context Pack*\n` +
-    `*Command:* /${mdv2(cmd)}${q ? ` "${mdv2(q)}"` : ''}\n` +
-    `*Window:* ${mdv2(days)}d · *Limit:* ${mdv2(limit)} · *Hits:* 0\n\n` +
-    `No matches\\. Try a larger window or broader terms\\.`;
-
-  return [{ json: { telegram_message: msg } }];
-}
-
-const maxSnippet = 300;
-const lines = [];
-
-lines.push(`*Context Pack*`);
-lines.push(`*Command:* /${mdv2(cmd)}${q ? ` "${mdv2(q)}"` : ''}`);
-lines.push(`*Window:* ${mdv2(days)}d · *Limit:* ${mdv2(limit)} · *Hits:* ${mdv2(hits)}`);
-lines.push('');
-
-// Render each hit
-hitsRows.forEach((r, idx) => {
-  const created = String(r.created_at).slice(0, 19).replace('T', ' ');
-  const source = r.source || '';
-  const intent = r.intent || '';
-  const title = String(r.title || '').trim();
-  const url = r.url_canonical || r.url || '';
-  const textLen = Number(r.text_len || 0);
-
-  const entryId = (r.entry_id === null || r.entry_id === undefined) ? '' : String(r.entry_id);
-
-  let snippet = String(r.snippet || '').trim();
-  if (snippet.length > maxSnippet) snippet = snippet.slice(0, maxSnippet - 1) + '…';
-
-  // Header line includes WP2 entry_id for /pull
-  // Example: "1) #12345 • 2026-01-26 04:56:56 • email • archive • 886 chars"
-  const idPart = entryId ? `#${entryId} • ` : '';
-  lines.push(`*${idx + 1}\\)* ${mdv2(idPart)}${mdv2(created)} • ${mdv2(source)}${intent ? ` • ${mdv2(intent)}` : ''} • ${mdv2(textLen)} chars`);
-
-  if (title) lines.push(`*Title:* ${mdv2(title)}`);
-  if (url) lines.push(`*URL:* ${mdv2(url)}`);
-  if (snippet) lines.push(`*Snippet:* ${mdv2(snippet)}`);
-  lines.push('');
-});
-
-let msg = lines.join('\n').trim();
+let msg = buildContextPackMarkdown(
+  hitsRows,
+  {
+    method,
+    query,
+    days: meta.days,
+    limit: meta.limit,
+  },
+  {
+    markdownV2: true,
+    maxContentLen: 300,
+  },
+);
 
 // safety cap (Telegram hard limit is 4096; keep margin for safety)
 const MAX_TELEGRAM = 3500;
 if (msg.length > MAX_TELEGRAM) {
-  msg = msg.slice(0, MAX_TELEGRAM - 1) + '…\n\n\\(Truncated — reduce limit\\)';
+  msg = msg.slice(0, MAX_TELEGRAM - 1) + '…';
 }
 
 return [{ json: { telegram_message: msg } }];

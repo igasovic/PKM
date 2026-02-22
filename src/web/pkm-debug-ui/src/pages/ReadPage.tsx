@@ -49,10 +49,9 @@ export function ReadPage() {
     q: q.trim(),
     days,
     limit,
-    run_id: lastRunId,
     generated_at: new Date().toISOString(),
     total_results: rows.length,
-  }), [operation, q, days, limit, lastRunId, rows.length]);
+  }), [operation, q, days, limit, rows.length]);
 
   const contextPack = useMemo(
     () => buildContextPack(format, selectedItems, packMeta),

@@ -1,5 +1,6 @@
 import { stableStringify } from './stable';
 import type { ReadItem, ReadOperation } from '../types';
+import contextPackBuilder from '@shared/context-pack-builder.js';
 
 export type ContextPackFormat = 'markdown' | 'json';
 
@@ -8,7 +9,6 @@ export interface ContextPackMeta {
   q: string;
   days: number | null;
   limit: number | null;
-  run_id: string;
   generated_at: string;
   total_results: number;
 }
@@ -19,35 +19,23 @@ function normValue(value: string | number | null | undefined): string {
 }
 
 export function buildContextPackMarkdown(items: ReadItem[], meta: ContextPackMeta): string {
-  const lines: string[] = [];
-  lines.push('# Context Pack');
-  lines.push(`generated_at: ${meta.generated_at}`);
-  lines.push(`operation: ${meta.operation}`);
-  lines.push(`q: "${meta.q}"`);
-  lines.push(`days: ${normValue(meta.days)}`);
-  lines.push(`limit: ${normValue(meta.limit)}`);
-  lines.push(`run_id: ${meta.run_id}`);
-  lines.push('');
-  lines.push(`## Items (${items.length} selected of ${meta.total_results} total)`);
-  lines.push('');
-
-  items.forEach((item, idx) => {
-    lines.push(`### Item ${idx + 1}`);
-    lines.push(`entry_id: ${item.entry_id || ''}`);
-    lines.push(`title: ${item.title || ''}`);
-    lines.push(`author: ${item.author || ''}`);
-    lines.push(`source: ${item.source || ''}`);
-    lines.push(`created_at: ${item.created_at || ''}`);
-    lines.push(`url: ${item.url || ''}`);
-    if (item.clean_char_count !== null && item.clean_char_count !== undefined) {
-      lines.push(`clean_char_count: ${item.clean_char_count}`);
-    }
-    lines.push('excerpt:');
-    lines.push(item.excerpt || '');
-    lines.push('');
-  });
-
-  return lines.join('\n').trim();
+  const helper = contextPackBuilder as {
+    buildContextPackMarkdown: (
+      rows: Array<Record<string, unknown>>,
+      payloadMeta: Record<string, unknown>,
+      opts?: { markdownV2?: boolean; maxContentLen?: number },
+    ) => string;
+  };
+  return helper.buildContextPackMarkdown(
+    items.map((item) => item.raw),
+    {
+      method: meta.operation,
+      query: meta.q,
+      days: normValue(meta.days),
+      limit: normValue(meta.limit),
+    },
+    { markdownV2: false },
+  );
 }
 
 export function buildContextPackJson(items: ReadItem[], meta: ContextPackMeta): string {
@@ -57,7 +45,6 @@ export function buildContextPackJson(items: ReadItem[], meta: ContextPackMeta): 
     q: meta.q,
     days: meta.days,
     limit: meta.limit,
-    run_id: meta.run_id,
     selected_count: items.length,
     total_results: meta.total_results,
     items: items.map((item) => ({
