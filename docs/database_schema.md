@@ -325,6 +325,10 @@ Always-on lightweight transition logs for backend pipelines (step order, summari
 **Retention**
 - Backend daily prune job deletes rows older than `PKM_PIPELINE_EVENTS_RETENTION_DAYS` (default `30`).
 
+**Deployment note**
+- This table must exist in the backend-configured schema (`PKM_DB_SCHEMA`, default `pkm`).
+- Required app grants for backend role `pkm_ingest`: `SELECT, INSERT, UPDATE, DELETE`.
+
 ---
 
 ### Tier-1 Batch Persistence
