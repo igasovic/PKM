@@ -4,6 +4,14 @@ Base URL: `http://<host>:<port>`
 
 This service exposes a minimal JSON API intended for internal systems (e.g., n8n) to read/write entries in Postgres. All endpoints accept `application/json` and return JSON.
 
+## Run ID Correlation
+
+- Preferred header: `X-PKM-Run-Id: <run_id>`
+- Optional body field: `run_id` (used if header is not provided)
+- Response header: `X-PKM-Run-Id` is always returned.
+
+`run_id` is propagated through backend pipelines, LangGraph nodes, Postgres `pipeline_events`, and Braintrust metadata.
+
 ## Health
 
 ### `GET /health`
@@ -64,6 +72,33 @@ Response:
 [
   { "is_test_mode": true }
 ]
+
+### `GET /debug/run/:run_id`
+Returns pipeline transition events for one run id.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Query params:
+- `limit` (optional, default `5000`)
+
+Response:
+```json
+{
+  "run_id": "n8n-12345",
+  "rows": [
+    {
+      "run_id": "n8n-12345",
+      "seq": 1,
+      "step": "api.normalize.email",
+      "direction": "start",
+      "input_summary": {},
+      "output_summary": {},
+      "error": null
+    }
+  ]
+}
+```
 ```
 
 ## Normalization

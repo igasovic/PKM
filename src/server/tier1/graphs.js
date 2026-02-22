@@ -3,6 +3,8 @@ const { getConfig } = require('../../libs/config.js');
 const { LiteLLMClient, extractResponseText } = require('../litellm-client.js');
 const { buildRetrievalForDb } = require('../quality.js');
 const { getBraintrustLogger } = require('../observability.js');
+const { getLogger } = require('../logger/index.js');
+const { getRunContext } = require('../logger/context.js');
 const { getVerbossLogger } = require('./verboss-logger.js');
 const {
   parseTier1Json,
@@ -77,8 +79,20 @@ function logNodeError(graph, node, state, err) {
 
 function withNodeErrorLogging(graphName, nodeName, fn) {
   return async (state) => {
+    const logger = getLogger().child({
+      pipeline: `langgraph.${graphName}`,
+      meta: { node: nodeName },
+    });
     try {
-      return await fn(state || {});
+      return await logger.step(
+        `langgraph.${graphName}.${nodeName}`,
+        async () => fn(state || {}),
+        {
+          input: state || {},
+          output: (out) => out,
+          meta: { graph: graphName, node: nodeName },
+        }
+      );
     } catch (err) {
       logNodeError(graphName, nodeName, state || {}, err);
       throw err;
@@ -559,30 +573,39 @@ async function getCompiledGraphs() {
 
 async function runSyncEnrichmentGraph(input, options) {
   const { syncGraph } = await getCompiledGraphs();
+  const ctx = getRunContext() || {};
+  const run_id = (options && options.run_id) || ctx.run_id || null;
   const state = await syncGraph.invoke({
     flow: 'sync',
+    run_id,
     input: input || {},
-    options: options || {},
+    options: { ...(options || {}), run_id },
   });
   return state.output;
 }
 
 async function runBatchScheduleGraph(items, options) {
   const { batchScheduleGraph } = await getCompiledGraphs();
+  const ctx = getRunContext() || {};
+  const run_id = (options && options.run_id) || ctx.run_id || null;
   const state = await batchScheduleGraph.invoke({
     flow: 'batch_schedule',
+    run_id,
     input: { items: Array.isArray(items) ? items : [] },
-    options: options || {},
+    options: { ...(options || {}), run_id },
   });
   return state.output;
 }
 
 async function runBatchCollectGraph(batchId, options) {
   const { batchCollectGraph } = await getCompiledGraphs();
+  const ctx = getRunContext() || {};
+  const run_id = (options && options.run_id) || ctx.run_id || null;
   const state = await batchCollectGraph.invoke({
     flow: 'batch_collect',
+    run_id,
     batch_id: batchId,
-    options: options || {},
+    options: { ...(options || {}), run_id },
   });
   return state.output;
 }

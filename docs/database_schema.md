@@ -1,4 +1,4 @@
-# PKM Database Schema v2.3 (Observed)
+# PKM Database Schema v2.4 (Observed + Required Runtime Tables)
 
 **Observed on:** 2026-02-17 (from `psql` introspection against database `pkm`).
 
@@ -58,6 +58,7 @@ Schema grants (current):
 **Production (`pkm`)**
 - `entries` (~1232 kB)
 - `idempotency_policies` (~16 kB)
+- `pipeline_events` (size varies by retention)
 - `runtime_config` (~16 kB)
 - `t1_batches` (~16 kB)
 - `t1_batch_items` (~80 kB)
@@ -79,6 +80,7 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 | Table | pgadmin | pkm_ingest | pkm_read | n8n |
 |---|---|---|---|---|
 | `pkm.entries` | RIUD + TRUNCATE/REF/… | RIUD | R | — |
+| `pkm.pipeline_events` | full | RIUD | — | — |
 | `pkm.runtime_config` | full | RIUD | R | R |
 | `pkm.idempotency_policies` | full | RIUD | — | — |
 | `pkm.t1_batches` | full | RIUD | — | — |
@@ -286,6 +288,42 @@ Small shared key/value store for runtime toggles used by backend and workflows.
 - `pkm_ingest`: RIUD
 - `pkm_read`: R
 - `n8n`: R
+
+---
+
+### `pkm.pipeline_events`
+
+**Purpose**
+Always-on lightweight transition logs for backend pipelines (step order, summaries, timing, and failures).
+
+**Columns**
+- `event_id` uuid PK default `gen_random_uuid()`
+- `ts` timestamptz default `now()`
+- `run_id` text NOT NULL
+- `seq` int NOT NULL
+- `service` text
+- `pipeline` text
+- `step` text NOT NULL
+- `direction` text CHECK in `('start','end','error')`
+- `level` text CHECK in `('info','warn','error','debug','trace')`
+- `duration_ms` int
+- `entry_id` bigint
+- `batch_id` text
+- `trace_id` text
+- `input_summary` jsonb
+- `output_summary` jsonb
+- `error` jsonb
+- `artifact_path` text
+- `meta` jsonb
+
+**Indexes**
+- unique `(run_id, seq)`
+- `(run_id, ts)`
+- `(ts DESC)`
+- partial `(ts DESC) WHERE direction = 'error'`
+
+**Retention**
+- Backend daily prune job deletes rows older than `PKM_PIPELINE_EVENTS_RETENTION_DAYS` (default `30`).
 
 ---
 

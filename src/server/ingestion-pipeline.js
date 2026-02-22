@@ -11,6 +11,7 @@ const {
   attachIdempotencyFields,
 } = require('./idempotency.js');
 const { buildRetrievalForDb } = require('./quality.js');
+const { getLogger } = require('./logger/index.js');
 
 function ensureObject(value) {
   return value && typeof value === 'object' ? value : {};
@@ -73,36 +74,62 @@ function applyIdempotencyFields(normalized, source) {
 }
 
 async function runTelegramIngestionPipeline({ text, source }) {
+  const logger = getLogger().child({ pipeline: 'ingestion.telegram' });
   const src = ensureObject(source);
-  const normalized = await normalizeTelegram({ text, source: src });
-  const withQuality = applyQualityFields(normalized);
-  const withIdempotency = applyIdempotencyFields(withQuality, {
-    ...src,
-    system: 'telegram',
-  });
+  const normalized = await logger.step(
+    'normalize.telegram',
+    async () => normalizeTelegram({ text, source: src }),
+    { input: { text, source: src }, output: (out) => out }
+  );
+  const withQuality = await logger.step(
+    'quality.telegram',
+    async () => applyQualityFields(normalized),
+    { input: normalized, output: (out) => out }
+  );
+  const withIdempotency = await logger.step(
+    'idempotency.telegram',
+    async () => applyIdempotencyFields(withQuality, {
+      ...src,
+      system: 'telegram',
+    }),
+    { input: withQuality, output: (out) => out }
+  );
   return stripInternalFields(withIdempotency);
 }
 
 async function runEmailIngestionPipeline({ raw_text, from, subject, date, message_id, source }) {
+  const logger = getLogger().child({ pipeline: 'ingestion.email' });
   const src = ensureObject(source);
-  const normalized = await normalizeEmail({
-    raw_text,
-    from,
-    subject,
-    date,
-    message_id,
-    source: src,
-  });
-  const withQuality = applyQualityFields(normalized);
-  const withIdempotency = applyIdempotencyFields(withQuality, {
-    ...src,
-    system: 'email',
-    from_addr: src.from_addr || src.from || src.sender || from || null,
-    subject: src.subject || subject || null,
-    date: src.date || date || null,
-    message_id: src.message_id || message_id || null,
-    body: src.body || raw_text || null,
-  });
+  const normalized = await logger.step(
+    'normalize.email',
+    async () => normalizeEmail({
+      raw_text,
+      from,
+      subject,
+      date,
+      message_id,
+      source: src,
+    }),
+    { input: { raw_text, from, subject, date, message_id, source: src }, output: (out) => out }
+  );
+  const withQuality = await logger.step(
+    'quality.email',
+    async () => applyQualityFields(normalized),
+    { input: normalized, output: (out) => out }
+  );
+  const withIdempotency = await logger.step(
+    'idempotency.email',
+    async () => applyIdempotencyFields(withQuality, {
+      ...src,
+      system: 'email',
+      from_addr: src.from_addr || src.from || src.sender || from || null,
+      subject: src.subject || subject || null,
+      date: src.date || date || null,
+      message_id: src.message_id || message_id || null,
+      body: src.body || raw_text || null,
+    }),
+    { input: withQuality, output: (out) => out }
+  );
   return stripInternalFields(withIdempotency);
 }
 
@@ -116,21 +143,30 @@ async function runWebpageIngestionPipeline({
   url_canonical,
   excerpt,
 }) {
-  const normalized = await normalizeWebpage({
-    text,
-    extracted_text,
-    clean_text,
-    capture_text,
-    content_type,
-    url,
-    url_canonical,
-    excerpt,
-  });
+  const logger = getLogger().child({ pipeline: 'ingestion.webpage' });
+  const normalized = await logger.step(
+    'normalize.webpage',
+    async () => normalizeWebpage({
+      text,
+      extracted_text,
+      clean_text,
+      capture_text,
+      content_type,
+      url,
+      url_canonical,
+      excerpt,
+    }),
+    { input: { text, extracted_text, clean_text, capture_text, content_type, url, url_canonical, excerpt }, output: (out) => out }
+  );
 
-  const withQuality = applyQualityFields(normalized, {
-    content_type,
-    excerpt_override: excerpt ?? null,
-  });
+  const withQuality = await logger.step(
+    'quality.webpage',
+    async () => applyQualityFields(normalized, {
+      content_type,
+      excerpt_override: excerpt ?? null,
+    }),
+    { input: normalized, output: (out) => out }
+  );
   return stripInternalFields(withQuality);
 }
 

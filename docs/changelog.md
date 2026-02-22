@@ -1,4 +1,37 @@
 # changelog
+## 2026-02-21 — Pipeline transition logging + run correlation
+
+### What changed
+- Added backend logger subsystem under `src/server/logger/` with two sinks:
+  - Postgres sink for pipeline transition events (`pipeline_events`)
+  - Braintrust sink for LLM-oriented spans/metadata
+- Added AsyncLocalStorage run context propagation:
+  - request-scoped `run_id` + `request_id`
+  - accepts `X-PKM-Run-Id` header
+  - accepts body `run_id` when header is absent
+  - response now includes `X-PKM-Run-Id`
+- Added step-level transition logging wrappers in key orchestration paths:
+  - normalization/ingestion pipeline
+  - email importer flow
+  - Tier-1 enrichment facade
+  - LangGraph node wrappers
+- Added Postgres DB plumbing for pipeline events:
+  - SQL builders in `src/libs/sql-builder.js`
+  - DB methods in `src/server/db.js`:
+    - `insertPipelineEvent`
+    - `getPipelineRun`
+    - `prunePipelineEvents`
+- Added admin debug endpoint:
+  - `GET /debug/run/:run_id`
+- Added daily retention prune in server startup:
+  - `PKM_PIPELINE_EVENTS_RETENTION_DAYS` (default `30`)
+- Added `run_id` metadata propagation to observability + LiteLLM logs for Braintrust correlation.
+- Updated docs:
+  - `docs/api.md`
+  - `docs/requirements.md`
+  - `docs/database_schema.md`
+  - `AGENTS.md` (DB safety rule: no raw SQL outside sql-builder/db modules)
+
 ## 2026-02-16 — Tier-1 LangGraph orchestration refactor
 
 ### What changed

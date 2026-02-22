@@ -6,6 +6,7 @@ const db = require('./db.js');
 const { runEmailIngestionPipeline } = require('./ingestion-pipeline.js');
 const { enqueueTier1Batch } = require('./tier1-enrichment.js');
 const { getBraintrustLogger } = require('./observability.js');
+const { getLogger } = require('./logger/index.js');
 const { getVerbossLogger } = require('./tier1/verboss-logger.js');
 
 const IMPORT_ROOT = '/data';
@@ -232,6 +233,7 @@ function resolveMboxPath(inputPath) {
 async function importEmailMbox(opts) {
   const options = opts || {};
   const logger = getBraintrustLogger();
+  const pipelineLogger = getLogger().child({ pipeline: 'email_ingest_v1' });
   const verbossLogger = getVerbossLogger();
   const safeVerbossLog = async (op, fn) => {
     try {
@@ -263,7 +265,11 @@ async function importEmailMbox(opts) {
 
   let st;
   try {
-    st = await fs.stat(absPath);
+    st = await pipelineLogger.step(
+      'email_import.stat_file',
+      async () => fs.stat(absPath),
+      { input: { inputPath, absPath } }
+    );
   } catch (err) {
     throw new Error(
       `mbox file not found/readable; input_path="${inputPath}", resolved_path="${absPath}", cause="${err.message}"`
@@ -273,8 +279,16 @@ async function importEmailMbox(opts) {
     throw new Error('mbox_path must be a file');
   }
 
-  const fileText = await fs.readFile(absPath, 'utf8');
-  let messages = splitMboxMessages(fileText);
+  const fileText = await pipelineLogger.step(
+    'email_import.read_file',
+    async () => fs.readFile(absPath, 'utf8'),
+    { input: { absPath } }
+  );
+  let messages = await pipelineLogger.step(
+    'email_import.split_mbox',
+    async () => splitMboxMessages(fileText),
+    { input: { file_chars: String(fileText || '').length }, output: (out) => ({ message_count: out.length }) }
+  );
   if (Number.isFinite(max_emails) && max_emails > 0) {
     messages = messages.slice(0, max_emails);
   }
@@ -325,15 +339,22 @@ async function importEmailMbox(opts) {
     while (tierBuffer.length >= batch_size || (flushRemainder && tierBuffer.length > 0)) {
       const take = flushRemainder ? Math.min(batch_size, tierBuffer.length) : batch_size;
       const chunk = tierBuffer.splice(0, take);
-      const result = await enqueueTier1Batch(chunk, {
-        completion_window,
-        metadata: {
-          source: 'email-batch-import',
-          import_id,
-          mbox_path: relativePath,
-          ...(options.metadata || {}),
-        },
-      });
+      const result = await pipelineLogger.step(
+        'email_import.enqueue_t1_batch',
+        async () => enqueueTier1Batch(chunk, {
+          completion_window,
+          metadata: {
+            source: 'email-batch-import',
+            import_id,
+            mbox_path: relativePath,
+            ...(options.metadata || {}),
+          },
+        }),
+        {
+          input: { chunk_size: chunk.length, import_id, completion_window },
+          output: (out) => out,
+        }
+      );
       summary.tier1_batches.push({
         batch_id: result.batch_id,
         status: result.status,
@@ -356,11 +377,18 @@ async function importEmailMbox(opts) {
 
     const pendingRows = insertBuffer.splice(0, insertBuffer.length);
     const pendingAuditRows = insertAuditBuffer.splice(0, insertAuditBuffer.length);
-    const result = await db.insert({
-      items: pendingRows,
-      continue_on_error: true,
-      returning: insertReturning,
-    });
+    const result = await pipelineLogger.step(
+      'email_import.db_insert_batch',
+      async () => db.insert({
+        items: pendingRows,
+        continue_on_error: true,
+        returning: insertReturning,
+      }),
+      {
+        input: { rows: pendingRows.length, returning: insertReturning },
+        output: (out) => ({ rowCount: out && out.rowCount ? out.rowCount : 0 }),
+      }
+    );
 
     const rows = Array.isArray(result && result.rows) ? result.rows : [];
     const dbInsertLogs = [];
@@ -421,17 +449,32 @@ async function importEmailMbox(opts) {
           [env.from || null, env.subject || null, env.date || null],
         ]);
       });
-      const normalized = await runEmailIngestionPipeline({
-        raw_text: env.textPlain,
-        from: env.from,
-        subject: env.subject,
-        date: env.date,
-        message_id: env.message_id,
-        source: {
-          message_id: env.message_id,
+      const normalized = await pipelineLogger.step(
+        'email_import.normalize_email',
+        async () => runEmailIngestionPipeline({
+          raw_text: env.textPlain,
+          from: env.from,
+          subject: env.subject,
           date: env.date,
-        },
-      });
+          message_id: env.message_id,
+          source: {
+            message_id: env.message_id,
+            date: env.date,
+          },
+        }),
+        {
+          input: {
+            index: i,
+            from: env.from || null,
+            subject: env.subject || null,
+            date: env.date || null,
+            message_id: env.message_id || null,
+            capture_text: env.textPlain || '',
+          },
+          output: (out) => ({ index: i, content_type: out && out.content_type ? out.content_type : null }),
+          meta: { index: i },
+        }
+      );
       await safeVerbossLog('email_batch.normalization.exit', async () => {
         await verbossLogger.logNormalizationExit([
           [env.subject || null, env.date || null, normalized && normalized.content_type ? normalized.content_type : null],

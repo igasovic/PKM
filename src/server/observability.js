@@ -1,5 +1,7 @@
 'use strict';
 
+const { getRunContext } = require('./logger/context.js');
+
 let braintrustLogger = null;
 
 function scrubCaptureText(value) {
@@ -46,6 +48,7 @@ function getBraintrustLogger() {
 
 function logError(err, req) {
   const logger = getBraintrustLogger();
+  const ctx = getRunContext();
   logger.log({
     input: {
       method: req && req.method,
@@ -58,12 +61,15 @@ function logError(err, req) {
     },
     metadata: {
       source: 'server',
+      run_id: ctx && ctx.run_id ? ctx.run_id : null,
+      request_id: ctx && ctx.request_id ? ctx.request_id : null,
     },
   });
 }
 
 function logApiSuccess(meta, output, metrics) {
   const logger = getBraintrustLogger();
+  const ctx = getRunContext();
   logger.log({
     input: scrubCaptureText({
       ...meta,
@@ -71,6 +77,8 @@ function logApiSuccess(meta, output, metrics) {
     output,
     metadata: {
       source: 'api',
+      run_id: ctx && ctx.run_id ? ctx.run_id : null,
+      request_id: ctx && ctx.request_id ? ctx.request_id : null,
     },
     metrics: metrics || undefined,
   });
@@ -78,6 +86,7 @@ function logApiSuccess(meta, output, metrics) {
 
 function logApiError(meta, err, metrics) {
   const logger = getBraintrustLogger();
+  const ctx = getRunContext();
   logger.log({
     input: {
       ...meta,
@@ -89,6 +98,8 @@ function logApiError(meta, err, metrics) {
     },
     metadata: {
       source: 'api',
+      run_id: ctx && ctx.run_id ? ctx.run_id : null,
+      request_id: ctx && ctx.request_id ? ctx.request_id : null,
     },
     metrics: metrics || undefined,
   });
@@ -96,6 +107,7 @@ function logApiError(meta, err, metrics) {
 
 async function traceDb(op, meta, fn) {
   const logger = getBraintrustLogger();
+  const ctx = getRunContext();
   const start = Date.now();
   try {
     const result = await fn();
@@ -110,6 +122,8 @@ async function traceDb(op, meta, fn) {
       },
       metadata: {
         source: 'db',
+        run_id: ctx && ctx.run_id ? ctx.run_id : null,
+        request_id: ctx && ctx.request_id ? ctx.request_id : null,
       },
       metrics: {
         duration_ms,
@@ -130,6 +144,8 @@ async function traceDb(op, meta, fn) {
       },
       metadata: {
         source: 'db',
+        run_id: ctx && ctx.run_id ? ctx.run_id : null,
+        request_id: ctx && ctx.request_id ? ctx.request_id : null,
       },
       metrics: {
         duration_ms,

@@ -15,6 +15,11 @@ const DELETE_MOVE_MAX_BATCH = (() => {
   return Number.isFinite(raw) && raw > 0 ? Math.trunc(raw) : 200;
 })();
 const PREVIEW_LIMIT = 20;
+const PIPELINE_EVENTS_SCHEMA = (() => {
+  const raw = String(process.env.PKM_DB_SCHEMA || 'pkm').trim();
+  return sb.isValidIdent(raw) ? raw : 'pkm';
+})();
+const PIPELINE_EVENTS_TABLE = sb.qualifiedTable(PIPELINE_EVENTS_SCHEMA, 'pipeline_events');
 
 function wrapConfigTableError(err) {
   if (!err) return err;
@@ -1354,6 +1359,94 @@ async function toggleTestModeState() {
   return { rows: [{ is_test_mode: state }], rowCount: 1 };
 }
 
+function toJsonParam(value) {
+  if (value === undefined) return null;
+  if (value === null) return null;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return JSON.stringify({ note: 'unserializable' });
+  }
+}
+
+function parsePositiveInt(value, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.trunc(n);
+}
+
+async function insertPipelineEvent(event) {
+  const row = event && typeof event === 'object' ? { ...event } : {};
+  const run_id = String(row.run_id || '').trim();
+  const step = String(row.step || '').trim();
+  const direction = String(row.direction || '').trim().toLowerCase();
+  if (!run_id) throw new Error('insertPipelineEvent requires run_id');
+  if (!step) throw new Error('insertPipelineEvent requires step');
+  if (!['start', 'end', 'error'].includes(direction)) {
+    throw new Error('insertPipelineEvent direction must be start|end|error');
+  }
+
+  const sql = sb.buildInsertPipelineEvent({ eventsTable: PIPELINE_EVENTS_TABLE });
+  const baseSeq = parsePositiveInt(row.seq, 1);
+  const paramsBase = [
+    run_id,
+    0, // seq placeholder per attempt
+    row.service || null,
+    row.pipeline || null,
+    step,
+    direction,
+    row.level || 'info',
+    row.duration_ms != null ? Number(row.duration_ms) : null,
+    (row.entry_id != null && Number.isFinite(Number(row.entry_id))) ? Number(row.entry_id) : null,
+    row.batch_id || null,
+    row.trace_id || null,
+    toJsonParam(row.input_summary),
+    toJsonParam(row.output_summary),
+    toJsonParam(row.error),
+    row.artifact_path || null,
+    toJsonParam(row.meta || {}),
+  ];
+
+  let attempt = 0;
+  while (attempt < 8) {
+    attempt += 1;
+    const seq = baseSeq + (attempt - 1);
+    const params = [...paramsBase];
+    params[1] = seq;
+    try {
+      const res = await getPool().query(sql, params);
+      return res.rows && res.rows[0] ? res.rows[0] : { run_id, seq };
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err;
+      if (attempt >= 8) throw err;
+    }
+  }
+  return null;
+}
+
+async function getPipelineRun(run_id, opts) {
+  const id = String(run_id || '').trim();
+  if (!id) throw new Error('run_id is required');
+  const options = opts || {};
+  const limit = parsePositiveInt(options.limit, 5000);
+  const sql = sb.buildGetPipelineEventsByRunId({ eventsTable: PIPELINE_EVENTS_TABLE });
+  const res = await getPool().query(sql, [id, limit]);
+  return {
+    run_id: id,
+    rows: res.rows || [],
+  };
+}
+
+async function prunePipelineEvents(days) {
+  const keepDays = parsePositiveInt(days, 30);
+  const sql = sb.buildPrunePipelineEvents({ eventsTable: PIPELINE_EVENTS_TABLE });
+  const res = await getPool().query(sql, [keepDays]);
+  return {
+    deleted: Number(res.rowCount || 0),
+    keep_days: keepDays,
+  };
+}
+
 module.exports = {
   getPool,
   insert,
@@ -1368,6 +1461,9 @@ module.exports = {
   toggleTestModeState,
   getTestModeStateFromDb,
   setTestModeStateInDb,
+  insertPipelineEvent,
+  getPipelineRun,
+  prunePipelineEvents,
   buildGenericInsertPayload,
   buildGenericUpdatePayload,
 };

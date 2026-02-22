@@ -1,6 +1,7 @@
 'use strict';
 
 const { getBraintrustLogger } = require('./observability.js');
+const { getRunContext } = require('./logger/context.js');
 
 const DEFAULT_SYSTEM_PROMPT =
   '\
@@ -265,12 +266,15 @@ class LiteLLMClient {
   }
 
   logSuccess(op, input, output, metadata, metrics) {
+    const ctx = getRunContext();
     this.logger.log({
       input,
       output,
       metadata: {
         source: 'litellm',
         op,
+        run_id: ctx && ctx.run_id ? ctx.run_id : null,
+        request_id: ctx && ctx.request_id ? ctx.request_id : null,
         ...(metadata || {}),
       },
       metrics: metrics || undefined,
@@ -278,12 +282,15 @@ class LiteLLMClient {
   }
 
   logError(op, input, err, metadata, metrics) {
+    const ctx = getRunContext();
     this.logger.log({
       input,
       error: errorDetails(err),
       metadata: {
         source: 'litellm',
         op,
+        run_id: ctx && ctx.run_id ? ctx.run_id : null,
+        request_id: ctx && ctx.request_id ? ctx.request_id : null,
         ...(metadata || {}),
       },
       metrics: metrics || undefined,

@@ -228,6 +228,9 @@ module.exports = {
   buildT1BatchStatusList,
   buildT1BatchStatusById,
   buildT1BatchItemStatusList,
+  buildInsertPipelineEvent,
+  buildGetPipelineEventsByRunId,
+  buildPrunePipelineEvents,
 };
 
 /**
@@ -508,6 +511,54 @@ LEFT JOIN ${resultsTable} r
 WHERE i.batch_id = $1
 ORDER BY i.created_at ASC
 LIMIT $2`;
+}
+
+/**
+ * Build SQL for inserting one pipeline transition event.
+ * @param {{ eventsTable: string }} opts
+ * @returns {string}
+ */
+function buildInsertPipelineEvent(opts) {
+  const eventsTable = opts && opts.eventsTable;
+  if (!eventsTable || typeof eventsTable !== 'string') {
+    throw new Error('buildInsertPipelineEvent: eventsTable must be a non-empty string');
+  }
+  return `INSERT INTO ${eventsTable}
+  (run_id, seq, service, pipeline, step, direction, level, duration_ms, entry_id, batch_id, trace_id, input_summary, output_summary, error, artifact_path, meta)
+VALUES
+  ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13::jsonb, $14::jsonb, $15, $16::jsonb)
+RETURNING event_id, ts, run_id, seq`;
+}
+
+/**
+ * Build SQL for loading events by run id.
+ * @param {{ eventsTable: string }} opts
+ * @returns {string}
+ */
+function buildGetPipelineEventsByRunId(opts) {
+  const eventsTable = opts && opts.eventsTable;
+  if (!eventsTable || typeof eventsTable !== 'string') {
+    throw new Error('buildGetPipelineEventsByRunId: eventsTable must be a non-empty string');
+  }
+  return `SELECT *
+FROM ${eventsTable}
+WHERE run_id = $1
+ORDER BY seq ASC, ts ASC
+LIMIT $2`;
+}
+
+/**
+ * Build SQL for pruning old pipeline events by retention days.
+ * @param {{ eventsTable: string }} opts
+ * @returns {string}
+ */
+function buildPrunePipelineEvents(opts) {
+  const eventsTable = opts && opts.eventsTable;
+  if (!eventsTable || typeof eventsTable !== 'string') {
+    throw new Error('buildPrunePipelineEvents: eventsTable must be a non-empty string');
+  }
+  return `DELETE FROM ${eventsTable}
+WHERE ts < now() - ($1::int * interval '1 day')`;
 }
 
 /**

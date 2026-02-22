@@ -224,6 +224,25 @@ Primary objective:
 - Status queries must support both schemas (`pkm`, `pkm_test`) regardless of current test-mode setting.
 - Detailed status API must support item-level status listing for one batch with bounded limit.
 
+## Pipeline transition logging requirements
+- Backend must emit lightweight, always-on transition events to Postgres `pipeline_events`.
+- Correlation key is `run_id`:
+  - accept `X-PKM-Run-Id` header
+  - accept body `run_id` when header is absent
+  - propagate into AsyncLocalStorage context and LangGraph state/options
+- Every important step should log:
+  - `start` and `end` (or `error`)
+  - duration
+  - input/output summaries (shape/count/hash), not full heavy texts
+- Summaries must never include full values of:
+  - `capture_text`
+  - `extracted_text`
+  - `clean_text`
+- Braintrust logging remains focused on LLM spans and should include `run_id` metadata.
+- Backend must expose run inspection API:
+  - `GET /debug/run/:run_id` (admin-protected)
+- Backend must prune old pipeline events daily with retention default `30` days (`PKM_PIPELINE_EVENTS_RETENTION_DAYS`).
+
 ## Non-goals
 - No duplicate side-table tracking in place of uniqueness constraints.
 - No client-side duplicate suppression as primary mechanism.

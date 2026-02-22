@@ -1,6 +1,7 @@
 'use strict';
 
 const { getBraintrustLogger } = require('./observability.js');
+const { getLogger } = require('./logger/index.js');
 const {
   listPendingBatchIds,
   listBatchStatuses,
@@ -16,21 +17,43 @@ let workerTimer = null;
 let workerActive = false;
 
 async function enrichTier1(input) {
-  return runSyncEnrichmentGraph(input || {});
+  const logger = getLogger().child({ pipeline: 't1.enrich.sync' });
+  return logger.step(
+    't1.enrich.sync',
+    async () => runSyncEnrichmentGraph(input || {}),
+    { input: input || {}, output: (out) => out }
+  );
 }
 
 async function enqueueTier1Batch(items, opts) {
-  return runBatchScheduleGraph(items || [], opts || {});
+  const logger = getLogger().child({ pipeline: 't1.enrich.batch.schedule' });
+  return logger.step(
+    't1.enrich.batch.schedule',
+    async () => runBatchScheduleGraph(items || [], opts || {}),
+    {
+      input: { items_count: Array.isArray(items) ? items.length : 0, options: opts || {} },
+      output: (out) => out,
+    }
+  );
 }
 
 async function syncPendingTier1Batches(opts) {
+  const logger = getLogger().child({ pipeline: 't1.enrich.batch.collect' });
   const options = opts || {};
-  const ids = await listPendingBatchIds(options.limit);
+  const ids = await logger.step(
+    't1.batch.pending.list',
+    async () => listPendingBatchIds(options.limit),
+    { input: { limit: options.limit }, output: (out) => ({ batch_ids: out }) }
+  );
   const synced = [];
 
   for (const batch_id of ids) {
     try {
-      const result = await runBatchCollectGraph(batch_id, {});
+      const result = await logger.step(
+        't1.batch.collect.one',
+        async () => runBatchCollectGraph(batch_id, {}),
+        { input: { batch_id }, output: (out) => out, meta: { batch_id } }
+      );
       synced.push(result);
     } catch (err) {
       synced.push({
@@ -47,7 +70,12 @@ async function syncPendingTier1Batches(opts) {
 }
 
 async function getTier1BatchStatusList(opts) {
-  const jobs = await listBatchStatuses(opts || {});
+  const logger = getLogger().child({ pipeline: 't1.status.list' });
+  const jobs = await logger.step(
+    't1.batch.status.list',
+    async () => listBatchStatuses(opts || {}),
+    { input: opts || {}, output: (out) => ({ jobs: Array.isArray(out) ? out.length : 0 }) }
+  );
   const summary = {
     jobs: jobs.length,
     in_progress: 0,
@@ -75,7 +103,12 @@ async function getTier1BatchStatusList(opts) {
 }
 
 async function getTier1BatchStatus(batchId, opts) {
-  return getBatchStatus(batchId, opts || {});
+  const logger = getLogger().child({ pipeline: 't1.status.one' });
+  return logger.step(
+    't1.batch.status.get',
+    async () => getBatchStatus(batchId, opts || {}),
+    { input: { batch_id: batchId, options: opts || {} }, output: (out) => out }
+  );
 }
 
 async function runTier1BatchWorkerCycle() {
