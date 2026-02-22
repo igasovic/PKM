@@ -230,6 +230,7 @@ module.exports = {
   buildT1BatchItemStatusList,
   buildInsertPipelineEvent,
   buildGetPipelineEventsByRunId,
+  buildGetRecentPipelineRuns,
   buildGetLastPipelineRunId,
   buildPrunePipelineEvents,
 };
@@ -546,6 +547,49 @@ FROM ${eventsTable}
 WHERE run_id = $1
 ORDER BY seq ASC, ts ASC
 LIMIT $2`;
+}
+
+/**
+ * Build SQL for listing recent run summaries from pipeline events.
+ * @param {{ eventsTable: string }} opts
+ * @returns {string}
+ */
+function buildGetRecentPipelineRuns(opts) {
+  const eventsTable = opts && opts.eventsTable;
+  if (!eventsTable || typeof eventsTable !== 'string') {
+    throw new Error('buildGetRecentPipelineRuns: eventsTable must be a non-empty string');
+  }
+  return `WITH runs AS (
+  SELECT
+    run_id,
+    MIN(ts) AS started_at,
+    MAX(ts) AS ended_at,
+    GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (MAX(ts) - MIN(ts))) * 1000))::bigint AS total_ms,
+    COUNT(*)::int AS event_count,
+    COUNT(*) FILTER (WHERE direction = 'error')::int AS error_count,
+    COUNT(*) FILTER (WHERE direction = 'start')::int AS start_count,
+    COUNT(*) FILTER (WHERE direction = 'end')::int AS end_count,
+    COUNT(*) FILTER (WHERE direction = 'error')::int AS error_event_count
+  FROM ${eventsTable}
+  WHERE ($1::timestamptz IS NULL OR ts < $1::timestamptz)
+  GROUP BY run_id
+)
+SELECT
+  run_id,
+  started_at,
+  ended_at,
+  total_ms,
+  event_count,
+  error_count,
+  GREATEST(start_count - end_count - error_event_count, 0)::int AS missing_end_count
+FROM runs
+WHERE (
+  $2::boolean IS NULL OR
+  ($2::boolean = true AND error_count > 0) OR
+  ($2::boolean = false AND error_count = 0)
+)
+ORDER BY ended_at DESC
+LIMIT $3`;
 }
 
 /**

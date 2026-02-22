@@ -358,6 +358,28 @@ async function handleRequest(req, res) {
     }
   }
 
+  if (method === 'GET' && url.pathname === '/debug/runs') {
+    try {
+      requireAdminSecret(req);
+      const limit = Number(url.searchParams.get('limit') || 50);
+      const before_ts = url.searchParams.get('before_ts') || url.searchParams.get('before') || null;
+      const has_error = url.searchParams.get('has_error');
+      const result = await logger.step(
+        'api.debug.runs',
+        async () => db.getRecentPipelineRuns({ limit, before_ts, has_error }),
+        {
+          input: { limit, before_ts, has_error },
+          output: (out) => ({ count: Array.isArray(out.rows) ? out.rows.length : 0 }),
+          meta: { route: url.pathname },
+        }
+      );
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
   const debugRunMatch = (method === 'GET')
     ? url.pathname.match(/^\/debug\/run\/([^/]+)$/)
     : null;

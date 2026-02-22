@@ -35,6 +35,16 @@ export interface RunBundle {
   rows: PipelineEventRow[];
 }
 
+export interface RecentRunSummary {
+  run_id: string;
+  started_at: string | null;
+  ended_at: string | null;
+  total_ms: number | null;
+  event_count: number;
+  error_count: number;
+  missing_end_count: number;
+}
+
 export type SpanStatus = 'ok' | 'error' | 'missing_end' | 'orphan_end' | 'orphan_error';
 
 export interface PairedSpan {

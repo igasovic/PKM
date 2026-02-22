@@ -241,7 +241,31 @@ Primary objective:
 - Braintrust logging remains focused on LLM spans and should include `run_id` metadata.
 - Backend must expose run inspection API:
   - `GET /debug/run/:run_id` (admin-protected)
+  - `GET /debug/run/last` (admin-protected)
+  - `GET /debug/runs` (admin-protected, recent run summaries)
 - Backend must prune old pipeline events daily with retention default `30` days (`PKM_PIPELINE_EVENTS_RETENTION_DAYS`).
+
+## Debug UI requirements (Mac React + Tailwind)
+- UI lives under `src/web/pkm-debug-ui` and must not add DB coupling.
+- UI must read pipeline debug data only through PKM HTTP `/debug/*` endpoints.
+- UI stack is fixed:
+  - React + TypeScript
+  - TailwindCSS
+  - dark mode only
+- UI must support:
+  - run lookup by `run_id`
+  - recent runs listing (`GET /debug/runs`)
+  - timeline inspection in table view and call-stack tree view
+  - paired span health states (`ok`, `error`, `missing_end`, `orphan_end`, `orphan_error`)
+  - detail drawer for event/span with JSON copy actions
+  - deterministic “investigation bundle” copy with stable key ordering
+- UI must handle payload variants:
+  - `{ run_id, rows }`
+  - `[{ run_id, rows }]`
+  - `{ rows }` (derive `run_id` from rows)
+- Large string guardrails:
+  - never render full heavy payload strings inline
+  - show compact size/hash summaries instead
 
 ## Non-goals
 - No duplicate side-table tracking in place of uniqueness constraints.

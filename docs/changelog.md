@@ -1,4 +1,22 @@
 # changelog
+## 2026-02-22 — Debug runs listing API + UI requirement updates
+
+### What changed
+- Added new admin debug endpoint:
+  - `GET /debug/runs`
+- Added backend run-summary query path for `pipeline_events`:
+  - SQL builder: `buildGetRecentPipelineRuns`
+  - DB method: `getRecentPipelineRuns`
+- `GET /debug/runs` supports:
+  - `limit` (default `50`, max `200`)
+  - `before_ts` pagination cutoff
+  - `has_error` filtering (`true|false`)
+- Updated docs:
+  - `docs/api.md` with `/debug/runs` contract and examples
+  - `docs/requirements.md` with full Mac Debug UI requirements and `/debug/runs` usage
+- Updated Mac debug UI to consume recent runs:
+  - added `/debug/runs` client support and recent-runs panel with quick-load actions
+
 ## 2026-02-21 — Pipeline transition logging + run correlation
 
 ### What changed

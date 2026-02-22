@@ -72,6 +72,7 @@ Response:
 [
   { "is_test_mode": true }
 ]
+```
 
 ### `GET /debug/run/:run_id`
 Returns pipeline transition events for one run id.
@@ -108,6 +109,36 @@ Headers:
 
 Query params:
 - `limit` (optional, default `5000`)
+
+### `GET /debug/runs`
+Returns recent run summaries from `pipeline_events`.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Query params:
+- `limit` (optional, default `50`, max `200`)
+- `before_ts` (optional ISO datetime, returns runs older than this timestamp)
+- `has_error` (optional boolean: `true` or `false`)
+
+Response:
+```json
+{
+  "rows": [
+    {
+      "run_id": "2233",
+      "started_at": "2026-02-22T05:10:01.000Z",
+      "ended_at": "2026-02-22T05:10:05.000Z",
+      "total_ms": 4000,
+      "event_count": 14,
+      "error_count": 0,
+      "missing_end_count": 0
+    }
+  ],
+  "limit": 50,
+  "before_ts": null,
+  "has_error": null
+}
 ```
 
 ## Normalization

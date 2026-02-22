@@ -1,19 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { EventsTable } from './components/EventsTable';
 import { JsonCard } from './components/JsonCard';
+import { RecentRunsList, type RecentFilter } from './components/RecentRunsList';
 import { SpanList } from './components/SpanList';
 import { SummaryBar } from './components/SummaryBar';
 import { TreeView } from './components/TreeView';
-import { fetchRunById } from './lib/api';
+import { fetchRecentRuns, fetchRunById } from './lib/api';
 import { buildInvestigationBundle } from './lib/bundle';
 import { fmtDuration, fmtTs } from './lib/format';
 import { normalizeRunBundle } from './lib/normalize';
 import { buildCallTree, computeRunSummary, pairSpans } from './lib/spans';
 import { copyText, stableStringify } from './lib/stable';
-import type { PairedSpan, PipelineEventRow, RunBundle, TreeNode } from './types';
+import type { PairedSpan, PipelineEventRow, RecentRunSummary, RunBundle, TreeNode } from './types';
 
 type ViewMode = 'events' | 'tree' | 'spans';
 type SourceMode = 'lookup' | 'paste';
+const RECENT_PAGE_SIZE = 30;
 type Selection =
   | { kind: 'row'; value: PipelineEventRow }
   | { kind: 'span'; value: PairedSpan }
@@ -121,6 +123,12 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [bundle, setBundle] = useState<RunBundle | null>(null);
   const [selected, setSelected] = useState<Selection>(null);
+  const [recentRuns, setRecentRuns] = useState<RecentRunSummary[]>([]);
+  const [recentLoading, setRecentLoading] = useState(false);
+  const [recentError, setRecentError] = useState<string | null>(null);
+  const [recentFilter, setRecentFilter] = useState<RecentFilter>('all');
+  const [recentBeforeTs, setRecentBeforeTs] = useState<string | null>(null);
+  const [recentHasMore, setRecentHasMore] = useState(false);
 
   const rows = bundle?.rows || [];
 
@@ -137,13 +145,14 @@ export default function App() {
     return selected.value.id;
   }, [selected]);
 
-  const loadByRunId = async () => {
+  const loadByRunId = async (candidateRunId?: string) => {
     setError(null);
-    const id = runId.trim();
+    const id = String(candidateRunId ?? runId).trim();
     if (!id) {
       setError('Run ID is required.');
       return;
     }
+    setRunId(id);
 
     setLoading(true);
     try {
@@ -157,6 +166,44 @@ export default function App() {
       setLoading(false);
     }
   };
+
+  const loadRecentRuns = async (reset = true) => {
+    setRecentError(null);
+    setRecentLoading(true);
+    try {
+      const has_error = recentFilter === 'all'
+        ? null
+        : recentFilter === 'error';
+      const before_ts = reset ? null : recentBeforeTs;
+      const result = await fetchRecentRuns({
+        limit: RECENT_PAGE_SIZE,
+        before_ts,
+        has_error,
+      });
+      const incoming = result.rows;
+      const merged = reset
+        ? incoming
+        : [...recentRuns, ...incoming].filter((row, index, arr) => {
+          const key = `${row.run_id}|${row.ended_at || 'na'}`;
+          return arr.findIndex((other) => `${other.run_id}|${other.ended_at || 'na'}` === key) === index;
+        });
+      setRecentRuns(merged);
+
+      const last = incoming[incoming.length - 1];
+      const nextBefore = last && last.ended_at ? last.ended_at : null;
+      setRecentBeforeTs(nextBefore);
+      setRecentHasMore(incoming.length === RECENT_PAGE_SIZE && !!nextBefore);
+    } catch (err) {
+      setRecentError(err instanceof Error ? err.message : 'failed to fetch recent runs');
+    } finally {
+      setRecentLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadRecentRuns(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recentFilter]);
 
   const parsePastedJson = () => {
     setError(null);
@@ -217,7 +264,7 @@ export default function App() {
                 type="button"
                 className="rounded border border-emerald-500 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-60"
                 onClick={() => {
-                  void loadByRunId();
+                  void loadByRunId(undefined);
                 }}
                 disabled={loading}
               >
@@ -260,6 +307,26 @@ export default function App() {
             </div>
           )}
         </header>
+
+        <div className="mt-4">
+          <RecentRunsList
+            rows={recentRuns}
+            loading={recentLoading}
+            error={recentError}
+            filter={recentFilter}
+            onFilterChange={setRecentFilter}
+            onRefresh={() => {
+              void loadRecentRuns(true);
+            }}
+            onLoadRun={(id) => {
+              void loadByRunId(id);
+            }}
+            onLoadMore={() => {
+              void loadRecentRuns(false);
+            }}
+            hasMore={recentHasMore}
+          />
+        </div>
 
         {summary && (
           <div className="mt-4">

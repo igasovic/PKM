@@ -29,6 +29,7 @@ Vite proxy forwards `/debug` to `${VITE_PKM_ORIGIN}/debug` and injects `x-pkm-ad
 
 ## Features
 - Run lookup by run id.
+- Recent run listing (`GET /debug/runs`) with quick load and error/no-error filters.
 - Optional paste-json mode for offline inspection.
 - Raw events table (seq/step/pipeline/direction/duration/ids/summaries).
 - Call-stack tree view (best-effort nested spans).

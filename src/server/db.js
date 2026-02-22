@@ -1375,6 +1375,15 @@ function parsePositiveInt(value, fallback) {
   return Math.trunc(n);
 }
 
+function parseNullableBoolean(value) {
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value === 'boolean') return value;
+  const raw = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  throw new Error('has_error must be true|false');
+}
+
 async function insertPipelineEvent(event) {
   const row = event && typeof event === 'object' ? { ...event } : {};
   const run_id = String(row.run_id || '').trim();
@@ -1437,6 +1446,27 @@ async function getPipelineRun(run_id, opts) {
   };
 }
 
+async function getRecentPipelineRuns(opts) {
+  const options = opts || {};
+  const limitRaw = parsePositiveInt(options.limit, 50);
+  const limit = Math.min(limitRaw, 200);
+  const beforeRaw = String(options.before_ts || '').trim();
+  const beforeTs = beforeRaw ? new Date(beforeRaw) : null;
+  if (beforeRaw && (!beforeTs || Number.isNaN(beforeTs.getTime()))) {
+    throw new Error('before_ts must be a valid datetime');
+  }
+  const hasError = parseNullableBoolean(options.has_error);
+  const sql = sb.buildGetRecentPipelineRuns({ eventsTable: PIPELINE_EVENTS_TABLE });
+  const params = [beforeTs ? beforeTs.toISOString() : null, hasError, limit];
+  const res = await getPool().query(sql, params);
+  return {
+    rows: res.rows || [],
+    limit,
+    before_ts: beforeTs ? beforeTs.toISOString() : null,
+    has_error: hasError,
+  };
+}
+
 async function getLastPipelineRun(opts) {
   const options = opts || {};
   const limit = parsePositiveInt(options.limit, 5000);
@@ -1478,6 +1508,7 @@ module.exports = {
   getTestModeStateFromDb,
   setTestModeStateInDb,
   insertPipelineEvent,
+  getRecentPipelineRuns,
   getPipelineRun,
   getLastPipelineRun,
   prunePipelineEvents,
