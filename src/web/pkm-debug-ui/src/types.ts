@@ -45,6 +45,22 @@ export interface RecentRunSummary {
   missing_end_count: number;
 }
 
+export type ReadOperation = 'continue' | 'find' | 'last';
+
+export interface ReadItem {
+  id: string;
+  index: number;
+  entry_id: string | null;
+  title: string | null;
+  author: string | null;
+  source: string | null;
+  created_at: string | null;
+  url: string | null;
+  clean_char_count: number | null;
+  excerpt: string;
+  raw: Record<string, unknown>;
+}
+
 export type SpanStatus = 'ok' | 'error' | 'missing_end' | 'orphan_end' | 'orphan_error';
 
 export interface PairedSpan {

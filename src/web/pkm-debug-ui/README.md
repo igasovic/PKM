@@ -1,11 +1,19 @@
 # PKM Debug UI
 
-Local React + Tailwind GUI for inspecting PKM pipeline logs through `/debug/*` HTTP endpoints.
+Local React + Tailwind GUI for:
+- **Read** workflows via `/db/read/*`
+- **Debug** pipeline inspection via `/debug/*`
 
 ## Scope
 - Dark-mode only UI.
 - Uses PKM server HTTP only (no DB connections).
-- MVP depends on `GET /debug/run/:run_id`.
+- Read page depends on:
+  - `POST /db/read/continue`
+  - `POST /db/read/find`
+  - `POST /db/read/last`
+- Debug page depends on:
+  - `GET /debug/run/:run_id`
+  - `GET /debug/runs`
 - Handles payload variants:
   - `[{ run_id, rows: [...] }]`
   - `{ run_id, rows: [...] }`
@@ -25,9 +33,26 @@ VITE_PKM_ORIGIN=http://192.168.5.4:3010
 PKM_ADMIN_SECRET=replace-with-your-pkm-admin-secret
 ```
 
-Vite proxy forwards `/debug` to `${VITE_PKM_ORIGIN}/debug` and injects `x-pkm-admin-secret` from `PKM_ADMIN_SECRET`, so frontend requests stay relative and no backend CORS changes are required.
+Vite proxy forwards:
+- `/db` to `${VITE_PKM_ORIGIN}/db`
+- `/debug` to `${VITE_PKM_ORIGIN}/debug` and injects `x-pkm-admin-secret` from `PKM_ADMIN_SECRET`
+
+This keeps frontend requests relative and avoids backend CORS changes.
 
 ## Features
+## Features
+
+### Read
+- Left menu navigation (`/read`, `/debug`).
+- Single-operation radio selection: `continue | find | last`.
+- Query controls: `q` (required), `days`, `limit`.
+- Sends request run id in `X-PKM-Run-Id` (`ui-read-<uuid>`).
+- Displays returned run id and quick link to open debug page for that run.
+- Result browser with per-row include checkbox and bulk actions.
+- Context pack builder (markdown/json), live preview, and copy to clipboard.
+- Token estimation (heuristic `chars / 4`).
+
+### Debug
 - Run lookup by run id.
 - Recent run listing (`GET /debug/runs`) with quick load and error/no-error filters.
 - Optional paste-json mode for offline inspection.
