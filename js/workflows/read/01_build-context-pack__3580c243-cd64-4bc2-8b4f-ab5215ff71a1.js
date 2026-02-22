@@ -38,6 +38,7 @@ module.exports = async function run(ctx) {
  */
 
 const rows = $input.all().map(i => i.json);
+const mdv2 = (value) => String(value ?? '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 
 // meta row is always present
 const meta = rows.find(r => r.is_meta === true) || {};
@@ -58,9 +59,10 @@ const hitsRows = rows.filter(r => r.is_meta === false && r.id);
 // No hits
 if (!hitsRows.length) {
   const msg =
-    `Context Pack — /${cmd}${q ? ` "${q}"` : ''}\n` +
-    `Window: ${days}d | Limit: ${limit} | Hits: 0\n\n` +
-    `No matches. Try a larger --days or broader terms.`;
+    `*Context Pack*\n` +
+    `*Command:* /${mdv2(cmd)}${q ? ` "${mdv2(q)}"` : ''}\n` +
+    `*Window:* ${mdv2(days)}d · *Limit:* ${mdv2(limit)} · *Hits:* 0\n\n` +
+    `No matches\\. Try a larger window or broader terms\\.`;
 
   return [{ json: { telegram_message: msg } }];
 }
@@ -68,8 +70,9 @@ if (!hitsRows.length) {
 const maxSnippet = 300;
 const lines = [];
 
-lines.push(`Context Pack — /${cmd}${q ? ` "${q}"` : ''}`);
-lines.push(`Window: ${days}d | Limit: ${limit} | Hits: ${hits}`);
+lines.push(`*Context Pack*`);
+lines.push(`*Command:* /${mdv2(cmd)}${q ? ` "${mdv2(q)}"` : ''}`);
+lines.push(`*Window:* ${mdv2(days)}d · *Limit:* ${mdv2(limit)} · *Hits:* ${mdv2(hits)}`);
 lines.push('');
 
 // Render each hit
@@ -89,11 +92,11 @@ hitsRows.forEach((r, idx) => {
   // Header line includes WP2 entry_id for /pull
   // Example: "1) #12345 • 2026-01-26 04:56:56 • email • archive • 886 chars"
   const idPart = entryId ? `#${entryId} • ` : '';
-  lines.push(`${idx + 1}) ${idPart}${created} • ${source}${intent ? ` • ${intent}` : ''} • ${textLen} chars`);
+  lines.push(`*${idx + 1}\\)* ${mdv2(idPart)}${mdv2(created)} • ${mdv2(source)}${intent ? ` • ${mdv2(intent)}` : ''} • ${mdv2(textLen)} chars`);
 
-  if (title) lines.push(`Title: ${title}`);
-  if (url) lines.push(`URL: ${url}`);
-  if (snippet) lines.push(`Snippet: ${snippet}`);
+  if (title) lines.push(`*Title:* ${mdv2(title)}`);
+  if (url) lines.push(`*URL:* ${mdv2(url)}`);
+  if (snippet) lines.push(`*Snippet:* ${mdv2(snippet)}`);
   lines.push('');
 });
 
@@ -102,7 +105,7 @@ let msg = lines.join('\n').trim();
 // safety cap (Telegram hard limit is 4096; keep margin for safety)
 const MAX_TELEGRAM = 3500;
 if (msg.length > MAX_TELEGRAM) {
-  msg = msg.slice(0, MAX_TELEGRAM - 1) + '…\n\n(Truncated — reduce --limit)';
+  msg = msg.slice(0, MAX_TELEGRAM - 1) + '…\n\n\\(Truncated — reduce limit\\)';
 }
 
 return [{ json: { telegram_message: msg } }];
