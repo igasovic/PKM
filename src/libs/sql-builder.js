@@ -555,11 +555,14 @@ LIMIT $2`;
  */
 function buildGetLastPipelineRunId(opts) {
   const eventsTable = opts && opts.eventsTable;
+  const excludeRunId = !!(opts && opts.excludeRunId);
   if (!eventsTable || typeof eventsTable !== 'string') {
     throw new Error('buildGetLastPipelineRunId: eventsTable must be a non-empty string');
   }
+  const where = excludeRunId ? 'WHERE run_id <> $1' : '';
   return `SELECT run_id
 FROM ${eventsTable}
+${where}
 GROUP BY run_id
 ORDER BY MAX(ts) DESC
 LIMIT 1`;

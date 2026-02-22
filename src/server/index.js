@@ -340,10 +340,16 @@ async function handleRequest(req, res) {
     try {
       requireAdminSecret(req);
       const limit = Number(url.searchParams.get('limit') || 5000);
+      const ctx = getRunContext() || {};
+      const exclude_run_id = ctx.run_id || null;
       const result = await logger.step(
         'api.debug.run.last',
-        async () => db.getLastPipelineRun({ limit }),
-        { input: { limit }, output: (out) => ({ run_id: out.run_id, rows: out.rows }), meta: { route: url.pathname } }
+        async () => db.getLastPipelineRun({ limit, exclude_run_id }),
+        {
+          input: { limit, exclude_run_id },
+          output: (out) => ({ run_id: out.run_id, rows: out.rows }),
+          meta: { route: url.pathname },
+        }
       );
       return json(res, 200, result);
     } catch (err) {

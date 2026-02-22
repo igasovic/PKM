@@ -1440,8 +1440,12 @@ async function getPipelineRun(run_id, opts) {
 async function getLastPipelineRun(opts) {
   const options = opts || {};
   const limit = parsePositiveInt(options.limit, 5000);
-  const latestSql = sb.buildGetLastPipelineRunId({ eventsTable: PIPELINE_EVENTS_TABLE });
-  const latest = await getPool().query(latestSql);
+  const excludeRunId = String(options.exclude_run_id || '').trim();
+  const latestSql = sb.buildGetLastPipelineRunId({
+    eventsTable: PIPELINE_EVENTS_TABLE,
+    excludeRunId: !!excludeRunId,
+  });
+  const latest = await getPool().query(latestSql, excludeRunId ? [excludeRunId] : []);
   const run_id = latest.rows && latest.rows[0] ? latest.rows[0].run_id : null;
   if (!run_id) {
     return { run_id: null, rows: [] };
