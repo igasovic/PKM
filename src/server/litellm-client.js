@@ -228,7 +228,7 @@ function getDefaultBatchRequestModel(fallback) {
   return (
     process.env.T1_BATCH_REQUEST_MODEL ||
     process.env.T1_BATCH_PROVIDER_MODEL ||
-    fallback
+    null
   );
 }
 
@@ -514,6 +514,11 @@ class LiteLLMClient {
 
     const model = options.model || getDefaultBatchModel();
     const requestModel = options.request_model || getDefaultBatchRequestModel(model);
+    if (!requestModel) {
+      throw new Error(
+        'LiteLLM createBatch requires provider model for JSONL body; set T1_BATCH_REQUEST_MODEL (e.g. gpt-5-nano) or pass options.request_model'
+      );
+    }
     const instructions = options.systemPrompt || this.systemPrompt;
     const completion_window = options.completion_window || '24h';
     const reasoningEffort = getReasoningEffort();
