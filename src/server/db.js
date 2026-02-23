@@ -1507,6 +1507,7 @@ module.exports = {
   toggleTestModeState,
   getTestModeStateFromDb,
   setTestModeStateInDb,
+  toggleTestModeStateInDb,
   insertPipelineEvent,
   getRecentPipelineRuns,
   getPipelineRun,
