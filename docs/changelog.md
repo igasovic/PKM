@@ -1,4 +1,15 @@
 # changelog
+## 2026-02-23 — Test mode UI control + backend toggle export fix
+
+### What changed
+- Added test mode control to Mac UI left sidebar (`src/web/pkm-debug-ui`):
+  - reads state via `GET /db/test-mode`
+  - toggles state via `POST /db/test-mode/toggle`
+  - visual state: green when ON, gray when OFF
+  - positioned at the bottom of the sidebar menu with independent menu scrolling
+- Fixed backend toggle wiring bug:
+  - exported `toggleTestModeStateInDb` from `src/server/db.js` so `TestModeService.toggle()` works correctly
+
 ## 2026-02-23 — Read keywords + context pack format alignment
 
 ### What changed

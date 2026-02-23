@@ -165,6 +165,24 @@ Primary objective:
   - cache must not outlive process restart (in-memory cache only)
 - Cached value is an optimization only; Postgres remains source of truth.
 
+## Test mode requirements
+- Test mode state is persisted in Postgres runtime config under key `is_test_mode`.
+- APIs:
+  - `GET /db/test-mode` returns current state as `[{ is_test_mode: boolean }]`.
+  - `POST /db/test-mode/toggle` flips state atomically and returns resulting state as `[{ is_test_mode: boolean }]`.
+- Schema routing behavior:
+  - `is_test_mode=false` routes DB operations to `pkm` schema.
+  - `is_test_mode=true` routes DB operations to `pkm_test` schema.
+- Toggle behavior requirements:
+  - no implicit defaults at call sites
+  - state change must be immediately visible to subsequent requests
+  - service cache must be updated/invalidate-on-write for toggle/set operations
+- Failure behavior:
+  - if `runtime_config` is missing, test-mode endpoints must fail with explicit error
+  - backend must not silently fall back to static config for mutable test-mode state
+- UI requirement:
+  - Mac debug UI includes a bottom-left sidebar control to view and toggle test mode (green when ON, gray when OFF).
+
 ## Integration expectations (n8n and other clients)
 - Call normalization first; do not hand-craft idempotency keys downstream.
 - Insert normalized payload directly to `/db/insert`.
