@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+STACK_DIR="/home/igasovic/stack"
+
+SERVICE="${1:-}"
+if [[ -z "$SERVICE" ]]; then
+  echo "Usage: recreate <service>" >&2
+  exit 1
+fi
+
+cd "$STACK_DIR"
+docker compose up -d --no-deps --force-recreate "$SERVICE"
