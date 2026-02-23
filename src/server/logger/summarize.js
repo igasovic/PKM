@@ -7,6 +7,10 @@ const DEFAULT_SUMMARY_MAX_BYTES = (() => {
   const raw = Number(process.env.PKM_LOG_SUMMARY_MAX_BYTES || 12 * 1024);
   return Number.isFinite(raw) && raw >= 2048 ? Math.trunc(raw) : 12 * 1024;
 })();
+const DEFAULT_STRING_HASH_THRESHOLD = (() => {
+  const raw = Number(process.env.PKM_LOG_STRING_HASH_THRESHOLD || 500);
+  return Number.isFinite(raw) && raw >= 50 ? Math.trunc(raw) : 500;
+})();
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value || ''), 'utf8').digest('hex');
@@ -24,21 +28,28 @@ function shouldIncludeTextSample(opts) {
 
 function summarizeString(value, key, opts) {
   const text = String(value || '');
-  const out = {
-    type: 'string',
-    char_count: text.length,
-  };
-  if (text.length > 0) out.sha256 = sha256(text);
+  const threshold = Number.isFinite(Number(opts && opts.string_hash_threshold))
+    ? Number(opts.string_hash_threshold)
+    : DEFAULT_STRING_HASH_THRESHOLD;
+  const out = {};
 
   const includeSample = shouldIncludeTextSample(opts);
-  if (includeSample) {
-    const max = Number((opts && opts.sample_max_chars) || 120);
-    out.sample = text.slice(0, Math.max(20, max));
+  const isLarge = text.length > threshold;
+  const isProtectedHeavyField = BIG_TEXT_FIELDS.has(String(key || ''));
+
+  if (!isProtectedHeavyField && !isLarge) {
+    out.value = text;
+    out.char_count = text.length;
+    return out;
   }
 
-  if (BIG_TEXT_FIELDS.has(String(key || ''))) {
-    // Hard guard: never emit full heavy fields in summaries.
-    delete out.sample;
+  out.type = 'string';
+  out.char_count = text.length;
+  if (text.length > 0) out.sha256 = sha256(text);
+
+  if (includeSample && !isProtectedHeavyField) {
+    const max = Number((opts && opts.sample_max_chars) || 120);
+    out.sample = text.slice(0, Math.max(20, max));
   }
   return out;
 }
