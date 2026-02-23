@@ -1,6 +1,6 @@
 import { stableStringify } from './stable';
 import type { ReadItem, ReadOperation } from '../types';
-import contextPackBuilder from '@shared/context-pack-builder.js';
+import contextPackBuilder from './contextPackBuilder';
 
 export type ContextPackFormat = 'markdown' | 'json';
 
@@ -23,7 +23,7 @@ export function buildContextPackMarkdown(items: ReadItem[], meta: ContextPackMet
     buildContextPackMarkdown: (
       rows: Array<Record<string, unknown>>,
       payloadMeta: Record<string, unknown>,
-      opts?: { markdownV2?: boolean; maxContentLen?: number },
+      opts?: { markdownV2?: boolean; maxContentLen?: number; layout?: string },
     ) => string;
   };
   return helper.buildContextPackMarkdown(
@@ -34,7 +34,7 @@ export function buildContextPackMarkdown(items: ReadItem[], meta: ContextPackMet
       days: normValue(meta.days),
       limit: normValue(meta.limit),
     },
-    { markdownV2: false },
+    { markdownV2: false, layout: 'ui' },
   );
 }
 

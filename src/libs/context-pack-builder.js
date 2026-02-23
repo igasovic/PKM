@@ -96,6 +96,7 @@ function toContextPackItem(record, opts) {
     author: pick(obj, ['author']) || '-',
     title: pick(obj, ['title']) || '-',
     date: shortDate(pick(obj, ['created_at', 'date'])),
+    url: pick(obj, ['url', 'url_canonical']) || '-',
     topic_primary: pick(obj, ['topic_primary']) || '-',
     topic_secondary: pick(obj, ['topic_secondary']) || '-',
     keywords: normalizeKeywords(pickAny(obj, ['keywords'])),
@@ -122,8 +123,11 @@ function buildContextPackMarkdown(items, meta, opts) {
   const options = opts || {};
   const markdownV2 = Boolean(options.markdownV2);
   const maxContentLen = Number(options.maxContentLen || 800);
+  const layout = String(options.layout || (markdownV2 ? 'telegram' : 'ui')).toLowerCase();
   const rows = Array.isArray(items) ? items : [];
-  const normalizedItems = rows.map((row) => toContextPackItem(row, { maxContentLen }));
+  const normalizedItems = rows
+    .filter((row) => !(row && typeof row === 'object' && row.is_meta === true))
+    .map((row) => toContextPackItem(row, { maxContentLen }));
 
   // Context pack template:
   // CONTEXT PACK
@@ -135,28 +139,44 @@ function buildContextPackMarkdown(items, meta, opts) {
   //   - Content: <content>
   // END CONTEXT PACK
   const lines = [];
-  lines.push('CONTEXT PACK');
-  lines.push(`Retrieval: ${buildRetrievalLine(meta)}`);
-  lines.push('Top matches (most relevant first):');
-
-  normalizedItems.forEach((item) => {
-    const keywords = item.keywords.length ? item.keywords.join(', ') : '-';
-    lines.push(`- ${item.entry_id} | ${item.content_type} | ${item.author} | ${item.title} | ${item.date}`);
-    lines.push(`  - Topic: ${item.topic_primary} -> ${item.topic_secondary}`);
-    lines.push(`  - Keywords: ${keywords}`);
-    lines.push(`  - Content: ${item.content}`);
-  });
-
-  if (normalizedItems.length === 0) {
-    lines.push('- (no matches)');
+  if (layout === 'ui') {
+    lines.push('## Context Pack');
+    lines.push(`retrieval: ${buildRetrievalLine(meta)}`);
+    lines.push('');
+    normalizedItems.forEach((item) => {
+      const keywords = item.keywords.length ? item.keywords.join(', ') : '-';
+      lines.push(`Entry ${item.entry_id} | ${item.content_type} | ${item.author} | ${item.title} | ${item.date}`);
+      lines.push(`topic: ${item.topic_primary} -> ${item.topic_secondary}`);
+      lines.push(`keywords: ${keywords}`);
+      lines.push(`url: ${item.url || '-'}`);
+      lines.push(`content: ${item.content}`);
+      lines.push('');
+    });
+    if (normalizedItems.length === 0) {
+      lines.push('No matches');
+    }
+  } else {
+    lines.push('CONTEXT PACK');
+    lines.push(`Retrieval: ${buildRetrievalLine(meta)}`);
+    lines.push('Top matches (most relevant first):');
+    normalizedItems.forEach((item) => {
+      const keywords = item.keywords.length ? item.keywords.join(', ') : '-';
+      lines.push(`- ${item.entry_id} | ${item.content_type} | ${item.author} | ${item.title} | ${item.date}`);
+      lines.push(`  - Topic: ${item.topic_primary} -> ${item.topic_secondary}`);
+      lines.push(`  - Keywords: ${keywords}`);
+      lines.push(`  - Content: ${item.content}`);
+    });
+    if (normalizedItems.length === 0) {
+      lines.push('- (no matches)');
+    }
+    lines.push('END CONTEXT PACK');
   }
-  lines.push('END CONTEXT PACK');
 
-  const out = lines.join('\n');
+  const out = lines.join('\n').trim();
   return markdownV2 ? escapeMarkdownV2(out) : out;
 }
 
-module.exports = {
+const api = {
   buildContextPackMarkdown,
   deriveExcerptFromRecord,
   escapeMarkdownV2,
@@ -164,3 +184,10 @@ module.exports = {
   snip,
   toContextPackItem,
 };
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = api;
+  module.exports.default = api;
+}
+if (typeof globalThis !== 'undefined') {
+  globalThis.__pkmContextPackBuilder = api;
+}

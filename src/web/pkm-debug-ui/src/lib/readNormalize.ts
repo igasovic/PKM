@@ -1,5 +1,5 @@
 import type { ReadItem } from '../types';
-import contextPackBuilder from '@shared/context-pack-builder.js';
+import contextPackBuilder from './contextPackBuilder';
 
 interface NormalizeOptions {
   snippetLength?: number;

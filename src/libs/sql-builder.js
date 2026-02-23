@@ -785,6 +785,7 @@ base AS (
     COALESCE(e.topic_secondary,'') AS topic_secondary,
     COALESCE(e.gist,'') AS gist,
     COALESCE(e.retrieval_excerpt, e.metadata #>> '{retrieval,excerpt}', '') AS excerpt,
+    COALESCE(e.keywords, ARRAY[]::text[]) AS keywords,
 
     COALESCE(e.keywords, ARRAY[]::text[]) AS keywords,
     COALESCE(e.quality_score, 0.5) AS quality_score,
@@ -914,6 +915,7 @@ meta_row AS (
     NULL::text AS topic_secondary,
     NULL::text AS gist,
     NULL::text AS excerpt,
+    NULL::text[] AS keywords,
     NULL::double precision AS score,
     NULL::text AS snippet
   FROM params p
@@ -940,6 +942,7 @@ hit_rows AS (
     h.topic_secondary,
     h.gist,
     h.excerpt,
+    h.keywords,
     h.score::double precision AS score,
     NULL::text AS snippet
   FROM hits h
@@ -1056,6 +1059,7 @@ SELECT
   NULL::text AS topic_secondary,
   NULL::text AS gist,
   NULL::text AS excerpt,
+  NULL::text[] AS keywords,
   NULL::double precision AS score,
   NULL::text AS snippet
 FROM meta m
@@ -1080,6 +1084,7 @@ SELECT
   h.topic_secondary,
   h.gist,
   h.excerpt,
+  h.keywords,
   h.score,
   h.snippet
 FROM hits h;
@@ -1225,6 +1230,7 @@ hits AS (
     topic_secondary,
     gist,
     excerpt,
+    keywords,
     score
   FROM scored
   ORDER BY score DESC, created_at DESC
@@ -1259,6 +1265,7 @@ SELECT
   NULL::text AS topic_secondary,
   NULL::text AS gist,
   NULL::text AS excerpt,
+  NULL::text[] AS keywords,
   NULL::double precision AS score,
   NULL::text AS snippet
 FROM meta m
@@ -1283,6 +1290,7 @@ SELECT
   h.topic_secondary,
   h.gist,
   h.excerpt,
+  h.keywords,
   h.score,
   NULL::text AS snippet
 FROM hits h;
