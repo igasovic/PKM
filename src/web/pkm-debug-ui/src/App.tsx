@@ -97,8 +97,8 @@ function SidebarNav() {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <nav className="space-y-2">
+    <div className="flex h-full min-h-0 flex-col">
+      <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
         {menu.map((item) => {
           if (!item.children || item.children.length === 0) {
             return <SidebarLink key={item.id} to={item.to || '/'} label={item.label} />;
@@ -129,7 +129,7 @@ function SidebarNav() {
         })}
       </nav>
 
-      <div className="mt-auto pt-3">
+      <div className="border-t border-slate-800 pt-3">
         <button
           type="button"
           className={`w-full rounded-lg border px-3 py-2 text-sm transition ${
@@ -156,7 +156,7 @@ export default function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-slate-950 text-slate-100">
         <div className="mx-auto grid min-h-screen max-w-[1900px] grid-cols-1 gap-4 p-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 shadow-glow lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)]">
+          <aside className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 shadow-glow lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:flex lg:min-h-0 lg:flex-col">
             <div className="mb-3 text-sm font-semibold text-slate-100">PKM UI</div>
             <SidebarNav />
           </aside>
