@@ -263,17 +263,18 @@ Primary objective:
 - Context pack generation must be centralized in `src/libs/context-pack-builder.js`.
 - Both UI (`src/web/pkm-debug-ui`) and n8n read workflow context-pack node must use this shared builder.
 - Output variants:
-  - UI: regular Markdown
+  - UI: regular Markdown using the UI-specific compact layout below
   - n8n Telegram: MarkdownV2-safe (escaped)
-- Context pack template is fixed:
-  - `CONTEXT PACK`
-  - `Retrieval: <method> q="<query>" | days=<days|default> | limit=<limit|default>`
-  - `Top matches (most relevant first):`
-  - `- <entry_id> | <content type> | <Author> | <Title> | <date YYYY-MM-DD>`
-  - `  - Topic: <primary topic> -> <secondary topic>`
-  - `  - Keywords: <keyword1>, <keyword2>, ...`
-  - `  - Content: <content>`
-  - `END CONTEXT PACK`
+- Read endpoints (`/db/read/continue`, `/db/read/find`, `/db/read/last`) must include `keywords` in hit rows.
+- Context-pack builder must skip meta row(s) (`is_meta=true`) and include only hit rows.
+- UI context-pack template is fixed:
+  - `## Context Pack`
+  - `retrieval: {method} | q="{query}" | days={days_or_default} | limit={limit_or_default}`
+  - `Entry {entry_id} | {content_type} | {author_or_-} | {title_or_-} | {yyyy_mm_dd}`
+  - `topic: {topic_primary_or_-} -> {topic_secondary_or_-}`
+  - `keywords: {k1, k2, k3_or_-}`
+  - `url: {url_or_-}`
+  - `content: {selected_content}`
 - `run_id` must not be included inside context-pack text.
 - Content selection priority is mandatory:
   - `gist`

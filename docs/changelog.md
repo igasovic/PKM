@@ -1,4 +1,24 @@
 # changelog
+## 2026-02-23 — Read keywords + context pack format alignment
+
+### What changed
+- Updated read SQL outputs to include `keywords` in all three read methods:
+  - `POST /db/read/continue`
+  - `POST /db/read/find`
+  - `POST /db/read/last`
+- Fixed SQL regressions introduced during read-shape changes:
+  - removed duplicate `keywords` select in `continue` path
+  - added missing `keywords` select in `find` hits CTE
+- Centralized context-pack rendering in `src/libs/context-pack-builder.js` and aligned output contracts:
+  - context-pack generation now skips `is_meta=true` rows
+  - UI uses compact markdown layout:
+    - `## Context Pack`
+    - `retrieval: ...`
+    - per-entry block with topic, keywords, url, content
+  - `run_id` removed from context-pack body
+- Updated docs:
+  - `docs/requirements.md` (new fixed UI context-pack template + read keywords requirement)
+
 ## 2026-02-22 — Debug runs listing API + UI requirement updates
 
 ### What changed
