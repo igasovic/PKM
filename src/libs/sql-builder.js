@@ -1001,6 +1001,7 @@ hits AS (
     COALESCE(e.topic_secondary,'') AS topic_secondary,
     COALESCE(e.gist,'') AS gist,
     COALESCE(e.retrieval_excerpt, e.metadata #>> '{retrieval,excerpt}', '') AS excerpt,
+    COALESCE(e.keywords, ARRAY[]::text[]) AS keywords,
 
     COALESCE(char_length(COALESCE(e.clean_text, e.capture_text)), 0) AS text_len,
 
