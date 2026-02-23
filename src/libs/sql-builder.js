@@ -786,8 +786,6 @@ base AS (
     COALESCE(e.gist,'') AS gist,
     COALESCE(e.retrieval_excerpt, e.metadata #>> '{retrieval,excerpt}', '') AS excerpt,
     COALESCE(e.keywords, ARRAY[]::text[]) AS keywords,
-
-    COALESCE(e.keywords, ARRAY[]::text[]) AS keywords,
     COALESCE(e.quality_score, 0.5) AS quality_score,
     COALESCE(e.boilerplate_heavy, false) AS boilerplate_heavy,
     COALESCE(e.low_signal, false) AS low_signal,
