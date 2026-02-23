@@ -32,6 +32,7 @@ let msg = buildContextPackMarkdown(
   },
   {
     markdownV2: true,
+    layout: 'ui',
     maxContentLen: 300,
   },
 );
