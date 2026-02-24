@@ -5,6 +5,7 @@ const {
   normalizeTelegram,
   normalizeEmail,
   normalizeWebpage,
+  normalizeNotion,
 } = require('./normalization.js');
 const {
   buildIdempotencyForNormalized,
@@ -12,6 +13,7 @@ const {
 } = require('./idempotency.js');
 const { buildRetrievalForDb } = require('./quality.js');
 const { getLogger } = require('./logger/index.js');
+const { getNotionClient } = require('./notion-client.js');
 
 function ensureObject(value) {
   return value && typeof value === 'object' ? value : {};
@@ -170,8 +172,110 @@ async function runWebpageIngestionPipeline({
   return stripInternalFields(withQuality);
 }
 
+async function runNotionIngestionPipeline({
+  id,
+  updated_at,
+  created_at,
+  content_type,
+  title,
+  url,
+  capture_text,
+}) {
+  const logger = getLogger().child({ pipeline: 'ingestion.notion' });
+  const notionPageId = String(id || '').trim();
+
+  const collected = await logger.step(
+    'collect.notion.page',
+    async () => getNotionClient().buildNotionObject({
+      page_id: notionPageId,
+      updated_at: updated_at || null,
+      created_at: created_at || null,
+      content_type: content_type || null,
+      title: title || null,
+      url: url || null,
+    }),
+    {
+      input: { page_id: notionPageId },
+      output: (out) => ({
+        notion: out.notion,
+        collect: out.collect,
+        capture_text_chars: out.capture_text ? String(out.capture_text).length : 0,
+      }),
+    }
+  );
+
+  const collectErrors = collected && collected.collect && Array.isArray(collected.collect.errors)
+    ? collected.collect.errors
+    : [];
+  for (const err of collectErrors) {
+    await logger.event('error', 'notion.collect.unsupported_block', { data: err });
+  }
+
+  const normalizedInput = {
+    notion: collected.notion,
+    updated_at: updated_at || (collected ? collected.updated_at : null),
+    created_at: created_at || (collected ? collected.created_at : null),
+    content_type: content_type || (collected ? collected.content_type : null),
+    title: title || (collected ? collected.title : null),
+    url: url || (collected ? collected.url : null),
+    capture_text: capture_text || (collected ? collected.capture_text : null),
+    blocks: collected.blocks,
+    source: {
+      ...(collected && collected.collect ? { notion_collect: collected.collect } : {}),
+    },
+  };
+
+  const normalized = await logger.step(
+    'normalize.notion',
+    async () => normalizeNotion({
+      notion: normalizedInput.notion,
+      updated_at: normalizedInput.updated_at,
+      created_at: normalizedInput.created_at,
+      content_type: normalizedInput.content_type,
+      title: normalizedInput.title,
+      url: normalizedInput.url,
+      capture_text: normalizedInput.capture_text,
+      blocks: normalizedInput.blocks,
+      source: normalizedInput.source,
+    }),
+    {
+      input: normalizedInput,
+      output: (out) => out,
+    }
+  );
+
+  if (normalized && normalized.skipped === true) {
+    const skipErrors = Array.isArray(normalized.skip_errors) ? normalized.skip_errors : [];
+    for (const err of skipErrors) {
+      await logger.event('error', 'notion.unsupported_block', { data: err });
+    }
+    return stripInternalFields(normalized);
+  }
+
+  const withIdempotency = await logger.step(
+    'idempotency.notion',
+    async () => applyIdempotencyFields(normalized, {
+      system: 'notion',
+      notion: {
+        ...(normalizedInput.notion && typeof normalizedInput.notion === 'object' ? normalizedInput.notion : {}),
+      },
+      title: normalizedInput.title || null,
+      content_type: normalizedInput.content_type || null,
+      created_at: normalizedInput.created_at || null,
+    }),
+    { input: normalized, output: (out) => out }
+  );
+  const withQuality = await logger.step(
+    'quality.notion',
+    async () => applyQualityFields(withIdempotency, { content_type }),
+    { input: withIdempotency, output: (out) => out }
+  );
+  return stripInternalFields(withQuality);
+}
+
 module.exports = {
   runTelegramIngestionPipeline,
   runEmailIngestionPipeline,
   runWebpageIngestionPipeline,
+  runNotionIngestionPipeline,
 };

@@ -263,6 +263,14 @@ Recommended wiring (so **pkm-server never calls OpenAI directly**):
 - `OPENAI_API_KEY=${LITELLM_MASTER_KEY}`
 - `T1_DEFAULT_MODEL=t1-default`
 
+**Notion ingest**
+- `NOTION_API_TOKEN=<notion integration token>` (required for server-side Notion block collection in `POST /normalize/notion` when only page id is provided)
+- optional:
+  - `NOTION_API_BASE=https://api.notion.com/v1`
+  - `NOTION_API_VERSION=2022-06-28`
+  - `NOTION_DATABASE_ID=<uuid>` (fallback database id when page parent metadata is unavailable)
+  - `NOTION_DATABASE_URL=https://www.notion.so/<db_id>?v=...` (database id can be extracted from URL)
+
 **Admin-protected debug endpoints**
 - `/debug/*` currently requires header `x-pkm-admin-secret: <PKM_ADMIN_SECRET>`.
 - If the header is missing or wrong, PKM returns `403 forbidden`.

@@ -117,6 +117,51 @@ function buildEmailCorrespondenceIdempotency(source, normalized) {
   };
 }
 
+function buildNotionIdempotency(source, normalized) {
+  const src = source || {};
+  const norm = normalized || {};
+  const notion = src.notion && typeof src.notion === 'object' ? src.notion : {};
+  const pageId = normalizeWhitespace(
+    notion.page_id ||
+    src.page_id ||
+    (norm.external_ref && norm.external_ref.notion ? norm.external_ref.notion.page_id : null)
+  );
+  if (!pageId) {
+    throw buildIdempotencyError('notion page_id is required', src, norm);
+  }
+  const contentType = String(norm.content_type || src.content_type || '').trim().toLowerCase();
+  if (!contentType) {
+    throw buildIdempotencyError('notion content_type is required', src, norm);
+  }
+  const policyByType = {
+    note: 'notion_note_v1',
+    newsletter: 'notion_newsletter_v1',
+    correspondence: 'notion_correspondence_v1',
+    other: 'notion_other_v1',
+  };
+  const policy = policyByType[contentType];
+  if (!policy) {
+    throw buildIdempotencyError(`unsupported notion content_type: ${contentType}`, src, norm);
+  }
+
+  const createdAt = normalizeWhitespace(
+    src.created_at ||
+    notion.created_at ||
+    norm.created_at ||
+    (norm.metadata && norm.metadata.notion ? norm.metadata.notion.created_at : null)
+  );
+  const title = normalizeWhitespace(norm.title || src.title);
+  const secondary = (createdAt && title)
+    ? sha256([createdAt, title.toLowerCase()])
+    : null;
+
+  return {
+    idempotency_policy_key: policy,
+    idempotency_key_primary: `notion:${pageId}`,
+    idempotency_key_secondary: secondary,
+  };
+}
+
 function safeJson(value) {
   try {
     return JSON.stringify(value);
@@ -169,6 +214,14 @@ function buildIdempotencyForNormalized({ source, normalized }) {
       src,
       norm
     );
+  }
+
+  if (system === 'notion') {
+    const out = buildNotionIdempotency(src, norm);
+    if (!out) {
+      throw buildIdempotencyError('notion keys could not be derived', src, norm);
+    }
+    return out;
   }
 
   throw buildIdempotencyError(

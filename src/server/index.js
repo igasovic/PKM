@@ -11,6 +11,7 @@ const {
   runTelegramIngestionPipeline,
   runEmailIngestionPipeline,
   runWebpageIngestionPipeline,
+  runNotionIngestionPipeline,
 } = require('./ingestion-pipeline.js');
 const {
   enrichTier1,
@@ -222,6 +223,31 @@ async function handleRequest(req, res) {
           url: body.url,
           url_canonical: body.url_canonical,
           excerpt: body.excerpt,
+        }),
+        { input: body, output: (out) => out, meta: { route: url.pathname } }
+      );
+      return json(res, 200, normalized);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/normalize/notion') {
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const normalized = await logger.step(
+        'api.normalize.notion',
+        async () => runNotionIngestionPipeline({
+          id: body.id || body.page_id || null,
+          updated_at: body.updated_at,
+          created_at: body.created_at,
+          content_type: body.content_type,
+          title: body.title,
+          url: body.url,
+          capture_text: body.capture_text,
         }),
         { input: body, output: (out) => out, meta: { route: url.pathname } }
       );

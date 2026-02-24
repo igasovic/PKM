@@ -268,6 +268,10 @@ Defines idempotency/deduplication behavior per `(source, content_type)` and stab
 - `email_correspondence_message_v1` (email / correspondence_message / skip)
 - `email_correspondence_thread_v1` (email / correspondence_thread / update)
 - `email_backfill_newsletter_v1` (email / newsletter / skip)
+- `notion_note_v1` (notion / note / update)
+- `notion_newsletter_v1` (notion / newsletter / update)
+- `notion_correspondence_v1` (notion / correspondence / update)
+- `notion_other_v1` (notion / other / update)
 
 ---
 

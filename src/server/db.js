@@ -8,7 +8,7 @@ const { traceDb, getBraintrustLogger } = require('./observability.js');
 const CONFIG_TABLE = sb.qualifiedTable(process.env.PKM_DB_SCHEMA || 'pkm', 'runtime_config');
 const IMMUTABLE_UPDATE_COLUMNS = new Set(['id', 'entry_id', 'created_at', 'tsv']);
 // For these ingest sources we fail closed unless idempotency keys are present.
-const IDEMPOTENCY_REQUIRED_SOURCES = new Set(['email', 'email-batch', 'telegram']);
+const IDEMPOTENCY_REQUIRED_SOURCES = new Set(['email', 'email-batch', 'telegram', 'notion']);
 const ADMIN_SCHEMAS = new Set(['pkm', 'pkm_test']);
 const DELETE_MOVE_MAX_BATCH = (() => {
   const raw = Number(process.env.DB_DELETE_MOVE_MAX_BATCH || 200);

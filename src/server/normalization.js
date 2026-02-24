@@ -1501,9 +1501,190 @@ async function normalizeWebpage({
   };
 }
 
+const NOTION_CONTENT_TYPES = new Set(['note', 'newsletter', 'correspondence', 'other']);
+
+function notionContentTypeOrThrow(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return 'note';
+  if (!NOTION_CONTENT_TYPES.has(raw)) {
+    throw new Error(`invalid content_type "${raw}" for notion; allowed: note|newsletter|correspondence|other`);
+  }
+  return raw;
+}
+
+function notionRichTextToPlain(richText) {
+  if (!Array.isArray(richText)) return '';
+  return richText
+    .map((item) => String((item && item.plain_text) || ''))
+    .join('')
+    .trim();
+}
+
+function renderNotionBlocksToText(blocks, ctx, depth = 0) {
+  if (!Array.isArray(blocks) || blocks.length === 0) return [];
+  const lines = [];
+  const indent = '  '.repeat(Math.max(0, depth));
+
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i] || {};
+    const type = String(block.type || '').trim();
+    const id = block.id || null;
+    const node = type && block[type] && typeof block[type] === 'object' ? block[type] : {};
+    const text = notionRichTextToPlain(node.rich_text);
+    let line = null;
+
+    if (type === 'paragraph') line = text;
+    else if (type === 'heading_1') line = text ? `# ${text}` : '#';
+    else if (type === 'heading_2') line = text ? `## ${text}` : '##';
+    else if (type === 'heading_3') line = text ? `### ${text}` : '###';
+    else if (type === 'bulleted_list_item') line = `- ${text}`.trim();
+    else if (type === 'numbered_list_item') line = `${i + 1}. ${text}`.trim();
+    else if (type === 'to_do') {
+      const checked = node.checked === true ? '[x]' : '[ ]';
+      line = `${checked} ${text}`.trim();
+    } else if (type === 'quote') line = text ? `> ${text}` : '>';
+    else if (type === 'code') {
+      const lang = String(node.language || '').trim();
+      const codeBody = text || '';
+      line = `\`\`\`${lang}\n${codeBody}\n\`\`\``;
+    } else if (type === 'divider') line = '---';
+    else {
+      ctx.unsupported.push({
+        source: 'notion',
+        notion_page_id: ctx.page_id || null,
+        block_type: type || '(empty)',
+        block_id: id,
+      });
+      continue;
+    }
+
+    if (line !== null && String(line).trim() !== '') {
+      lines.push(`${indent}${line}`);
+    }
+
+    if (block.has_children === true && Array.isArray(block.children) && block.children.length > 0) {
+      const childLines = renderNotionBlocksToText(block.children, ctx, depth + 1);
+      if (childLines.length > 0) lines.push(...childLines);
+    }
+  }
+
+  return lines;
+}
+
+async function normalizeNotion({
+  notion,
+  updated_at,
+  created_at,
+  content_type,
+  title,
+  url,
+  capture_text,
+  blocks,
+  source,
+}) {
+  const src = source && typeof source === 'object' ? source : {};
+  const notionObj = notion && typeof notion === 'object' ? notion : {};
+  const page_id = sanitizeHeaderText(notionObj.page_id || src.page_id || src.notion_page_id);
+  const database_id = sanitizeHeaderText(notionObj.database_id || src.database_id || src.notion_database_id);
+  const page_url = sanitizeHeaderText(notionObj.page_url || src.page_url || null);
+
+  if (!page_id) throw new Error('notion.page_id is required');
+  const notionUpdatedAt = sanitizeHeaderText(updated_at || notionObj.updated_at || src.updated_at);
+  if (!notionUpdatedAt) throw new Error('updated_at is required (Notion Last edited time property)');
+
+  const notionCreatedAt = sanitizeHeaderText(created_at || notionObj.created_at || src.created_at || null);
+  const resolvedType = notionContentTypeOrThrow(content_type || src.content_type || notionObj.content_type || null);
+  const resolvedTitle = sanitizeHeaderText(title || src.title || null);
+  if (!resolvedTitle) throw new Error('title is required');
+
+  const renderCtx = { page_id, unsupported: [] };
+  const renderedLines = renderNotionBlocksToText(blocks, renderCtx, 0);
+  const renderedText = collapseWhitespacePreserveNewlines(renderedLines.join('\n'));
+  const incomingText = collapseWhitespacePreserveNewlines(String(capture_text || ''));
+  if (renderCtx.unsupported.length > 0) {
+    return {
+      skipped: true,
+      skip_reason: 'unsupported_block_type',
+      skip_errors: renderCtx.unsupported,
+      source: 'notion',
+      title: resolvedTitle,
+      content_type: resolvedType,
+      notion: {
+        page_id,
+        database_id,
+        page_url,
+        updated_at: notionUpdatedAt,
+      },
+      __idempotency_source: {
+        ...src,
+        system: 'notion',
+        notion: {
+          page_id,
+          database_id,
+          page_url,
+          updated_at: notionUpdatedAt,
+          created_at: notionCreatedAt,
+        },
+      },
+    };
+  }
+  const bodyText = incomingText || renderedText;
+  if (!bodyText) throw new Error('text or blocks is required');
+
+  const canonicalUrl = canonicalizeUrl(url || page_url || null);
+  const normalized = formatForInsert({
+    source: 'notion',
+    intent: resolvedType === 'note' ? 'think' : 'archive',
+    content_type: resolvedType,
+    title: resolvedTitle,
+    author: null,
+    capture_text: bodyText,
+    clean_text: bodyText,
+    url: canonicalUrl || null,
+    url_canonical: canonicalUrl || null,
+    retrieval_fields: null,
+  });
+
+  return {
+    ...normalized,
+    ...(notionCreatedAt ? { created_at: notionCreatedAt } : {}),
+    external_ref: {
+      notion: {
+        page_id,
+        database_id,
+        page_url: canonicalUrl || page_url || null,
+      },
+    },
+    metadata: {
+      notion: {
+        page_id,
+        database_id,
+        page_url: canonicalUrl || page_url || null,
+        updated_at: notionUpdatedAt,
+        created_at: notionCreatedAt,
+      },
+    },
+    __idempotency_source: {
+      ...src,
+      system: 'notion',
+      notion: {
+        page_id,
+        database_id,
+        page_url: canonicalUrl || page_url || null,
+        updated_at: notionUpdatedAt,
+        created_at: notionCreatedAt,
+      },
+      title: resolvedTitle,
+      content_type: resolvedType,
+      created_at: notionCreatedAt,
+    },
+  };
+}
+
 module.exports = {
   normalizeTelegram,
   normalizeEmail,
   normalizeWebpage,
+  normalizeNotion,
   decideEmailIntent,
 };

@@ -70,4 +70,52 @@ describe('idempotency', () => {
     expect(toDateBucketYYYYMMDD('Tue, 17 Feb 2026 14:00:43 +0000')).toBe('20260217');
     expect(toDateBucketYYYYMMDD('2026-02-17')).toBe('20260217');
   });
+
+  test('derives notion note keys from page_id with optional secondary key', () => {
+    const out = buildIdempotencyForNormalized({
+      source: {
+        system: 'notion',
+        notion: { page_id: 'pg_123', created_at: '2026-02-24T10:00:00.000Z' },
+      },
+      normalized: {
+        content_type: 'note',
+        title: 'Notion idea',
+      },
+    });
+
+    expect(out.idempotency_policy_key).toBe('notion_note_v1');
+    expect(out.idempotency_key_primary).toBe('notion:pg_123');
+    expect(out.idempotency_key_secondary).toBe(
+      sha256(['2026-02-24T10:00:00.000Z', 'notion idea'])
+    );
+  });
+
+  test('derives notion newsletter policy mapping', () => {
+    const out = buildIdempotencyForNormalized({
+      source: {
+        system: 'notion',
+        notion: { page_id: 'pg_news' },
+      },
+      normalized: {
+        content_type: 'newsletter',
+        title: 'Weekly Brief',
+      },
+    });
+
+    expect(out.idempotency_policy_key).toBe('notion_newsletter_v1');
+    expect(out.idempotency_key_primary).toBe('notion:pg_news');
+  });
+
+  test('throws for unsupported notion content_type', () => {
+    expect(() => buildIdempotencyForNormalized({
+      source: {
+        system: 'notion',
+        notion: { page_id: 'pg_bad' },
+      },
+      normalized: {
+        content_type: 'thread',
+        title: 'Bad',
+      },
+    })).toThrow('unsupported notion content_type');
+  });
 });

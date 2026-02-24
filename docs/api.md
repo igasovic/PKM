@@ -284,6 +284,76 @@ Response:
 }
 ```
 
+### `POST /normalize/notion`
+Normalizes a Notion page payload into a `pkm.entries`-compatible payload.
+`source.system` is inferred by backend as `"notion"` from this endpoint.
+
+Body:
+```json
+{
+  "id": "abc123",
+  "updated_at": "2026-02-24T14:30:00.000Z",
+  "content_type": "note",
+  "title": "Idea title",
+  "url": "https://example.com",
+  "capture_text": "Rendered Notion page text"
+}
+```
+
+Rules:
+- `id` (or `page_id`) is required.
+- `updated_at` is required and must come from Notion DB Last edited time property.
+- `content_type` defaults to `note` only when missing/empty.
+- allowed content types: `note|newsletter|correspondence|other`.
+- request input does not require `notion{}` block.
+- backend always resolves page content by `id` via Notion API block fetch.
+- `capture_text` is optional override and is treated as the same body field used for normalization.
+- Notion API collection requires `NOTION_API_TOKEN` in backend environment.
+- if fetched blocks include unsupported block types, item is skipped with `skipped=true` and `skip_errors[]` (HTTP 200, non-fatal).
+
+Response (normal case):
+```json
+{
+  "source": "notion",
+  "intent": "think",
+  "content_type": "note",
+  "title": "Idea title",
+  "capture_text": "...",
+  "clean_text": "...",
+  "external_ref": {
+    "notion": {
+      "page_id": "abc123",
+      "database_id": "db123",
+      "page_url": "https://www.notion.so/..."
+    }
+  },
+  "metadata": {
+    "notion": {
+      "updated_at": "2026-02-24T14:30:00.000Z"
+    }
+  },
+  "idempotency_policy_key": "notion_note_v1",
+  "idempotency_key_primary": "notion:abc123",
+  "idempotency_key_secondary": null
+}
+```
+
+Response (unsupported blocks):
+```json
+{
+  "skipped": true,
+  "skip_reason": "unsupported_block_type",
+  "skip_errors": [
+    {
+      "source": "notion",
+      "notion_page_id": "abc123",
+      "block_type": "table",
+      "block_id": "..."
+    }
+  ]
+}
+```
+
 ## Enrichment
 
 ### `POST /enrich/t1`

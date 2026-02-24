@@ -1,4 +1,52 @@
 # changelog
+## 2026-02-24 — Notion collector client + normalize/notion input expansion
+
+### What changed
+- Added `src/server/notion-client.js`:
+  - fetches Notion page + paginated block tree
+  - recursively collects children (including synced block source references)
+  - renders collected blocks into `capture_text`
+  - returns collector stats/errors for logging
+- Wired Notion collector into `runNotionIngestionPipeline`:
+  - backend now always collects Notion blocks/content by `id` before normalization
+- Expanded `POST /normalize/notion` input handling:
+  - uses top-level `id`/`page_id` as canonical input (no required `notion{}` block)
+  - uses `capture_text` as the only body-text override field
+  - always fetches Notion blocks for the page id in collector path
+- Notion client now derives metadata without n8n-supplied fields:
+  - resolves `page_url` from Notion API/page id
+  - resolves `database_id` from page parent, or fallback config (`NOTION_DATABASE_ID` / `NOTION_DATABASE_URL`)
+- Updated docs:
+  - `docs/api.md`
+  - `docs/requirements.md`
+  - `docs/env.md` (Notion env vars)
+
+## 2026-02-24 — Notion normalization + idempotency wiring
+
+### What changed
+- Added Notion normalization API endpoint:
+  - `POST /normalize/notion`
+- Added Notion ingest orchestration path in backend:
+  - `runNotionIngestionPipeline` in `src/server/ingestion-pipeline.js`
+  - Notion order is `normalize -> idempotency -> quality`
+- Added Notion idempotency support in `src/server/idempotency.js`:
+  - `notion_note_v1`
+  - `notion_newsletter_v1`
+  - `notion_correspondence_v1`
+  - `notion_other_v1`
+  - primary key uses `notion:{page_id}`
+  - optional secondary key uses `sha256(created_at + title)` when `created_at` is provided
+- Added Notion normalization behavior in `src/server/normalization.js`:
+  - strict `content_type` validation (`note|newsletter|correspondence|other`)
+  - `updated_at` required
+  - Notion block rendering support for allowed block types
+  - unsupported block types now cause non-fatal item skip with `skipped=true` + `skip_errors[]`
+- Hardened DB insert/update idempotency requirement list:
+  - `source=notion` now fail-closed if idempotency fields are missing
+- Updated docs:
+  - `docs/api.md`
+  - `docs/requirements.md`
+
 ## 2026-02-23 — Test mode UI control + backend toggle export fix
 
 ### What changed

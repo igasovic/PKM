@@ -13,7 +13,7 @@ Primary objective:
 - Idempotency keys are computed in normalization.
 - Conflict resolution is enforced in backend DB insert logic using DB unique constraints.
 - Behavior must be schema-consistent between `pkm` and `pkm_test`.
-- Email, email-batch, and Telegram inserts are fail-closed: if idempotency fields are missing, insert is rejected.
+- Email, email-batch, Telegram, and Notion inserts are fail-closed: if idempotency fields are missing, insert is rejected.
 
 ## Data flow
 1. Ingest sends structured input to normalization.
@@ -76,6 +76,28 @@ Primary objective:
   - if normalized clean text is empty, response sets `retrieval_update_skipped: true`
   - caller should skip retrieval overwrite in that case
 
+### `POST /normalize/notion`
+- Purpose:
+  - normalize Notion page payloads for PKM ingest
+  - enforce strict content type validation
+  - support page-text rendering from Notion blocks
+- Input:
+  - `id` (or `page_id`) required
+  - `updated_at` required and must be sourced from Notion DB Last edited time property
+  - `title` required
+  - `content_type` optional; defaults to `note` only when missing/empty
+  - `content_type` allowed values: `note|newsletter|correspondence|other`
+  - `url` optional
+  - `capture_text` optional
+  - backend must collect page blocks from Notion API using page id and build `capture_text` when needed
+  - Notion API collector requires `NOTION_API_TOKEN`
+- Unsupported block behavior:
+  - if any unsupported Notion block type is encountered, item is skipped (non-fatal)
+  - response returns `skipped=true`, `skip_reason=unsupported_block_type`, and `skip_errors[]`
+- Quality ordering:
+  - Notion flow computes idempotency first
+  - quality/retrieval fields are computed only after idempotency
+
 ## Policy definitions
 
 ### `telegram_thought_v1`
@@ -111,6 +133,34 @@ Primary objective:
 - primary key: `sha256(subject_base)`
 - secondary key: none
 - participants are not part of key evaluation
+
+### `notion_note_v1`
+- source: `notion`
+- content type: `note`
+- conflict action: `update`
+- primary key: `notion:{page_id}`
+- secondary key: optional `sha256(created_at + title)` when created_at is supplied
+
+### `notion_newsletter_v1`
+- source: `notion`
+- content type: `newsletter`
+- conflict action: `update`
+- primary key: `notion:{page_id}`
+- secondary key: optional `sha256(created_at + title)` when created_at is supplied
+
+### `notion_correspondence_v1`
+- source: `notion`
+- content type: `correspondence`
+- conflict action: `update`
+- primary key: `notion:{page_id}`
+- secondary key: optional `sha256(created_at + title)` when created_at is supplied
+
+### `notion_other_v1`
+- source: `notion`
+- content type: `other`
+- conflict action: `update`
+- primary key: `notion:{page_id}`
+- secondary key: optional `sha256(created_at + title)` when created_at is supplied
 
 ## DB requirements
 

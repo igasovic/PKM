@@ -4,6 +4,7 @@ const {
   normalizeTelegram,
   normalizeEmail,
   normalizeWebpage,
+  normalizeNotion,
 } = require('../../src/server/normalization.js');
 
 describe('normalization', () => {
@@ -53,5 +54,67 @@ describe('normalization', () => {
     expect(out.url_canonical).toBe('https://example.com/post');
     expect(out.retrieval_excerpt).toBeUndefined();
     expect(out.idempotency_policy_key).toBeUndefined();
+  });
+
+  test('notion normalization defaults content_type to note and renders supported blocks', async () => {
+    const out = await normalizeNotion({
+      notion: { page_id: 'pg_123', database_id: 'db_1', page_url: 'https://www.notion.so/page' },
+      updated_at: '2026-02-24T10:00:00.000Z',
+      title: 'Notion idea',
+      blocks: [
+        {
+          id: 'b1',
+          type: 'heading_2',
+          heading_2: { rich_text: [{ plain_text: 'Section' }] },
+        },
+        {
+          id: 'b2',
+          type: 'paragraph',
+          paragraph: { rich_text: [{ plain_text: 'Paragraph body' }] },
+        },
+      ],
+      source: {},
+    });
+
+    expect(out.source).toBe('notion');
+    expect(out.content_type).toBe('note');
+    expect(out.title).toBe('Notion idea');
+    expect(out.clean_text).toContain('## Section');
+    expect(out.clean_text).toContain('Paragraph body');
+    expect(out.external_ref.notion.page_id).toBe('pg_123');
+    expect(out.__idempotency_source.system).toBe('notion');
+  });
+
+  test('notion normalization skips on unsupported block type', async () => {
+    const out = await normalizeNotion({
+      notion: { page_id: 'pg_unsupported', database_id: 'db_1' },
+      updated_at: '2026-02-24T10:00:00.000Z',
+      content_type: 'note',
+      title: 'Unsupported',
+      blocks: [
+        {
+          id: 'x1',
+          type: 'table',
+          table: {},
+        },
+      ],
+      source: {},
+    });
+
+    expect(out.skipped).toBe(true);
+    expect(out.skip_reason).toBe('unsupported_block_type');
+    expect(Array.isArray(out.skip_errors)).toBe(true);
+    expect(out.skip_errors[0].block_type).toBe('table');
+  });
+
+  test('notion normalization rejects invalid content_type', async () => {
+    await expect(normalizeNotion({
+      notion: { page_id: 'pg_bad', database_id: 'db_1' },
+      updated_at: '2026-02-24T10:00:00.000Z',
+      content_type: 'thread',
+      title: 'Invalid',
+      capture_text: 'hello',
+      source: {},
+    })).rejects.toThrow('invalid content_type');
   });
 });
