@@ -386,7 +386,27 @@ async function importEmailMbox(opts) {
       }),
       {
         input: { rows: pendingRows.length, returning: insertReturning },
-        output: (out) => ({ rowCount: out && out.rowCount ? out.rowCount : 0 }),
+        output: (out) => {
+          const rows = Array.isArray(out && out.rows) ? out.rows : [];
+          const inserted = [];
+          const updated = [];
+          const skipped = [];
+          for (const row of rows) {
+            if (!row || row._batch_ok === false) continue;
+            const entityId = row.entry_id || null;
+            if (entityId === null) continue;
+            const action = String(row.action || 'inserted');
+            if (action === 'skipped') skipped.push(entityId);
+            else if (action === 'updated') updated.push(entityId);
+            else inserted.push(entityId);
+          }
+          return {
+            rowCount: out && out.rowCount ? out.rowCount : 0,
+            inserted_entity_ids: inserted,
+            updated_entity_ids: updated,
+            skipped_entity_ids: skipped,
+          };
+        },
       }
     );
 
