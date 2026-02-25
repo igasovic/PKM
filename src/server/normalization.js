@@ -1512,72 +1512,6 @@ function notionContentTypeOrThrow(value) {
   return raw;
 }
 
-function notionRichTextToPlain(richText) {
-  if (!Array.isArray(richText)) return '';
-  return richText
-    .map((item) => String((item && item.plain_text) || ''))
-    .join('')
-    .trim();
-}
-
-function renderNotionBlocksToText(blocks, ctx, depth = 0) {
-  if (!Array.isArray(blocks) || blocks.length === 0) return [];
-  const lines = [];
-  const indent = '  '.repeat(Math.max(0, depth));
-
-  for (let i = 0; i < blocks.length; i++) {
-    const block = blocks[i] || {};
-    const type = String(block.type || '').trim();
-    const id = block.id || null;
-    const node = type && block[type] && typeof block[type] === 'object' ? block[type] : {};
-    const text = notionRichTextToPlain(node.rich_text);
-    let line = null;
-
-    if (type === 'paragraph') line = text;
-    else if (type === 'heading_1') line = text ? `# ${text}` : '#';
-    else if (type === 'heading_2') line = text ? `## ${text}` : '##';
-    else if (type === 'heading_3') line = text ? `### ${text}` : '###';
-    else if (type === 'callout') {
-      const icon = node.icon && typeof node.icon === 'object' && node.icon.type === 'emoji'
-        ? String(node.icon.emoji || '').trim()
-        : '';
-      const prefix = icon ? `${icon} ` : '';
-      line = text ? `> ${prefix}${text}` : '>';
-    }
-    else if (type === 'bulleted_list_item') line = `- ${text}`.trim();
-    else if (type === 'numbered_list_item') line = `${i + 1}. ${text}`.trim();
-    else if (type === 'to_do') {
-      const checked = node.checked === true ? '[x]' : '[ ]';
-      line = `${checked} ${text}`.trim();
-    } else if (type === 'quote') line = text ? `> ${text}` : '>';
-    else if (type === 'code') {
-      const lang = String(node.language || '').trim();
-      const codeBody = text || '';
-      line = `\`\`\`${lang}\n${codeBody}\n\`\`\``;
-    } else if (type === 'divider') line = '---';
-    else {
-      ctx.unsupported.push({
-        source: 'notion',
-        notion_page_id: ctx.page_id || null,
-        block_type: type || '(empty)',
-        block_id: id,
-      });
-      continue;
-    }
-
-    if (line !== null && String(line).trim() !== '') {
-      lines.push(`${indent}${line}`);
-    }
-
-    if (block.has_children === true && Array.isArray(block.children) && block.children.length > 0) {
-      const childLines = renderNotionBlocksToText(block.children, ctx, depth + 1);
-      if (childLines.length > 0) lines.push(...childLines);
-    }
-  }
-
-  return lines;
-}
-
 async function normalizeNotion({
   notion,
   updated_at,
@@ -1604,39 +1538,9 @@ async function normalizeNotion({
   const resolvedTitle = sanitizeHeaderText(title || src.title || null);
   if (!resolvedTitle) throw new Error('title is required');
 
-  const renderCtx = { page_id, unsupported: [] };
-  const renderedLines = renderNotionBlocksToText(blocks, renderCtx, 0);
-  const renderedText = collapseWhitespacePreserveNewlines(renderedLines.join('\n'));
-  const incomingText = collapseWhitespacePreserveNewlines(String(capture_text || ''));
-  if (renderCtx.unsupported.length > 0) {
-    return {
-      skipped: true,
-      skip_reason: 'unsupported_block_type',
-      skip_errors: renderCtx.unsupported,
-      source: 'notion',
-      title: resolvedTitle,
-      content_type: resolvedType,
-      notion: {
-        page_id,
-        database_id,
-        page_url,
-        updated_at: notionUpdatedAt,
-      },
-      __idempotency_source: {
-        ...src,
-        system: 'notion',
-        notion: {
-          page_id,
-          database_id,
-          page_url,
-          updated_at: notionUpdatedAt,
-          created_at: notionCreatedAt,
-        },
-      },
-    };
-  }
-  const bodyText = incomingText || renderedText;
-  if (!bodyText) throw new Error('text or blocks is required');
+  // Notion block parsing is owned by notion-client.js; normalization only post-processes capture_text.
+  const bodyText = collapseWhitespacePreserveNewlines(String(capture_text || ''));
+  if (!bodyText) throw new Error('capture_text is required');
 
   const canonicalUrl = canonicalizeUrl(url || page_url || null);
   const normalized = formatForInsert({

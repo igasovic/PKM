@@ -56,11 +56,12 @@ describe('normalization', () => {
     expect(out.idempotency_policy_key).toBeUndefined();
   });
 
-  test('notion normalization defaults content_type to note and renders supported blocks', async () => {
+  test('notion normalization defaults content_type to note and post-processes capture_text', async () => {
     const out = await normalizeNotion({
       notion: { page_id: 'pg_123', database_id: 'db_1', page_url: 'https://www.notion.so/page' },
       updated_at: '2026-02-24T10:00:00.000Z',
       title: 'Notion idea',
+      capture_text: '## Section\n\nParagraph body\n\n> 💡 Callout line',
       blocks: [
         {
           id: 'b1',
@@ -80,6 +81,68 @@ describe('normalization', () => {
             rich_text: [{ plain_text: 'Callout line' }],
           },
         },
+        {
+          id: 'b4',
+          type: 'toggle',
+          toggle: { rich_text: [{ plain_text: 'Toggle title' }] },
+        },
+        {
+          id: 'b5',
+          type: 'table_of_contents',
+          table_of_contents: {},
+        },
+        {
+          id: 'b6',
+          type: 'child_page',
+          child_page: { title: 'Nested Page' },
+        },
+        {
+          id: 'b7',
+          type: 'column_list',
+          has_children: true,
+          children: [
+            {
+              id: 'b7c1',
+              type: 'column',
+              has_children: true,
+              children: [
+                {
+                  id: 'b7c1p',
+                  type: 'paragraph',
+                  paragraph: { rich_text: [{ plain_text: 'Column paragraph' }] },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'b8',
+          type: 'table',
+          has_children: true,
+          table: { has_column_header: true },
+          children: [
+            {
+              id: 'r1',
+              type: 'table_row',
+              table_row: {
+                cells: [
+                  [{ plain_text: 'H1' }],
+                  [{ plain_text: 'H2' }],
+                ],
+              },
+            },
+            {
+              id: 'r2',
+              type: 'table_row',
+              table_row: {
+                cells: [
+                  [{ plain_text: 'A1' }],
+                  [{ plain_text: 'A2' }],
+                ],
+              },
+            },
+          ],
+        },
       ],
       source: {},
     });
@@ -94,8 +157,8 @@ describe('normalization', () => {
     expect(out.__idempotency_source.system).toBe('notion');
   });
 
-  test('notion normalization skips on unsupported block type', async () => {
-    const out = await normalizeNotion({
+  test('notion normalization requires capture_text (parsing is handled upstream)', async () => {
+    await expect(normalizeNotion({
       notion: { page_id: 'pg_unsupported', database_id: 'db_1' },
       updated_at: '2026-02-24T10:00:00.000Z',
       content_type: 'note',
@@ -103,17 +166,12 @@ describe('normalization', () => {
       blocks: [
         {
           id: 'x1',
-          type: 'table',
-          table: {},
+          type: 'unsupported_widget',
+          unsupported_widget: {},
         },
       ],
       source: {},
-    });
-
-    expect(out.skipped).toBe(true);
-    expect(out.skip_reason).toBe('unsupported_block_type');
-    expect(Array.isArray(out.skip_errors)).toBe(true);
-    expect(out.skip_errors[0].block_type).toBe('table');
+    })).rejects.toThrow('capture_text is required');
   });
 
   test('notion normalization rejects invalid content_type', async () => {

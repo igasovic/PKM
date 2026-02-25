@@ -1,6 +1,7 @@
 'use strict';
 
 const { NotionClient } = require('../../src/server/notion-client.js');
+const { normalizeNotion } = require('../../src/server/normalization.js');
 
 function makeJsonResponse(payload, status = 200) {
   return {
@@ -106,7 +107,7 @@ describe('notion-client', () => {
       if (asString.includes('/children?page_size=100')) {
         return makeJsonResponse({
           results: [
-            { id: 'b1', type: 'table', has_children: false, table: {} },
+            { id: 'b1', type: 'unsupported_widget', has_children: false, unsupported_widget: {} },
             { id: 'b2', type: 'paragraph', has_children: false, paragraph: { rich_text: [{ plain_text: 'ok' }] } },
           ],
           has_more: false,
@@ -126,7 +127,7 @@ describe('notion-client', () => {
 
     expect(out.capture_text).toContain('ok');
     expect(out.collect.blocks_skipped_unsupported).toBe(1);
-    expect(out.collect.errors[0].block_type).toBe('table');
+    expect(out.collect.errors[0].block_type).toBe('unsupported_widget');
   });
 
   test('smoke: can fetch real Notion page when enabled', async () => {
@@ -150,5 +151,19 @@ describe('notion-client', () => {
     expect(out.notion.page_id).toBeTruthy();
     expect(out.capture_text.length).toBeGreaterThan(0);
     expect(out.collect.blocks_fetched_total).toBeGreaterThan(0);
+
+    const normalized = await normalizeNotion({
+      notion: out.notion,
+      updated_at: out.updated_at,
+      created_at: out.created_at,
+      content_type: out.content_type || 'note',
+      title: out.title || 'smoke',
+      url: out.url,
+      capture_text: out.capture_text,
+      blocks: out.blocks,
+      source: {},
+    });
+
+    expect(normalized.skipped).not.toBe(true);
   }, 60000);
 });

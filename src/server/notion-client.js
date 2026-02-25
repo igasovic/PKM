@@ -13,6 +13,13 @@ const SUPPORTED_BLOCK_TYPES = new Set([
   'heading_2',
   'heading_3',
   'callout',
+  'toggle',
+  'column_list',
+  'column',
+  'table',
+  'table_row',
+  'child_page',
+  'table_of_contents',
   'bulleted_list_item',
   'numbered_list_item',
   'to_do',
@@ -93,6 +100,14 @@ function richTextToMarkdown(richText) {
   }).join('');
 }
 
+function tableRowToCells(rowBlock) {
+  const node = rowBlock && rowBlock.table_row && typeof rowBlock.table_row === 'object'
+    ? rowBlock.table_row
+    : {};
+  const cells = Array.isArray(node.cells) ? node.cells : [];
+  return cells.map((cell) => richTextToMarkdown(cell || []));
+}
+
 function renderBlocksToLines(blocks, ctx, depth = 0) {
   if (!Array.isArray(blocks)) return [];
   const lines = [];
@@ -129,6 +144,30 @@ function renderBlocksToLines(blocks, ctx, depth = 0) {
         : '';
       const prefix = icon ? `${icon} ` : '';
       line = text ? `> ${prefix}${text}` : '>';
+    } else if (type === 'toggle') {
+      line = text ? `- ▶ ${text}` : '- ▶';
+    } else if (type === 'column_list' || type === 'column') {
+      line = null;
+    } else if (type === 'table_of_contents') {
+      line = '[table of contents]';
+    } else if (type === 'child_page') {
+      const childTitle = String(node.title || '').trim();
+      line = childTitle ? `[[${childTitle}]]` : '[[child page]]';
+    } else if (type === 'table') {
+      const rows = Array.isArray(block.children) ? block.children.filter((b) => b && b.type === 'table_row') : [];
+      const matrix = rows.map(tableRowToCells);
+      if (matrix.length > 0) {
+        const header = matrix[0];
+        const body = matrix.slice(1);
+        lines.push(`${indent}| ${header.join(' | ')} |`);
+        lines.push(`${indent}| ${header.map(() => '---').join(' | ')} |`);
+        for (const row of body) {
+          lines.push(`${indent}| ${row.join(' | ')} |`);
+        }
+      }
+      line = null;
+    } else if (type === 'table_row') {
+      line = null;
     } else if (type === 'bulleted_list_item') {
       line = `- ${text}`.trim();
     } else if (type === 'numbered_list_item') {
