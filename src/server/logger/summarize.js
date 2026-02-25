@@ -39,7 +39,6 @@ function summarizeString(value, key, opts) {
 
   if (!isProtectedHeavyField && !isLarge) {
     out.value = text;
-    out.char_count = text.length;
     return out;
   }
 
