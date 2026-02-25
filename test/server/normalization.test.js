@@ -72,6 +72,14 @@ describe('normalization', () => {
           type: 'paragraph',
           paragraph: { rich_text: [{ plain_text: 'Paragraph body' }] },
         },
+        {
+          id: 'b3',
+          type: 'callout',
+          callout: {
+            icon: { type: 'emoji', emoji: '💡' },
+            rich_text: [{ plain_text: 'Callout line' }],
+          },
+        },
       ],
       source: {},
     });
@@ -81,6 +89,7 @@ describe('normalization', () => {
     expect(out.title).toBe('Notion idea');
     expect(out.clean_text).toContain('## Section');
     expect(out.clean_text).toContain('Paragraph body');
+    expect(out.clean_text).toContain('> 💡 Callout line');
     expect(out.external_ref.notion.page_id).toBe('pg_123');
     expect(out.__idempotency_source.system).toBe('notion');
   });

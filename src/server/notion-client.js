@@ -12,6 +12,7 @@ const SUPPORTED_BLOCK_TYPES = new Set([
   'heading_1',
   'heading_2',
   'heading_3',
+  'callout',
   'bulleted_list_item',
   'numbered_list_item',
   'to_do',
@@ -122,6 +123,12 @@ function renderBlocksToLines(blocks, ctx, depth = 0) {
       line = `## ${text}`.trim();
     } else if (type === 'heading_3') {
       line = `### ${text}`.trim();
+    } else if (type === 'callout') {
+      const icon = node.icon && typeof node.icon === 'object' && node.icon.type === 'emoji'
+        ? String(node.icon.emoji || '').trim()
+        : '';
+      const prefix = icon ? `${icon} ` : '';
+      line = text ? `> ${prefix}${text}` : '>';
     } else if (type === 'bulleted_list_item') {
       line = `- ${text}`.trim();
     } else if (type === 'numbered_list_item') {

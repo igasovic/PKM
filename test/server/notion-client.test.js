@@ -54,6 +54,15 @@ describe('notion-client', () => {
               has_children: false,
               paragraph: { rich_text: [{ plain_text: 'Paragraph from notion.' }] },
             },
+            {
+              id: 'b_callout',
+              type: 'callout',
+              has_children: false,
+              callout: {
+                icon: { type: 'emoji', emoji: '💡' },
+                rich_text: [{ plain_text: 'Callout from notion.' }],
+              },
+            },
           ],
           has_more: false,
           next_cursor: null,
@@ -74,7 +83,8 @@ describe('notion-client', () => {
     expect(out.title).toBe('Smoke Page Title');
     expect(out.capture_text).toContain('## Section A');
     expect(out.capture_text).toContain('Paragraph from notion.');
-    expect(out.collect.blocks_fetched_total).toBe(2);
+    expect(out.capture_text).toContain('> 💡 Callout from notion.');
+    expect(out.collect.blocks_fetched_total).toBe(3);
     expect(out.collect.blocks_skipped_unsupported).toBe(0);
     expect(calls.some((x) => x.includes('/pages/'))).toBe(true);
     expect(calls.some((x) => x.includes('/children?page_size=100'))).toBe(true);
@@ -142,4 +152,3 @@ describe('notion-client', () => {
     expect(out.collect.blocks_fetched_total).toBeGreaterThan(0);
   }, 60000);
 });
-

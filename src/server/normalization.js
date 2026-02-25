@@ -1537,6 +1537,13 @@ function renderNotionBlocksToText(blocks, ctx, depth = 0) {
     else if (type === 'heading_1') line = text ? `# ${text}` : '#';
     else if (type === 'heading_2') line = text ? `## ${text}` : '##';
     else if (type === 'heading_3') line = text ? `### ${text}` : '###';
+    else if (type === 'callout') {
+      const icon = node.icon && typeof node.icon === 'object' && node.icon.type === 'emoji'
+        ? String(node.icon.emoji || '').trim()
+        : '';
+      const prefix = icon ? `${icon} ` : '';
+      line = text ? `> ${prefix}${text}` : '>';
+    }
     else if (type === 'bulleted_list_item') line = `- ${text}`.trim();
     else if (type === 'numbered_list_item') line = `${i + 1}. ${text}`.trim();
     else if (type === 'to_do') {
