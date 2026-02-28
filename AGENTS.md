@@ -59,6 +59,7 @@ Before coding, output a short plan:
 - If behavior changes: add/update Jest tests.
 - If boundaries/contracts change: update the relevant docs in the same change.
 - Prefer refactoring to avoid duplication rather than copying code.
+- Run scripts/CI/check.sh before committing changes (or before declaring work “done”).
 
 ## 4) “Do not do” list (common failure modes)
 - Do not bypass docs/api.md by calling undocumented endpoints.
