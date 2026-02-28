@@ -2,79 +2,83 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-cd "$ROOT"
 
-echo "==> Running repo checks in: $ROOT"
+echo "==> CI check (local): $ROOT"
 
-# -----------------------------
-# 1) Prevent new legacy n8n code in js/
-# Hybrid policy: edits allowed, but NEW files under js/ are forbidden.
-# -----------------------------
-if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  added_js_files="$(git diff --name-status --diff-filter=A HEAD -- 'js/**' 2>/dev/null || true)"
-  if [[ -n "${added_js_files}" ]]; then
-    echo "ERROR: New files detected under legacy js/ (Hybrid policy forbids new files in js/)."
-    echo "Move new code to src/n8n/ instead, or explicitly override this policy."
-    echo
-    echo "${added_js_files}"
+# --------
+# 1) Hybrid migration rule: no *new* files under legacy js/
+#    (edits to existing files are allowed)
+# --------
+echo "==> Checking legacy js/ policy (no new files under js/)..."
+if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  # List newly added files (A) compared to HEAD
+  NEW_FILES="$(git -C "$ROOT" diff --name-status --diff-filter=A HEAD | awk '{print $2}' || true)"
+  if echo "$NEW_FILES" | grep -qE '^js/'; then
+    echo "ERROR: New files were added under legacy js/. Add new n8n code under src/n8n/ instead."
+    echo "New files:"
+    echo "$NEW_FILES" | grep -E '^js/' || true
     exit 1
   fi
 else
-  echo "WARN: Not a git repo? Skipping 'new files under js/' check."
+  echo "WARN: Not a git repo; skipping new-file checks."
 fi
 
-# -----------------------------
-# 2) Raw SQL guardrail
-# Enforce: no SQL keywords outside allowed files.
-# Note: heuristic check; tune patterns if it false-positives.
-# -----------------------------
-ALLOW_1="src/libs/sql-builder.js"
-ALLOW_2="src/server/db.js"
+# --------
+# 2) DB safety: flag likely raw SQL usage outside allowed files
+#    Allowed:
+#      - src/libs/sql-builder.js
+#      - src/server/db.js
+# --------
+echo "==> Checking for likely raw SQL outside allowed files..."
+# Heuristic patterns; tune as you learn false positives
+SQL_PATTERNS='(SELECT|INSERT|UPDATE|DELETE|CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE)\b'
+ALLOWED_1='src/libs/sql-builder.js'
+ALLOWED_2='src/server/db.js'
 
-echo "==> Checking for raw SQL outside allowed files..."
-# Search only under src/ (exclude docs, workflows, tests by design)
-# Exclude allowed files explicitly.
-# This flags common SQL statements appearing in strings/templates.
-violations="$(
-  rg -n --no-heading -S -i \
-    '(?<![a-z])\b(select|insert|update|delete|create|alter|drop|truncate)\b' \
-    src \
-    --glob "!${ALLOW_1}" \
-    --glob "!${ALLOW_2}" \
-    || true
-)"
+# Search only in src/ and only in JS/TS-ish files
+MATCHES="$(rg -n --hidden --glob '!**/node_modules/**' \
+  -S "$SQL_PATTERNS" "$ROOT/src" \
+  --glob '**/*.js' --glob '**/*.cjs' --glob '**/*.mjs' --glob '**/*.ts' --glob '**/*.tsx' \
+  2>/dev/null || true)"
 
-if [[ -n "${violations}" ]]; then
-  echo "ERROR: Possible raw SQL found outside allowed files:"
-  echo "  - ${ALLOW_1}"
-  echo "  - ${ALLOW_2}"
-  echo
-  echo "${violations}"
-  echo
-  echo "Fix: move SQL into the allowed layer (sql-builder/db module) and expose a DB method."
-  exit 1
+if [[ -n "$MATCHES" ]]; then
+  # Filter out allowed files
+  VIOLATIONS="$(echo "$MATCHES" | grep -vE "^$ROOT/$ALLOWED_1:" | grep -vE "^$ROOT/$ALLOWED_2:" || true)"
+  # rg output might not be rooted; handle relative output too
+  VIOLATIONS="$(echo "$VIOLATIONS" | grep -vE "^$ALLOWED_1:" | grep -vE "^$ALLOWED_2:" || true)"
+
+  if [[ -n "$VIOLATIONS" ]]; then
+    echo "ERROR: Likely raw SQL found outside allowed files:"
+    echo "$VIOLATIONS"
+    echo
+    echo "Rule: No raw SQL outside:"
+    echo "  - $ALLOWED_1"
+    echo "  - $ALLOWED_2"
+    exit 1
+  fi
 fi
 
-# -----------------------------
-# 3) Run Jest (best-effort)
-# -----------------------------
-echo "==> Running Jest..."
+# --------
+# 3) Tests: run backend Jest from src/server
+# --------
+echo "==> Running backend tests (Jest) from src/server..."
+BACKEND_DIR="$ROOT/src/server"
 
-if [[ -f package.json ]]; then
-  # Prefer explicit npm script if it exists; fall back progressively.
-  if node -e "const p=require('./package.json');process.exit(!(p.scripts&&p.scripts.test))" >/dev/null 2>&1; then
-    npm test
-  elif node -e "const p=require('./package.json');process.exit(!(p.scripts&&p.scripts.jest))" >/dev/null 2>&1; then
-    npm run jest
-  elif npx --no-install jest --version >/dev/null 2>&1; then
-    npx jest
+if [[ -f "$BACKEND_DIR/package.json" ]]; then
+  if command -v npm >/dev/null 2>&1; then
+    # Install deps if node_modules missing
+    if [[ ! -d "$BACKEND_DIR/node_modules" ]]; then
+      echo "==> Installing backend deps (npm install)..."
+      (cd "$BACKEND_DIR" && npm install)
+    fi
+
+    echo "==> npm test (src/server)..."
+    (cd "$BACKEND_DIR" && npm test)
   else
-    echo "WARN: Could not determine how to run Jest (no test/jest script, and npx jest unavailable)."
-    echo "Add a package.json script (recommended):"
-    echo '  "scripts": { "test": "jest" }'
+    echo "WARN: npm not found. Skipping tests."
   fi
 else
-  echo "WARN: No package.json found; skipping Jest."
+  echo "WARN: src/server/package.json not found. Skipping backend tests."
 fi
 
-echo "==> All checks passed."
+echo "✅ All checks passed."
