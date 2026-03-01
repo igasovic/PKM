@@ -35,7 +35,8 @@ MIN_JS_LINES=80 ./scripts/n8n/sync_workflows.sh
 4. Import patched raw workflows back into n8n (overwrite existing workflows only).
 5. Export + normalize again so repo matches post-import n8n state.
 6. Restart `n8n` container.
-7. Commit changes only if `--commit` is set.
+7. Activate workflows programmatically in n8n.
+8. Commit changes only if `--commit` is set.
 
 ## Safety rules
 
@@ -65,3 +66,4 @@ All workflow-management scripts live under `scripts/n8n/`:
 - `scripts/n8n/rename_workflows_by_name.sh`
 - `scripts/n8n/sync_code_nodes.py`
 - `scripts/n8n/import_workflows.sh`
+- `scripts/n8n/activate_workflows.sh`

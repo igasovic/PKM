@@ -87,12 +87,15 @@ echo "[4/7] Import patched raw workflows back to n8n (overwrite only, no deletes
 echo "[5/7] Export + normalize workflows again after n8n import"
 "$REPO_DIR/scripts/n8n/export_workflows.sh"
 
-echo "[6/7] Recreate n8n container"
+echo "[6/8] Recreate n8n container"
 docker restart n8n >/dev/null
 echo "n8n container restarted."
 
+echo "[7/8] Activate workflows in n8n"
+"$REPO_DIR/scripts/n8n/activate_workflows.sh" "$PATCHED_RAW_DIR"
+
 if [[ "$DO_COMMIT" -eq 1 ]]; then
-  echo "[7/7] Commit workflow and node changes"
+  echo "[8/8] Commit workflow and node changes"
   if git -C "$REPO_DIR" diff --quiet -- workflows js/workflows; then
     echo "No changes detected in workflows/ or js/workflows; skipping commit."
   else
@@ -101,5 +104,5 @@ if [[ "$DO_COMMIT" -eq 1 ]]; then
     echo "Committed changes."
   fi
 else
-  echo "[7/7] Commit skipped (pass --commit to enable)"
+  echo "[8/8] Commit skipped (pass --commit to enable)"
 fi
