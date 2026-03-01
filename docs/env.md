@@ -230,8 +230,7 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 - Repo root: `/home/igasovic/repos/n8n-workflows`
 - Mount: repo → `/data` (read-only)
 - Canonical docs (in this project):
-  - `n8n_to_git.md` (export workflow changes back to repo)
-  - `git_to_n8n.md` (import changes from repo into n8n)
+  - `n8n_sync.md` (canonical n8n<->Git sync flow)
 
 ---
 

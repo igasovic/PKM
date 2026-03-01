@@ -38,11 +38,8 @@ Files:
 - `docs/changelog.md`  
   Operator-facing changelog (SSD migration notes, Matter server, and PKM test-mode work).
 
-- `docs/n8n_to_git.md`  
-  Procedure: export workflows from n8n to Git (authoritative direction after workflow edits).
-
-- `docs/git_to_n8n.md`  
-  Procedure: when and how Git changes map back into n8n (primarily **external JS** changes; workflow-structure changes are generally made in n8n UI then exported back).
+- `docs/n8n_sync.md`  
+  Canonical end-to-end sync process between n8n and Git (export, node sync, import, re-export, optional commit).
 
 - `docs/pkm_n8n_js_templates_with_readme.zip`  
   Template bundle + README for authoring external JS modules that match this repo’s conventions.
@@ -107,7 +104,7 @@ This avoids config being lost across branches/merges where `$json` state may be 
 Exported, normalized n8n workflows (JSON). These are the workflow definitions you can re-import if needed, but the repo’s canonical flow is:
 
 - Make workflow structure edits in **n8n UI**
-- Export to Git via `scripts/export_workflows.sh`
+- Export/sync via `scripts/n8n/sync_workflows.sh`
 
 Current workflows (examples in this snapshot):
 
@@ -139,13 +136,16 @@ Current workflows (examples in this snapshot):
 
 ## scripts/
 
-- `scripts/export_workflows.sh`  
+- `scripts/n8n/sync_workflows.sh`  
+  Canonical one-command n8n<->Git sync orchestration.
+
+- `scripts/n8n/export_workflows.sh`  
   Exports workflows from n8n into `workflows/` in the repo.
 
-- `scripts/normalize_workflows.sh`  
+- `scripts/n8n/normalize_workflows.sh`  
   Normalizes workflow JSON for stable Git diffs.
 
-- `scripts/rename_workflows_by_name.sh`  
+- `scripts/n8n/rename_workflows_by_name.sh`  
   Renames workflow export filenames based on workflow names/IDs.
 
 - `scripts/migrate/`  
@@ -156,7 +156,7 @@ Current workflows (examples in this snapshot):
 ## Operational quickstart
 
 - **After changing workflow structure in n8n UI:**  
-  Run `./scripts/export_workflows.sh` and commit changes in `workflows/`.
+  Run `./scripts/n8n/sync_workflows.sh` (or `--commit`) to sync workflows and code nodes.
 
 - **After updating external JS modules:**  
   Commit `js/` changes and restart the n8n container to avoid module cache issues.

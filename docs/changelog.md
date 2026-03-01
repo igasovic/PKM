@@ -18,15 +18,14 @@
   - move JS files to correct workflow folders when nodes moved
   - update wrapper paths to `/data/js/workflows/...`
   - remove orphan files from `js/workflows/` after processing all workflows
-- Added env-doc guard in orchestrator:
-  - script stops if `/home/igasovic/repos/n8n-workflows -> /data` mount is not present in `docs/env.md`
-- Converted legacy scripts to compatibility wrappers that delegate to `scripts/n8n/*`:
+- Added compose guard in orchestrator:
+  - script stops if n8n mount `/home/igasovic/repos/n8n-workflows:/data:ro` is not present in `docker-compose.yml`
+- Removed top-level wrapper scripts:
   - `scripts/export_workflows.sh`
   - `scripts/normalize_workflows.sh`
   - `scripts/rename_workflows_by_name.sh`
 - Updated docs:
-  - `docs/n8n_to_git.md`
-  - `docs/git_to_n8n.md`
+  - merged `docs/n8n_to_git.md` + `docs/git_to_n8n.md` into `docs/n8n_sync.md`
 
 ## 2026-02-24 — Notion collector client + normalize/notion input expansion
 

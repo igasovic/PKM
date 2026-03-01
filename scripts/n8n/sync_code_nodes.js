@@ -247,6 +247,12 @@ function main() {
   let inlinedNodes = 0;
   let skippedMissingSource = 0;
   let missingJsCode = 0;
+  const workflowCreated = [];
+  const workflowUpdated = [];
+  const nodeAdded = [];
+  const nodeUpdated = [];
+  const nodeMoved = [];
+  const nodeDeleted = [];
 
   for (const rawFile of rawFiles) {
     const fileName = path.basename(rawFile);
@@ -286,8 +292,14 @@ function main() {
 
       const lineCount = nonEmptyLineCount(effectiveCode);
       if (lineCount < minLines) {
+        const previousCode = String(node?.parameters?.jsCode || "");
         node.parameters = node.parameters || {};
         node.parameters.jsCode = normalizeNewlines(effectiveCode);
+        if (normalizeNewlines(previousCode) !== normalizeNewlines(node.parameters.jsCode)) {
+          nodeUpdated.push(
+            `${workflowSlug}/${nodeFileName(node)} (inlined: under ${minLines} lines)`
+          );
+        }
         inlinedNodes += 1;
         patchedNodes += 1;
         continue;
@@ -302,29 +314,51 @@ function main() {
         if (fs.existsSync(desiredAbs)) {
           fs.writeFileSync(desiredAbs, normalizedCode, "utf8");
           fs.rmSync(sourceAbs, { force: true });
+          nodeUpdated.push(toPosixPath(path.relative(jsRootDir, desiredAbs)));
         } else {
           fs.renameSync(sourceAbs, desiredAbs);
+          nodeMoved.push(
+            `${toPosixPath(path.relative(jsRootDir, sourceAbs))} -> ${toPosixPath(
+              path.relative(jsRootDir, desiredAbs)
+            )}`
+          );
         }
         movedFiles += 1;
       } else if (!fs.existsSync(desiredAbs)) {
         fs.writeFileSync(desiredAbs, normalizedCode, "utf8");
+        nodeAdded.push(toPosixPath(path.relative(jsRootDir, desiredAbs)));
         createdFiles += 1;
       } else {
         const existing = fs.readFileSync(desiredAbs, "utf8");
         if (normalizeNewlines(existing) !== normalizeNewlines(normalizedCode)) {
           fs.writeFileSync(desiredAbs, normalizedCode, "utf8");
+          nodeUpdated.push(toPosixPath(path.relative(jsRootDir, desiredAbs)));
         }
       }
 
+      const prevJsCode = String(node?.parameters?.jsCode || "");
       node.parameters = node.parameters || {};
       node.parameters.jsCode = buildWrapper(desiredRel);
+      if (normalizeNewlines(prevJsCode) !== normalizeNewlines(node.parameters.jsCode)) {
+        nodeUpdated.push(`${desiredRel} (wrapper)`);
+      }
       expectedJsFiles.add(desiredAbs);
       patchedNodes += 1;
     }
 
     const patchedRawPath = path.join(patchedRawDir, fileName);
     writeJson(patchedRawPath, workflow);
-    writeJson(path.join(repoWorkflowsDir, fileName), workflow);
+    const repoWorkflowPath = path.join(repoWorkflowsDir, fileName);
+    const nextRepoJson = `${JSON.stringify(workflow, null, 2)}\n`;
+    if (!fs.existsSync(repoWorkflowPath)) {
+      workflowCreated.push(fileName);
+    } else {
+      const prevRepoJson = fs.readFileSync(repoWorkflowPath, "utf8");
+      if (normalizeNewlines(prevRepoJson) !== normalizeNewlines(nextRepoJson)) {
+        workflowUpdated.push(fileName);
+      }
+    }
+    fs.writeFileSync(repoWorkflowPath, nextRepoJson, "utf8");
   }
 
   const allJsFiles = listFilesRecursive(jsRootDir).filter(
@@ -337,8 +371,63 @@ function main() {
       continue;
     }
     fs.rmSync(abs, { force: true });
+    nodeDeleted.push(toPosixPath(path.relative(jsRootDir, abs)));
     deleteEmptyParents(abs, jsRootDir);
     removedOrphans += 1;
+  }
+
+  console.log("Workflows created:");
+  if (workflowCreated.length === 0) {
+    console.log("- none");
+  } else {
+    for (const item of workflowCreated.sort()) {
+      console.log(`- ${item}`);
+    }
+  }
+
+  console.log("Workflows updated:");
+  if (workflowUpdated.length === 0) {
+    console.log("- none");
+  } else {
+    for (const item of workflowUpdated.sort()) {
+      console.log(`- ${item}`);
+    }
+  }
+
+  console.log("Nodes added:");
+  if (nodeAdded.length === 0) {
+    console.log("- none");
+  } else {
+    for (const item of nodeAdded.sort()) {
+      console.log(`- ${item}`);
+    }
+  }
+
+  console.log("Nodes updated:");
+  if (nodeUpdated.length === 0) {
+    console.log("- none");
+  } else {
+    for (const item of nodeUpdated.sort()) {
+      console.log(`- ${item}`);
+    }
+  }
+
+  console.log("Nodes moved:");
+  if (nodeMoved.length === 0) {
+    console.log("- none");
+  } else {
+    for (const item of nodeMoved.sort()) {
+      console.log(`- ${item}`);
+    }
+  }
+
+  console.log("Nodes deleted:");
+  if (nodeDeleted.length === 0) {
+    console.log("- none");
+  } else {
+    for (const item of nodeDeleted.sort()) {
+      console.log(`- ${item}`);
+    }
   }
 
   console.log(
