@@ -10,7 +10,7 @@
   - `normalize_workflows.sh`
   - `rename_workflows_by_name.sh`
   - `import_workflows.sh`
-  - `sync_code_nodes.js`
+  - `sync_code_nodes.py`
   - `sync_workflows.sh`
 - Updated node sync behavior:
   - externalize only Code nodes with `>= 50` non-empty JS lines (`MIN_JS_LINES` override)

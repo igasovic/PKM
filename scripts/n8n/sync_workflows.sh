@@ -8,6 +8,7 @@ RAW_DIR="$REPO_DIR/tmp/n8n-sync/raw"
 PATCHED_RAW_DIR="$REPO_DIR/tmp/n8n-sync/patched"
 MIN_JS_LINES="${MIN_JS_LINES:-50}"
 DO_COMMIT=0
+PYTHON_BIN="${PYTHON_BIN:-}"
 
 usage() {
   echo "Usage: sync_workflows.sh [--commit]" >&2
@@ -20,6 +21,18 @@ if [[ "${1:-}" == "--commit" ]]; then
 fi
 if [[ $# -ne 0 ]]; then
   usage
+fi
+
+if [[ -z "$PYTHON_BIN" ]]; then
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+  elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+  else
+    echo "Neither 'python3' nor 'python' is available in PATH." >&2
+    echo "Install Python or run with PYTHON_BIN=/full/path/to/python" >&2
+    exit 1
+  fi
 fi
 
 COMPOSE_FILE="${COMPOSE_FILE:-/home/igasovic/stack/docker-compose.yml}"
@@ -60,7 +73,7 @@ docker cp n8n:/tmp/workflows_raw_sync/. "$RAW_DIR/"
 "$REPO_DIR/scripts/n8n/rename_workflows_by_name.sh" "$RAW_DIR"
 
 echo "[3/7] Sync code nodes in repo (externalize >= ${MIN_JS_LINES} lines, inline short nodes)"
-node "$REPO_DIR/scripts/n8n/sync_code_nodes.js" \
+"$PYTHON_BIN" "$REPO_DIR/scripts/n8n/sync_code_nodes.py" \
   "$RAW_DIR" \
   "$PATCHED_RAW_DIR" \
   "$WORKFLOWS_DIR" \

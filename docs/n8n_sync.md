@@ -63,5 +63,5 @@ All workflow-management scripts live under `scripts/n8n/`:
 - `scripts/n8n/export_workflows.sh`
 - `scripts/n8n/normalize_workflows.sh`
 - `scripts/n8n/rename_workflows_by_name.sh`
-- `scripts/n8n/sync_code_nodes.js`
+- `scripts/n8n/sync_code_nodes.py`
 - `scripts/n8n/import_workflows.sh`
