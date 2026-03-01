@@ -62,17 +62,17 @@ fi
 
 mkdir -p "$RAW_DIR" "$PATCHED_RAW_DIR" "$WORKFLOWS_DIR" "$JS_ROOT_DIR"
 
-echo "[1/7] Export + normalize workflows to repo"
+echo "[1/8] Export + normalize workflows to repo"
 "$REPO_DIR/scripts/n8n/export_workflows.sh"
 
-echo "[2/7] Export raw workflows for patch/import cycle"
+echo "[2/8] Export raw workflows for patch/import cycle"
 docker exec -u node n8n sh -lc 'rm -rf /tmp/workflows_raw_sync && mkdir -p /tmp/workflows_raw_sync'
 docker exec -u node n8n n8n export:workflow --backup --output=/tmp/workflows_raw_sync
 rm -rf "$RAW_DIR"/*
 docker cp n8n:/tmp/workflows_raw_sync/. "$RAW_DIR/"
 "$REPO_DIR/scripts/n8n/rename_workflows_by_name.sh" "$RAW_DIR"
 
-echo "[3/7] Sync code nodes in repo (externalize >= ${MIN_JS_LINES} lines, inline short nodes)"
+echo "[3/8] Sync code nodes in repo (externalize >= ${MIN_JS_LINES} lines, inline short nodes)"
 "$PYTHON_BIN" "$REPO_DIR/scripts/n8n/sync_code_nodes.py" \
   "$RAW_DIR" \
   "$PATCHED_RAW_DIR" \
@@ -81,15 +81,28 @@ echo "[3/7] Sync code nodes in repo (externalize >= ${MIN_JS_LINES} lines, inlin
   "$MIN_JS_LINES"
 "$REPO_DIR/scripts/n8n/normalize_workflows.sh" "$WORKFLOWS_DIR"
 
-echo "[4/7] Import patched raw workflows back to n8n (overwrite only, no deletes)"
+echo "[4/8] Import patched raw workflows back to n8n (overwrite only, no deletes)"
 "$REPO_DIR/scripts/n8n/import_workflows.sh" "$PATCHED_RAW_DIR"
 
-echo "[5/7] Export + normalize workflows again after n8n import"
+echo "[5/8] Export + normalize workflows again after n8n import"
 "$REPO_DIR/scripts/n8n/export_workflows.sh"
 
 echo "[6/8] Recreate n8n container"
 docker restart n8n >/dev/null
 echo "n8n container restarted."
+
+echo "Waiting for n8n CLI to become ready..."
+for i in $(seq 1 30); do
+  if docker exec -u node n8n n8n --help >/dev/null 2>&1; then
+    echo "n8n CLI is ready."
+    break
+  fi
+  if [[ "$i" -eq 30 ]]; then
+    echo "n8n did not become ready in time after restart." >&2
+    exit 1
+  fi
+  sleep 2
+done
 
 echo "[7/8] Activate workflows in n8n"
 "$REPO_DIR/scripts/n8n/activate_workflows.sh" "$PATCHED_RAW_DIR"

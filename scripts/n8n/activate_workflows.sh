@@ -14,7 +14,7 @@ fi
 
 activate_via_cli() {
   local wid="$1"
-  docker exec -u node n8n n8n update:workflow --id="$wid" --active=true >/dev/null
+  docker exec -u node n8n n8n update:workflow --id="$wid" --active=true
 }
 
 activate_via_api() {
@@ -40,6 +40,7 @@ else
   echo "Set N8N_API_KEY (and optional N8N_API_BASE_URL) or upgrade n8n CLI support." >&2
   exit 1
 fi
+echo "Activation mode: $MODE"
 
 shopt -s nullglob
 files=("$DIR"/*.json)
@@ -55,10 +56,19 @@ for f in "${files[@]}"; do
     continue
   fi
 
+  echo "Activating: $wid"
   if [[ "$MODE" == "cli" ]]; then
-    activate_via_cli "$wid"
+    if ! out="$(activate_via_cli "$wid" 2>&1)"; then
+      echo "Activation failed for $wid (cli):" >&2
+      echo "$out" >&2
+      exit 1
+    fi
   else
-    activate_via_api "$wid"
+    if ! out="$(activate_via_api "$wid" 2>&1)"; then
+      echo "Activation failed for $wid (api):" >&2
+      echo "$out" >&2
+      exit 1
+    fi
   fi
   echo "Activated: $wid"
 done
