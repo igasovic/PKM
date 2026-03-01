@@ -11,17 +11,30 @@ DO_COMMIT=0
 PYTHON_BIN="${PYTHON_BIN:-}"
 
 usage() {
-  echo "Usage: sync_workflows.sh [--commit]" >&2
+  echo "Usage: sync_workflows.sh [--commit] [--recreate-workflow <workflow name>]" >&2
   exit 1
 }
 
-if [[ "${1:-}" == "--commit" ]]; then
-  DO_COMMIT=1
-  shift
-fi
-if [[ $# -ne 0 ]]; then
-  usage
-fi
+RECREATE_WORKFLOW_NAMES=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --commit)
+      DO_COMMIT=1
+      shift
+      ;;
+    --recreate-workflow)
+      if [[ -z "${2:-}" ]]; then
+        echo "Missing value for --recreate-workflow" >&2
+        usage
+      fi
+      RECREATE_WORKFLOW_NAMES+=("$2")
+      shift 2
+      ;;
+    *)
+      usage
+      ;;
+  esac
+done
 
 if [[ -z "$PYTHON_BIN" ]]; then
   if command -v python3 >/dev/null 2>&1; then
@@ -82,7 +95,13 @@ echo "[3/8] Sync code nodes in repo (externalize >= ${MIN_JS_LINES} lines, inlin
 "$REPO_DIR/scripts/n8n/normalize_workflows.sh" "$WORKFLOWS_DIR"
 
 echo "[4/8] Import patched raw workflows back to n8n (overwrite only, no deletes)"
-"$REPO_DIR/scripts/n8n/import_workflows.sh" "$PATCHED_RAW_DIR"
+if [[ "${#RECREATE_WORKFLOW_NAMES[@]}" -gt 0 ]]; then
+  echo "Recreate mode requested for:"
+  for wf_name in "${RECREATE_WORKFLOW_NAMES[@]}"; do
+    echo "- $wf_name"
+  done
+fi
+"$REPO_DIR/scripts/n8n/import_workflows.sh" "$PATCHED_RAW_DIR" "${RECREATE_WORKFLOW_NAMES[@]}"
 
 echo "[5/8] Export + normalize workflows again after n8n import"
 "$REPO_DIR/scripts/n8n/export_workflows.sh"

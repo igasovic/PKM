@@ -3,14 +3,16 @@ set -euo pipefail
 
 DIR="${1:-}"
 if [[ -z "$DIR" ]]; then
-  echo "Usage: import_workflows.sh <raw_workflows_dir>" >&2
+  echo "Usage: import_workflows.sh <raw_workflows_dir> [workflow_name_to_recreate ...]" >&2
   exit 1
 fi
+shift || true
 
 if [[ ! -d "$DIR" ]]; then
   echo "Missing directory: $DIR" >&2
   exit 1
 fi
+RECREATE_WORKFLOW_NAMES=("$@")
 
 TMP_LIVE_DIR="$(mktemp -d)"
 LIVE_MAP="$TMP_LIVE_DIR/live_workflows.tsv"
@@ -39,6 +41,48 @@ deactivate_via_api() {
     -H "X-N8N-API-KEY: $N8N_API_KEY" \
     -H "Content-Type: application/json" \
     -d '{"active": false}' >/dev/null
+}
+
+delete_via_cli() {
+  local wid="$1"
+  docker exec -u node n8n n8n delete:workflow --id="$wid"
+}
+
+delete_via_api() {
+  local wid="$1"
+  local base_url="${N8N_API_BASE_URL:-http://127.0.0.1:5678}"
+  if [[ -z "${N8N_API_KEY:-}" ]]; then
+    return 1
+  fi
+  curl -fsS -X DELETE "${base_url%/}/api/v1/workflows/$wid" \
+    -H "X-N8N-API-KEY: $N8N_API_KEY" \
+    -H "Content-Type: application/json" >/dev/null
+}
+
+recreate_requested() {
+  local wf_name="$1"
+  local candidate
+  for candidate in "${RECREATE_WORKFLOW_NAMES[@]}"; do
+    if [[ "$candidate" == "$wf_name" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+build_recreate_import_payload() {
+  local src_file="$1"
+  local out_file="$2"
+  jq '
+    del(
+      .id,
+      .versionId,
+      .activeVersionId,
+      .versionCounter,
+      .createdAt,
+      .updatedAt
+    )
+  ' "$src_file" >"$out_file"
 }
 
 build_live_workflow_map() {
@@ -76,6 +120,16 @@ fi
 echo "Pre-import deactivate mode: $DEACT_MODE"
 build_live_workflow_map
 
+DELETE_MODE="none"
+if docker exec -u node n8n n8n delete:workflow --help >/dev/null 2>&1; then
+  DELETE_MODE="cli-delete"
+elif [[ -n "${N8N_API_KEY:-}" ]]; then
+  DELETE_MODE="api"
+fi
+if [[ "${#RECREATE_WORKFLOW_NAMES[@]}" -gt 0 ]]; then
+  echo "Recreate delete mode: $DELETE_MODE"
+fi
+
 shopt -s nullglob
 files=("$DIR"/*.json)
 if [[ "${#files[@]}" -eq 0 ]]; then
@@ -91,8 +145,39 @@ for f in "${files[@]}"; do
   wid="${live_wid:-$src_wid}"
   import_src="$f"
   remote="/tmp/$base"
+  do_recreate=0
 
-  if [[ -n "$live_wid" && -n "$src_wid" && "$live_wid" != "$src_wid" ]]; then
+  if recreate_requested "$wf_name"; then
+    do_recreate=1
+    if [[ -z "$live_wid" ]]; then
+      echo "Recreate requested, but live workflow not found by name: $wf_name (will import as new)." >&2
+    else
+      if [[ "$DELETE_MODE" == "none" ]]; then
+        echo "Cannot recreate '$wf_name': no delete workflow mode available (need n8n delete:workflow CLI or N8N_API_KEY)." >&2
+        exit 1
+      fi
+      echo "Recreating workflow: $wf_name (deleting live id: $live_wid; execution history will be lost)"
+      if [[ "$DELETE_MODE" == "cli-delete" ]]; then
+        if ! out="$(delete_via_cli "$live_wid" 2>&1)"; then
+          echo "Delete failed for $wf_name ($live_wid):" >&2
+          echo "$out" >&2
+          exit 1
+        fi
+      else
+        if ! out="$(delete_via_api "$live_wid" 2>&1)"; then
+          echo "Delete failed for $wf_name ($live_wid) via api:" >&2
+          echo "$out" >&2
+          exit 1
+        fi
+      fi
+    fi
+    tmp_recreate="$TMP_LIVE_DIR/recreate.$base"
+    build_recreate_import_payload "$f" "$tmp_recreate"
+    import_src="$tmp_recreate"
+    wid=""
+  fi
+
+  if [[ "$do_recreate" -eq 0 && -n "$live_wid" && -n "$src_wid" && "$live_wid" != "$src_wid" ]]; then
     tmp_file="$TMP_LIVE_DIR/import.$base"
     jq --arg wid "$live_wid" '.id = $wid' "$f" >"$tmp_file"
     import_src="$tmp_file"

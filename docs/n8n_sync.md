@@ -22,6 +22,24 @@ Optional threshold override (default is `50` non-empty lines):
 MIN_JS_LINES=80 ./scripts/n8n/sync_workflows.sh
 ```
 
+Optional targeted recreate for flaky workflows (deletes live workflow, then imports as new):
+
+```bash
+./scripts/n8n/sync_workflows.sh --recreate-workflow "10 Read"
+```
+
+Multiple workflows can be recreated in one run:
+
+```bash
+./scripts/n8n/sync_workflows.sh \
+  --recreate-workflow "10 Read" \
+  --recreate-workflow "02 Telegram Capture"
+```
+
+Warning:
+- Recreate mode deletes the existing workflow first, so execution history for that workflow is lost.
+- This mode is optional and off by default.
+
 ## Flow (orchestrated)
 
 1. Export workflows from n8n and normalize into `workflows/`.
@@ -33,6 +51,7 @@ MIN_JS_LINES=80 ./scripts/n8n/sync_workflows.sh
    - update wrappers to correct `/data/js/workflows/...` paths
    - remove orphan managed node files (`*__<node-id>.js`) after all workflows are processed
 4. Import patched raw workflows back into n8n (overwrite existing workflows only).
+   - if `--recreate-workflow "<name>"` is passed, that workflow is deleted first and imported as new.
 5. Export + normalize again so repo matches post-import n8n state.
 6. Restart `n8n` container.
 7. Activate workflows programmatically in n8n.

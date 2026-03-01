@@ -26,6 +26,10 @@
   - `scripts/normalize_workflows.sh`
   - `scripts/rename_workflows_by_name.sh`
 - Made workflow activation mandatory in orchestrator after n8n restart and before optional commit.
+- Added optional targeted recreate mode for problematic workflows:
+  - `./scripts/n8n/sync_workflows.sh --recreate-workflow "<workflow name>"`
+  - deletes matched live workflow by name before import (history-loss expected for that workflow)
+  - default behavior remains overwrite import (no deletes)
 - Updated docs:
   - merged `docs/n8n_to_git.md` + `docs/git_to_n8n.md` into `docs/n8n_sync.md`
 
