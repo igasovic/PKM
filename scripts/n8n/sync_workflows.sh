@@ -22,15 +22,28 @@ if [[ $# -ne 0 ]]; then
   usage
 fi
 
-ENV_DOC="$REPO_DIR/docs/env.md"
-if [[ ! -f "$ENV_DOC" ]]; then
-  echo "Missing docs/env.md; cannot validate n8n mount path." >&2
+COMPOSE_FILE="${COMPOSE_FILE:-/home/igasovic/stack/docker-compose.yml}"
+EXPECTED_MOUNT="/home/igasovic/repos/n8n-workflows:/data:ro"
+
+if [[ ! -f "$COMPOSE_FILE" ]]; then
+  echo "Missing docker compose file: $COMPOSE_FILE" >&2
   exit 1
 fi
 
-if ! grep -F "/home/igasovic/repos/n8n-workflows" "$ENV_DOC" | grep -Fq "/data"; then
-  echo "Mount path '/home/igasovic/repos/n8n-workflows -> /data' not found in docs/env.md." >&2
-  echo "Stop and confirm mount path before updating wrapper paths." >&2
+N8N_BLOCK="$(awk '
+  /^[[:space:]]{2}n8n:[[:space:]]*$/ {in_n8n=1; print; next}
+  in_n8n && /^[[:space:]]{2}[a-zA-Z0-9_-]+:[[:space:]]*$/ {exit}
+  in_n8n {print}
+' "$COMPOSE_FILE")"
+
+if [[ -z "$N8N_BLOCK" ]]; then
+  echo "Service block 'n8n:' not found in $COMPOSE_FILE" >&2
+  exit 1
+fi
+
+if ! printf '%s\n' "$N8N_BLOCK" | grep -Fq "$EXPECTED_MOUNT"; then
+  echo "Required n8n mount '$EXPECTED_MOUNT' not found in $COMPOSE_FILE" >&2
+  echo "Stop and confirm compose mount before updating wrapper paths." >&2
   exit 1
 fi
 
