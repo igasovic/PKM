@@ -1,4 +1,33 @@
 # changelog
+## 2026-03-01 — n8n workflow sync orchestration under scripts/n8n
+
+### What changed
+- Added canonical one-command sync flow:
+  - `./scripts/n8n/sync_workflows.sh`
+  - optional `--commit` to commit `workflows/` + `js/workflows/`
+- Added `scripts/n8n/` workflow-management scripts:
+  - `export_workflows.sh`
+  - `normalize_workflows.sh`
+  - `rename_workflows_by_name.sh`
+  - `import_workflows.sh`
+  - `sync_code_nodes.js`
+  - `sync_workflows.sh`
+- Updated node sync behavior:
+  - externalize only Code nodes with `>= 50` non-empty JS lines (`MIN_JS_LINES` override)
+  - keep short Code nodes inline
+  - move JS files to correct workflow folders when nodes moved
+  - update wrapper paths to `/data/js/workflows/...`
+  - remove orphan files from `js/workflows/` after processing all workflows
+- Added env-doc guard in orchestrator:
+  - script stops if `/home/igasovic/repos/n8n-workflows -> /data` mount is not present in `docs/env.md`
+- Converted legacy scripts to compatibility wrappers that delegate to `scripts/n8n/*`:
+  - `scripts/export_workflows.sh`
+  - `scripts/normalize_workflows.sh`
+  - `scripts/rename_workflows_by_name.sh`
+- Updated docs:
+  - `docs/n8n_to_git.md`
+  - `docs/git_to_n8n.md`
+
 ## 2026-02-24 — Notion collector client + normalize/notion input expansion
 
 ### What changed
