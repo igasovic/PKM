@@ -12,7 +12,12 @@ if [[ ! -d "$DIR" ]]; then
   exit 1
 fi
 
-deactivate_via_cli() {
+deactivate_via_cli_unpublish() {
+  local wid="$1"
+  docker exec -u node n8n n8n unpublish:workflow --id="$wid"
+}
+
+deactivate_via_cli_update() {
   local wid="$1"
   docker exec -u node n8n n8n update:workflow --id="$wid" --active=false
 }
@@ -30,8 +35,10 @@ deactivate_via_api() {
 }
 
 DEACT_MODE=""
-if docker exec -u node n8n n8n update:workflow --help >/dev/null 2>&1; then
-  DEACT_MODE="cli"
+if docker exec -u node n8n n8n unpublish:workflow --help >/dev/null 2>&1; then
+  DEACT_MODE="cli-unpublish"
+elif docker exec -u node n8n n8n update:workflow --help >/dev/null 2>&1; then
+  DEACT_MODE="cli-update"
 elif [[ -n "${N8N_API_KEY:-}" ]]; then
   DEACT_MODE="api"
 else
@@ -48,14 +55,19 @@ fi
 
 for f in "${files[@]}"; do
   base="$(basename "$f")"
-  wid="$(basename "$f" .json | sed -E 's/^.*__//')"
+  wid="$(jq -r '.id // empty' "$f")"
   remote="/tmp/$base"
 
   if [[ -n "$wid" && "$DEACT_MODE" != "none" ]]; then
     echo "Pre-deactivating: $wid"
-    if [[ "$DEACT_MODE" == "cli" ]]; then
-      if ! out="$(deactivate_via_cli "$wid" 2>&1)"; then
-        echo "Pre-deactivate failed for $wid (cli), continuing to import." >&2
+    if [[ "$DEACT_MODE" == "cli-unpublish" ]]; then
+      if ! out="$(deactivate_via_cli_unpublish "$wid" 2>&1)"; then
+        echo "Pre-deactivate failed for $wid (cli-unpublish), continuing to import." >&2
+        echo "$out" >&2
+      fi
+    elif [[ "$DEACT_MODE" == "cli-update" ]]; then
+      if ! out="$(deactivate_via_cli_update "$wid" 2>&1)"; then
+        echo "Pre-deactivate failed for $wid (cli-update), continuing to import." >&2
         echo "$out" >&2
       fi
     else

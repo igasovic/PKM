@@ -12,7 +12,12 @@ if [[ ! -d "$DIR" ]]; then
   exit 1
 fi
 
-activate_via_cli() {
+activate_via_cli_publish() {
+  local wid="$1"
+  docker exec -u node n8n n8n publish:workflow --id="$wid"
+}
+
+activate_via_cli_update() {
   local wid="$1"
   docker exec -u node n8n n8n update:workflow --id="$wid" --active=true
 }
@@ -30,8 +35,10 @@ activate_via_api() {
 }
 
 MODE=""
-if docker exec -u node n8n n8n update:workflow --help >/dev/null 2>&1; then
-  MODE="cli"
+if docker exec -u node n8n n8n publish:workflow --help >/dev/null 2>&1; then
+  MODE="cli-publish"
+elif docker exec -u node n8n n8n update:workflow --help >/dev/null 2>&1; then
+  MODE="cli-update"
 elif [[ -n "${N8N_API_KEY:-}" ]]; then
   MODE="api"
 else
@@ -50,16 +57,22 @@ if [[ "${#files[@]}" -eq 0 ]]; then
 fi
 
 for f in "${files[@]}"; do
-  wid="$(basename "$f" .json | sed -E 's/^.*__//')"
+  wid="$(jq -r '.id // empty' "$f")"
   if [[ -z "$wid" ]]; then
-    echo "Skipping activation (cannot derive workflow id): $(basename "$f")" >&2
-    continue
+    echo "Activation failed: missing .id in $(basename "$f")" >&2
+    exit 1
   fi
 
   echo "Activating: $wid"
-  if [[ "$MODE" == "cli" ]]; then
-    if ! out="$(activate_via_cli "$wid" 2>&1)"; then
-      echo "Activation failed for $wid (cli):" >&2
+  if [[ "$MODE" == "cli-publish" ]]; then
+    if ! out="$(activate_via_cli_publish "$wid" 2>&1)"; then
+      echo "Activation failed for $wid (cli-publish):" >&2
+      echo "$out" >&2
+      exit 1
+    fi
+  elif [[ "$MODE" == "cli-update" ]]; then
+    if ! out="$(activate_via_cli_update "$wid" 2>&1)"; then
+      echo "Activation failed for $wid (cli-update):" >&2
       echo "$out" >&2
       exit 1
     fi
