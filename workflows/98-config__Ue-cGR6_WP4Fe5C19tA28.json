@@ -1,6 +1,6 @@
 {
-  "active": true,
-  "activeVersionId": "ea4cfcaa-75f4-4c8e-a142-ea28067d9bab",
+  "active": false,
+  "activeVersionId": null,
   "connections": {
     "Get Config": {
       "main": [
@@ -54,7 +54,7 @@
       },
       "position": [
         -64,
-        0
+        -96
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -78,12 +78,21 @@
       "id": "a55eb994-44aa-4300-9a1e-666dbf2414e4",
       "name": "Get Config",
       "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
         "options": {},
+        "sendHeaders": true,
         "url": "http://pkm-server:8080/config"
       },
       "position": [
-        192,
-        0
+        160,
+        -32
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -95,8 +104,8 @@
         "jsCode": "return [{ config: { ...$json } }];"
       },
       "position": [
-        368,
-        0
+        384,
+        -32
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -104,10 +113,14 @@
     {
       "id": "d4945feb-1510-4a61-9895-333fb5657e91",
       "name": "Merge",
-      "parameters": {},
+      "parameters": {
+        "combineBy": "combineByPosition",
+        "mode": "combine",
+        "options": {}
+      },
       "position": [
-        592,
-        -112
+        608,
+        -96
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -142,6 +155,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-02-11T18:13:30.049Z",
-  "versionCounter": 77
+  "updatedAt": "2026-02-22T03:34:18.432Z",
+  "versionCounter": 104
 }

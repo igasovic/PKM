@@ -1,0 +1,369 @@
+{
+  "active": false,
+  "activeVersionId": null,
+  "connections": {
+    "Extract Title & Author": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Merge1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Extract Title & Author",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Text Clean",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read Webpage (HTTP)",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Trafilatura Extract (HTTP)",
+            "type": "main"
+          },
+          {
+            "index": 1,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Read Webpage (HTTP)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Recompute retrieval excerpt + quality signals from clean_text": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Update",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Text Clean": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Recompute retrieval excerpt + quality signals from clean_text",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Trafilatura Extract (HTTP)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "remove trafiltura title - hack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Config",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "remove trafiltura title - hack": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge1",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-02-13T16:57:22.702Z",
+  "description": null,
+  "isArchived": false,
+  "name": "22 Web Extraction",
+  "nodes": [
+    {
+      "id": "634baf51-838f-48a5-9109-b73e79e662fa",
+      "name": "When Executed by Another Workflow",
+      "notesInFlow": false,
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        -176,
+        0
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "25209a2d-8dbb-47ca-8de9-ee409f64dca2",
+      "name": "Merge",
+      "parameters": {
+        "combineBy": "combineByPosition",
+        "mode": "combine",
+        "options": {}
+      },
+      "position": [
+        576,
+        -192
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
+    },
+    {
+      "id": "e2698dac-1c9a-4244-8b23-8aa8cadee892",
+      "name": "Merge1",
+      "parameters": {
+        "combineBy": "combineByPosition",
+        "mode": "combine",
+        "options": {}
+      },
+      "position": [
+        1024,
+        -96
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
+    },
+    {
+      "id": "40daf375-fbf6-4d46-8564-47bd4a05fdf7",
+      "name": "remove trafiltura title - hack",
+      "parameters": {
+        "jsCode": "/**\n * PKM / n8n Externalized Code Node\n *\n * Workflow: Telegram Capture (telegram-capture)\n * Node: remove trafiltura title - hack\n * Node ID: a02c847f-191c-4f90-adf2-c76d3b715596\n */\n'use strict';\n\nmodule.exports = async function run(ctx) {\n  const { $input, $json, $items, $node, $env, helpers } = ctx;\n\nconst item = { ...$json };\n\n// Always discard Trafilatura title\ndelete item.title;\ndelete item.author;\n\nreturn [item];\n};\n"
+      },
+      "position": [
+        800,
+        32
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "0a3d5478-3ab2-4199-a276-e93723225434",
+      "name": "Extract Title & Author",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/22-web-extraction/extract-title-author__0a3d5478-3ab2-4199-a276-e93723225434.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/extract-title-author__0a3d5478-3ab2-4199-a276-e93723225434.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        800,
+        -192
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "e3d370cf-c8f9-4022-ab8c-cbdce2d351dd",
+      "name": "Recompute retrieval excerpt + quality signals from clean_text",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/22-web-extraction/recompute-retrieval-excerpt-quality-signals-from-clean-text__e3d370cf-c8f9-4022-ab8c-cbdce2d351dd.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/recompute-retrieval-excerpt-quality-signals-from-clean-text__e3d370cf-c8f9-4022-ab8c-cbdce2d351dd.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1472,
+        -96
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "9ceb22a3-83dc-4b29-844e-6a769101b0d2",
+      "name": "Text Clean",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/js/workflows/22-web-extraction/text-clean__9ceb22a3-83dc-4b29-844e-6a769101b0d2.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/text-clean__9ceb22a3-83dc-4b29-844e-6a769101b0d2.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1248,
+        -96
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "fb9f50f3-1052-48e4-a949-b269a31e0892",
+      "name": "PKM Config",
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "98 Config",
+          "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
+          "mode": "list",
+          "value": "Ue-cGR6_WP4Fe5C19tA28"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        16,
+        0
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "f6e46a32-f8e6-4adf-aa0f-30469691d814",
+      "name": "PKM Update",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => {\n  const id = $json.id;\n\n  const url = $json.url ?? null;\n  const url_canonical = $json.url_canonical ?? null;\n  const title = $json.title ?? null;\n  const author = $json.author ?? null;\n\n  // only send clean_text/extracted_text if non-empty (matches your previous COALESCE logic)\n  const clean = String($json.clean_text ?? \"\");\n  const cleanTrim = clean.trim();\n\n  const extractedRaw = $json.extracted_text ?? $json.text ?? null;\n  const extracted = (extractedRaw === null || extractedRaw === undefined) ? \"\" : String(extractedRaw);\n  const extractedTrim = extracted.trim();\n\n  // retrieval patch + promoted columns (WP2)\n  const retrieval = $json.retrieval ?? null;\n  const doMeta = !!(retrieval && typeof retrieval === \"object\");\n  const q = doMeta ? (retrieval.quality || {}) : {};\n\n  const body = {\n    id,\n\n    url,\n    url_canonical,\n    title,\n    author,\n\n    // backend accepts JSONB as object or valid JSON string; we send object\n    metadata: doMeta ? { retrieval } : null,\n\n    // promoted columns only when retrieval exists\n    retrieval_excerpt: doMeta ? (retrieval.excerpt ?? null) : null,\n    retrieval_version: doMeta ? (retrieval.version ?? null) : null,\n    source_domain: doMeta ? (retrieval.source_domain ?? null) : null,\n\n    clean_word_count: doMeta ? (q.clean_word_count ?? null) : null,\n    clean_char_count: doMeta ? (q.clean_char_count ?? null) : null,\n    extracted_char_count: doMeta ? (q.extracted_char_count ?? null) : null,\n\n    link_count: doMeta ? (q.link_count ?? null) : null,\n    link_ratio: doMeta ? (q.link_ratio ?? null) : null,\n\n    boilerplate_heavy: doMeta ? (q.boilerplate_heavy ?? null) : null,\n    low_signal: doMeta ? (q.low_signal ?? null) : null,\n    extraction_incomplete: doMeta ? (q.extraction_incomplete ?? null) : null,\n    quality_score: doMeta ? (q.quality_score ?? null) : null,\n\n    returning: [\n      \"entry_id\",\n      \"id\",\n      \"created_at\",\n      \"source\",\n      \"intent\",\n      \"content_type\",\n      \"COALESCE(title,'') AS title\",\n      \"COALESCE(author,'') AS author\",\n      \"COALESCE(clean_text,'') AS clean_text\",\n      \"url_canonical\",\n      \"COALESCE(char_length(clean_text), 0) AS clean_len\",\n      \"COALESCE(char_length(extracted_text), 0) AS extracted_len\"\n    ]\n  };\n\n  if (cleanTrim) body.clean_text = clean;\n  if (extractedTrim) body.extracted_text = extracted;\n\n  return body;\n})()) }}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/update"
+      },
+      "position": [
+        1680,
+        -96
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "31b3ff63-9719-493f-be09-1176aa452fa3",
+      "name": "Trafilatura Extract (HTTP)",
+      "parameters": {
+        "options": {
+          "timeout": 20000
+        },
+        "url": "={{'http://172.18.0.1:8787/extract?url=' + encodeURIComponent($json.url_canonical)}}"
+      },
+      "position": [
+        576,
+        32
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4
+    },
+    {
+      "id": "183d92e9-cc72-40ea-960a-29839fe9a5f1",
+      "name": "Read Webpage (HTTP)",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            }
+          ]
+        },
+        "options": {
+          "lowercaseHeaders": false,
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "outputPropertyName": "html",
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 25000
+        },
+        "sendHeaders": true,
+        "url": "={{ $json.url_canonical }}"
+      },
+      "position": [
+        352,
+        -256
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-02-13T16:57:22.702Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-02-13T16:57:22.702Z",
+      "workflowId": "eYF7ivDiFwDYgi-pFRbpg"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-02-22T03:32:19.811Z",
+  "versionCounter": 32
+}

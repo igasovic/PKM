@@ -1,13 +1,13 @@
 {
-  "active": true,
-  "activeVersionId": "b9b87455-9aff-4005-a03d-c473ba1b3830",
+  "active": false,
+  "activeVersionId": null,
   "connections": {
-    "Build SQL - UPDATE": {
+    "Call '06 Web Extraction'": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Postgres Update Extract",
+            "node": "Call 'Tier-1 Enhancement'",
             "type": "main"
           }
         ]
@@ -24,55 +24,12 @@
         ]
       ]
     },
-    "Compose Response": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Send a text message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Compute Retrieval Excerpt + Quality Signals (from capture_text)": {
-      "main": [
-        []
-      ]
-    },
     "Create Message": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Send a text message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Extract Title & Author": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Trafilatura Extract (HTTP)1",
-            "type": "main"
-          },
-          {
-            "index": 0,
-            "node": "Merge1",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "HTTP Request": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Merge",
+            "node": "Send a text message1",
             "type": "main"
           }
         ]
@@ -83,52 +40,32 @@
         [
           {
             "index": 0,
-            "node": "HTTP Request",
-            "type": "main"
-          },
-          {
-            "index": 1,
-            "node": "Merge",
+            "node": "Call '06 Web Extraction'",
             "type": "main"
           }
         ],
         [
           {
             "index": 0,
-            "node": "Compose Response",
+            "node": "Send 'thought saved' message",
             "type": "main"
           }
         ]
       ]
     },
-    "Merge": {
+    "If 'skipped'": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Extract Title & Author",
+            "node": "Send 'duplicate' message",
             "type": "main"
           }
-        ]
-      ]
-    },
-    "Merge1": {
-      "main": [
+        ],
         [
           {
             "index": 0,
-            "node": "Text Clean",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Normalize": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Compute Retrieval Excerpt + Quality Signals (from capture_text)",
+            "node": "IF Has URL",
             "type": "main"
           }
         ]
@@ -150,7 +87,7 @@
         [
           {
             "index": 0,
-            "node": "IF Has URL",
+            "node": "If 'skipped'",
             "type": "main"
           }
         ]
@@ -167,61 +104,12 @@
         ]
       ]
     },
-    "PKM Update": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Call 'Tier-1 Enhancement'",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Postgres Update Extract": {
-      "main": [
-        []
-      ]
-    },
-    "Recompute retrieval excerpt + quality signals from clean_text": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "PKM Update",
-            "type": "main"
-          }
-        ]
-      ]
-    },
     "Telegram Trigger": {
       "main": [
         [
           {
             "index": 0,
             "node": "PKM Config",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Text Clean": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Recompute retrieval excerpt + quality signals from clean_text",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Trafilatura Extract (HTTP)1": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "remove trafiltura title - hack",
             "type": "main"
           }
         ]
@@ -237,17 +125,6 @@
           }
         ]
       ]
-    },
-    "remove trafiltura title - hack": {
-      "main": [
-        [
-          {
-            "index": 1,
-            "node": "Merge1",
-            "type": "main"
-          }
-        ]
-      ]
     }
   },
   "createdAt": "2026-01-13T04:28:47.800Z",
@@ -255,30 +132,6 @@
   "isArchived": false,
   "name": "02 Telegram Capture",
   "nodes": [
-    {
-      "credentials": {
-        "telegramApi": {
-          "id": "4svco1wrzYsvoLNB",
-          "name": "Telegram account"
-        }
-      },
-      "id": "725ddc72-d79c-4041-8931-5a9a84489694",
-      "name": "Send a text message",
-      "parameters": {
-        "additionalFields": {
-          "appendAttribution": false
-        },
-        "chatId": "1509032341",
-        "text": "={{ $json.telegram_message }}"
-      },
-      "position": [
-        3136,
-        -320
-      ],
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
-    },
     {
       "id": "0ff69fb7-2f88-4864-8ccd-385134a83376",
       "name": "IF Has URL",
@@ -307,154 +160,21 @@
         "options": {}
       },
       "position": [
-        240,
-        -336
+        16,
+        -416
       ],
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2
-    },
-    {
-      "credentials": {
-        "postgres": {
-          "id": "YICLDaLPmdddPcoA",
-          "name": "Postgres account"
-        }
-      },
-      "id": "44d29e92-4525-4aea-bdc2-bfc782bc3d73",
-      "name": "Postgres Update Extract",
-      "parameters": {
-        "operation": "executeQuery",
-        "options": {},
-        "query": "={{$json.sql}}"
-      },
-      "position": [
-        2416,
-        -416
-      ],
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2
-    },
-    {
-      "id": "ed663b2a-aae4-4856-ab00-50b04abc4f39",
-      "name": "HTTP Request",
-      "parameters": {
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "User-Agent",
-              "value": "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari"
-            },
-            {
-              "name": "Accept",
-              "value": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-            }
-          ]
-        },
-        "options": {
-          "lowercaseHeaders": false,
-          "redirect": {
-            "redirect": {}
-          },
-          "response": {
-            "response": {
-              "fullResponse": true,
-              "outputPropertyName": "html",
-              "responseFormat": "text"
-            }
-          },
-          "timeout": 25000
-        },
-        "sendHeaders": true,
-        "url": "={{ $json.url_canonical }}"
-      },
-      "position": [
-        464,
-        -480
-      ],
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3
-    },
-    {
-      "id": "d652a964-3dba-422f-ba34-2c07d79fd7b5",
-      "name": "Trafilatura Extract (HTTP)1",
-      "parameters": {
-        "options": {
-          "timeout": 20000
-        },
-        "url": "={{'http://172.18.0.1:8787/extract?url=' + encodeURIComponent($json.url_canonical)}}"
-      },
-      "position": [
-        1136,
-        -336
-      ],
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4
-    },
-    {
-      "id": "bfc8a630-5489-405f-949c-49473a62f187",
-      "name": "Merge",
-      "parameters": {
-        "combineBy": "combineByPosition",
-        "mode": "combine",
-        "options": {}
-      },
-      "position": [
-        688,
-        -416
-      ],
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.2
-    },
-    {
-      "id": "dddb503f-10d7-440d-9b48-ecbfef020bcf",
-      "name": "Merge1",
-      "parameters": {
-        "combineBy": "combineByPosition",
-        "mode": "combine",
-        "options": {}
-      },
-      "position": [
-        1584,
-        -416
-      ],
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.2
-    },
-    {
-      "id": "a02c847f-191c-4f90-adf2-c76d3b715596",
-      "name": "remove trafiltura title - hack",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/10_remove-trafiltura-title-hack__a02c847f-191c-4f90-adf2-c76d3b715596.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/10_remove-trafiltura-title-hack__a02c847f-191c-4f90-adf2-c76d3b715596.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        1360,
-        -336
-      ],
-      "type": "n8n-nodes-base.code",
       "typeVersion": 2
     },
     {
       "id": "e7474a77-f17b-4f8f-bbe1-632804bd2e69",
       "name": "Create Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/05_create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/05_create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/js/workflows/02-telegram-capture/create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:02-telegram-capture/create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js] ${e.message}`;throw e;}"
       },
       "position": [
-        2912,
-        -416
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "7a117ec5-8af2-4d89-a227-128c2c488114",
-      "name": "Compose Response",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/03_compose-response__7a117ec5-8af2-4d89-a227-128c2c488114.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/03_compose-response__7a117ec5-8af2-4d89-a227-128c2c488114.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        2704,
-        -176
+        688,
+        -512
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -467,75 +187,10 @@
       },
       "position": [
         -1104,
-        -224
+        -416
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
-    },
-    {
-      "id": "08ca99f5-2ba7-42e9-aab6-4b90e6055f85",
-      "name": "Normalize",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/07_normalize__08ca99f5-2ba7-42e9-aab6-4b90e6055f85.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/07_normalize__08ca99f5-2ba7-42e9-aab6-4b90e6055f85.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        -656,
-        -336
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "0cfd5e2a-ef19-4ec1-b575-eba3131c8977",
-      "name": "Extract Title & Author",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/06_extract-title-author__0cfd5e2a-ef19-4ec1-b575-eba3131c8977.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/06_extract-title-author__0cfd5e2a-ef19-4ec1-b575-eba3131c8977.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        912,
-        -416
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "f9724210-2848-4b77-be35-30b5007bc3ef",
-      "name": "Compute Retrieval Excerpt + Quality Signals (from capture_text)",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/04_compute-retrieval-excerpt-quality-signals-from-capture-text__f9724210-2848-4b77-be35-30b5007bc3ef.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/04_compute-retrieval-excerpt-quality-signals-from-capture-text__f9724210-2848-4b77-be35-30b5007bc3ef.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        -432,
-        -336
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "5116846d-f384-40e1-a928-518eb22430a7",
-      "name": "Recompute retrieval excerpt + quality signals from clean_text",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/08_recompute-retrieval-excerpt-quality-signals-from-clean-text__5116846d-f384-40e1-a928-518eb22430a7.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/08_recompute-retrieval-excerpt-quality-signals-from-clean-text__5116846d-f384-40e1-a928-518eb22430a7.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        2032,
-        -416
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "ef9f91cc-dbd4-48b7-a22d-66f47ea07239",
-      "name": "Text Clean",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/09_text-clean__ef9f91cc-dbd4-48b7-a22d-66f47ea07239.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/09_text-clean__ef9f91cc-dbd4-48b7-a22d-66f47ea07239.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        1808,
-        -416
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
     },
     {
       "credentials": {
@@ -557,7 +212,7 @@
       },
       "position": [
         -1104,
-        -416
+        -608
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -572,7 +227,7 @@
         },
         "workflowId": {
           "__rl": true,
-          "cachedResultName": "PKM — Retrieval Config",
+          "cachedResultName": "98 Config",
           "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
           "mode": "list",
           "value": "Ue-cGR6_WP4Fe5C19tA28"
@@ -588,7 +243,7 @@
       },
       "position": [
         -880,
-        -336
+        -512
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -600,7 +255,7 @@
         "options": {},
         "workflowId": {
           "__rl": true,
-          "cachedResultName": "Tier-1 Enhancement",
+          "cachedResultName": "04 Tier-1 Enrichment",
           "cachedResultUrl": "/workflow/WFB4SDkDPDPIphppIn3l7",
           "mode": "list",
           "value": "WFB4SDkDPDPIphppIn3l7"
@@ -615,8 +270,8 @@
         }
       },
       "position": [
-        2688,
-        -416
+        464,
+        -512
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -625,68 +280,189 @@
       "id": "2c78cab4-52de-430e-90e4-6f46f5fe340c",
       "name": "PKM Insert",
       "parameters": {
-        "jsonBody": "={{ JSON.stringify({\n  source: \"telegram\",\n  intent: $json.intent ?? \"archive\",\n  content_type: $json.content_type ?? null,\n  title: $json.title ?? null,\n  author: $json.author ?? null,\n  capture_text: $json.capture_text ?? $json.message?.text ?? \"\",\n  clean_text: $json.clean_text ?? null,\n  url: $json.url ?? null,\n  url_canonical: $json.url_canonical ?? null,\n\n  topic_primary: $json.topic_primary ?? $json.topic ?? null,\n  topic_primary_confidence: $json.topic_primary_confidence ?? $json.primary_topic_confidence ?? null,\n  topic_secondary: $json.topic_secondary ?? $json.secondary_topic ?? null,\n  topic_secondary_confidence: $json.topic_secondary_confidence ?? $json.secondary_topic_confidence ?? null,\n\n  gist: $json.gist ?? null,\n\n  // nested JSON stays nested\n  metadata: $json.metadata_patch ?? ($json.retrieval ? { retrieval: $json.retrieval } : null),\n\n  retrieval_excerpt: $json.retrieval?.excerpt ?? null,\n  retrieval_version: $json.retrieval?.version ?? null,\n  source_domain: $json.retrieval?.source_domain ?? null,\n\n  clean_word_count: $json.retrieval?.quality?.clean_word_count ?? null,\n  clean_char_count: $json.retrieval?.quality?.clean_char_count ?? null,\n  extracted_char_count: $json.retrieval?.quality?.extracted_char_count ?? null,\n  link_count: $json.retrieval?.quality?.link_count ?? null,\n  link_ratio: $json.retrieval?.quality?.link_ratio ?? null,\n  boilerplate_heavy: $json.retrieval?.quality?.boilerplate_heavy ?? null,\n  low_signal: $json.retrieval?.quality?.low_signal ?? null,\n  extraction_incomplete: $json.retrieval?.quality?.extraction_incomplete ?? null,\n  quality_score: $json.retrieval?.quality?.quality_score ?? null,\n\n  returning: [\n    \"entry_id\",\"id\",\"created_at\",\"source\",\"intent\",\"content_type\",\"title\",\"author\",\"url\",\"url_canonical\",\n    \"COALESCE(char_length(capture_text), 0) AS text_len\"\n  ]\n}) }}\n",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify({\n  source: \"telegram\",\n  intent: $json.intent,\n  content_type: $json.content_type,\n  title: null,\n  author: null,\n  capture_text: $json.capture_text,\n  clean_text: $json.clean_text,\n  url: $json.url ?? null,\n  url_canonical: $json.url_canonical ?? null,\n\n  topic_primary: null,\n  topic_primary_confidence: null,\n  topic_secondary: null,\n  topic_secondary_confidence: null,\n  gist: null,\n\n  idempotency_policy_key: $json.idempotency_policy_key,\n  idempotency_key_primary: $json.idempotency_key_primary,\n  idempotency_key_secondary: $json.idempotency_key_secondary, \n\n  // nested JSON stays nested\n  metadata: $json.metadata_patch ?? ($json.retrieval ? { retrieval: $json.retrieval } : null),\n\n  retrieval_excerpt: $json.retrieval?.excerpt ?? null,\n  retrieval_version: $json.retrieval?.version ?? null,\n  source_domain: $json.retrieval?.source_domain ?? null,\n\n  clean_word_count: $json.retrieval?.quality?.clean_word_count ?? null,\n  clean_char_count: $json.retrieval?.quality?.clean_char_count ?? null,\n  extracted_char_count: $json.retrieval?.quality?.extracted_char_count ?? null,\n  link_count: $json.retrieval?.quality?.link_count ?? null,\n  link_ratio: $json.retrieval?.quality?.link_ratio ?? null,\n  boilerplate_heavy: $json.retrieval?.quality?.boilerplate_heavy ?? null,\n  low_signal: $json.retrieval?.quality?.low_signal ?? null,\n  extraction_incomplete: $json.retrieval?.quality?.extraction_incomplete ?? null,\n  quality_score: $json.retrieval?.quality?.quality_score ?? null,\n\n  returning: [\n    \"entry_id\",\"id\",\"created_at\",\"source\",\"intent\",\"content_type\",\"title\",\"author\",\"url\",\"url_canonical\",\"capture_text\",\"COALESCE(char_length(capture_text), 0) AS text_len\"\n  ]\n}) }}\n",
         "method": "POST",
         "options": {},
         "sendBody": true,
+        "sendHeaders": true,
         "specifyBody": "json",
         "url": "http://pkm-server:8080/db/insert"
       },
       "position": [
-        -96,
-        -336
+        -432,
+        -512
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
-    },
-    {
-      "id": "ce7068f8-f017-4926-9142-7fa06b9f18fe",
-      "name": "PKM Update",
-      "parameters": {
-        "jsonBody": "={{ JSON.stringify((() => {\n  const id = $json.id;\n\n  const url = $json.url ?? null;\n  const url_canonical = $json.url_canonical ?? null;\n  const title = $json.title ?? null;\n  const author = $json.author ?? null;\n\n  // only send clean_text/extracted_text if non-empty (matches your previous COALESCE logic)\n  const clean = String($json.clean_text ?? \"\");\n  const cleanTrim = clean.trim();\n\n  const extractedRaw = $json.extracted_text ?? $json.text ?? null;\n  const extracted = (extractedRaw === null || extractedRaw === undefined) ? \"\" : String(extractedRaw);\n  const extractedTrim = extracted.trim();\n\n  // retrieval patch + promoted columns (WP2)\n  const retrieval = $json.retrieval ?? null;\n  const doMeta = !!(retrieval && typeof retrieval === \"object\");\n  const q = doMeta ? (retrieval.quality || {}) : {};\n\n  const body = {\n    id,\n\n    url,\n    url_canonical,\n    title,\n    author,\n\n    // backend accepts JSONB as object or valid JSON string; we send object\n    metadata: doMeta ? { retrieval } : null,\n\n    // promoted columns only when retrieval exists\n    retrieval_excerpt: doMeta ? (retrieval.excerpt ?? null) : null,\n    retrieval_version: doMeta ? (retrieval.version ?? null) : null,\n    source_domain: doMeta ? (retrieval.source_domain ?? null) : null,\n\n    clean_word_count: doMeta ? (q.clean_word_count ?? null) : null,\n    clean_char_count: doMeta ? (q.clean_char_count ?? null) : null,\n    extracted_char_count: doMeta ? (q.extracted_char_count ?? null) : null,\n\n    link_count: doMeta ? (q.link_count ?? null) : null,\n    link_ratio: doMeta ? (q.link_ratio ?? null) : null,\n\n    boilerplate_heavy: doMeta ? (q.boilerplate_heavy ?? null) : null,\n    low_signal: doMeta ? (q.low_signal ?? null) : null,\n    extraction_incomplete: doMeta ? (q.extraction_incomplete ?? null) : null,\n    quality_score: doMeta ? (q.quality_score ?? null) : null,\n\n    returning: [\n      \"entry_id\",\n      \"id\",\n      \"created_at\",\n      \"source\",\n      \"intent\",\n      \"content_type\",\n      \"COALESCE(title,'') AS title\",\n      \"COALESCE(author,'') AS author\",\n      \"COALESCE(clean_text,'') AS clean_text\",\n      \"url_canonical\",\n      \"COALESCE(char_length(clean_text), 0) AS clean_len\",\n      \"COALESCE(char_length(extracted_text), 0) AS extracted_len\"\n    ]\n  };\n\n  if (cleanTrim) body.clean_text = clean;\n  if (extractedTrim) body.extracted_text = extracted;\n\n  return body;\n})()) }}\n",
-        "method": "POST",
-        "options": {},
-        "sendBody": true,
-        "specifyBody": "json",
-        "url": "http://pkm-server:8080/db/update"
-      },
-      "position": [
-        2336,
-        -576
-      ],
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3
-    },
-    {
-      "id": "1c1e479b-b8f6-4d85-9c69-8c0f9943982f",
-      "name": "Build SQL - UPDATE",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/telegram-capture/02_build-sql-update__1c1e479b-b8f6-4d85-9c69-8c0f9943982f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:telegram-capture/02_build-sql-update__1c1e479b-b8f6-4d85-9c69-8c0f9943982f.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        2256,
-        -416
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
     },
     {
       "id": "77be5c05-f9f1-4190-a2ac-d80f08258a62",
       "name": "PKM Normalize Telegram",
       "parameters": {
-        "jsonBody": "={ \"text\" : \"{{$json.message.text}}\"}",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={\n  \"text\": \"{{$json.message.text}}\",\n  \"source\": {\n    \"chat_id\": \"{{ $json.message.chat.id }}\",\n    \"message_id\": \"{{ $json.message.message_id }}\"\n  }\n}",
         "method": "POST",
         "options": {},
         "sendBody": true,
+        "sendHeaders": true,
         "specifyBody": "json",
         "url": "http://pkm-server:8080/normalize/telegram"
       },
       "position": [
-        -528,
-        -528
+        -656,
+        -512
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "b4304d3d-7f0b-49ea-8359-adad233cc41a",
+      "name": "Send a text message1",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "1509032341",
+        "text": "={{ $json.telegram_message }}"
+      },
+      "position": [
+        912,
+        -512
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    },
+    {
+      "id": "b732ea00-d46e-4161-91de-4a897856c1f7",
+      "name": "Call '06 Web Extraction'",
+      "parameters": {
+        "options": {},
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "06 Web Extraction",
+          "cachedResultUrl": "/workflow/eYF7ivDiFwDYgi-pFRbpg",
+          "mode": "list",
+          "value": "eYF7ivDiFwDYgi-pFRbpg"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        240,
+        -512
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "93631cd4-04c8-40c0-abe8-aff3cebac861",
+      "name": "If 'skipped'",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "8a66c028-b1b9-4671-8657-f12359d1f942",
+              "leftValue": "={{ $json.action }}",
+              "operator": {
+                "name": "filter.operator.equals",
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "skipped"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        -208,
+        -512
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "a2b2fc7b-ce86-496d-90d1-b5c2b725d356",
+      "name": "Send 'duplicate' message",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "1509032341",
+        "text": "=Message duplicate of entry #{{$json.entry_id}}. Processing stopped."
+      },
+      "position": [
+        16,
+        -608
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "725ddc72-d79c-4041-8931-5a9a84489694",
+      "name": "Send 'thought saved' message",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "1509032341",
+        "text": "=🧠 Thought saved as entry #{{ $json.entry_id }}. Operation: {{ $json.action }}"
+      },
+      "position": [
+        240,
+        -320
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
     }
   ],
   "settings": {
@@ -718,6 +494,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-02-11T18:11:07.258Z",
-  "versionCounter": 184
+  "updatedAt": "2026-02-22T03:27:20.181Z",
+  "versionCounter": 241
 }

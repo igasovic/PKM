@@ -1,0 +1,188 @@
+{
+  "active": false,
+  "activeVersionId": null,
+  "connections": {
+    "Get files": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "PKM Batch Import",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Batch Import": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        []
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Get files",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-02-13T19:08:36.657Z",
+  "description": null,
+  "isArchived": false,
+  "name": "23 E-Mail Batch Import",
+  "nodes": [
+    {
+      "id": "95804e8f-9bff-41cc-9b51-03617f04e7bb",
+      "name": "When clicking ‘Execute workflow’",
+      "parameters": {},
+      "position": [
+        -496,
+        -48
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "credentials": {
+        "sshPassword": {
+          "id": "9D3Ebf2kKfkEuCDJ",
+          "name": "SSH Password account"
+        }
+      },
+      "id": "70cbae74-e458-470f-996e-e7249f0530cb",
+      "name": "Get files",
+      "parameters": {
+        "command": "ls -1t /home/igasovic/pkm-import/*.mbox 2>/dev/null | head -n 1"
+      },
+      "position": [
+        -288,
+        -48
+      ],
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "457f463f-2592-4cba-811c-03f5eb927961",
+      "name": "Send a text message",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "1509032341",
+        "text": "=⬇ Importing mailbox: {{ $json?.stdout ?? \"empty\" }}"
+      },
+      "position": [
+        -16,
+        -240
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    },
+    {
+      "id": "600d0158-e28b-49ad-b377-ec514653ccb8",
+      "name": "PKM Batch Import",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={\n  \"mbox_path\": \"{{$json.stdout}}\",\n  \"batch_size\": 500,\n  \"insert_chunk_size\": 200,\n  \"completion_window\": \"24h\",\n  \"max_emails\": 85\n}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/import/email/mbox"
+      },
+      "position": [
+        -16,
+        -48
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "b8c2371d-b0c4-4913-a9a8-bfcd523dddd2",
+      "name": "Send a text message1",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "1509032341",
+        "text": "=📬 Email backlog import update\n\n🆔 Import: {{ $json.import_id }}\n📦 MBOX: {{ $json.mbox_path }}\n\n📨 Messages: {{ $json.total_messages }}\n✅ Normalized: {{ $json.normalized_ok }} (errors: {{ $json.normalize_errors }})\n\n🗄️ DB (schema: {{ $json.tier1_batches[0].schema }})\n➕ Inserted: {{ $json.inserted }} (errors: {{ $json.insert_errors }})\n🔁 Updated: {{ $json.updated }}\n⏭️ Skipped: {{ $json.skipped }}\n\n🧠 Tier-1\n🎯 Candidates: {{ $json.tier1_candidates }}\n📤 Enqueued: {{ $json.tier1_enqueued_items }}\n🔢 Requests: {{ $json.tier1_batches[0].request_count }}\n\n📌 Status: {{ $json.tier1_batches[0].status }}"
+      },
+      "position": [
+        208,
+        -48
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-02-13T19:08:36.657Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-02-13T19:08:36.657Z",
+      "workflowId": "M7wdUQ8CxcdbDteRLbd8e"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-02-25T14:01:40.578Z",
+  "versionCounter": 12
+}

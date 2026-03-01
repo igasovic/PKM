@@ -1,6 +1,6 @@
 {
-  "active": true,
-  "activeVersionId": "b4e083ec-1edc-4ae0-bd3e-33c5951a3d13",
+  "active": false,
+  "activeVersionId": null,
   "connections": {
     "Call 'Tier-1 Enhancement'": {
       "main": [
@@ -8,17 +8,6 @@
           {
             "index": 0,
             "node": "Compose Reply Text",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Capture": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Switch",
             "type": "main"
           }
         ]
@@ -35,17 +24,6 @@
         ]
       ]
     },
-    "Compute Retrieval Excerpt + Quality (email clean_text)": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "PKM Insert",
-            "type": "main"
-          }
-        ]
-      ]
-    },
     "Email Trigger (IMAP)1": {
       "main": [
         [
@@ -57,34 +35,19 @@
         ]
       ]
     },
-    "Markdown Conversion": {
+    "If 'skipped'": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Remove Boilerplate",
+            "node": "Send 'duplicate' message",
             "type": "main"
           }
-        ]
-      ]
-    },
-    "Normalization1": {
-      "main": [
+        ],
         [
           {
             "index": 0,
-            "node": "Thread Parser",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Normalize": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Markdown Conversion",
+            "node": "Call 'Tier-1 Enhancement'",
             "type": "main"
           }
         ]
@@ -95,7 +58,7 @@
         [
           {
             "index": 0,
-            "node": "Capture",
+            "node": "PKM Normalize E-Mail",
             "type": "main"
           }
         ]
@@ -106,58 +69,18 @@
         [
           {
             "index": 0,
-            "node": "Call 'Tier-1 Enhancement'",
+            "node": "If 'skipped'",
             "type": "main"
           }
         ]
       ]
     },
-    "Remove Boilerplate": {
+    "PKM Normalize E-Mail": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Compute Retrieval Excerpt + Quality (email clean_text)",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Signatures and Markdown": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Compute Retrieval Excerpt + Quality (email clean_text)",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Switch": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Normalize",
-            "type": "main"
-          }
-        ],
-        [
-          {
-            "index": 0,
-            "node": "Normalization1",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Thread Parser": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Signatures and Markdown",
+            "node": "PKM Insert",
             "type": "main"
           }
         ]
@@ -169,139 +92,6 @@
   "isArchived": false,
   "name": "03 E-Mail Capture",
   "nodes": [
-    {
-      "id": "baf8de8d-5694-4d2f-9bef-295760ae0872",
-      "name": "Switch",
-      "parameters": {
-        "options": {},
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "combinator": "and",
-                "conditions": [
-                  {
-                    "id": "405552b3-f700-4ac0-96d3-b72570c8d02d",
-                    "leftValue": "={{$json.content_type}}",
-                    "operator": {
-                      "operation": "equals",
-                      "type": "string"
-                    },
-                    "rightValue": "newsletter"
-                  }
-                ],
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 3
-                }
-              },
-              "outputKey": "newsletter",
-              "renameOutput": true
-            },
-            {
-              "conditions": {
-                "combinator": "and",
-                "conditions": [
-                  {
-                    "id": "d91ae66a-2dfb-4dda-8b31-69174e80e66b",
-                    "leftValue": "={{$json.content_type}}",
-                    "operator": {
-                      "name": "filter.operator.equals",
-                      "operation": "equals",
-                      "type": "string"
-                    },
-                    "rightValue": "correspondence"
-                  }
-                ],
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 3
-                }
-              },
-              "outputKey": "correspondence",
-              "renameOutput": true
-            }
-          ]
-        }
-      },
-      "position": [
-        368,
-        -480
-      ],
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.4
-    },
-    {
-      "id": "224e23d6-aa73-4cc8-917d-b6d951546451",
-      "name": "Markdown Conversion",
-      "notes": "## 3) Convert to Markdown\n- Turn paragraphs/lists/links into clean Markdown with stable formatting (no random headers).\n- Prevent artifacts from becoming headings (e.g., transport ids / internal anchors).\n- Preserve semantic breaks (paragraphs, list items), avoid collapsing links into one mega-line.\n- Output Markdown that is readable and diff-friendly (consistent line breaks, minimal noise).\n",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/07_markdown-conversion__224e23d6-aa73-4cc8-917d-b6d951546451.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/07_markdown-conversion__224e23d6-aa73-4cc8-917d-b6d951546451.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        816,
-        -576
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "02e08da0-cb80-465c-b77b-d881bfe5a0b0",
-      "name": "Remove Boilerplate",
-      "notes": "## 4) Clean Boilerplate\n- Detect and remove footers/CTAs/nav: unsubscribe, preferences, archives, privacy, address blocks, “email to a friend”.\n- Remove tracking/link-dumps and high link-density spans; keep at most one canonical “view online” link (optional).\n- Deduplicate teaser vs full-body by selecting the strongest main-content block (length + low link density).\n- Output final “clean_md / clean_text” + optional separated metadata (title, canonical_url, tags).",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/11_remove-boilerplate__02e08da0-cb80-465c-b77b-d881bfe5a0b0.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/11_remove-boilerplate__02e08da0-cb80-465c-b77b-d881bfe5a0b0.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        1040,
-        -576
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "344c864b-cc78-4f3c-b10a-c7cf2f1050dd",
-      "name": "Normalization1",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/08_normalization1__344c864b-cc78-4f3c-b10a-c7cf2f1050dd.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/08_normalization1__344c864b-cc78-4f3c-b10a-c7cf2f1050dd.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        592,
-        -384
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "00fb2628-a0f9-40a0-9307-ba07a9fcc25a",
-      "name": "Thread Parser",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/13_thread-parser__00fb2628-a0f9-40a0-9307-ba07a9fcc25a.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/13_thread-parser__00fb2628-a0f9-40a0-9307-ba07a9fcc25a.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        816,
-        -384
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "46831d4c-c2ac-42a8-823f-9947d36c5201",
-      "name": "Signatures and Markdown",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/12_signatures-and-markdown__46831d4c-c2ac-42a8-823f-9947d36c5201.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/12_signatures-and-markdown__46831d4c-c2ac-42a8-823f-9947d36c5201.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        1040,
-        -384
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
     {
       "credentials": {
         "imap": {
@@ -325,42 +115,14 @@
       "typeVersion": 2.1
     },
     {
-      "id": "0d46a330-acb5-4954-a88e-1e0ee38ac0cf",
-      "name": "Capture",
-      "notes": "## 1) Capture\n- Ingest raw email content and metadata (subject/from/date/message-id), without losing fidelity.\n- Preserve original MIME/HTML/text parts (or raw .eml) for later fallbacks and debugging.\n- Record provenance fields (source mailbox, label/folder, received timestamp, thread/forward info).\n- Output a structured “raw payload” object: {headers, raw_body, parts, attachments, ids}.\n",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/02_capture__0d46a330-acb5-4954-a88e-1e0ee38ac0cf.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/02_capture__0d46a330-acb5-4954-a88e-1e0ee38ac0cf.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        144,
-        -480
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
-      "id": "b74a02d7-1371-4de6-afc4-4499b981e469",
-      "name": "Normalize",
-      "notes": "## 2) Normalize\n- Decode correctly using MIME charset + transfer-encoding; repair common mojibake only when detected.\n- Sanitize text: strip Unicode format chars (Cf), normalize whitespace/newlines, remove obvious transport wrappers.\n- Choose best “content candidate” (HTML→text or text/plain) and unwrap angle-bracket URLs.\n- Output a single normalized text plus a small metadata block (canonical_url candidate, source, date).\n",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/09_normalize__b74a02d7-1371-4de6-afc4-4499b981e469.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/09_normalize__b74a02d7-1371-4de6-afc4-4499b981e469.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        592,
-        -576
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
-    },
-    {
       "id": "0ae5a1f1-fc06-445c-b460-7447a1632dba",
       "name": "Compose Reply Text",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/03_compose-reply-text__0ae5a1f1-fc06-445c-b460-7447a1632dba.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/03_compose-reply-text__0ae5a1f1-fc06-445c-b460-7447a1632dba.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/js/workflows/03-e-mail-capture/compose-reply-text__0ae5a1f1-fc06-445c-b460-7447a1632dba.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:03-e-mail-capture/compose-reply-text__0ae5a1f1-fc06-445c-b460-7447a1632dba.js] ${e.message}`;throw e;}"
       },
       "position": [
-        2032,
-        -480
+        1040,
+        -384
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -382,25 +144,12 @@
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        2256,
-        -480
+        1264,
+        -384
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
-    },
-    {
-      "id": "2b306dd2-9dfb-4d42-9302-0258fd2d5ce0",
-      "name": "Compute Retrieval Excerpt + Quality (email clean_text)",
-      "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/e-mail-capture/04_compute-retrieval-excerpt-quality-email-clean-text__2b306dd2-9dfb-4d42-9302-0258fd2d5ce0.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:e-mail-capture/04_compute-retrieval-excerpt-quality-email-clean-text__2b306dd2-9dfb-4d42-9302-0258fd2d5ce0.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        1264,
-        -480
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
     },
     {
       "id": "c35eb190-fc48-4340-9c7c-c0283110bf8b",
@@ -454,8 +203,8 @@
         }
       },
       "position": [
-        1808,
-        -480
+        816,
+        -384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -464,19 +213,113 @@
       "id": "38d88987-fe5a-4b83-bb5e-7078db544254",
       "name": "PKM Insert",
       "parameters": {
-        "jsonBody": "={{ JSON.stringify((() => {\n  // Core fields (mirror your Build SQL INSERT node)\n  const source = \"email\";\n  const intent = $json.intent ?? \"archive\";\n  const content_type = $json.content_type ?? null;\n\n  const title = $json.title ?? null;\n  const author = $json.author ?? null;\n\n  const capture_text = $json.capture_text ?? \"\";\n  const clean_text = $json.clean_text ?? \"\";\n\n  const url = $json.url ?? null;\n  const url_canonical = $json.url_canonical ?? null;\n\n  const external_ref = $json.external_ref ?? null;\n\n  // WP1 metadata patch (same logic as your node)\n  const metadata_patch =\n    $json.metadata_patch ??\n    ($json.retrieval ? { retrieval: $json.retrieval } : null);\n\n  // WP2 promoted retrieval columns (same logic as your node)\n  const r = $json.retrieval ?? (metadata_patch?.retrieval ?? null);\n  const q = r?.quality ?? {};\n\n  const body = {\n    source,\n    intent,\n    content_type,\n    title,\n    author,\n    capture_text,\n    clean_text,\n    url,\n    url_canonical,\n\n    // JSONB columns: send as objects (or null)\n    external_ref,\n    metadata: metadata_patch,\n\n    // Keep your workflow behavior (pending after insert)\n    enrichment_status: \"pending\",\n\n    // promoted retrieval columns\n    retrieval_excerpt: r?.excerpt ?? null,\n    retrieval_version: r?.version ?? null,\n    source_domain: r?.source_domain ?? null,\n\n    clean_word_count: q.clean_word_count ?? null,\n    clean_char_count: q.clean_char_count ?? null,\n    extracted_char_count: q.extracted_char_count ?? null,\n\n    link_count: q.link_count ?? null,\n    link_ratio: q.link_ratio ?? null,\n\n    boilerplate_heavy: q.boilerplate_heavy ?? null,\n    low_signal: q.low_signal ?? null,\n    extraction_incomplete: q.extraction_incomplete ?? null,\n\n    quality_score: q.quality_score ?? null,\n\n    // match your previous RETURNING\n    returning: [\n      \"entry_id\",\n      \"id\",\n      \"created_at\",\n      \"source\",\n      \"intent\",\n      \"content_type\",\n      \"title\",\n      \"author\",\n      \"clean_text\",\n      \"metadata\",\n      \"COALESCE(char_length(clean_text), 0) AS clean_len\"\n    ]\n  };\n\n  return body;\n})()) }}\n",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => {\n  const source = \"email\";\n  \n  const external_ref = $json.external_ref ?? null;\n\n  // WP1 metadata patch (same logic as your node)\n  const metadata_patch =\n    $json.metadata_patch ??\n    ($json.retrieval ? { retrieval: $json.retrieval } : null);\n\n  // WP2 promoted retrieval columns (same logic as your node)\n  const r = $json.retrieval ?? (metadata_patch?.retrieval ?? null);\n  const q = r?.quality ?? {};\n\n  const body = {\n    // core columns, force all except URLs\n    source,\n    intent: $json.intent,\n    content_type: $json.content_type,\n    title: $json.title,\n    author: $json.author,\n    capture_text: $json.capture_text,\n    clean_text: $json.clean_text,\n    url: $json.url ?? null,\n    url_canonical: $json.url_canonical ?? null,\n\n    // idempotency columns - force policy and primary key\n    idempotency_policy_key: $json.idempotency_policy_key,\n    idempotency_key_primary: $json.idempotency_key_primary,\n    idempotency_key_secondary: $json.idempotency_key_secondary ?? null,\n\n    // JSONB columns: send as objects (or null)\n    external_ref,\n    metadata: metadata_patch,\n\n    // Keep your workflow behavior (pending after insert)\n    enrichment_status: \"pending\",\n\n    // promoted retrieval columns\n    retrieval_excerpt: r?.excerpt ?? null,\n    retrieval_version: r?.version ?? null,\n    source_domain: r?.source_domain ?? null,\n\n    clean_word_count: q.clean_word_count ?? null,\n    clean_char_count: q.clean_char_count ?? null,\n    extracted_char_count: q.extracted_char_count ?? null,\n\n    link_count: q.link_count ?? null,\n    link_ratio: q.link_ratio ?? null,\n\n    boilerplate_heavy: q.boilerplate_heavy ?? null,\n    low_signal: q.low_signal ?? null,\n    extraction_incomplete: q.extraction_incomplete ?? null,\n\n    quality_score: q.quality_score ?? null,\n\n    // match your previous RETURNING\n    \n    returning: [\n      \"entry_id\",\n      \"id\",\n      \"created_at\",\n      \"source\",\n      \"intent\",\n      \"content_type\",\n      \"title\",\n      \"author\",\n      \"clean_text\",\n      \"metadata\",\n      \"COALESCE(char_length(clean_text), 0) AS clean_len\"\n    ]\n  };\n\n  return body;\n})()) }}\n",
         "method": "POST",
         "options": {},
         "sendBody": true,
+        "sendHeaders": true,
         "specifyBody": "json",
         "url": "http://pkm-server:8080/db/insert"
       },
       "position": [
-        1584,
+        368,
         -480
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
+    },
+    {
+      "id": "9e48b315-63e7-4cc0-865c-d695be07369d",
+      "name": "If 'skipped'",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "8a66c028-b1b9-4671-8657-f12359d1f942",
+              "leftValue": "={{ $json.action }}",
+              "operator": {
+                "name": "filter.operator.equals",
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "skipped"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        592,
+        -480
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "id": "8d7aa31a-0a2a-497c-bf5c-11ee3ebf9f4b",
+      "name": "PKM Normalize E-Mail",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => {\n  const body = {\n    raw_text: $json.textPlain,\n    from: $json.from,\n    date: $json.date,\n    subject: $json.subject,\n  };\n\n  return body;\n})()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/normalize/email"
+      },
+      "position": [
+        144,
+        -480
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "b7989a1a-a02d-4e89-813c-0d53effc7026",
+      "name": "Send 'duplicate' message",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "1509032341",
+        "text": "=Message duplicate of entry #{{$json.entry_id}}. Processing stopped."
+      },
+      "position": [
+        816,
+        -576
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
     }
   ],
   "settings": {
@@ -507,11 +350,11 @@
   ],
   "staticData": {
     "node:Email Trigger (IMAP)1": {
-      "lastMessageUid": 122
+      "lastMessageUid": 166
     }
   },
   "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2026-02-11T18:22:45.972Z",
-  "versionCounter": 142
+  "updatedAt": "2026-02-22T03:28:05.792Z",
+  "versionCounter": 232
 }

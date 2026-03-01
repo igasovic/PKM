@@ -1,0 +1,336 @@
+{
+  "active": false,
+  "activeVersionId": null,
+  "connections": {
+    "Delete Daily File": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "If Daily Exists": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Delete Daily File",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Lookup Daily Files": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "If Daily Exists",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Upload File",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Read Daily Files from Disk": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Lookup Daily Files",
+            "type": "main"
+          },
+          {
+            "index": 1,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read Daily Files from Disk",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-02-18T02:24:46.547Z",
+  "description": null,
+  "isArchived": false,
+  "name": "81 Postgres Backup GDrive",
+  "nodes": [
+    {
+      "id": "2b7f982b-dbcb-4639-9015-ce9904a9115a",
+      "name": "Merge",
+      "parameters": {
+        "combineBy": "combineByPosition",
+        "mode": "combine",
+        "options": {}
+      },
+      "position": [
+        224,
+        144
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
+    },
+    {
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "5t2aHMcMnx2YNbBi",
+          "name": "Google Drive account"
+        }
+      },
+      "id": "f828b534-911e-4483-853d-16a3ab202221",
+      "name": "Upload File",
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "cachedResultName": "pg",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/15rRqLnwDeNKuKRU-rGZ_PNlEwGbTgZ8f",
+          "mode": "list",
+          "value": "15rRqLnwDeNKuKRU-rGZ_PNlEwGbTgZ8f"
+        },
+        "name": "={{ $json.filename }}",
+        "options": {}
+      },
+      "position": [
+        448,
+        144
+      ],
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3
+    },
+    {
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "5t2aHMcMnx2YNbBi",
+          "name": "Google Drive account"
+        }
+      },
+      "id": "4259ab35-22d6-48d6-8962-43963c8afa7c",
+      "name": "Delete Daily File",
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "method": "DELETE",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "=name = '{{ $json.filename }}' and '15rRqLnwDeNKuKRU-rGZ_PNlEwGbTgZ8f' in parents and trashed = false"
+            },
+            {
+              "name": "fields",
+              "value": "files(id,name,parents,modifiedTime,size)"
+            },
+            {
+              "name": "pageSize",
+              "value": "1"
+            },
+            {
+              "name": "supportsAllDrives",
+              "value": "true"
+            },
+            {
+              "name": "includeItemsFromAllDrives",
+              "value": "true"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "url": "=https://www.googleapis.com/drive/v3/files/{{$json.files[0].id}}"
+      },
+      "position": [
+        0,
+        0
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "5t2aHMcMnx2YNbBi",
+          "name": "Google Drive account"
+        }
+      },
+      "id": "e0c6bb49-ddef-47d9-8dad-1e7a2035fd4d",
+      "name": "Lookup Daily Files",
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "=name = '{{ $json.filename }}' and '15rRqLnwDeNKuKRU-rGZ_PNlEwGbTgZ8f' in parents and trashed = false"
+            },
+            {
+              "name": "fields",
+              "value": "files(id,name,parents,modifiedTime,size)"
+            },
+            {
+              "name": "pageSize",
+              "value": "1"
+            },
+            {
+              "name": "supportsAllDrives",
+              "value": "true"
+            },
+            {
+              "name": "includeItemsFromAllDrives",
+              "value": "true"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "url": "https://www.googleapis.com/drive/v3/files"
+      },
+      "position": [
+        -448,
+        64
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "c6c9a2af-6656-403c-921f-71074fed258b",
+      "name": "Read Daily Files from Disk",
+      "parameters": {
+        "fileSelector": "=/home/node/.n8n-files/backup-postgres/uploads/{{ $json.filename }}",
+        "options": {}
+      },
+      "position": [
+        -672,
+        144
+      ],
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "1205f568-efd3-4023-a4fa-f94bec869fd8",
+      "name": "If Daily Exists",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c946c55f-1754-478c-8edd-d2c53127ec2b",
+              "leftValue": "={{$json.files}}",
+              "operator": {
+                "operation": "exists",
+                "singleValue": true,
+                "type": "array"
+              },
+              "rightValue": ""
+            },
+            {
+              "id": "da06caad-3b02-4644-84ce-64b6bca18d47",
+              "leftValue": "={{$json.files.length}}",
+              "operator": {
+                "operation": "gt",
+                "type": "number"
+              },
+              "rightValue": 0
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        -224,
+        64
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "id": "71b87065-228f-42a6-b2d3-b04d46342800",
+      "name": "When Executed by Another Workflow",
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "filename"
+            }
+          ]
+        }
+      },
+      "position": [
+        -912,
+        144
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-02-18T02:24:46.547Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-02-18T02:24:46.547Z",
+      "workflowId": "4KyG6iOubMpom5h-kBK-A"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-02-18T02:25:16.923Z",
+  "versionCounter": 14
+}

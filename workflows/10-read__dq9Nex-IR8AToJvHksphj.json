@@ -1,13 +1,13 @@
 {
-  "active": true,
-  "activeVersionId": "74c95572-3460-4fdc-ab0a-95100aeb5ed3",
+  "active": false,
+  "activeVersionId": null,
   "connections": {
     "Build Context Pack": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Send a text message4",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -35,12 +35,45 @@
         ]
       ]
     },
+    "Format Status Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send MarkdownV2 Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Format Telegram Message": {
       "main": [
         [
           {
             "index": 0,
             "node": "Send a text message4",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format delete message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send MarkdownV2 Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format move message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -98,6 +131,17 @@
         ]
       ]
     },
+    "PKM Delete": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format delete message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "PKM Find": {
       "main": [
         [
@@ -120,12 +164,34 @@
         ]
       ]
     },
+    "PKM Move": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format move message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "PKM Pull": {
       "main": [
         [
           {
             "index": 0,
             "node": "Format Telegram Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Status - T1 Batch": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Status Message",
             "type": "main"
           }
         ]
@@ -166,6 +232,34 @@
           {
             "index": 0,
             "node": "Format /help Message",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Status - T1 Batch",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Delete",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Move",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Debug",
             "type": "main"
           }
         ]
@@ -216,8 +310,8 @@
         "text": "={{$json.telegram_message}}"
       },
       "position": [
-        1360,
-        -192
+        1344,
+        48
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -252,7 +346,7 @@
       },
       "position": [
         896,
-        128
+        192
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -286,7 +380,7 @@
       },
       "position": [
         1120,
-        128
+        192
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -446,13 +540,113 @@
               },
               "outputKey": "help",
               "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "bb8d0042-7794-4b75-bdaf-b32cea0a73a4",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "status"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "status",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "cc0cfe47-8bb2-4c41-8941-8661f43719bf",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "delete"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "delete",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "88eea9f5-5422-46b6-a037-bbf4076140a9",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "move"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "move",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "cdc49bb6-67c7-416a-9485-d5a29646b229",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "debug"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "debug",
+              "renameOutput": true
             }
           ]
         }
       },
       "position": [
         1344,
-        256
+        368
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -465,7 +659,7 @@
       },
       "position": [
         224,
-        224
+        288
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -474,11 +668,11 @@
       "id": "926eb875-5735-4746-a0a4-7801b8db586f",
       "name": "Command Parser",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/read/06_command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/06_command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/js/workflows/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js] ${e.message}`;throw e;}"
       },
       "position": [
         672,
-        128
+        192
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -501,7 +695,7 @@
       },
       "position": [
         2016,
-        448
+        480
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -511,11 +705,11 @@
       "id": "f305ac84-35d3-44df-8ef5-1c0e004f37b8",
       "name": "Format Telegram Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/read/08_format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/08_format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/js/workflows/10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
-        512
+        384
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -524,11 +718,11 @@
       "id": "83d12448-5f97-48f1-9ece-de61a9756db3",
       "name": "Format /help Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/read/07_format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/07_format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js] ${e.message}`;throw e;}"
+        "jsCode": "/**\n * PKM / n8n Externalized Code Node\n *\n * Workflow: Read (read)\n * Node: Format /help Message\n * Node ID: 83d12448-5f97-48f1-9ece-de61a9756db3\n *\n * Notes:\n * - Generated from workflow export for clean Git diffs.\n * - Keep return shape identical to original Code node.\n * - Sandbox: require() allowed (allowlisted); fs/process not available.\n */\n'use strict';\n\nconst { getConfig } = require('../../../src/libs/config.js');\n\nmodule.exports = async function run(ctx) {\n  const { $input, $json, $items, $node, $env, helpers } = ctx;\n\nconst msg =\n`/last \"query\" [--days N] [--limit M]\nBest when you vaguely remember something. Ranks using your Tier-1 metadata + full-text + quality + recency.\n\n /find \"needle\" [--days N] [--limit M]\nBest for exact-ish strings (names, errors, phrases). Prefers literal matches + full-text; returns evidence snippets.\n\n /continue topic [--days N] [--limit M]\nBest to resume a topic. Uses Tier-1-first scoring and tries to return your notes first (if available).\n\n /pull <id> [--excerpt]\nFetch one entry by its numeric id (#12345). Default shows a short excerpt; --excerpt returns a longer excerpt.\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\n\nconst config = getConfig();\nconst isTestMode = config.db.is_test_mode === true;\nconst banner = isTestMode ? '⚗️🧪 TEST MODE\n' : '';\nconst telegram_message = msg.split('\\n').map(l => l.trimEnd()).join('\\n').trim();\nreturn [{ json: { ...$json, telegram_message } }];\n};\n"
       },
       "position": [
         1792,
-        704
+        576
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -537,11 +731,11 @@
       "id": "3580c243-cd64-4bc2-8b4f-ab5215ff71a1",
       "name": "Build Context Pack",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/read/01_build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:read/01_build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js] ${e.message}`;throw e;}"
+        "jsCode": "/**\n * PKM / n8n Externalized Code Node\n *\n * Workflow: Read (read)\n * Node: Build Context Pack\n * Node ID: 3580c243-cd64-4bc2-8b4f-ab5215ff71a1\n *\n * Notes:\n * - Generated from workflow export for clean Git diffs.\n * - Keep return shape identical to original Code node.\n * - Sandbox: require() allowed (allowlisted); fs/process not available.\n */\n'use strict';\n\nmodule.exports = async function run(ctx) {\n  const { $input, $json, $items, $node, $env, helpers } = ctx;\n  const { buildContextPackMarkdown } = require('../../../src/libs/context-pack-builder.js');\n\nconst rows = $input.all().map(i => i.json);\nconst meta = rows.find((r) => r.is_meta === true) || {};\nconst hitsRows = rows.filter((r) => r.is_meta === false && r.id);\nconst method = String(meta.cmd || 'last').toLowerCase();\nconst query = String(meta.query_text || '').trim();\n\nlet msg = buildContextPackMarkdown(\n  hitsRows,\n  {\n    method,\n    query,\n    days: meta.days,\n    limit: meta.limit,\n  },\n  {\n    markdownV2: true,\n    layout: 'ui',\n    maxContentLen: 300,\n  },\n);\n\n// safety cap (Telegram hard limit is 4096; keep margin for safety)\nconst MAX_TELEGRAM = 3500;\nif (msg.length > MAX_TELEGRAM) {\n  msg = msg.slice(0, MAX_TELEGRAM - 1) + '…';\n}\n\nreturn [{ json: { telegram_message: msg } }];\n};\n"
       },
       "position": [
         1792,
-        176
+        96
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -566,7 +760,7 @@
       },
       "position": [
         224,
-        32
+        96
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -597,7 +791,7 @@
       },
       "position": [
         448,
-        128
+        192
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -606,16 +800,25 @@
       "id": "2cce1bfc-827b-44f3-86d8-5b22f7ea5d93",
       "name": "PKM Pull",
       "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
         "jsonBody": "={ \"entry_id\" : \"{{$json.entry_id}}\"}",
         "method": "POST",
         "options": {},
         "sendBody": true,
+        "sendHeaders": true,
         "specifyBody": "json",
         "url": "http://pkm-server:8080/db/read/pull"
       },
       "position": [
         1568,
-        512
+        384
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -624,16 +827,25 @@
       "id": "df81f142-e2e4-47df-902e-49f4ed9c95e6",
       "name": "PKM Continue",
       "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
         "jsonBody": "={ \n  \"q\" : \"{{ $json.q }}\",\n  \"days\" : \"{{$json.days}}\",\n  \"limit\" : \"{{$json.limit}}\"\n}\n",
         "method": "POST",
         "options": {},
         "sendBody": true,
+        "sendHeaders": true,
         "specifyBody": "json",
         "url": "http://pkm-server:8080/db/read/continue"
       },
       "position": [
         1568,
-        128
+        0
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -642,16 +854,25 @@
       "id": "b7917712-ba33-4d11-8d33-26dad0a7f707",
       "name": "PKM Find",
       "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
         "jsonBody": "={ \n  \"q\" : \"{{ $json.q }}\",\n  \"days\" : \"{{$json.days}}\",\n  \"limit\" : \"{{$json.limit}}\"\n}\n",
         "method": "POST",
         "options": {},
         "sendBody": true,
+        "sendHeaders": true,
         "specifyBody": "json",
         "url": "http://pkm-server:8080/db/read/find"
       },
       "position": [
         1568,
-        -64
+        -192
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -660,16 +881,201 @@
       "id": "a9cd2690-c5df-4d8d-87eb-491e29fdbc1d",
       "name": "PKM Last",
       "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
         "jsonBody": "={ \n  \"q\" : \"{{ $json.q }}\",\n  \"days\" : \"{{$json.days}}\",\n  \"limit\" : \"{{$json.limit}}\"\n}\n",
         "method": "POST",
         "options": {},
         "sendBody": true,
+        "sendHeaders": true,
         "specifyBody": "json",
         "url": "http://pkm-server:8080/db/read/last"
       },
       "position": [
         1568,
-        320
+        192
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "6cd8b6fa-83c7-4be8-bb8c-66179ec54b6a",
+      "name": "PKM Status - T1 Batch",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "options": {},
+        "sendHeaders": true,
+        "url": "http://pkm-server:8080/status/t1/batch"
+      },
+      "position": [
+        1568,
+        768
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "075f1d02-d3af-43dc-a694-f387f757ba3d",
+      "name": "Format Status Message",
+      "parameters": {
+        "jsCode": "const s = $json.summary || {};\n\nreturn {\n  telegram_message:\n`*T1 Batch summary*\n\n*Jobs:* ${s.jobs}\n*In\\\\_progress:* ${s.in_progress}\n*Terminal:* ${s.terminal}\n\n*Items*\n• Total: ${s.total_items}\n• Processed: ${s.processed}\n• Pending: ${s.pending}\n\n*Results*\n✅ OK: ${s.ok}\n⚠️ Parse\\\\_error: ${s.parse_error}\n❌ Error: ${s.error}`\n};\n"
+      },
+      "position": [
+        1792,
+        768
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "6c3c44b1-11b6-4b30-a89a-a835f31d6942",
+      "name": "Send MarkdownV2 Message",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
+        },
+        "chatId": "1509032341",
+        "text": "={{$json.telegram_message}}"
+      },
+      "position": [
+        2032,
+        1056
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    },
+    {
+      "id": "2f089629-e174-4427-a5d8-f8f6b3e495a7",
+      "name": "PKM Delete",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "your-long-random-secretdfdsfdsfdsfsdf"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => {\n  const parseMaybeJson = (v) => {\n    if (typeof v !== \"string\") return v;\n    const s = v.trim();\n    if (!s) return v;\n    if (s.startsWith(\"{\") || s.startsWith(\"[\")) {\n      try { return JSON.parse(s); } catch (e) { return v; }\n    }\n    return v;\n  };\n\n  const body = {\n    schema: $json.schema,\n    entry_ids: parseMaybeJson($json.entry_ids),\n    range: parseMaybeJson($json.range),\n    dry_run: $json.dry_run,\n    force: $json.force,\n  };\n\n  // Type normalization (only if upstream sends strings)\n  if (typeof body.dry_run === \"string\") body.dry_run = (body.dry_run === \"true\");\n  if (typeof body.force === \"string\") body.force = (body.force === \"true\");\n\n  return body;\n})()) }}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/delete"
+      },
+      "position": [
+        1568,
+        960
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "3feac23b-f095-4af9-9179-3b0a1a4279a2",
+      "name": "Format delete message",
+      "parameters": {
+        "jsCode": "const s = $json || {};\n\nconst mdv2 = (v) =>\n  String(v ?? \"\")\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, \"\\\\$1\"); // MarkdownV2 escape\n\nreturn {\n  telegram_message:\n`*✅ Delete successful:*\n• Dry run: ${s.dry_run}\n• Schema: ${mdv2(s.schema)}\n• Deleted: ${s.deleted_count}`\n};\n"
+      },
+      "position": [
+        1792,
+        960
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "86fd8662-7691-4efa-b461-9f0080d8743a",
+      "name": "PKM Move",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "your-long-random-secretdfdsfdsfdsfsdf"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => {\n  const parseMaybeJson = (v) => {\n    if (typeof v !== \"string\") return v;\n    const s = v.trim();\n    if (!s) return v;\n    if (s.startsWith(\"{\") || s.startsWith(\"[\")) {\n      try { return JSON.parse(s); } catch (e) { return v; }\n    }\n    return v;\n  };\n\n  const body = {\n    from_schema: $json.from_schema,\n    to_schema: $json.to_schema,\n    entry_ids: parseMaybeJson($json.entry_ids),\n    range: parseMaybeJson($json.range),\n    dry_run: $json.dry_run,\n    force: $json.force,\n  };\n\n  // Type normalization (only if upstream sends strings)\n  if (typeof body.dry_run === \"string\") body.dry_run = (body.dry_run === \"true\");\n  if (typeof body.force === \"string\") body.force = (body.force === \"true\");\n\n  return body;\n})()) }}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/move"
+      },
+      "position": [
+        1568,
+        1152
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "344aac95-db6e-4262-9441-1072918d9d48",
+      "name": "Format move message",
+      "parameters": {
+        "jsCode": "const s = $json || {};\n\nconst mdv2 = (v) =>\n  String(v ?? \"\")\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, \"\\\\$1\"); // MarkdownV2 escape\n\nreturn {\n  telegram_message:\n`*✅ Move successful:*\n• Dry run: ${s.dry_run}\n• Schema: ${mdv2(s.from_schema)} \\\\-\\\\> *${mdv2(s.to_schema)}*\n• Moved: ${s.moved_count}`\n};\n"
+      },
+      "position": [
+        1792,
+        1152
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "b4c54788-8a83-4a5c-a008-a8dd26ae8196",
+      "name": "PKM Debug",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            },
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "your-long-random-secretdfdsfdsfdsfsdf"
+            }
+          ]
+        },
+        "options": {},
+        "sendHeaders": true,
+        "url": "http://pkm-server:8080/debug/run/last"
+      },
+      "position": [
+        1568,
+        1328
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -704,6 +1110,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-02-11T18:22:28.601Z",
-  "versionCounter": 136
+  "updatedAt": "2026-02-22T15:43:20.670Z",
+  "versionCounter": 221
 }

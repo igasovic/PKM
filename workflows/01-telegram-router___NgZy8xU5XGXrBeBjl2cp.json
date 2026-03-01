@@ -1,6 +1,6 @@
 {
-  "active": true,
-  "activeVersionId": "e2053f2d-eef4-46c8-9ebc-ebbc83c34cdd",
+  "active": false,
+  "activeVersionId": null,
   "connections": {
     "IS COMMAND": {
       "main": [
@@ -86,7 +86,8 @@
           "chatIds": "1509032341"
         },
         "updates": [
-          "message"
+          "message",
+          "edited_message"
         ]
       },
       "position": [
@@ -185,6 +186,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2026-02-11T18:10:26.046Z",
-  "versionCounter": 58
+  "updatedAt": "2026-02-13T18:31:17.120Z",
+  "versionCounter": 80
 }
