@@ -12,6 +12,13 @@ if [[ ! -d "$DIR" ]]; then
   exit 1
 fi
 
+TMP_LIVE_DIR="$(mktemp -d)"
+LIVE_MAP="$TMP_LIVE_DIR/live_workflows.tsv"
+cleanup() {
+  rm -rf "$TMP_LIVE_DIR"
+}
+trap cleanup EXIT
+
 deactivate_via_cli_unpublish() {
   local wid="$1"
   docker exec -u node n8n n8n unpublish:workflow --id="$wid"
@@ -34,6 +41,28 @@ deactivate_via_api() {
     -d '{"active": false}' >/dev/null
 }
 
+build_live_workflow_map() {
+  docker exec -u node n8n sh -lc 'rm -rf /tmp/workflows_live_sync && mkdir -p /tmp/workflows_live_sync'
+  docker exec -u node n8n n8n export:workflow --backup --output=/tmp/workflows_live_sync >/dev/null
+  docker cp n8n:/tmp/workflows_live_sync/. "$TMP_LIVE_DIR/"
+  : >"$LIVE_MAP"
+  shopt -s nullglob
+  local f
+  for f in "$TMP_LIVE_DIR"/*.json; do
+    local name wid
+    name="$(jq -r '.name // empty' "$f")"
+    wid="$(jq -r '.id // empty' "$f")"
+    if [[ -n "$name" && -n "$wid" && "$name" != "null" && "$wid" != "null" ]]; then
+      printf '%s\t%s\n' "$name" "$wid" >>"$LIVE_MAP"
+    fi
+  done
+}
+
+live_id_by_name() {
+  local wf_name="$1"
+  awk -F '\t' -v n="$wf_name" '$1==n { print $2; exit }' "$LIVE_MAP"
+}
+
 DEACT_MODE=""
 if docker exec -u node n8n n8n unpublish:workflow --help >/dev/null 2>&1; then
   DEACT_MODE="cli-unpublish"
@@ -45,6 +74,7 @@ else
   DEACT_MODE="none"
 fi
 echo "Pre-import deactivate mode: $DEACT_MODE"
+build_live_workflow_map
 
 shopt -s nullglob
 files=("$DIR"/*.json)
@@ -55,8 +85,19 @@ fi
 
 for f in "${files[@]}"; do
   base="$(basename "$f")"
-  wid="$(jq -r '.id // empty' "$f")"
+  wf_name="$(jq -r '.name // empty' "$f")"
+  src_wid="$(jq -r '.id // empty' "$f")"
+  live_wid="$(live_id_by_name "$wf_name")"
+  wid="${live_wid:-$src_wid}"
+  import_src="$f"
   remote="/tmp/$base"
+
+  if [[ -n "$live_wid" && -n "$src_wid" && "$live_wid" != "$src_wid" ]]; then
+    tmp_file="$TMP_LIVE_DIR/import.$base"
+    jq --arg wid "$live_wid" '.id = $wid' "$f" >"$tmp_file"
+    import_src="$tmp_file"
+    echo "ID remap: $base: $src_wid -> $live_wid"
+  fi
 
   if [[ -n "$wid" && "$DEACT_MODE" != "none" ]]; then
     echo "Pre-deactivating: $wid"
@@ -78,7 +119,7 @@ for f in "${files[@]}"; do
     fi
   fi
 
-  docker cp "$f" "n8n:$remote"
+  docker cp "$import_src" "n8n:$remote"
   docker exec -u node n8n n8n import:workflow --input="$remote"
   echo "Imported: $base"
 done
