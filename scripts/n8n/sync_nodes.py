@@ -16,6 +16,13 @@ def die(message: str, code: int = 1) -> None:
     sys.exit(code)
 
 
+def slugify(value: str) -> str:
+    value = (value or "").strip().lower()
+    value = re.sub(r"[^a-z0-9]+", "-", value)
+    value = re.sub(r"-+", "-", value).strip("-")
+    return value
+
+
 def run_cmd(cmd, check: bool = True):
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if check and proc.returncode != 0:
@@ -88,6 +95,7 @@ def build_live_workflow_map():
         run_cmd(["docker", "cp", "n8n:/tmp/workflows_live_sync/.", temp_dir])
 
         workflow_map = {}
+        slug_map = {}
         for path_obj in sorted(Path(temp_dir).glob("*.json")):
             data = load_json(path_obj)
             name = data.get("name")
@@ -98,7 +106,9 @@ def build_live_workflow_map():
             if name in workflow_map:
                 die(f"Duplicate live workflow name detected: {name}")
             workflow_map[name] = {"id": str(wid), "active": active}
-        return workflow_map
+            slug = slugify(name)
+            slug_map.setdefault(slug, []).append({"name": name, "id": str(wid), "active": active})
+        return workflow_map, slug_map
 
 
 def extract_wrapper_targets(workflow_payload):
@@ -145,6 +155,25 @@ def workflow_patch_payload(local_workflow):
     return payload
 
 
+def sanitize_settings_for_put(settings):
+    if not isinstance(settings, dict):
+        return {}
+    allowed = {
+        "executionOrder",
+        "saveManualExecutions",
+        "callerPolicy",
+        "callerIds",
+        "errorWorkflow",
+        "timezone",
+        "saveDataErrorExecution",
+        "saveDataSuccessExecution",
+        "saveExecutionProgress",
+        "saveDataManualExecutions",
+        "executionTimeout",
+    }
+    return {k: v for k, v in settings.items() if k in allowed}
+
+
 def deactivate_workflow(base_url: str, api_key: str, workflow_id: str):
     try:
         api_request(base_url, api_key, "POST", f"/api/v1/workflows/{workflow_id}/deactivate", {})
@@ -183,8 +212,29 @@ def update_workflow_definition(base_url: str, api_key: str, workflow_id: str, pa
         message = str(exc).lower()
         if "http 405" not in message and "method not allowed" not in message:
             raise
-    api_request(base_url, api_key, "PUT", f"/api/v1/workflows/{workflow_id}", payload)
-    return "PUT"
+    try:
+        api_request(base_url, api_key, "PUT", f"/api/v1/workflows/{workflow_id}", payload)
+        return "PUT"
+    except RuntimeError as exc:
+        message = str(exc).lower()
+        if "request/body/settings must not have additional properties" not in message:
+            raise
+    retry_payload = dict(payload)
+    retry_payload["settings"] = sanitize_settings_for_put(payload.get("settings"))
+    api_request(base_url, api_key, "PUT", f"/api/v1/workflows/{workflow_id}", retry_payload)
+    return "PUT(retry-settings)"
+
+
+def resolve_live_workflow(local_name: str, workflow_map, slug_map):
+    exact = workflow_map.get(local_name)
+    if exact:
+        return exact, None
+    slug = slugify(local_name)
+    matches = slug_map.get(slug, [])
+    if len(matches) == 1:
+        m = matches[0]
+        return {"id": m["id"], "active": m["active"]}, f"{local_name} -> {m['name']}"
+    return None, None
 
 
 def parse_args(argv):
@@ -251,11 +301,11 @@ def main(argv):
 
     validate_wrapper_targets(workflow_files, js_root_dir)
 
-    live_map = build_live_workflow_map()
+    live_map, slug_map = build_live_workflow_map()
     missing_live = []
     updated = []
     failed = []
-    method_usage = {"PATCH": 0, "PUT": 0}
+    method_usage = {"PATCH": 0, "PUT": 0, "PUT(retry-settings)": 0}
 
     for wf_file in workflow_files:
         local = load_json(wf_file)
@@ -263,10 +313,12 @@ def main(argv):
         if not isinstance(wf_name, str) or not wf_name.strip():
             failed.append(f"{wf_file.name}: missing .name")
             continue
-        live = live_map.get(wf_name)
+        live, name_fallback = resolve_live_workflow(wf_name, live_map, slug_map)
         if not live:
             missing_live.append(wf_name)
             continue
+        if name_fallback:
+            print(f"Name fallback match: {name_fallback}")
         workflow_id = live["id"]
         was_active = bool(live["active"])
         payload = workflow_patch_payload(local)
@@ -281,7 +333,7 @@ def main(argv):
             if was_active:
                 deactivate_workflow(base_url, api_key, workflow_id)
             method_used = update_workflow_definition(base_url, api_key, workflow_id, payload)
-            method_usage[method_used] += 1
+            method_usage[method_used] = method_usage.get(method_used, 0) + 1
             if was_active:
                 activate_workflow(base_url, api_key, workflow_id)
             updated.append(wf_name)
@@ -312,7 +364,8 @@ def main(argv):
     print(
         "Update method usage: "
         f"PATCH={method_usage['PATCH']} "
-        f"PUT={method_usage['PUT']}"
+        f"PUT={method_usage['PUT']} "
+        f"PUT(retry-settings)={method_usage['PUT(retry-settings)']}"
     )
 
     if missing_live or failed:
