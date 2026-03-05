@@ -128,6 +128,11 @@ elif [[ -n "${N8N_API_KEY:-}" ]]; then
 fi
 if [[ "${#RECREATE_WORKFLOW_NAMES[@]}" -gt 0 ]]; then
   echo "Recreate delete mode: $DELETE_MODE"
+  if [[ "$DELETE_MODE" == "none" ]]; then
+    echo "Cannot run recreate mode: no delete workflow mode available." >&2
+    echo "Need n8n CLI 'delete:workflow' or N8N_API_KEY for API delete." >&2
+    exit 1
+  fi
 fi
 
 shopt -s nullglob

@@ -10,6 +10,18 @@ Run from repo root:
 ./scripts/n8n/sync_workflows.sh
 ```
 
+Push local workflow node/wiring changes to n8n in-place (no delete/import):
+
+```bash
+./scripts/n8n/sync_nodes.sh
+```
+
+Patch only specific workflows by exact workflow name:
+
+```bash
+./scripts/n8n/sync_nodes.sh --workflow-name "10 Read"
+```
+
 Optional commit:
 
 ```bash
@@ -80,6 +92,8 @@ During node sync, script prints:
 All workflow-management scripts live under `scripts/n8n/`:
 
 - `scripts/n8n/sync_workflows.sh` (entrypoint)
+- `scripts/n8n/sync_nodes.sh` (API patch in-place; no delete/import)
+- `scripts/n8n/sync_nodes.py`
 - `scripts/n8n/export_workflows.sh`
 - `scripts/n8n/normalize_workflows.sh`
 - `scripts/n8n/rename_workflows_by_name.sh`

@@ -1,4 +1,17 @@
 # changelog
+## 2026-03-05 — n8n in-place node sync via API patch
+
+### What changed
+- Added `scripts/n8n/sync_nodes.sh` + `scripts/n8n/sync_nodes.py`.
+- New flow patches existing workflows by name using n8n API (`PATCH /api/v1/workflows/:id`) instead of delete/import.
+- Script preserves workflow IDs/history by default and restores active state for workflows that were active before patch.
+- Added wrapper-target validation before patching:
+  - if a code wrapper points to `/data/js/workflows/...` and target file is missing in repo, sync aborts early.
+- Supports targeted patching:
+  - `./scripts/n8n/sync_nodes.sh --workflow-name "<name>"`
+- Updated docs:
+  - `docs/n8n_sync.md`
+
 ## 2026-03-01 — n8n workflow sync orchestration under scripts/n8n
 
 ### What changed
