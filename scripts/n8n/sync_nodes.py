@@ -175,6 +175,18 @@ def activate_workflow(base_url: str, api_key: str, workflow_id: str):
     )
 
 
+def update_workflow_definition(base_url: str, api_key: str, workflow_id: str, payload):
+    try:
+        api_request(base_url, api_key, "PATCH", f"/api/v1/workflows/{workflow_id}", payload)
+        return "PATCH"
+    except RuntimeError as exc:
+        message = str(exc).lower()
+        if "http 405" not in message and "method not allowed" not in message:
+            raise
+    api_request(base_url, api_key, "PUT", f"/api/v1/workflows/{workflow_id}", payload)
+    return "PUT"
+
+
 def parse_args(argv):
     repo_root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(
@@ -243,6 +255,7 @@ def main(argv):
     missing_live = []
     updated = []
     failed = []
+    method_usage = {"PATCH": 0, "PUT": 0}
 
     for wf_file in workflow_files:
         local = load_json(wf_file)
@@ -267,7 +280,8 @@ def main(argv):
         try:
             if was_active:
                 deactivate_workflow(base_url, api_key, workflow_id)
-            api_request(base_url, api_key, "PATCH", f"/api/v1/workflows/{workflow_id}", payload)
+            method_used = update_workflow_definition(base_url, api_key, workflow_id, payload)
+            method_usage[method_used] += 1
             if was_active:
                 activate_workflow(base_url, api_key, workflow_id)
             updated.append(wf_name)
@@ -294,6 +308,12 @@ def main(argv):
             print(f"- {item}")
     else:
         print("- none")
+
+    print(
+        "Update method usage: "
+        f"PATCH={method_usage['PATCH']} "
+        f"PUT={method_usage['PUT']}"
+    )
 
     if missing_live or failed:
         return 1
