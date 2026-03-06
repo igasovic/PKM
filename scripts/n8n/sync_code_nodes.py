@@ -143,34 +143,6 @@ def build_wrapper(wrapper_rel: str) -> str:
     )
 
 
-def build_legacy_bridge(wrapper_rel: str) -> str:
-    return (
-        '"use strict";\n\n'
-        f"const loaded = require('{CANONICAL_WRAPPER_PREFIX}{wrapper_rel}');\n"
-        "const fn = (typeof loaded === 'function') ? loaded : loaded?.default;\n\n"
-        "function toItems(result) {\n"
-        "  if (Array.isArray(result)) return result;\n"
-        "  if (result == null) return [];\n"
-        "  if (Array.isArray(result.items)) return result.items;\n"
-        "  if (typeof result === 'object' && (\n"
-        "    Object.prototype.hasOwnProperty.call(result, 'json') ||\n"
-        "    Object.prototype.hasOwnProperty.call(result, 'binary') ||\n"
-        "    Object.prototype.hasOwnProperty.call(result, 'pairedItem')\n"
-        "  )) {\n"
-        "    return [result];\n"
-        "  }\n"
-        "  return [{ json: result }];\n"
-        "}\n\n"
-        "module.exports = async function bridge(ctx) {\n"
-        "  if (typeof fn !== 'function') {\n"
-        "    throw new Error('Bridge target does not export a function');\n"
-        "  }\n"
-        "  const out = await fn(ctx);\n"
-        "  return toItems(out);\n"
-        "};\n"
-    )
-
-
 def read_json(path_obj: Path):
     try:
         return json.loads(path_obj.read_text(encoding="utf-8"))
@@ -298,23 +270,6 @@ def resolve_source_for_wrapper(
     return wrapper_rel, source_path
 
 
-def ensure_legacy_bridge(
-    legacy_nodes_root_dir: Path | None,
-    wrapper_rel: str,
-):
-    if legacy_nodes_root_dir is None:
-        return None
-    bridge_abs = (legacy_nodes_root_dir / Path(wrapper_rel)).resolve()
-    ensure_dir(bridge_abs.parent)
-    next_content = build_legacy_bridge(wrapper_rel)
-    if bridge_abs.exists():
-        current = bridge_abs.read_text(encoding="utf-8")
-        if normalize_newlines(current) == normalize_newlines(next_content):
-            return None
-    bridge_abs.write_text(next_content, encoding="utf-8")
-    return wrapper_rel
-
-
 def parse_args(argv):
     if len(argv) not in (5, 6):
         die(
@@ -388,7 +343,6 @@ def main():
     node_updated = []
     node_moved = []
     node_deleted = []
-    node_bridged = []
 
     for raw_file in raw_files:
         file_name = raw_file.name
@@ -495,10 +449,6 @@ def main():
             expected_node_files.add(desired_abs)
             patched_nodes += 1
 
-            bridge_rel = ensure_legacy_bridge(legacy_nodes_root_dir, desired_rel_posix)
-            if bridge_rel is not None:
-                node_bridged.append(bridge_rel)
-
         patched_raw_path = patched_raw_dir / file_name
         write_json(patched_raw_path, workflow)
 
@@ -569,13 +519,6 @@ def main():
         for item in sorted(node_deleted):
             print(f"- {item}")
 
-    print("Nodes bridged:")
-    if not node_bridged:
-        print("- none")
-    else:
-        for item in sorted(node_bridged):
-            print(f"- {item}")
-
     print(
         "Node sync complete: "
         f"patched_nodes={patched_nodes} "
@@ -583,7 +526,6 @@ def main():
         f"created_files={created_files} "
         f"inlined_nodes={inlined_nodes} "
         f"removed_orphans={removed_orphans} "
-        f"bridges_created={len(node_bridged)} "
         f"missing_js_code={missing_js_code} "
         f"skipped_missing_source={skipped_missing_source} "
         f"min_lines={min_lines}"

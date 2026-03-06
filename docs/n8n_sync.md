@@ -5,7 +5,6 @@ Canonical process for syncing n8n workflows and externalized Code-node JS with t
 Canonical repo locations:
 - Workflows: `src/n8n/workflows`
 - Externalized code nodes: `src/n8n/nodes`
-- Legacy compatibility bridges (temporary): `js/workflows`
 
 ## One command
 
@@ -53,7 +52,6 @@ MIN_JS_LINES=80 ./scripts/n8n/sync_workflows.sh --mode pull
    - keep short Code nodes inline in workflow JSON
    - move node JS to the correct `src/n8n/nodes/<workflow-slug>/` folder when workflow/node location changed
    - update wrappers to canonical `/data/src/n8n/nodes/...` paths
-   - maintain legacy bridge files in `js/workflows/` for old wrapper compatibility
    - remove orphan managed canonical files (`*__<node-id>.js`) under `src/n8n/nodes/`
 4. Push mode patches existing workflows in-place via n8n API (`PATCH`, fallback `PUT`).
 5. Commit changes only if `--commit` is set.
@@ -64,9 +62,30 @@ MIN_JS_LINES=80 ./scripts/n8n/sync_workflows.sh --mode pull
   - `/home/igasovic/repos/n8n-workflows:/data:ro`
 - No automatic workflow deletion in n8n.
 - Node relocation is move/copy-first to avoid losing existing code.
-- Legacy `js/workflows` bridges are preserved intentionally while migration is in progress.
+- Legacy wrapper paths `/data/js/workflows/...` are forbidden in canonical repo workflows.
 - Externalized code-node imports must not use relative repo paths like `../../../src/...`.
   Use absolute mount paths (for example `require('/data/src/libs/config.js')`) so runtime resolution is stable inside the n8n container.
+
+## Bridge Cutover (safe)
+
+Use one command to remove legacy bridge dependency safely:
+
+```bash
+./scripts/n8n/cutover_remove_bridges.sh
+```
+
+What it does:
+1. Runs existing DB backup script (`scripts/db/backup.sh daily` by default).
+2. Snapshots live n8n workflows before cutover.
+3. Runs full sync (`pull + push + recreate`) with live no-legacy validation.
+4. Removes local legacy bridge files under `js/workflows`.
+5. Verifies no `/data/js/workflows/...` references remain in repo workflows.
+
+Optional commit:
+
+```bash
+./scripts/n8n/cutover_remove_bridges.sh --commit
+```
 
 ## Change logs emitted by sync
 
@@ -89,5 +108,7 @@ All workflow-management scripts live under `scripts/n8n/`:
 - `scripts/n8n/normalize_workflows.sh`
 - `scripts/n8n/rename_workflows_by_name.sh`
 - `scripts/n8n/sync_code_nodes.py`
+- `scripts/n8n/cutover_remove_bridges.sh`
+- `scripts/n8n/remove_legacy_bridges.py`
 - `scripts/n8n/import_workflows.sh`
 - `scripts/n8n/activate_workflows.sh`

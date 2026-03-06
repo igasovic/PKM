@@ -1,4 +1,28 @@
 # changelog
+## 2026-03-06 — Bridge dependency cutover (safe remove path)
+
+### What changed
+- Removed bridge creation from sync flow:
+  - `scripts/n8n/sync_code_nodes.py` no longer emits legacy bridge files in `js/workflows`.
+- Hardened push validation:
+  - `scripts/n8n/sync_nodes.py` now forbids legacy wrapper paths (`/data/js/workflows/...`) by default.
+- Added repo/live validation in orchestrator:
+  - `scripts/n8n/sync_workflows.sh` now validates:
+    - repo workflows contain no legacy wrapper paths
+    - canonical wrapper targets exist
+    - live n8n workflows (post-push) contain no legacy wrapper paths
+- Added safe cutover orchestration:
+  - `scripts/n8n/cutover_remove_bridges.sh`
+    - runs existing backup script (`scripts/db/backup.sh`)
+    - snapshots live workflows before cutover
+    - runs full sync + recreate
+    - removes local legacy bridge files
+    - validates no legacy wrapper references remain
+- Added local bridge cleanup helper:
+  - `scripts/n8n/remove_legacy_bridges.py`
+- Updated docs:
+  - `docs/n8n_sync.md`
+
 ## 2026-03-06 — Canonical n8n paths under src/n8n with legacy bridge compatibility
 
 ### What changed

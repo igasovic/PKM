@@ -112,7 +112,6 @@ require_file "$REPO_DIR/scripts/n8n/normalize_workflows.sh"
 require_file "$REPO_DIR/scripts/n8n/rename_workflows_by_name.sh"
 require_file "$REPO_DIR/scripts/n8n/sync_code_nodes.py"
 require_file "$REPO_DIR/scripts/n8n/sync_nodes.py"
-require_file "$REPO_DIR/scripts/n8n/repair_legacy_bridges.py"
 require_file "$COMPOSE_FILE"
 
 if ! docker ps --format '{{.Names}}' | grep -qx 'n8n'; then
@@ -137,7 +136,56 @@ if ! printf '%s\n' "$N8N_BLOCK" | grep -Fq "$EXPECTED_MOUNT"; then
   exit 1
 fi
 
-mkdir -p "$RAW_DIR" "$PATCHED_RAW_DIR" "$WORKFLOWS_DIR" "$NODES_ROOT_DIR" "$LEGACY_NODES_ROOT_DIR"
+mkdir -p "$RAW_DIR" "$PATCHED_RAW_DIR" "$WORKFLOWS_DIR" "$NODES_ROOT_DIR"
+
+validate_repo_workflows() {
+  if rg -n "/data/js/workflows/" "$WORKFLOWS_DIR" >/dev/null 2>&1; then
+    echo "Legacy wrapper paths found in repo workflows ($WORKFLOWS_DIR):" >&2
+    rg -n "/data/js/workflows/" "$WORKFLOWS_DIR" >&2
+    exit 1
+  fi
+
+  "$PYTHON_BIN" - "$WORKFLOWS_DIR" "$NODES_ROOT_DIR" <<'PY'
+import json
+import pathlib
+import re
+import sys
+
+workflows_dir = pathlib.Path(sys.argv[1])
+nodes_root_dir = pathlib.Path(sys.argv[2])
+missing = []
+
+for wf in sorted(workflows_dir.glob("*.json")):
+    data = json.loads(wf.read_text(encoding="utf-8"))
+    for node in data.get("nodes", []):
+        js = (node.get("parameters") or {}).get("jsCode", "")
+        m = re.search(r"/data/src/n8n/nodes/([^'\"`]+\.js)", js)
+        if m and not (nodes_root_dir / m.group(1)).exists():
+            missing.append((wf.name, node.get("name"), m.group(1)))
+
+if missing:
+    print("Missing canonical wrapper targets in repo workflows:", file=sys.stderr)
+    for wf_name, node_name, rel_path in missing:
+        print(f"- {wf_name} :: {node_name} -> {rel_path}", file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
+validate_live_workflows() {
+  local live_validate_dir="$REPO_DIR/tmp/n8n-sync/live-validate"
+  rm -rf "$live_validate_dir"
+  mkdir -p "$live_validate_dir"
+
+  docker exec -u node n8n sh -lc 'rm -rf /tmp/workflows_live_validate && mkdir -p /tmp/workflows_live_validate'
+  docker exec -u node n8n n8n export:workflow --backup --output=/tmp/workflows_live_validate
+  docker cp n8n:/tmp/workflows_live_validate/. "$live_validate_dir/"
+
+  if rg -n "/data/js/workflows/" "$live_validate_dir" >/dev/null 2>&1; then
+    echo "Legacy wrapper paths still present in live n8n workflows after push:" >&2
+    rg -n "/data/js/workflows/" "$live_validate_dir" >&2
+    exit 1
+  fi
+}
 
 run_pull() {
   echo "[pull 1/3] Export + normalize workflows to repo"
@@ -151,24 +199,33 @@ run_pull() {
   "$REPO_DIR/scripts/n8n/rename_workflows_by_name.sh" "$RAW_DIR"
 
   echo "[pull 3/3] Sync code nodes into repo (canonical src/n8n/nodes)"
-  "$PYTHON_BIN" "$REPO_DIR/scripts/n8n/sync_code_nodes.py" \
-    "$RAW_DIR" \
-    "$PATCHED_RAW_DIR" \
-    "$WORKFLOWS_DIR" \
-    "$NODES_ROOT_DIR" \
-    "$MIN_JS_LINES" \
-    "$LEGACY_NODES_ROOT_DIR"
-  "$PYTHON_BIN" "$REPO_DIR/scripts/n8n/repair_legacy_bridges.py" "$LEGACY_NODES_ROOT_DIR"
+  local args=(
+    "$PYTHON_BIN" "$REPO_DIR/scripts/n8n/sync_code_nodes.py"
+    "$RAW_DIR"
+    "$PATCHED_RAW_DIR"
+    "$WORKFLOWS_DIR"
+    "$NODES_ROOT_DIR"
+    "$MIN_JS_LINES"
+  )
+  if [[ -d "$LEGACY_NODES_ROOT_DIR" ]]; then
+    args+=("$LEGACY_NODES_ROOT_DIR")
+  fi
+  "${args[@]}"
   "$REPO_DIR/scripts/n8n/normalize_workflows.sh" "$WORKFLOWS_DIR"
+  validate_repo_workflows
 }
 
 run_push() {
+  validate_repo_workflows
+
   local args=(
     "$PYTHON_BIN" "$REPO_DIR/scripts/n8n/sync_nodes.py"
     "--workflows-dir" "$WORKFLOWS_DIR"
     "--nodes-root-dir" "$NODES_ROOT_DIR"
-    "--legacy-nodes-root-dir" "$LEGACY_NODES_ROOT_DIR"
   )
+  if [[ -d "$LEGACY_NODES_ROOT_DIR" ]]; then
+    args+=("--legacy-nodes-root-dir" "$LEGACY_NODES_ROOT_DIR")
+  fi
   if [[ "$DRY_RUN" -eq 1 ]]; then
     args+=("--dry-run")
   fi
@@ -209,11 +266,13 @@ case "$MODE" in
   push)
     run_push
     recreate_n8n
+    validate_live_workflows
     ;;
   full)
     run_pull
     run_push
     recreate_n8n
+    validate_live_workflows
     ;;
 esac
 

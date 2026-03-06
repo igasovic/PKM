@@ -133,6 +133,7 @@ def validate_wrapper_targets(
     workflow_files,
     nodes_root_dir: Path,
     legacy_nodes_root_dir: Path | None,
+    allow_legacy_wrappers: bool,
 ):
     missing = []
     for workflow_path in workflow_files:
@@ -142,19 +143,24 @@ def validate_wrapper_targets(
             if target_type == "canonical":
                 target = nodes_root_dir / rel_path
                 exists = target.exists()
+                reason = "missing canonical target"
             else:
+                if not allow_legacy_wrappers:
+                    missing.append((wf_name, rel_path, "legacy wrapper path is forbidden"))
+                    continue
                 if legacy_nodes_root_dir is None:
                     target = nodes_root_dir / rel_path
                     exists = target.exists()
                 else:
                     target = legacy_nodes_root_dir / rel_path
                     exists = target.exists() or (nodes_root_dir / rel_path).exists()
+                reason = "missing legacy target"
             if not exists:
-                missing.append((wf_name, rel_path))
+                missing.append((wf_name, rel_path, reason))
     if missing:
-        print("Missing wrapper targets:", file=sys.stderr)
-        for wf_name, rel_path in missing:
-            print(f"- {wf_name}: {rel_path}", file=sys.stderr)
+        print("Wrapper validation failed:", file=sys.stderr)
+        for wf_name, rel_path, reason in missing:
+            print(f"- {wf_name}: {rel_path} ({reason})", file=sys.stderr)
         die("Aborting sync_nodes due to missing wrapper targets.")
 
 
@@ -275,6 +281,11 @@ def parse_args(argv):
         action="store_true",
         help="Validate and print actions without PATCH/activate calls.",
     )
+    parser.add_argument(
+        "--allow-legacy-wrappers",
+        action="store_true",
+        help="Allow /data/js/workflows/... wrapper paths in local workflow JSON (default: false).",
+    )
     return parser.parse_args(argv)
 
 
@@ -314,7 +325,12 @@ def main(argv):
             die("Requested workflow names not found locally: " + ", ".join(missing_requested))
         workflow_files = filtered
 
-    validate_wrapper_targets(workflow_files, nodes_root_dir, legacy_nodes_root_dir)
+    validate_wrapper_targets(
+        workflow_files,
+        nodes_root_dir,
+        legacy_nodes_root_dir,
+        args.allow_legacy_wrappers,
+    )
 
     live_map, slug_map = build_live_workflow_map()
     missing_live = []
