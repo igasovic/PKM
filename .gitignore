@@ -10,3 +10,7 @@
 src/server/node_modules/
 src/web/pkm-debug-ui/node_modules/
 src/web/pkm-debug-ui/dist/
+
+# python cache artifacts
+__pycache__/
+*.py[cod]
