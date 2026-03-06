@@ -184,8 +184,12 @@ run_push() {
 
 recreate_n8n() {
   echo "[push 2/2] Recreate n8n container"
-  docker restart n8n >/dev/null
-  echo "n8n container restarted."
+  if command -v recreate >/dev/null 2>&1; then
+    recreate n8n
+  else
+    docker restart n8n >/dev/null
+    echo "n8n container restarted."
+  fi
   echo "Waiting for n8n CLI to become ready..."
   for i in $(seq 1 30); do
     if docker exec -u node n8n n8n --help >/dev/null 2>&1; then
