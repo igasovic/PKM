@@ -65,6 +65,8 @@ MIN_JS_LINES=80 ./scripts/n8n/sync_workflows.sh --mode pull
 - No automatic workflow deletion in n8n.
 - Node relocation is move/copy-first to avoid losing existing code.
 - Legacy `js/workflows` bridges are preserved intentionally while migration is in progress.
+- Externalized code-node imports must not use relative repo paths like `../../../src/...`.
+  Use absolute mount paths (for example `require('/data/src/libs/config.js')`) so runtime resolution is stable inside the n8n container.
 
 ## Change logs emitted by sync
 

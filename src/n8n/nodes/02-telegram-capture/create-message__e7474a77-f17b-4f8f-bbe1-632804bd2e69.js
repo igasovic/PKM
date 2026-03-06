@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { getConfig } = require('../../../src/libs/config.js');
+const { getConfig } = require('/data/src/libs/config.js');
 
 module.exports = async function run(ctx) {
   const { $json, $items } = ctx;

@@ -48,6 +48,19 @@ def is_module_style_js(text: str) -> bool:
     return any(marker in normalized for marker in markers)
 
 
+def rewrite_repo_imports(text: str) -> str:
+    normalized = normalize_newlines(text)
+    # Normalize legacy relative requires used before path migration.
+    # Code-node files run from /data/src/n8n/nodes/<workflow>/..., so using absolute
+    # /data/src/libs/... avoids fragile relative traversal.
+    normalized = re.sub(
+        r"""require\(\s*['"](?:\.\./){3}src/libs/([^'"]+)['"]\s*\)""",
+        r"require('/data/src/libs/\1')",
+        normalized,
+    )
+    return normalized
+
+
 def to_posix_path(path_obj: Path) -> str:
     return path_obj.as_posix()
 
@@ -360,6 +373,8 @@ def main():
                     continue
                 source_abs = source_path.resolve()
                 effective_code = source_abs.read_text(encoding="utf-8")
+
+            effective_code = rewrite_repo_imports(effective_code)
 
             line_count = non_empty_line_count(effective_code)
             if line_count < min_lines:
