@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import json
-import os
 import re
 import shutil
 import sys
 from pathlib import Path
+
+CANONICAL_WRAPPER_PREFIX = "/data/src/n8n/nodes/"
+LEGACY_WRAPPER_PREFIX = "/data/js/workflows/"
 
 
 def die(message: str) -> None:
@@ -41,20 +43,41 @@ def to_posix_path(path_obj: Path) -> str:
     return path_obj.as_posix()
 
 
+def path_is_under(path_obj: Path, root: Path) -> bool:
+    try:
+        path_obj.resolve().relative_to(root.resolve())
+        return True
+    except ValueError:
+        return False
+
+
 def extract_wrapper_relative_path(js_code: str):
     normalized = normalize_newlines(js_code)
-    match = re.search(
-        r"""require\(\s*['"]/data/js/workflows/([^'"]+?\.js)['"]\s*\)""",
-        normalized,
-    )
-    return match.group(1) if match else None
+    for prefix in (CANONICAL_WRAPPER_PREFIX, LEGACY_WRAPPER_PREFIX):
+        match = re.search(
+            rf"""require\(\s*['"]{re.escape(prefix)}([^'"]+?\.js)['"]\s*\)""",
+            normalized,
+        )
+        if match:
+            return prefix, match.group(1)
+    return None, None
 
 
 def build_wrapper(wrapper_rel: str) -> str:
     return (
-        f"try{{const fn=require('/data/js/workflows/{wrapper_rel}');"
+        f"try{{const fn=require('{CANONICAL_WRAPPER_PREFIX}{wrapper_rel}');"
         "return await fn({$input,$json,$items,$node,$env,helpers});}"
         f"catch(e){{e.message=`[extjs:{wrapper_rel}] ${{e.message}}`;throw e;}}"
+    )
+
+
+def build_legacy_bridge(wrapper_rel: str) -> str:
+    return (
+        '"use strict";\n\n'
+        f"const fn = require('{CANONICAL_WRAPPER_PREFIX}{wrapper_rel}');\n\n"
+        "module.exports = async function bridge(ctx) {\n"
+        "  return fn(ctx);\n"
+        "};\n"
     )
 
 
@@ -114,26 +137,18 @@ def is_managed_node_js_file(file_path: Path) -> bool:
     return bool(re.search(r"__([^.\\/]+)\.js$", file_path.name))
 
 
-def is_legacy_compat_file(file_path: Path, js_root_dir: Path) -> bool:
-    rel = to_posix_path(file_path.resolve().relative_to(js_root_dir.resolve()))
-    legacy_prefixes = (
-        "read/",
-        "telegram-capture/",
-        "e-mail-capture/",
-        "tier-1-enhancement/",
-        "pkm-retrieval-config/",
-    )
-    return rel.startswith(legacy_prefixes)
-
-
-def build_node_file_index(js_root_dir: Path):
+def build_node_file_index(roots):
     index = {}
-    files = [
-        p
-        for p in list_files_recursive(js_root_dir)
-        if p.suffix == ".js" and is_managed_node_js_file(p)
-    ]
-    for abs_path in files:
+    files = []
+    for root in roots:
+        files.extend(
+            [
+                p
+                for p in list_files_recursive(root)
+                if p.suffix == ".js" and is_managed_node_js_file(p)
+            ]
+        )
+    for abs_path in sorted(set(files)):
         node_id = node_id_from_filename(abs_path.name)
         if not node_id:
             continue
@@ -167,49 +182,106 @@ def is_code_node(node) -> bool:
     return node.get("type") == "n8n-nodes-base.code"
 
 
-def resolve_source_for_wrapper(js_code: str, node_id: str, js_root_dir: Path, node_file_index):
-    wrapper_rel = extract_wrapper_relative_path(js_code)
+def resolve_source_for_wrapper(
+    js_code: str,
+    node_id: str,
+    nodes_root_dir: Path,
+    legacy_nodes_root_dir: Path | None,
+    node_file_index,
+):
+    wrapper_prefix, wrapper_rel = extract_wrapper_relative_path(js_code)
     if not wrapper_rel:
         return None, None
-    wrapper_abs = js_root_dir / Path(wrapper_rel)
+
+    candidates = []
+    if wrapper_prefix == CANONICAL_WRAPPER_PREFIX:
+        candidates.append(nodes_root_dir / Path(wrapper_rel))
+    elif wrapper_prefix == LEGACY_WRAPPER_PREFIX and legacy_nodes_root_dir is not None:
+        candidates.append(legacy_nodes_root_dir / Path(wrapper_rel))
+
+    candidates.append(nodes_root_dir / Path(wrapper_rel))
+    if legacy_nodes_root_dir is not None:
+        candidates.append(legacy_nodes_root_dir / Path(wrapper_rel))
+
     by_id_candidates = node_file_index.get(str(node_id or ""), [])
-    source_path = first_existing([wrapper_abs, *by_id_candidates])
+    source_path = first_existing([*candidates, *by_id_candidates])
     return wrapper_rel, source_path
 
 
+def ensure_legacy_bridge(
+    legacy_nodes_root_dir: Path | None,
+    wrapper_rel: str,
+):
+    if legacy_nodes_root_dir is None:
+        return None
+    bridge_abs = (legacy_nodes_root_dir / Path(wrapper_rel)).resolve()
+    if bridge_abs.exists():
+        return None
+    ensure_dir(bridge_abs.parent)
+    bridge_abs.write_text(build_legacy_bridge(wrapper_rel), encoding="utf-8")
+    return wrapper_rel
+
+
 def parse_args(argv):
-    if len(argv) != 5:
+    if len(argv) not in (5, 6):
         die(
-            "Usage: sync_code_nodes.py <raw_dir> <patched_raw_dir> <repo_workflows_dir> <js_root_dir> <min_lines>"
+            "Usage: sync_code_nodes.py "
+            "<raw_dir> <patched_raw_dir> <repo_workflows_dir> <nodes_root_dir> <min_lines> "
+            "[legacy_nodes_root_dir]"
         )
+
     raw_dir = Path(argv[0]).resolve()
     patched_raw_dir = Path(argv[1]).resolve()
     repo_workflows_dir = Path(argv[2]).resolve()
-    js_root_dir = Path(argv[3]).resolve()
+    nodes_root_dir = Path(argv[3]).resolve()
     try:
         min_lines = int(argv[4])
     except Exception:
         die(f"Invalid min_lines: {argv[4]}")
     if min_lines < 1:
         die(f"Invalid min_lines: {argv[4]}")
+
+    legacy_nodes_root_dir = None
+    if len(argv) == 6 and argv[5]:
+        legacy_nodes_root_dir = Path(argv[5]).resolve()
+
     if not raw_dir.exists() or not raw_dir.is_dir():
         die(f"Missing raw workflows dir: {raw_dir}")
     if not repo_workflows_dir.exists() or not repo_workflows_dir.is_dir():
         die(f"Missing repo workflows dir: {repo_workflows_dir}")
-    ensure_dir(js_root_dir)
+
+    ensure_dir(nodes_root_dir)
     ensure_dir(patched_raw_dir)
-    return raw_dir, patched_raw_dir, repo_workflows_dir, js_root_dir, min_lines
+    if legacy_nodes_root_dir is not None:
+        ensure_dir(legacy_nodes_root_dir)
+
+    return (
+        raw_dir,
+        patched_raw_dir,
+        repo_workflows_dir,
+        nodes_root_dir,
+        legacy_nodes_root_dir,
+        min_lines,
+    )
 
 
 def main():
-    raw_dir, patched_raw_dir, repo_workflows_dir, js_root_dir, min_lines = parse_args(
-        sys.argv[1:]
-    )
+    (
+        raw_dir,
+        patched_raw_dir,
+        repo_workflows_dir,
+        nodes_root_dir,
+        legacy_nodes_root_dir,
+        min_lines,
+    ) = parse_args(sys.argv[1:])
 
     empty_dir(patched_raw_dir)
     raw_files = list_json_files(raw_dir)
-    node_file_index = build_node_file_index(js_root_dir)
-    expected_js_files = set()
+    node_index_roots = [nodes_root_dir]
+    if legacy_nodes_root_dir is not None:
+        node_index_roots.append(legacy_nodes_root_dir)
+    node_file_index = build_node_file_index(node_index_roots)
+    expected_node_files = set()
 
     patched_nodes = 0
     moved_files = 0
@@ -223,6 +295,7 @@ def main():
     node_updated = []
     node_moved = []
     node_deleted = []
+    node_bridged = []
 
     for raw_file in raw_files:
         file_name = raw_file.name
@@ -242,7 +315,11 @@ def main():
 
             node_id = str(node.get("id", ""))
             _wrapper_rel, source_path = resolve_source_for_wrapper(
-                js_code, node_id, js_root_dir, node_file_index
+                js_code,
+                node_id,
+                nodes_root_dir,
+                legacy_nodes_root_dir,
+                node_file_index,
             )
 
             effective_code = js_code
@@ -270,31 +347,43 @@ def main():
                 continue
 
             desired_rel = Path(workflow_slug) / node_file_name(node)
-            desired_abs = (js_root_dir / desired_rel).resolve()
+            desired_abs = (nodes_root_dir / desired_rel).resolve()
             ensure_dir(desired_abs.parent)
 
             normalized_code = with_trailing_newline(effective_code)
+            desired_existed = desired_abs.exists()
+
             if source_abs and source_abs != desired_abs and source_abs.exists():
-                if desired_abs.exists():
-                    desired_abs.write_text(normalized_code, encoding="utf-8")
-                    source_abs.unlink(missing_ok=True)
-                    node_updated.append(to_posix_path(desired_abs.relative_to(js_root_dir)))
+                if path_is_under(source_abs, nodes_root_dir):
+                    if desired_existed:
+                        desired_abs.write_text(normalized_code, encoding="utf-8")
+                        source_abs.unlink(missing_ok=True)
+                        node_updated.append(to_posix_path(desired_abs.relative_to(nodes_root_dir)))
+                    else:
+                        source_abs.rename(desired_abs)
+                        node_moved.append(
+                            f"{to_posix_path(source_abs.relative_to(nodes_root_dir))} -> "
+                            f"{to_posix_path(desired_abs.relative_to(nodes_root_dir))}"
+                        )
+                    moved_files += 1
                 else:
-                    source_abs.rename(desired_abs)
-                    node_moved.append(
-                        f"{to_posix_path(source_abs.relative_to(js_root_dir))} -> "
-                        f"{to_posix_path(desired_abs.relative_to(js_root_dir))}"
-                    )
-                moved_files += 1
-            elif not desired_abs.exists():
+                    desired_abs.write_text(normalized_code, encoding="utf-8")
+                    if desired_existed:
+                        node_updated.append(
+                            f"{to_posix_path(desired_abs.relative_to(nodes_root_dir))} (copied)"
+                        )
+                    else:
+                        node_added.append(to_posix_path(desired_abs.relative_to(nodes_root_dir)))
+                        created_files += 1
+            elif not desired_existed:
                 desired_abs.write_text(normalized_code, encoding="utf-8")
-                node_added.append(to_posix_path(desired_abs.relative_to(js_root_dir)))
+                node_added.append(to_posix_path(desired_abs.relative_to(nodes_root_dir)))
                 created_files += 1
             else:
                 existing = desired_abs.read_text(encoding="utf-8")
                 if normalize_newlines(existing) != normalize_newlines(normalized_code):
                     desired_abs.write_text(normalized_code, encoding="utf-8")
-                    node_updated.append(to_posix_path(desired_abs.relative_to(js_root_dir)))
+                    node_updated.append(to_posix_path(desired_abs.relative_to(nodes_root_dir)))
 
             prev_js_code = str((node.get("parameters") or {}).get("jsCode", ""))
             node.setdefault("parameters", {})
@@ -302,8 +391,12 @@ def main():
             node["parameters"]["jsCode"] = build_wrapper(desired_rel_posix)
             if normalize_newlines(prev_js_code) != normalize_newlines(node["parameters"]["jsCode"]):
                 node_updated.append(f"{desired_rel_posix} (wrapper)")
-            expected_js_files.add(desired_abs)
+            expected_node_files.add(desired_abs)
             patched_nodes += 1
+
+            bridge_rel = ensure_legacy_bridge(legacy_nodes_root_dir, desired_rel_posix)
+            if bridge_rel is not None:
+                node_bridged.append(bridge_rel)
 
         patched_raw_path = patched_raw_dir / file_name
         write_json(patched_raw_path, workflow)
@@ -318,23 +411,19 @@ def main():
                 workflow_updated.append(file_name)
         repo_workflow_path.write_text(next_repo_json, encoding="utf-8")
 
-    all_js_files = [
+    all_node_files = [
         p
-        for p in list_files_recursive(js_root_dir)
+        for p in list_files_recursive(nodes_root_dir)
         if p.suffix == ".js" and is_managed_node_js_file(p)
     ]
     removed_orphans = 0
-    kept_legacy_compat = 0
-    for js_file in all_js_files:
-        abs_path = js_file.resolve()
-        if abs_path in expected_js_files:
+    for node_file in all_node_files:
+        abs_path = node_file.resolve()
+        if abs_path in expected_node_files:
             continue
-        if is_legacy_compat_file(abs_path, js_root_dir):
-            kept_legacy_compat += 1
-            continue
-        js_file.unlink(missing_ok=True)
-        node_deleted.append(to_posix_path(abs_path.relative_to(js_root_dir)))
-        delete_empty_parents(abs_path, js_root_dir)
+        node_file.unlink(missing_ok=True)
+        node_deleted.append(to_posix_path(abs_path.relative_to(nodes_root_dir)))
+        delete_empty_parents(abs_path, nodes_root_dir)
         removed_orphans += 1
 
     print("Workflows created:")
@@ -379,6 +468,13 @@ def main():
         for item in sorted(node_deleted):
             print(f"- {item}")
 
+    print("Nodes bridged:")
+    if not node_bridged:
+        print("- none")
+    else:
+        for item in sorted(node_bridged):
+            print(f"- {item}")
+
     print(
         "Node sync complete: "
         f"patched_nodes={patched_nodes} "
@@ -386,7 +482,7 @@ def main():
         f"created_files={created_files} "
         f"inlined_nodes={inlined_nodes} "
         f"removed_orphans={removed_orphans} "
-        f"kept_legacy_compat={kept_legacy_compat} "
+        f"bridges_created={len(node_bridged)} "
         f"missing_js_code={missing_js_code} "
         f"skipped_missing_source={skipped_missing_source} "
         f"min_lines={min_lines}"

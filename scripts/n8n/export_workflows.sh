@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-OUT_DIR="$REPO_DIR/workflows"
+OUT_DIR="${1:-$REPO_DIR/src/n8n/workflows}"
 
 mkdir -p "$OUT_DIR"
 

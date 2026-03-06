@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DIR="${1:-workflows}"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+DIR="${1:-$REPO_DIR/src/n8n/workflows}"
 
 shopt -s nullglob
 for f in "$DIR"/*.json; do

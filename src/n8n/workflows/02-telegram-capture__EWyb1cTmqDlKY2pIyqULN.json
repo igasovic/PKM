@@ -170,7 +170,7 @@
       "id": "e7474a77-f17b-4f8f-bbe1-632804bd2e69",
       "name": "Create Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/02-telegram-capture/create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:02-telegram-capture/create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/02-telegram-capture/create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:02-telegram-capture/create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js] ${e.message}`;throw e;}"
       },
       "position": [
         688,

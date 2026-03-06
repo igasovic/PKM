@@ -119,20 +119,37 @@ def extract_wrapper_targets(workflow_payload):
         js_code = params.get("jsCode")
         if not isinstance(js_code, str):
             continue
+        match = re.search(r"/data/src/n8n/nodes/([^'\"`]+\.js)", js_code)
+        if match:
+            targets.append(("canonical", match.group(1)))
+            continue
         match = re.search(r"/data/js/workflows/([^'\"`]+\.js)", js_code)
         if match:
-            targets.append(match.group(1))
+            targets.append(("legacy", match.group(1)))
     return targets
 
 
-def validate_wrapper_targets(workflow_files, js_root_dir: Path):
+def validate_wrapper_targets(
+    workflow_files,
+    nodes_root_dir: Path,
+    legacy_nodes_root_dir: Path | None,
+):
     missing = []
     for workflow_path in workflow_files:
         data = load_json(workflow_path)
         wf_name = data.get("name", workflow_path.name)
-        for rel_path in extract_wrapper_targets(data):
-            target = js_root_dir / rel_path
-            if not target.exists():
+        for target_type, rel_path in extract_wrapper_targets(data):
+            if target_type == "canonical":
+                target = nodes_root_dir / rel_path
+                exists = target.exists()
+            else:
+                if legacy_nodes_root_dir is None:
+                    target = nodes_root_dir / rel_path
+                    exists = target.exists()
+                else:
+                    target = legacy_nodes_root_dir / rel_path
+                    exists = target.exists() or (nodes_root_dir / rel_path).exists()
+            if not exists:
                 missing.append((wf_name, rel_path))
     if missing:
         print("Missing wrapper targets:", file=sys.stderr)
@@ -244,13 +261,18 @@ def parse_args(argv):
     )
     parser.add_argument(
         "--workflows-dir",
-        default=str(repo_root / "workflows"),
+        default=str(repo_root / "src" / "n8n" / "workflows"),
         help="Directory containing local workflow JSON files.",
     )
     parser.add_argument(
-        "--js-root-dir",
+        "--nodes-root-dir",
+        default=str(repo_root / "src" / "n8n" / "nodes"),
+        help="Directory containing canonical externalized JS node files.",
+    )
+    parser.add_argument(
+        "--legacy-nodes-root-dir",
         default=str(repo_root / "js" / "workflows"),
-        help="Directory containing externalized JS wrapper targets.",
+        help="Optional legacy JS node directory for wrapper compatibility validation.",
     )
     parser.add_argument(
         "--workflow-name",
@@ -274,11 +296,14 @@ def main(argv):
         die("N8N_API_KEY is required for sync_nodes.")
 
     workflows_dir = Path(args.workflows_dir).resolve()
-    js_root_dir = Path(args.js_root_dir).resolve()
+    nodes_root_dir = Path(args.nodes_root_dir).resolve()
+    legacy_nodes_root_dir = Path(args.legacy_nodes_root_dir).resolve()
     if not workflows_dir.exists():
         die(f"Missing workflows dir: {workflows_dir}")
-    if not js_root_dir.exists():
-        die(f"Missing JS root dir: {js_root_dir}")
+    if not nodes_root_dir.exists():
+        die(f"Missing nodes root dir: {nodes_root_dir}")
+    if not legacy_nodes_root_dir.exists():
+        legacy_nodes_root_dir = None
 
     workflow_files = sorted(workflows_dir.glob("*.json"))
     if not workflow_files:
@@ -299,7 +324,7 @@ def main(argv):
             die("Requested workflow names not found locally: " + ", ".join(missing_requested))
         workflow_files = filtered
 
-    validate_wrapper_targets(workflow_files, js_root_dir)
+    validate_wrapper_targets(workflow_files, nodes_root_dir, legacy_nodes_root_dir)
 
     live_map, slug_map = build_live_workflow_map()
     missing_live = []

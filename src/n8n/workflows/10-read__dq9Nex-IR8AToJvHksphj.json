@@ -668,7 +668,7 @@
       "id": "926eb875-5735-4746-a0a4-7801b8db586f",
       "name": "Command Parser",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js] ${e.message}`;throw e;}"
       },
       "position": [
         672,
@@ -705,7 +705,7 @@
       "id": "f305ac84-35d3-44df-8ef5-1c0e004f37b8",
       "name": "Format Telegram Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,

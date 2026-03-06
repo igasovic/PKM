@@ -2,39 +2,94 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-WORKFLOWS_DIR="$REPO_DIR/workflows"
-JS_ROOT_DIR="$REPO_DIR/js/workflows"
+WORKFLOWS_DIR="$REPO_DIR/src/n8n/workflows"
+NODES_ROOT_DIR="$REPO_DIR/src/n8n/nodes"
+LEGACY_NODES_ROOT_DIR="$REPO_DIR/js/workflows"
 RAW_DIR="$REPO_DIR/tmp/n8n-sync/raw"
 PATCHED_RAW_DIR="$REPO_DIR/tmp/n8n-sync/patched"
 MIN_JS_LINES="${MIN_JS_LINES:-50}"
-DO_COMMIT=0
 PYTHON_BIN="${PYTHON_BIN:-}"
 
+MODE="pull"
+DO_COMMIT=0
+DRY_RUN=0
+WORKFLOW_NAMES=()
+
 usage() {
-  echo "Usage: sync_workflows.sh [--commit] [--recreate-workflow <workflow name>]" >&2
-  exit 1
+  local exit_code="${1:-1}"
+  cat >&2 <<EOF
+Usage: sync_workflows.sh [options]
+
+Options:
+  --mode <pull|push|full>     Default: pull
+    pull  Export from n8n -> normalize -> sync externalized nodes to repo
+    push  Push repo workflows to n8n in-place via API patch
+    full  pull + push
+  --workflow-name "<name>"    Repeatable, push/full only (target specific workflows)
+  --dry-run                   Push/full only (no API writes)
+  --commit                    Commit repo changes after run
+  -h, --help                  Show this help
+EOF
+  exit "$exit_code"
 }
 
-RECREATE_WORKFLOW_NAMES=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -h|--help)
+      usage 0
+      ;;
+    --mode)
+      MODE="${2:-}"
+      shift 2
+      ;;
+    --workflow-name)
+      WORKFLOW_NAMES+=("${2:-}")
+      shift 2
+      ;;
+    --dry-run)
+      DRY_RUN=1
+      shift
+      ;;
     --commit)
       DO_COMMIT=1
       shift
-      ;;
-    --recreate-workflow)
-      if [[ -z "${2:-}" ]]; then
-        echo "Missing value for --recreate-workflow" >&2
-        usage
-      fi
-      RECREATE_WORKFLOW_NAMES+=("$2")
-      shift 2
       ;;
     *)
       usage
       ;;
   esac
 done
+
+require_cmd() {
+  local cmd="$1"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Missing required command: $cmd" >&2
+    exit 1
+  fi
+}
+
+require_file() {
+  local file="$1"
+  if [[ ! -f "$file" ]]; then
+    echo "Missing required file: $file" >&2
+    exit 1
+  fi
+}
+
+if [[ "$MODE" != "pull" && "$MODE" != "push" && "$MODE" != "full" ]]; then
+  echo "Invalid mode: $MODE" >&2
+  usage
+fi
+
+if [[ "${#WORKFLOW_NAMES[@]}" -gt 0 && "$MODE" == "pull" ]]; then
+  echo "--workflow-name is only valid with --mode push|full" >&2
+  exit 1
+fi
+
+if [[ "$DRY_RUN" -eq 1 && "$MODE" == "pull" ]]; then
+  echo "--dry-run is only valid with --mode push|full" >&2
+  exit 1
+fi
 
 if [[ -z "$PYTHON_BIN" ]]; then
   if command -v python3 >/dev/null 2>&1; then
@@ -43,7 +98,6 @@ if [[ -z "$PYTHON_BIN" ]]; then
     PYTHON_BIN="python"
   else
     echo "Neither 'python3' nor 'python' is available in PATH." >&2
-    echo "Install Python or run with PYTHON_BIN=/full/path/to/python" >&2
     exit 1
   fi
 fi
@@ -51,8 +105,17 @@ fi
 COMPOSE_FILE="${COMPOSE_FILE:-/home/igasovic/stack/docker-compose.yml}"
 EXPECTED_MOUNT="/home/igasovic/repos/n8n-workflows:/data:ro"
 
-if [[ ! -f "$COMPOSE_FILE" ]]; then
-  echo "Missing docker compose file: $COMPOSE_FILE" >&2
+require_cmd docker
+require_cmd jq
+require_file "$REPO_DIR/scripts/n8n/export_workflows.sh"
+require_file "$REPO_DIR/scripts/n8n/normalize_workflows.sh"
+require_file "$REPO_DIR/scripts/n8n/rename_workflows_by_name.sh"
+require_file "$REPO_DIR/scripts/n8n/sync_code_nodes.py"
+require_file "$REPO_DIR/scripts/n8n/sync_nodes.py"
+require_file "$COMPOSE_FILE"
+
+if ! docker ps --format '{{.Names}}' | grep -qx 'n8n'; then
+  echo "Container 'n8n' is not running." >&2
   exit 1
 fi
 
@@ -73,68 +136,75 @@ if ! printf '%s\n' "$N8N_BLOCK" | grep -Fq "$EXPECTED_MOUNT"; then
   exit 1
 fi
 
-mkdir -p "$RAW_DIR" "$PATCHED_RAW_DIR" "$WORKFLOWS_DIR" "$JS_ROOT_DIR"
+mkdir -p "$RAW_DIR" "$PATCHED_RAW_DIR" "$WORKFLOWS_DIR" "$NODES_ROOT_DIR" "$LEGACY_NODES_ROOT_DIR"
 
-echo "[1/8] Export + normalize workflows to repo"
-"$REPO_DIR/scripts/n8n/export_workflows.sh"
+run_pull() {
+  echo "[pull 1/3] Export + normalize workflows to repo"
+  "$REPO_DIR/scripts/n8n/export_workflows.sh" "$WORKFLOWS_DIR"
 
-echo "[2/8] Export raw workflows for patch/import cycle"
-docker exec -u node n8n sh -lc 'rm -rf /tmp/workflows_raw_sync && mkdir -p /tmp/workflows_raw_sync'
-docker exec -u node n8n n8n export:workflow --backup --output=/tmp/workflows_raw_sync
-rm -rf "$RAW_DIR"/*
-docker cp n8n:/tmp/workflows_raw_sync/. "$RAW_DIR/"
-"$REPO_DIR/scripts/n8n/rename_workflows_by_name.sh" "$RAW_DIR"
+  echo "[pull 2/3] Export raw workflows for patch/source lookup"
+  docker exec -u node n8n sh -lc 'rm -rf /tmp/workflows_raw_sync && mkdir -p /tmp/workflows_raw_sync'
+  docker exec -u node n8n n8n export:workflow --backup --output=/tmp/workflows_raw_sync
+  rm -rf "$RAW_DIR"/*
+  docker cp n8n:/tmp/workflows_raw_sync/. "$RAW_DIR/"
+  "$REPO_DIR/scripts/n8n/rename_workflows_by_name.sh" "$RAW_DIR"
 
-echo "[3/8] Sync code nodes in repo (externalize >= ${MIN_JS_LINES} lines, inline short nodes)"
-"$PYTHON_BIN" "$REPO_DIR/scripts/n8n/sync_code_nodes.py" \
-  "$RAW_DIR" \
-  "$PATCHED_RAW_DIR" \
-  "$WORKFLOWS_DIR" \
-  "$JS_ROOT_DIR" \
-  "$MIN_JS_LINES"
-"$REPO_DIR/scripts/n8n/normalize_workflows.sh" "$WORKFLOWS_DIR"
+  echo "[pull 3/3] Sync code nodes into repo (canonical src/n8n/nodes)"
+  "$PYTHON_BIN" "$REPO_DIR/scripts/n8n/sync_code_nodes.py" \
+    "$RAW_DIR" \
+    "$PATCHED_RAW_DIR" \
+    "$WORKFLOWS_DIR" \
+    "$NODES_ROOT_DIR" \
+    "$MIN_JS_LINES" \
+    "$LEGACY_NODES_ROOT_DIR"
+  "$REPO_DIR/scripts/n8n/normalize_workflows.sh" "$WORKFLOWS_DIR"
+}
 
-echo "[4/8] Import patched raw workflows back to n8n (overwrite only, no deletes)"
-if [[ "${#RECREATE_WORKFLOW_NAMES[@]}" -gt 0 ]]; then
-  echo "Recreate mode requested for:"
-  for wf_name in "${RECREATE_WORKFLOW_NAMES[@]}"; do
-    echo "- $wf_name"
-  done
-fi
-"$REPO_DIR/scripts/n8n/import_workflows.sh" "$PATCHED_RAW_DIR" "${RECREATE_WORKFLOW_NAMES[@]}"
-
-echo "[5/8] Export + normalize workflows again after n8n import"
-"$REPO_DIR/scripts/n8n/export_workflows.sh"
-
-echo "[6/8] Recreate n8n container"
-docker restart n8n >/dev/null
-echo "n8n container restarted."
-
-echo "Waiting for n8n CLI to become ready..."
-for i in $(seq 1 30); do
-  if docker exec -u node n8n n8n --help >/dev/null 2>&1; then
-    echo "n8n CLI is ready."
-    break
+run_push() {
+  local args=(
+    "$PYTHON_BIN" "$REPO_DIR/scripts/n8n/sync_nodes.py"
+    "--workflows-dir" "$WORKFLOWS_DIR"
+    "--nodes-root-dir" "$NODES_ROOT_DIR"
+    "--legacy-nodes-root-dir" "$LEGACY_NODES_ROOT_DIR"
+  )
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    args+=("--dry-run")
   fi
-  if [[ "$i" -eq 30 ]]; then
-    echo "n8n did not become ready in time after restart." >&2
-    exit 1
+  if [[ "${#WORKFLOW_NAMES[@]}" -gt 0 ]]; then
+    local wf
+    for wf in "${WORKFLOW_NAMES[@]}"; do
+      args+=("--workflow-name" "$wf")
+    done
   fi
-  sleep 2
-done
+  echo "[push 1/1] Patch repo workflows to n8n via API (in-place)"
+  "${args[@]}"
+}
 
-echo "[7/8] Activate workflows in n8n"
-"$REPO_DIR/scripts/n8n/activate_workflows.sh" "$PATCHED_RAW_DIR"
+case "$MODE" in
+  pull)
+    run_pull
+    ;;
+  push)
+    run_push
+    ;;
+  full)
+    run_pull
+    run_push
+    ;;
+esac
 
 if [[ "$DO_COMMIT" -eq 1 ]]; then
-  echo "[8/8] Commit workflow and node changes"
-  if git -C "$REPO_DIR" diff --quiet -- workflows js/workflows; then
-    echo "No changes detected in workflows/ or js/workflows; skipping commit."
+  echo "[commit] Commit canonical n8n repo changes"
+  local_paths=(src/n8n/workflows src/n8n/nodes js/workflows)
+  if [[ -d "$REPO_DIR/workflows" ]] || git -C "$REPO_DIR" ls-files --error-unmatch workflows >/dev/null 2>&1; then
+    local_paths+=(workflows)
+  fi
+
+  if git -C "$REPO_DIR" diff --quiet -- "${local_paths[@]}"; then
+    echo "No changes detected in src/n8n/workflows, src/n8n/nodes, js/workflows, or legacy workflows/; skipping commit."
   else
-    git -C "$REPO_DIR" add workflows js/workflows
+    git -C "$REPO_DIR" add -A "${local_paths[@]}"
     git -C "$REPO_DIR" commit -m "chore(n8n): sync workflows and code nodes"
     echo "Committed changes."
   fi
-else
-  echo "[8/8] Commit skipped (pass --commit to enable)"
 fi

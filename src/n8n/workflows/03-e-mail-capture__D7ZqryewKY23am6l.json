@@ -118,7 +118,7 @@
       "id": "0ae5a1f1-fc06-445c-b460-7447a1632dba",
       "name": "Compose Reply Text",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/03-e-mail-capture/compose-reply-text__0ae5a1f1-fc06-445c-b460-7447a1632dba.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:03-e-mail-capture/compose-reply-text__0ae5a1f1-fc06-445c-b460-7447a1632dba.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/03-e-mail-capture/compose-reply-text__0ae5a1f1-fc06-445c-b460-7447a1632dba.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:03-e-mail-capture/compose-reply-text__0ae5a1f1-fc06-445c-b460-7447a1632dba.js] ${e.message}`;throw e;}"
       },
       "position": [
         1040,

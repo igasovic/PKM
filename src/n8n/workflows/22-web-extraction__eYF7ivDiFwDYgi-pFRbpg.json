@@ -189,7 +189,7 @@
       "id": "0a3d5478-3ab2-4199-a276-e93723225434",
       "name": "Extract Title & Author",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/22-web-extraction/extract-title-author__0a3d5478-3ab2-4199-a276-e93723225434.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/extract-title-author__0a3d5478-3ab2-4199-a276-e93723225434.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/22-web-extraction/extract-title-author__0a3d5478-3ab2-4199-a276-e93723225434.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/extract-title-author__0a3d5478-3ab2-4199-a276-e93723225434.js] ${e.message}`;throw e;}"
       },
       "position": [
         800,
@@ -202,7 +202,7 @@
       "id": "e3d370cf-c8f9-4022-ab8c-cbdce2d351dd",
       "name": "Recompute retrieval excerpt + quality signals from clean_text",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/22-web-extraction/recompute-retrieval-excerpt-quality-signals-from-clean-text__e3d370cf-c8f9-4022-ab8c-cbdce2d351dd.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/recompute-retrieval-excerpt-quality-signals-from-clean-text__e3d370cf-c8f9-4022-ab8c-cbdce2d351dd.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/22-web-extraction/recompute-retrieval-excerpt-quality-signals-from-clean-text__e3d370cf-c8f9-4022-ab8c-cbdce2d351dd.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/recompute-retrieval-excerpt-quality-signals-from-clean-text__e3d370cf-c8f9-4022-ab8c-cbdce2d351dd.js] ${e.message}`;throw e;}"
       },
       "position": [
         1472,
@@ -215,7 +215,7 @@
       "id": "9ceb22a3-83dc-4b29-844e-6a769101b0d2",
       "name": "Text Clean",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/js/workflows/22-web-extraction/text-clean__9ceb22a3-83dc-4b29-844e-6a769101b0d2.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/text-clean__9ceb22a3-83dc-4b29-844e-6a769101b0d2.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/22-web-extraction/text-clean__9ceb22a3-83dc-4b29-844e-6a769101b0d2.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/text-clean__9ceb22a3-83dc-4b29-844e-6a769101b0d2.js] ${e.message}`;throw e;}"
       },
       "position": [
         1248,

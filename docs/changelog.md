@@ -1,4 +1,26 @@
 # changelog
+## 2026-03-06 — Canonical n8n paths under src/n8n with legacy bridge compatibility
+
+### What changed
+- Migrated canonical n8n assets to:
+  - `src/n8n/workflows` (workflow JSON)
+  - `src/n8n/nodes` (externalized code nodes)
+- Updated workflow wrapper paths to canonical mount path:
+  - `/data/src/n8n/nodes/...`
+- Kept legacy compatibility paths under `js/workflows` for existing/stale wrappers.
+- Updated sync scripts defaults and behavior:
+  - `scripts/n8n/export_workflows.sh` now defaults to `src/n8n/workflows`
+  - `scripts/n8n/normalize_workflows.sh` and `rename_workflows_by_name.sh` default to `src/n8n/workflows`
+  - `scripts/n8n/sync_workflows.sh` now syncs canonical `src/n8n/*` paths and keeps legacy root for bridges
+  - `scripts/n8n/sync_code_nodes.py` now writes canonical nodes to `src/n8n/nodes`, emits canonical wrappers, and can read legacy wrapper sources from `js/workflows`
+  - `scripts/n8n/sync_nodes.py` now defaults to canonical `src/n8n/*` paths with optional legacy wrapper validation root
+- Updated docs:
+  - `docs/n8n_sync.md`
+- Consolidated to a single entrypoint script:
+  - kept `scripts/n8n/sync_workflows.sh`
+  - removed `scripts/n8n/sync_nodes.sh`
+  - added `--mode pull|push|full` to `sync_workflows.sh`
+
 ## 2026-03-05 — n8n in-place node sync via API patch
 
 ### What changed

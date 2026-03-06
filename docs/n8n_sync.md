@@ -2,6 +2,11 @@
 
 Canonical process for syncing n8n workflows and externalized Code-node JS with this repo.
 
+Canonical repo locations:
+- Workflows: `src/n8n/workflows`
+- Externalized code nodes: `src/n8n/nodes`
+- Legacy compatibility bridges (temporary): `js/workflows`
+
 ## One command
 
 Run from repo root:
@@ -10,16 +15,21 @@ Run from repo root:
 ./scripts/n8n/sync_workflows.sh
 ```
 
+Modes:
+- `--mode pull` (default): n8n -> repo (export/normalize + externalize code nodes)
+- `--mode push`: repo -> n8n in-place API patch (no delete/import)
+- `--mode full`: pull + push
+
 Push local workflow node/wiring changes to n8n in-place (no delete/import):
 
 ```bash
-./scripts/n8n/sync_nodes.sh
+./scripts/n8n/sync_workflows.sh --mode push
 ```
 
 Patch only specific workflows by exact workflow name:
 
 ```bash
-./scripts/n8n/sync_nodes.sh --workflow-name "10 Read"
+./scripts/n8n/sync_workflows.sh --mode push --workflow-name "10 Read"
 ```
 
 Optional commit:
@@ -28,53 +38,33 @@ Optional commit:
 ./scripts/n8n/sync_workflows.sh --commit
 ```
 
-Optional threshold override (default is `50` non-empty lines):
+Optional threshold override for `pull/full` (default is `50` non-empty lines):
 
 ```bash
-MIN_JS_LINES=80 ./scripts/n8n/sync_workflows.sh
+MIN_JS_LINES=80 ./scripts/n8n/sync_workflows.sh --mode pull
 ```
-
-Optional targeted recreate for flaky workflows (deletes live workflow, then imports as new):
-
-```bash
-./scripts/n8n/sync_workflows.sh --recreate-workflow "10 Read"
-```
-
-Multiple workflows can be recreated in one run:
-
-```bash
-./scripts/n8n/sync_workflows.sh \
-  --recreate-workflow "10 Read" \
-  --recreate-workflow "02 Telegram Capture"
-```
-
-Warning:
-- Recreate mode deletes the existing workflow first, so execution history for that workflow is lost.
-- This mode is optional and off by default.
 
 ## Flow (orchestrated)
 
-1. Export workflows from n8n and normalize into `workflows/`.
+1. Export workflows from n8n and normalize into `src/n8n/workflows/`.
 2. Export raw workflows (for import-safe patching with metadata like `id`/`versionId`).
 3. Sync Code nodes in repo:
    - externalize only Code nodes with `>= MIN_JS_LINES`
    - keep short Code nodes inline in workflow JSON
-   - move node JS to the correct `js/workflows/<workflow-slug>/` folder when workflow/node location changed
-   - update wrappers to correct `/data/js/workflows/...` paths
-   - remove orphan managed node files (`*__<node-id>.js`) after all workflows are processed
-4. Import patched raw workflows back into n8n (overwrite existing workflows only).
-   - if `--recreate-workflow "<name>"` is passed, that workflow is deleted first and imported as new.
-5. Export + normalize again so repo matches post-import n8n state.
-6. Restart `n8n` container.
-7. Activate workflows programmatically in n8n.
-8. Commit changes only if `--commit` is set.
+   - move node JS to the correct `src/n8n/nodes/<workflow-slug>/` folder when workflow/node location changed
+   - update wrappers to canonical `/data/src/n8n/nodes/...` paths
+   - maintain legacy bridge files in `js/workflows/` for old wrapper compatibility
+   - remove orphan managed canonical files (`*__<node-id>.js`) under `src/n8n/nodes/`
+4. Push mode patches existing workflows in-place via n8n API (`PATCH`, fallback `PUT`).
+5. Commit changes only if `--commit` is set.
 
 ## Safety rules
 
 - Compose guard: reads `docker-compose.yml` (default `/home/igasovic/stack/docker-compose.yml`, override via `COMPOSE_FILE`) and requires n8n mount:
   - `/home/igasovic/repos/n8n-workflows:/data:ro`
 - No automatic workflow deletion in n8n.
-- Node relocation is move-first to avoid losing existing code.
+- Node relocation is move/copy-first to avoid losing existing code.
+- Legacy `js/workflows` bridges are preserved intentionally while migration is in progress.
 
 ## Change logs emitted by sync
 
@@ -92,7 +82,6 @@ During node sync, script prints:
 All workflow-management scripts live under `scripts/n8n/`:
 
 - `scripts/n8n/sync_workflows.sh` (entrypoint)
-- `scripts/n8n/sync_nodes.sh` (API patch in-place; no delete/import)
 - `scripts/n8n/sync_nodes.py`
 - `scripts/n8n/export_workflows.sh`
 - `scripts/n8n/normalize_workflows.sh`
