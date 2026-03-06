@@ -39,6 +39,15 @@ def non_empty_line_count(text: str) -> int:
     return sum(1 for line in normalize_newlines(text).split("\n") if line.strip())
 
 
+def is_module_style_js(text: str) -> bool:
+    normalized = normalize_newlines(text)
+    markers = (
+        "module.exports",
+        "exports.default",
+    )
+    return any(marker in normalized for marker in markers)
+
+
 def to_posix_path(path_obj: Path) -> str:
     return path_obj.as_posix()
 
@@ -354,6 +363,17 @@ def main():
 
             line_count = non_empty_line_count(effective_code)
             if line_count < min_lines:
+                # If source code is module-style (exports function), it is not valid as inline
+                # n8n Code node body. Keep existing wrapper instead of inlining.
+                if source_abs is not None and is_module_style_js(effective_code):
+                    if path_is_under(source_abs, nodes_root_dir):
+                        expected_node_files.add(source_abs.resolve())
+                    node_updated.append(
+                        f"{workflow_slug}/{node_file_name(node)} (kept wrapper: module-style under {min_lines} lines)"
+                    )
+                    patched_nodes += 1
+                    continue
+
                 previous_code = str((node.get("parameters") or {}).get("jsCode", ""))
                 node.setdefault("parameters", {})
                 node["parameters"]["jsCode"] = normalize_newlines(effective_code)
