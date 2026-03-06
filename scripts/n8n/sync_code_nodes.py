@@ -48,6 +48,56 @@ def is_module_style_js(text: str) -> bool:
     return any(marker in normalized for marker in markers)
 
 
+def module_to_inline_code(text: str):
+    normalized = normalize_newlines(text).strip()
+    header = re.search(
+        r"module\.exports\s*=\s*async\s*function(?:\s+\w+)?\s*\(\s*([A-Za-z_$][\w$]*)\s*\)\s*\{",
+        normalized,
+    )
+    if not header:
+        header = re.search(
+            r"exports\.default\s*=\s*async\s*function(?:\s+\w+)?\s*\(\s*([A-Za-z_$][\w$]*)\s*\)\s*\{",
+            normalized,
+        )
+    if not header:
+        return None
+
+    param = header.group(1)
+    start = header.start()
+    body_start = header.end()
+
+    depth = 1
+    i = body_start
+    while i < len(normalized):
+        ch = normalized[i]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                body_end = i
+                break
+        i += 1
+    else:
+        return None
+
+    body = normalized[body_start:body_end].strip("\n")
+    # In Code node context these variables already exist, so drop explicit ctx destructure.
+    body = re.sub(
+        r"""^\s*const\s*\{\s*\$input\s*,\s*\$json\s*,\s*\$items\s*,\s*\$node\s*,\s*\$env\s*,\s*helpers\s*\}\s*=\s*"""
+        + re.escape(param)
+        + r"""\s*;\s*\n?""",
+        "",
+        body,
+        count=1,
+        flags=re.M,
+    )
+    prefix = normalized[:start].rstrip()
+    if prefix:
+        return prefix + "\n\n" + body + "\n"
+    return body + "\n"
+
+
 def rewrite_repo_imports(text: str) -> str:
     normalized = normalize_newlines(text)
     # Normalize legacy relative requires used before path migration.
@@ -378,20 +428,15 @@ def main():
 
             line_count = non_empty_line_count(effective_code)
             if line_count < min_lines:
-                # If source code is module-style (exports function), it is not valid as inline
-                # n8n Code node body. Keep existing wrapper instead of inlining.
-                if source_abs is not None and is_module_style_js(effective_code):
-                    if path_is_under(source_abs, nodes_root_dir):
-                        expected_node_files.add(source_abs.resolve())
-                    node_updated.append(
-                        f"{workflow_slug}/{node_file_name(node)} (kept wrapper: module-style under {min_lines} lines)"
-                    )
-                    patched_nodes += 1
-                    continue
+                inline_code = effective_code
+                if is_module_style_js(effective_code):
+                    converted = module_to_inline_code(effective_code)
+                    if converted:
+                        inline_code = converted
 
                 previous_code = str((node.get("parameters") or {}).get("jsCode", ""))
                 node.setdefault("parameters", {})
-                node["parameters"]["jsCode"] = normalize_newlines(effective_code)
+                node["parameters"]["jsCode"] = normalize_newlines(inline_code)
                 if normalize_newlines(previous_code) != normalize_newlines(
                     node["parameters"]["jsCode"]
                 ):

@@ -176,7 +176,7 @@
       "id": "40daf375-fbf6-4d46-8564-47bd4a05fdf7",
       "name": "remove trafiltura title - hack",
       "parameters": {
-        "jsCode": "/**\n * PKM / n8n Externalized Code Node\n *\n * Workflow: Telegram Capture (telegram-capture)\n * Node: remove trafiltura title - hack\n * Node ID: a02c847f-191c-4f90-adf2-c76d3b715596\n */\n'use strict';\n\nmodule.exports = async function run(ctx) {\n  const { $input, $json, $items, $node, $env, helpers } = ctx;\n\nconst item = { ...$json };\n\n// Always discard Trafilatura title\ndelete item.title;\ndelete item.author;\n\nreturn [item];\n};\n"
+        "jsCode": "  const { $input, $json, $items, $node, $env, helpers } = ctx;\n\nconst item = { ...$json };\n\n// Always discard Trafilatura title\ndelete item.title;\ndelete item.author;\n\nreturn [{ json: item }];\n"
       },
       "position": [
         800,
