@@ -5,9 +5,13 @@ Before proposing changes or writing code, read:
 - docs/env.md
 - docs/api.md
 - docs/database_schema.md
-- docs/n8n_to_git.md + docs/git_to_n8n.md
+- docs/n8n_sync.md
+- docs/n8n_node_style_guide.md
 - docs/requirements.md + docs/changelog.md
 - docs/repo-map.md
+
+For any n8n-related change (workflows, code nodes, sync scripts), reading
+`docs/n8n_sync.md` and `docs/n8n_node_style_guide.md` is mandatory.
 
 ## 1) System boundaries (hard rules)
 

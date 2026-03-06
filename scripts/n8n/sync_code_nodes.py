@@ -84,7 +84,7 @@ def module_to_inline_code(text: str):
     body = normalized[body_start:body_end].strip("\n")
     # In Code node context these variables already exist, so drop explicit ctx destructure.
     body = re.sub(
-        r"""^\s*const\s*\{\s*\$input\s*,\s*\$json\s*,\s*\$items\s*,\s*\$node\s*,\s*\$env\s*,\s*helpers\s*\}\s*=\s*"""
+        r"""^\s*const\s*\{[^}]+\}\s*=\s*"""
         + re.escape(param)
         + r"""\s*;\s*\n?""",
         "",

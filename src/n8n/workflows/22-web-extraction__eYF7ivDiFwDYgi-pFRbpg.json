@@ -176,7 +176,7 @@
       "id": "40daf375-fbf6-4d46-8564-47bd4a05fdf7",
       "name": "remove trafiltura title - hack",
       "parameters": {
-        "jsCode": "  const { $input, $json, $items, $node, $env, helpers } = ctx;\n\nconst item = { ...$json };\n\n// Always discard Trafilatura title\ndelete item.title;\ndelete item.author;\n\nreturn [{ json: item }];\n"
+        "jsCode": "const item = { ...$json };\n\n// Always discard Trafilatura title\ndelete item.title;\ndelete item.author;\n\nreturn [{ json: item }];\n"
       },
       "position": [
         800,
