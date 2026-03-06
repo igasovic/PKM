@@ -114,6 +114,18 @@ def is_managed_node_js_file(file_path: Path) -> bool:
     return bool(re.search(r"__([^.\\/]+)\.js$", file_path.name))
 
 
+def is_legacy_compat_file(file_path: Path, js_root_dir: Path) -> bool:
+    rel = to_posix_path(file_path.resolve().relative_to(js_root_dir.resolve()))
+    legacy_prefixes = (
+        "read/",
+        "telegram-capture/",
+        "e-mail-capture/",
+        "tier-1-enhancement/",
+        "pkm-retrieval-config/",
+    )
+    return rel.startswith(legacy_prefixes)
+
+
 def build_node_file_index(js_root_dir: Path):
     index = {}
     files = [
@@ -312,9 +324,13 @@ def main():
         if p.suffix == ".js" and is_managed_node_js_file(p)
     ]
     removed_orphans = 0
+    kept_legacy_compat = 0
     for js_file in all_js_files:
         abs_path = js_file.resolve()
         if abs_path in expected_js_files:
+            continue
+        if is_legacy_compat_file(abs_path, js_root_dir):
+            kept_legacy_compat += 1
             continue
         js_file.unlink(missing_ok=True)
         node_deleted.append(to_posix_path(abs_path.relative_to(js_root_dir)))
@@ -370,6 +386,7 @@ def main():
         f"created_files={created_files} "
         f"inlined_nodes={inlined_nodes} "
         f"removed_orphans={removed_orphans} "
+        f"kept_legacy_compat={kept_legacy_compat} "
         f"missing_js_code={missing_js_code} "
         f"skipped_missing_source={skipped_missing_source} "
         f"min_lines={min_lines}"
