@@ -196,14 +196,9 @@ def deactivate_workflow(base_url: str, api_key: str, workflow_id: str):
         api_request(base_url, api_key, "POST", f"/api/v1/workflows/{workflow_id}/deactivate", {})
         return
     except RuntimeError:
-        pass
-    api_request(
-        base_url,
-        api_key,
-        "PATCH",
-        f"/api/v1/workflows/{workflow_id}",
-        {"active": False},
-    )
+        # Older n8n versions may not expose PATCH and may reject fallback state updates.
+        # If explicit deactivate endpoint fails, continue with definition update/import path.
+        return
 
 
 def activate_workflow(base_url: str, api_key: str, workflow_id: str):
@@ -211,14 +206,9 @@ def activate_workflow(base_url: str, api_key: str, workflow_id: str):
         api_request(base_url, api_key, "POST", f"/api/v1/workflows/{workflow_id}/activate", {})
         return
     except RuntimeError:
-        pass
-    api_request(
-        base_url,
-        api_key,
-        "PATCH",
-        f"/api/v1/workflows/{workflow_id}",
-        {"active": True},
-    )
+        # Older n8n versions may not expose PATCH and may reject fallback state updates.
+        # If explicit activate endpoint fails, continue without hard-failing the sync.
+        return
 
 
 def update_workflow_definition(base_url: str, api_key: str, workflow_id: str, payload):

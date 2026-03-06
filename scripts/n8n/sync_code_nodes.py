@@ -74,9 +74,27 @@ def build_wrapper(wrapper_rel: str) -> str:
 def build_legacy_bridge(wrapper_rel: str) -> str:
     return (
         '"use strict";\n\n'
-        f"const fn = require('{CANONICAL_WRAPPER_PREFIX}{wrapper_rel}');\n\n"
+        f"const loaded = require('{CANONICAL_WRAPPER_PREFIX}{wrapper_rel}');\n"
+        "const fn = (typeof loaded === 'function') ? loaded : loaded?.default;\n\n"
+        "function toItems(result) {\n"
+        "  if (Array.isArray(result)) return result;\n"
+        "  if (result == null) return [];\n"
+        "  if (Array.isArray(result.items)) return result.items;\n"
+        "  if (typeof result === 'object' && (\n"
+        "    Object.prototype.hasOwnProperty.call(result, 'json') ||\n"
+        "    Object.prototype.hasOwnProperty.call(result, 'binary') ||\n"
+        "    Object.prototype.hasOwnProperty.call(result, 'pairedItem')\n"
+        "  )) {\n"
+        "    return [result];\n"
+        "  }\n"
+        "  return [{ json: result }];\n"
+        "}\n\n"
         "module.exports = async function bridge(ctx) {\n"
-        "  return fn(ctx);\n"
+        "  if (typeof fn !== 'function') {\n"
+        "    throw new Error('Bridge target does not export a function');\n"
+        "  }\n"
+        "  const out = await fn(ctx);\n"
+        "  return toItems(out);\n"
         "};\n"
     )
 
@@ -215,10 +233,13 @@ def ensure_legacy_bridge(
     if legacy_nodes_root_dir is None:
         return None
     bridge_abs = (legacy_nodes_root_dir / Path(wrapper_rel)).resolve()
-    if bridge_abs.exists():
-        return None
     ensure_dir(bridge_abs.parent)
-    bridge_abs.write_text(build_legacy_bridge(wrapper_rel), encoding="utf-8")
+    next_content = build_legacy_bridge(wrapper_rel)
+    if bridge_abs.exists():
+        current = bridge_abs.read_text(encoding="utf-8")
+        if normalize_newlines(current) == normalize_newlines(next_content):
+            return None
+    bridge_abs.write_text(next_content, encoding="utf-8")
     return wrapper_rel
 
 
