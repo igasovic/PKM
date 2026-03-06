@@ -112,6 +112,7 @@ require_file "$REPO_DIR/scripts/n8n/normalize_workflows.sh"
 require_file "$REPO_DIR/scripts/n8n/rename_workflows_by_name.sh"
 require_file "$REPO_DIR/scripts/n8n/sync_code_nodes.py"
 require_file "$REPO_DIR/scripts/n8n/sync_nodes.py"
+require_file "$REPO_DIR/scripts/n8n/repair_legacy_bridges.py"
 require_file "$COMPOSE_FILE"
 
 if ! docker ps --format '{{.Names}}' | grep -qx 'n8n'; then
@@ -157,6 +158,7 @@ run_pull() {
     "$NODES_ROOT_DIR" \
     "$MIN_JS_LINES" \
     "$LEGACY_NODES_ROOT_DIR"
+  "$PYTHON_BIN" "$REPO_DIR/scripts/n8n/repair_legacy_bridges.py" "$LEGACY_NODES_ROOT_DIR"
   "$REPO_DIR/scripts/n8n/normalize_workflows.sh" "$WORKFLOWS_DIR"
 }
 
