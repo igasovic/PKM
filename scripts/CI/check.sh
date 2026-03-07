@@ -5,6 +5,16 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 echo "==> CI check (local): $ROOT"
 
+search_text() {
+  local pattern="$1"
+  local path="$2"
+  if command -v rg >/dev/null 2>&1; then
+    rg -n --hidden --glob '!**/node_modules/**' -S "$pattern" "$path" 2>/dev/null || true
+  else
+    grep -R -n -E "$pattern" "$path" 2>/dev/null || true
+  fi
+}
+
 # --------
 # 1) Hybrid migration rule: no *new* files under legacy js/
 #    (edits to existing files are allowed)
@@ -59,7 +69,55 @@ if [[ -n "$MATCHES" ]]; then
 fi
 
 # --------
-# 3) Tests: run backend Jest from src/server
+# 3) n8n safety checks
+# --------
+echo "==> Checking n8n workflow safety rules..."
+N8N_WF_DIR="$ROOT/src/n8n/workflows"
+N8N_NODES_DIR="$ROOT/src/n8n/nodes"
+
+if [[ -d "$N8N_WF_DIR" ]]; then
+  LEGACY_REFS="$(search_text '/data/js/workflows/' "$N8N_WF_DIR")"
+  if [[ -n "$LEGACY_REFS" ]]; then
+    echo "ERROR: Legacy wrapper paths found in canonical workflows:"
+    echo "$LEGACY_REFS"
+    exit 1
+  fi
+
+  MISSING_TARGETS="$(
+    python3 - "$N8N_WF_DIR" "$N8N_NODES_DIR" <<'PY'
+import json
+import pathlib
+import re
+import sys
+
+wf_dir = pathlib.Path(sys.argv[1])
+nodes_dir = pathlib.Path(sys.argv[2])
+missing = []
+for wf in sorted(wf_dir.glob("*.json")):
+    try:
+        data = json.loads(wf.read_text(encoding="utf-8"))
+    except Exception:
+        continue
+    for node in data.get("nodes", []):
+        js = (node.get("parameters") or {}).get("jsCode", "")
+        m = re.search(r"/data/src/n8n/nodes/([^'\\\"]+\\.js)", js)
+        if m and not (nodes_dir / m.group(1)).exists():
+            missing.append(f"{wf.name}: {node.get('name')} -> {m.group(1)}")
+if missing:
+    print("\n".join(missing))
+PY
+  )"
+  if [[ -n "$MISSING_TARGETS" ]]; then
+    echo "ERROR: Missing canonical wrapper targets:"
+    echo "$MISSING_TARGETS"
+    exit 1
+  fi
+else
+  echo "WARN: $N8N_WF_DIR not found. Skipping n8n workflow safety checks."
+fi
+
+# --------
+# 4) Tests: run backend Jest from src/server
 # --------
 echo "==> Running backend tests (Jest) from src/server..."
 BACKEND_DIR="$ROOT/src/server"
