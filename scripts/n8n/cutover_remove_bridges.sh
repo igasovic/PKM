@@ -51,9 +51,18 @@ require_file() {
   fi
 }
 
+search_text() {
+  local pattern="$1"
+  local path="$2"
+  if command -v rg >/dev/null 2>&1; then
+    rg -n -S "$pattern" "$path" 2>/dev/null || true
+  else
+    grep -R -n -E "$pattern" "$path" 2>/dev/null || true
+  fi
+}
+
 require_cmd docker
 require_cmd "$PYTHON_BIN"
-require_cmd rg
 require_file "$REPO_DIR/scripts/db/backup.sh"
 require_file "$REPO_DIR/scripts/n8n/sync_workflows.sh"
 require_file "$REPO_DIR/scripts/n8n/remove_legacy_bridges.py"
@@ -77,9 +86,10 @@ echo "[4/5] Removing local legacy bridge files"
 "$PYTHON_BIN" "$REPO_DIR/scripts/n8n/remove_legacy_bridges.py" "$REPO_DIR/js/workflows"
 
 echo "[5/5] Validating repo workflows contain no legacy bridge references"
-if rg -n "/data/js/workflows/" "$REPO_DIR/src/n8n/workflows" >/dev/null 2>&1; then
+legacy_refs="$(search_text "/data/js/workflows/" "$REPO_DIR/src/n8n/workflows")"
+if [[ -n "$legacy_refs" ]]; then
   echo "Legacy wrapper paths still found in repo workflows:" >&2
-  rg -n "/data/js/workflows/" "$REPO_DIR/src/n8n/workflows" >&2
+  echo "$legacy_refs" >&2
   exit 1
 fi
 echo "Bridge cutover validation passed."

@@ -43,6 +43,45 @@ Optional threshold override for `pull/full` (default is `50` non-empty lines):
 MIN_JS_LINES=80 ./scripts/n8n/sync_workflows.sh --mode pull
 ```
 
+## Git -> n8n usage (future operations)
+
+Use these modes depending on intent:
+
+1. Normal repo -> n8n update:
+```bash
+./scripts/n8n/sync_workflows.sh --mode push
+```
+
+2. Reconcile drift (pull then push):
+```bash
+./scripts/n8n/sync_workflows.sh --mode full
+```
+
+3. Patch one workflow only:
+```bash
+./scripts/n8n/sync_workflows.sh --mode push --workflow-name "10 Read"
+```
+
+Prerequisites in current shell:
+```bash
+export N8N_API_BASE_URL='http://127.0.0.1:5678'
+export N8N_API_KEY='...'
+```
+
+Quick auth check:
+```bash
+curl -sS -o /dev/null -w "HTTP %{http_code}\n" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY" \
+  "$N8N_API_BASE_URL/api/v1/workflows?limit=1"
+```
+
+Expected: `HTTP 200`.
+
+Avoid:
+- direct DB edits for workflow state
+- reintroducing `/data/js/workflows/...` wrappers
+- relative externalized imports like `../../../src/...`
+
 ## Flow (orchestrated)
 
 1. Export workflows from n8n and normalize into `src/n8n/workflows/`.
@@ -110,5 +149,8 @@ All workflow-management scripts live under `scripts/n8n/`:
 - `scripts/n8n/sync_code_nodes.py`
 - `scripts/n8n/cutover_remove_bridges.sh`
 - `scripts/n8n/remove_legacy_bridges.py`
-- `scripts/n8n/import_workflows.sh`
-- `scripts/n8n/activate_workflows.sh`
+
+Archived (do not use for normal operations):
+- `scripts/archive/n8n/import_workflows.sh`
+- `scripts/archive/n8n/activate_workflows.sh`
+- `scripts/archive/n8n/repair_legacy_bridges.py`

@@ -1,4 +1,15 @@
 # changelog
+## 2026-03-06 — Script sunset + Git->n8n operator doc
+
+### What changed
+- Archived obsolete n8n scripts to `scripts/archive/n8n/`:
+  - `activate_workflows.sh`
+  - `import_workflows.sh`
+  - `repair_legacy_bridges.py`
+- Updated `docs/n8n_sync.md`:
+  - integrated operator-focused Git->n8n runbook sections
+  - updated active vs archived script lists
+
 ## 2026-03-06 — Bridge dependency cutover (safe remove path)
 
 ### What changed

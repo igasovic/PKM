@@ -76,6 +76,16 @@ require_file() {
   fi
 }
 
+search_text() {
+  local pattern="$1"
+  local path="$2"
+  if command -v rg >/dev/null 2>&1; then
+    rg -n -S "$pattern" "$path" 2>/dev/null || true
+  else
+    grep -R -n -E "$pattern" "$path" 2>/dev/null || true
+  fi
+}
+
 if [[ "$MODE" != "pull" && "$MODE" != "push" && "$MODE" != "full" ]]; then
   echo "Invalid mode: $MODE" >&2
   usage
@@ -139,9 +149,11 @@ fi
 mkdir -p "$RAW_DIR" "$PATCHED_RAW_DIR" "$WORKFLOWS_DIR" "$NODES_ROOT_DIR"
 
 validate_repo_workflows() {
-  if rg -n "/data/js/workflows/" "$WORKFLOWS_DIR" >/dev/null 2>&1; then
+  local legacy_refs
+  legacy_refs="$(search_text "/data/js/workflows/" "$WORKFLOWS_DIR")"
+  if [[ -n "$legacy_refs" ]]; then
     echo "Legacy wrapper paths found in repo workflows ($WORKFLOWS_DIR):" >&2
-    rg -n "/data/js/workflows/" "$WORKFLOWS_DIR" >&2
+    echo "$legacy_refs" >&2
     exit 1
   fi
 
@@ -180,9 +192,11 @@ validate_live_workflows() {
   docker exec -u node n8n n8n export:workflow --backup --output=/tmp/workflows_live_validate
   docker cp n8n:/tmp/workflows_live_validate/. "$live_validate_dir/"
 
-  if rg -n "/data/js/workflows/" "$live_validate_dir" >/dev/null 2>&1; then
+  local legacy_refs
+  legacy_refs="$(search_text "/data/js/workflows/" "$live_validate_dir")"
+  if [[ -n "$legacy_refs" ]]; then
     echo "Legacy wrapper paths still present in live n8n workflows after push:" >&2
-    rg -n "/data/js/workflows/" "$live_validate_dir" >&2
+    echo "$legacy_refs" >&2
     exit 1
   fi
 }
