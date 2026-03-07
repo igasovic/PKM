@@ -1,6 +1,6 @@
 {
-  "active": false,
-  "activeVersionId": null,
+  "active": true,
+  "activeVersionId": "4eaded25-6dcb-451c-85f1-0939942b5e4c",
   "connections": {
     "Build Context Pack": {
       "main": [
@@ -718,7 +718,7 @@
       "id": "83d12448-5f97-48f1-9ece-de61a9756db3",
       "name": "Format /help Message",
       "parameters": {
-        "jsCode": "const msg =\n`/last \"query\" [--days N] [--limit M]\nBest when you vaguely remember something. Ranks using your Tier-1 metadata + full-text + quality + recency.\n\n /find \"needle\" [--days N] [--limit M]\nBest for exact-ish strings (names, errors, phrases). Prefers literal matches + full-text; returns evidence snippets.\n\n /continue topic [--days N] [--limit M]\nBest to resume a topic. Uses Tier-1-first scoring and tries to return your notes first (if available).\n\n /pull <id> [--excerpt]\nFetch one entry by its numeric id (#12345). Default shows a short excerpt; --excerpt returns a longer excerpt.\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\n\nconst config = getConfig();\nconst isTestMode = config.db.is_test_mode === true;\nconst banner = isTestMode ? '\u2697\ufe0f\ud83e\uddea TEST MODE\n' : '';\nconst telegram_message = msg.split('\\n').map(l => l.trimEnd()).join('\\n').trim();\nreturn [{ json: { ...$json, telegram_message } }];\n"
+        "jsCode": "const msg =\n`/last \"query\" [--days N] [--limit M]\nBest when you vaguely remember something. Ranks using your Tier-1 metadata + full-text + quality + recency.\n\n /find \"needle\" [--days N] [--limit M]\nBest for exact-ish strings (names, errors, phrases). Prefers literal matches + full-text; returns evidence snippets.\n\n /continue topic [--days N] [--limit M]\nBest to resume a topic. Uses Tier-1-first scoring and tries to return your notes first (if available).\n\n /pull <id> [--excerpt]\nFetch one entry by its numeric id (#12345). Default shows a short excerpt; --excerpt returns a longer excerpt.\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\n\nconst config = getConfig();\nconst isTestMode = config.db.is_test_mode === true;\nconst banner = isTestMode ? '⚗️🧪 TEST MODE\n' : '';\nconst telegram_message = msg.split('\\n').map(l => l.trimEnd()).join('\\n').trim();\nreturn [{ json: { ...$json, telegram_message } }];\n"
       },
       "position": [
         1792,
@@ -731,7 +731,7 @@
       "id": "3580c243-cd64-4bc2-8b4f-ab5215ff71a1",
       "name": "Build Context Pack",
       "parameters": {
-        "jsCode": "const { buildContextPackMarkdown } = require('/data/src/libs/context-pack-builder.js');\n\nconst rows = $input.all().map(i => i.json);\nconst meta = rows.find((r) => r.is_meta === true) || {};\nconst hitsRows = rows.filter((r) => r.is_meta === false && r.id);\nconst method = String(meta.cmd || 'last').toLowerCase();\nconst query = String(meta.query_text || '').trim();\n\nlet msg = buildContextPackMarkdown(\n  hitsRows,\n  {\n    method,\n    query,\n    days: meta.days,\n    limit: meta.limit,\n  },\n  {\n    markdownV2: true,\n    layout: 'ui',\n    maxContentLen: 300,\n  },\n);\n\n// safety cap (Telegram hard limit is 4096; keep margin for safety)\nconst MAX_TELEGRAM = 3500;\nif (msg.length > MAX_TELEGRAM) {\n  msg = msg.slice(0, MAX_TELEGRAM - 1) + '\u2026';\n}\n\nreturn [{ json: { telegram_message: msg } }];\n"
+        "jsCode": "const { buildContextPackMarkdown } = require('/data/src/libs/context-pack-builder.js');\n\nconst rows = $input.all().map(i => i.json);\nconst meta = rows.find((r) => r.is_meta === true) || {};\nconst hitsRows = rows.filter((r) => r.is_meta === false && r.id);\nconst method = String(meta.cmd || 'last').toLowerCase();\nconst query = String(meta.query_text || '').trim();\n\nlet msg = buildContextPackMarkdown(\n  hitsRows,\n  {\n    method,\n    query,\n    days: meta.days,\n    limit: meta.limit,\n  },\n  {\n    markdownV2: true,\n    layout: 'ui',\n    maxContentLen: 300,\n  },\n);\n\n// safety cap (Telegram hard limit is 4096; keep margin for safety)\nconst MAX_TELEGRAM = 3500;\nif (msg.length > MAX_TELEGRAM) {\n  msg = msg.slice(0, MAX_TELEGRAM - 1) + '…';\n}\n\nreturn [{ json: { telegram_message: msg } }];\n"
       },
       "position": [
         1792,
@@ -775,7 +775,7 @@
         },
         "workflowId": {
           "__rl": true,
-          "cachedResultName": "PKM \u2014 Retrieval Config",
+          "cachedResultName": "PKM — Retrieval Config",
           "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
           "mode": "list",
           "value": "Ue-cGR6_WP4Fe5C19tA28"
@@ -931,7 +931,7 @@
       "id": "075f1d02-d3af-43dc-a694-f387f757ba3d",
       "name": "Format Status Message",
       "parameters": {
-        "jsCode": "const s = $json.summary || {};\n\nreturn {\n  telegram_message:\n`*T1 Batch summary*\n\n*Jobs:* ${s.jobs}\n*In\\\\_progress:* ${s.in_progress}\n*Terminal:* ${s.terminal}\n\n*Items*\n\u2022 Total: ${s.total_items}\n\u2022 Processed: ${s.processed}\n\u2022 Pending: ${s.pending}\n\n*Results*\n\u2705 OK: ${s.ok}\n\u26a0\ufe0f Parse\\\\_error: ${s.parse_error}\n\u274c Error: ${s.error}`\n};\n"
+        "jsCode": "const s = $json.summary || {};\n\nreturn {\n  telegram_message:\n`*T1 Batch summary*\n\n*Jobs:* ${s.jobs}\n*In\\\\_progress:* ${s.in_progress}\n*Terminal:* ${s.terminal}\n\n*Items*\n• Total: ${s.total_items}\n• Processed: ${s.processed}\n• Pending: ${s.pending}\n\n*Results*\n✅ OK: ${s.ok}\n⚠️ Parse\\\\_error: ${s.parse_error}\n❌ Error: ${s.error}`\n};\n"
       },
       "position": [
         1792,
@@ -1000,7 +1000,7 @@
       "id": "3feac23b-f095-4af9-9179-3b0a1a4279a2",
       "name": "Format delete message",
       "parameters": {
-        "jsCode": "const s = $json || {};\n\nconst mdv2 = (v) =>\n  String(v ?? \"\")\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, \"\\\\$1\"); // MarkdownV2 escape\n\nreturn {\n  telegram_message:\n`*\u2705 Delete successful:*\n\u2022 Dry run: ${s.dry_run}\n\u2022 Schema: ${mdv2(s.schema)}\n\u2022 Deleted: ${s.deleted_count}`\n};\n"
+        "jsCode": "const s = $json || {};\n\nconst mdv2 = (v) =>\n  String(v ?? \"\")\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, \"\\\\$1\"); // MarkdownV2 escape\n\nreturn {\n  telegram_message:\n`*✅ Delete successful:*\n• Dry run: ${s.dry_run}\n• Schema: ${mdv2(s.schema)}\n• Deleted: ${s.deleted_count}`\n};\n"
       },
       "position": [
         1792,
@@ -1044,7 +1044,7 @@
       "id": "344aac95-db6e-4262-9441-1072918d9d48",
       "name": "Format move message",
       "parameters": {
-        "jsCode": "const s = $json || {};\n\nconst mdv2 = (v) =>\n  String(v ?? \"\")\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, \"\\\\$1\"); // MarkdownV2 escape\n\nreturn {\n  telegram_message:\n`*\u2705 Move successful:*\n\u2022 Dry run: ${s.dry_run}\n\u2022 Schema: ${mdv2(s.from_schema)} \\\\-\\\\> *${mdv2(s.to_schema)}*\n\u2022 Moved: ${s.moved_count}`\n};\n"
+        "jsCode": "const s = $json || {};\n\nconst mdv2 = (v) =>\n  String(v ?? \"\")\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, \"\\\\$1\"); // MarkdownV2 escape\n\nreturn {\n  telegram_message:\n`*✅ Move successful:*\n• Dry run: ${s.dry_run}\n• Schema: ${mdv2(s.from_schema)} \\\\-\\\\> *${mdv2(s.to_schema)}*\n• Moved: ${s.moved_count}`\n};\n"
       },
       "position": [
         1792,
@@ -1110,6 +1110,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-02-22T15:43:20.670Z",
-  "versionCounter": 225
+  "updatedAt": "2026-03-06T20:11:33.715Z",
+  "versionCounter": 266
 }

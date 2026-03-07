@@ -1,6 +1,6 @@
 {
-  "active": false,
-  "activeVersionId": null,
+  "active": true,
+  "activeVersionId": "c841742a-bfe2-426e-a15d-50219cb6bf7c",
   "connections": {
     "Delete Daily File": {
       "main": [
@@ -307,6 +307,7 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
   "shared": [
@@ -331,6 +332,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-02-18T02:25:16.923Z",
-  "versionCounter": 15
+  "updatedAt": "2026-03-06T20:11:35.618Z",
+  "versionCounter": 59
 }

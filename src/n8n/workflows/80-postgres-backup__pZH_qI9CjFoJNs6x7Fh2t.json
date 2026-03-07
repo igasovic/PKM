@@ -1,6 +1,6 @@
 {
-  "active": false,
-  "activeVersionId": null,
+  "active": true,
+  "activeVersionId": "2a5b45ea-e72f-4fa8-942f-da2e07155382",
   "connections": {
     "Backup GDrive Daily": {
       "main": [
@@ -561,6 +561,7 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
   "shared": [
@@ -585,6 +586,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 4,
-  "updatedAt": "2026-02-18T03:43:09.336Z",
-  "versionCounter": 57
+  "updatedAt": "2026-03-06T20:11:35.105Z",
+  "versionCounter": 101
 }

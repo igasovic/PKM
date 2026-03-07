@@ -1,6 +1,6 @@
 {
-  "active": false,
-  "activeVersionId": null,
+  "active": true,
+  "activeVersionId": "8a23c2ea-e48b-4876-8e56-47c9a2e42597",
   "connections": {
     "Extract Title & Author": {
       "main": [
@@ -340,6 +340,7 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
   "shared": [
@@ -364,6 +365,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-02-22T03:32:19.811Z",
-  "versionCounter": 35
+  "updatedAt": "2026-03-06T20:11:34.563Z",
+  "versionCounter": 77
 }

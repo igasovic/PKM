@@ -1,6 +1,6 @@
 {
-  "active": false,
-  "activeVersionId": null,
+  "active": true,
+  "activeVersionId": "e73c5e9d-0c51-40cb-8130-fc4636f64cf4",
   "connections": {
     "IS COMMAND": {
       "main": [
@@ -186,6 +186,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2026-02-13T18:31:17.120Z",
-  "versionCounter": 85
+  "updatedAt": "2026-03-06T20:11:28.449Z",
+  "versionCounter": 125
 }

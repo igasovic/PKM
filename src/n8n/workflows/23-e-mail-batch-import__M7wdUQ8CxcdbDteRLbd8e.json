@@ -159,6 +159,7 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
   "shared": [
@@ -183,6 +184,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-02-25T14:01:40.578Z",
-  "versionCounter": 13
+  "updatedAt": "2026-03-06T20:11:34.841Z",
+  "versionCounter": 18
 }
