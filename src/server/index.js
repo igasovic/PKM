@@ -21,6 +21,9 @@ const {
   startTier1BatchWorker,
   stopTier1BatchWorker,
 } = require('./tier1-enrichment.js');
+const {
+  distillTier2SingleEntrySync,
+} = require('./tier2/service.js');
 const { importEmailMbox } = require('./email-importer.js');
 const {
   getBraintrustLogger,
@@ -276,6 +279,31 @@ async function handleRequest(req, res) {
     } catch (err) {
       logError(err, req);
       return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/distill/sync') {
+    try {
+      requireAdminSecret(req);
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const result = await logger.step(
+        'api.distill.sync',
+        async () => distillTier2SingleEntrySync(body.entry_id),
+        { input: body, output: (out) => out, meta: { route: url.pathname } }
+      );
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      const errorCode = status === 403
+        ? 'forbidden'
+        : status === 404
+          ? 'not_found'
+          : 'bad_request';
+      return json(res, status, { error: errorCode, message: err.message });
     }
   }
 

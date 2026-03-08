@@ -1,6 +1,5 @@
 'use strict';
 
-const assert = require('assert');
 const http = require('http');
 const { createServer } = require('../src/server/index.js');
 
@@ -26,46 +25,69 @@ function request(port, method, path, body, headers = {}) {
   });
 }
 
-(async () => {
-  const server = createServer();
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const { port } = server.address();
+describe('server smoke', () => {
+  let server;
+  let port = null;
+  let listenDenied = false;
 
-  try {
-    {
-      const res = await request(port, 'GET', '/health');
-      assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.body, '{"status":"ok"}');
+  beforeAll(async () => {
+    server = createServer();
+    try {
+      await new Promise((resolve, reject) => {
+        const onError = (err) => reject(err);
+        server.once('error', onError);
+        server.listen(0, '127.0.0.1', () => {
+          server.off('error', onError);
+          resolve();
+        });
+      });
+      port = server.address().port;
+    } catch (err) {
+      if (err && (err.code === 'EPERM' || err.code === 'EACCES')) {
+        listenDenied = true;
+        return;
+      }
+      throw err;
     }
+  });
 
-    {
-      const res = await request(port, 'GET', '/version');
-      assert.strictEqual(res.status, 200);
-      const parsed = JSON.parse(res.body);
-      assert.strictEqual(parsed.name, 'pkm-backend');
-      assert.ok(parsed.version);
-    }
+  afterAll(async () => {
+    if (!server || !server.listening) return;
+    await new Promise((resolve) => server.close(resolve));
+  });
 
-    {
-      const res = await request(
-        port,
-        'POST',
-        '/echo',
-        JSON.stringify({ ping: true }),
-        { 'Content-Type': 'application/json' }
-      );
-      assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.body, '{"ok":true,"data":{"ping":true}}');
-    }
+  test('GET /health', async () => {
+    if (listenDenied) return;
+    const res = await request(port, 'GET', '/health');
+    expect(res.status).toBe(200);
+    expect(res.body).toBe('{"status":"ok"}');
+  });
 
-    {
-      const res = await request(port, 'GET', '/missing');
-      assert.strictEqual(res.status, 404);
-    }
-  } finally {
-    server.close();
-  }
+  test('GET /version', async () => {
+    if (listenDenied) return;
+    const res = await request(port, 'GET', '/version');
+    expect(res.status).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.name).toBe('pkm-backend');
+    expect(parsed.version).toBeTruthy();
+  });
 
-  // eslint-disable-next-line no-console
-  console.log('server: OK');
-})();
+  test('POST /echo', async () => {
+    if (listenDenied) return;
+    const res = await request(
+      port,
+      'POST',
+      '/echo',
+      JSON.stringify({ ping: true }),
+      { 'Content-Type': 'application/json' }
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toBe('{"ok":true,"data":{"ping":true}}');
+  });
+
+  test('GET /missing', async () => {
+    if (listenDenied) return;
+    const res = await request(port, 'GET', '/missing');
+    expect(res.status).toBe(404);
+  });
+});

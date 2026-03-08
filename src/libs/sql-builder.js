@@ -219,6 +219,9 @@ module.exports = {
   buildReadFind,
   buildReadLast,
   buildReadPull,
+  buildTier2CandidateDiscovery,
+  buildTier2SelectedDetailQuery,
+  buildTier2EntryByEntryId,
   buildT1BatchUpsert,
   buildT1BatchItemsInsert,
   buildT1BatchResultsUpsert,
@@ -228,6 +231,7 @@ module.exports = {
   buildT1BatchStatusList,
   buildT1BatchStatusById,
   buildT1BatchItemStatusList,
+  buildT1BatchItemRequests,
   buildInsertPipelineEvent,
   buildGetPipelineEventsByRunId,
   buildGetRecentPipelineRuns,
@@ -345,6 +349,22 @@ function buildT1BatchFind(opts) {
     throw new Error('buildT1BatchFind: batchesTable must be a non-empty string');
   }
   return `SELECT * FROM ${batchesTable} WHERE batch_id = $1 LIMIT 1`;
+}
+
+/**
+ * Build SQL for reading stored request payloads for a batch.
+ * @param {{ itemsTable: string }} opts
+ * @returns {string}
+ */
+function buildT1BatchItemRequests(opts) {
+  const itemsTable = opts && opts.itemsTable;
+  if (!itemsTable || typeof itemsTable !== 'string') {
+    throw new Error('buildT1BatchItemRequests: itemsTable must be a non-empty string');
+  }
+  return `SELECT custom_id, prompt, prompt_mode, title, author, content_type
+FROM ${itemsTable}
+WHERE batch_id = $1
+ORDER BY created_at ASC`;
 }
 
 /**
@@ -1326,6 +1346,106 @@ SELECT
   left(regexp_replace(COALESCE(clean_text, capture_text), '\\s+', ' ', 'g'), ${longN}) AS excerpt_long
 FROM ${entries_table}
 WHERE entry_id = ${bigIntLit(entry_id)}::bigint
+LIMIT 1;
+`.trim();
+}
+
+function buildTier2CandidateDiscovery(opts) {
+  const entries_table = opts && opts.entries_table;
+  if (!entries_table || typeof entries_table !== 'string') {
+    throw new Error('buildTier2CandidateDiscovery: entries_table must be a non-empty string');
+  }
+  const limitRaw = Number(opts && opts.limit);
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.trunc(limitRaw) : 250;
+
+  return `
+SELECT
+  e.id,
+  e.entry_id,
+  e.content_hash,
+  e.intent,
+  e.content_type,
+  e.author,
+  e.topic_primary_confidence,
+  e.topic_secondary_confidence,
+  e.quality_score,
+  e.clean_word_count,
+  e.distill_status,
+  e.distill_created_from_hash,
+  e.created_at,
+  (COALESCE(length(btrim(e.clean_text)), 0) > 0) AS has_usable_clean_text
+FROM ${entries_table} e
+WHERE
+  e.content_type = 'newsletter'
+  AND COALESCE(length(btrim(e.clean_text)), 0) > 0
+  AND COALESCE(e.distill_status, 'pending') <> 'queued'
+  AND (
+    e.content_hash IS NULL
+    OR e.distill_created_from_hash IS NULL
+    OR e.content_hash IS DISTINCT FROM e.distill_created_from_hash
+  )
+ORDER BY e.created_at ASC, e.id ASC
+LIMIT ${limit};
+`.trim();
+}
+
+function buildTier2SelectedDetailQuery(opts) {
+  const entries_table = opts && opts.entries_table;
+  if (!entries_table || typeof entries_table !== 'string') {
+    throw new Error('buildTier2SelectedDetailQuery: entries_table must be a non-empty string');
+  }
+  const ids = Array.isArray(opts && opts.ids) ? opts.ids : [];
+  if (!ids.length) {
+    throw new Error('buildTier2SelectedDetailQuery: ids must be a non-empty array');
+  }
+
+  const valueRows = ids.map((id, index) => `(${lit(id)}::uuid, ${index + 1})`).join(',\n  ');
+  return `
+WITH selected_ids (id, ord) AS (
+  VALUES
+  ${valueRows}
+)
+SELECT
+  e.id,
+  e.entry_id,
+  e.title,
+  e.author,
+  e.content_type,
+  e.clean_text,
+  e.clean_word_count,
+  e.content_hash,
+  e.distill_status,
+  e.distill_created_from_hash,
+  e.distill_metadata,
+  e.created_at
+FROM selected_ids s
+JOIN ${entries_table} e ON e.id = s.id
+ORDER BY s.ord ASC;
+`.trim();
+}
+
+function buildTier2EntryByEntryId(opts) {
+  const entries_table = opts && opts.entries_table;
+  if (!entries_table || typeof entries_table !== 'string') {
+    throw new Error('buildTier2EntryByEntryId: entries_table must be a non-empty string');
+  }
+  const entry_id = opts && opts.entry_id;
+  return `
+SELECT
+  e.id,
+  e.entry_id,
+  e.title,
+  e.author,
+  e.content_type,
+  e.clean_text,
+  e.clean_word_count,
+  e.content_hash,
+  e.distill_status,
+  e.distill_created_from_hash,
+  e.distill_metadata,
+  e.created_at
+FROM ${entries_table} e
+WHERE e.entry_id = ${bigIntLit(entry_id)}::bigint
 LIMIT 1;
 `.trim();
 }

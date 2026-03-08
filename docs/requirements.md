@@ -280,6 +280,17 @@ Primary objective:
   - LiteLLM client must emit full call instrumentation for all LLM/proxy interactions.
   - Non-LLM graph nodes should emit logs only on errors.
 
+## Tier-2 distillation requirements (sync v1)
+- Tier‑2 sync distillation must run through backend API only (`POST /distill/sync`).
+- Sync distillation must target prod schema (`pkm`) only.
+- Sync distillation requires existing row `clean_text`; if absent, request fails.
+- Route selection must be deterministic from `clean_word_count` and `distill.direct_chunk_threshold_words`.
+- Tier‑2 output must validate deterministically before persistence:
+  - required fields: `distill_summary`, `distill_why_it_matters`, `distill_stance`, `distill_version`, `distill_created_from_hash`, `distill_metadata`
+  - optional `distill_excerpt` must be non-empty and grounded in source when present
+- Successful persistence must write artifact fields and `distill_status = completed` together.
+- Failed validation/generation must persist `distill_status = failed` with compact error metadata.
+
 ## Tier-1 batch visibility requirements
 - Backend must expose read-only status APIs for current Tier‑1 batch jobs.
 - Status APIs must report aggregate counts per batch:

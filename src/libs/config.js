@@ -35,6 +35,45 @@ const CONFIG_V1 = {
       verbose_log_path: '/data/t1.log',
     },
   },
+  distill: {
+    max_entries_per_run: 25,
+    candidate_scan_limit: 250,
+    direct_chunk_threshold_words: 5000,
+    chunk_target_words: 1800,
+    chunk_max_words: 2200,
+    chunk_overlap_words: 150,
+    version: 'distill_v1',
+    models: {
+      direct: process.env.T2_MODEL_DIRECT || 't2-direct',
+      chunk_note: process.env.T2_MODEL_CHUNK_NOTE || 't2-chunk-note',
+      synthesis: process.env.T2_MODEL_SYNTHESIS || 't2-synthesis',
+      sync_direct: process.env.T2_MODEL_SYNC_DIRECT || 't2-sync-direct',
+    },
+    retry: {
+      enabled: String(process.env.T2_RETRY_ENABLED || 'true').toLowerCase() !== 'false',
+      max_attempts: (() => {
+        const n = Number(process.env.T2_RETRY_MAX_ATTEMPTS || 2);
+        return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 2;
+      })(),
+      retryable_error_codes: [
+        'network_error',
+        'timeout',
+        'rate_limited',
+        'provider_error',
+        'malformed_output',
+        'worker_error',
+      ],
+      non_retryable_error_codes: [
+        'missing_clean_text',
+        'wrong_content_type',
+        'already_current',
+        'already_queued',
+        'invalid_config',
+        'invalid_route',
+        'validation_contract_mismatch',
+      ],
+    },
+  },
   scoring: {
     ordering: ['score_desc', 'created_at_desc'],
 

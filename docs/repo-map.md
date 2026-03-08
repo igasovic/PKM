@@ -13,6 +13,7 @@ Owns:
 - Business logic
 - DB access layer
 - Logging and telemetry sinks
+- Tier pipeline modules (for example `src/server/tier1/`, `src/server/tier2/`)
 
 Public surface:
 - API endpoints documented in docs/api.md

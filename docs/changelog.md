@@ -1,4 +1,27 @@
 # changelog
+## 2026-03-08 — Tier-2 foundation: sync distillation endpoint + control-plane utilities
+
+### What changed
+- Added Tier‑2 backend modules under `src/server/tier2/`:
+  - control-plane eligibility/scoring/budget/route utilities
+  - deterministic chunking
+  - prompt builders
+  - parsing + validation contract helpers
+  - sync distillation service
+- Added Tier‑2 sync API endpoint:
+  - `POST /distill/sync` (admin-protected)
+- Extended DB/API runtime support for Tier‑2 fields:
+  - added Tier‑2 columns to backend insert/update type map
+  - added DB helpers for Tier‑2 candidate/detail reads and sync persistence
+  - added Tier‑2 SQL builders in `src/libs/sql-builder.js`
+- Expanded shared config with `distill.*` keys and Tier‑2 model/retry settings.
+- Added Jest coverage for Tier‑2 control-plane, chunking, and validation modules.
+- Updated docs:
+  - `docs/api.md`
+  - `docs/database_schema.md`
+  - `docs/env.md`
+  - `docs/requirements.md`
+
 ## 2026-03-06 — Script sunset + Git->n8n operator doc
 
 ### What changed

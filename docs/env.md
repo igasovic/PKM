@@ -264,6 +264,14 @@ Recommended wiring (so **pkm-server never calls OpenAI directly**):
 - `OPENAI_BASE_URL=http://litellm:4000/v1`
 - `OPENAI_API_KEY=${LITELLM_MASTER_KEY}`
 - `T1_DEFAULT_MODEL=t1-default`
+- Tier-2 model routes (recommended):
+  - `T2_MODEL_DIRECT=t2-direct`
+  - `T2_MODEL_CHUNK_NOTE=t2-chunk-note`
+  - `T2_MODEL_SYNTHESIS=t2-synthesis`
+  - `T2_MODEL_SYNC_DIRECT=t2-sync-direct`
+- Tier-2 retry controls:
+  - `T2_RETRY_ENABLED=true`
+  - `T2_RETRY_MAX_ATTEMPTS=2`
 
 **Notion ingest**
 - `NOTION_API_TOKEN=<notion integration token>` (required for server-side Notion block collection in `POST /normalize/notion` when only page id is provided)

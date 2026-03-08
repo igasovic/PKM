@@ -1,4 +1,4 @@
-# PKM Database Schema v2.4 (Observed + Required Runtime Tables)
+# PKM Database Schema v2.5 (Observed + Required Runtime Tables)
 
 **Observed on:** 2026-02-17 (from `psql` introspection against database `pkm`).
 
@@ -208,11 +208,21 @@ Primary storage for captured items (email, telegram, etc.) and Tier-1 enrichment
 | `idempotency_policy_key` | text | yes |  | FK to policy key |
 | `idempotency_key_primary` | text | yes |  | durable dedupe key |
 | `idempotency_key_secondary` | text | yes |  | fallback dedupe key |
+| `distill_summary` | text | yes |  | Tier-2 artifact |
+| `distill_excerpt` | text | yes |  | Tier-2 optional grounded excerpt |
+| `distill_version` | text | yes |  | Tier-2 prompt/schema contract version |
+| `distill_created_from_hash` | text | yes |  | source `content_hash` used to build current artifact |
+| `distill_why_it_matters` | text | yes |  | Tier-2 relevance rationale |
+| `distill_stance` | text | yes |  | Tier-2 stance enum |
+| `distill_status` | text | no | `'pending'` | Tier-2 lifecycle state |
+| `distill_metadata` | jsonb | yes |  | Tier-2 operational metadata |
 
 **Constraints**
 - PK: `(id)`
 - Unique: `(entry_id)`
 - FK: `idempotency_policy_key` → `idempotency_policies(policy_key)` with `ON DELETE SET NULL`
+- CHECK (recommended): `distill_status` in `{pending, queued, completed, failed, skipped, not_eligible, stale}`
+- CHECK (recommended): `distill_stance` in `{descriptive, analytical, argumentative, speculative, instructional, narrative, other}`
 
 **Indexes (prod)**
 - PK: `entries_pkey` on `(id)`
@@ -229,6 +239,9 @@ Primary storage for captured items (email, telegram, etc.) and Tier-1 enrichment
 - `entries_quality_good_created_at_idx` partial on `(created_at DESC)` WHERE `boilerplate_heavy IS NOT TRUE AND low_signal IS NOT TRUE`
 - `pkm_entries_idem_primary_uidx` UNIQUE partial on `(idempotency_policy_key, idempotency_key_primary)`
 - `pkm_entries_idem_secondary_uidx` UNIQUE partial on `(idempotency_policy_key, idempotency_key_secondary)`
+- (recommended) `entries_distill_status_created_at_idx` on `(distill_status, created_at DESC)`
+- (recommended) `entries_distill_created_from_hash_idx` on `(distill_created_from_hash)`
+- (recommended) partial candidate index for Tier‑2 discovery on newsletter rows with usable clean text
 
 **Indexes (test)**
 Same intent as prod, but names differ slightly:

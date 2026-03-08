@@ -48,6 +48,10 @@ Response:
 {
   "version": "v1",
   "db": { "is_test_mode": false, "schema_prod": "pkm", "schema_test": "pkm_test" },
+  "distill": {
+    "max_entries_per_run": 25,
+    "direct_chunk_threshold_words": 5000
+  },
   "scoring": {},
   "qualityThresholds": {},
   "metadataPaths": {}
@@ -509,6 +513,52 @@ Response:
 }
 ```
 
+## Tier-2 Distillation
+
+### `POST /distill/sync`
+Runs Tier‑2 distillation synchronously for one existing entry in production schema (`pkm`) and persists the validated artifact on success.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Body:
+```json
+{
+  "entry_id": 12345
+}
+```
+
+Notes:
+- This endpoint is sync-only and does not enqueue async batch work.
+- It requires existing usable `clean_text` on the target row.
+- It applies Tier‑2 route selection (`direct` vs `chunked`) from backend config.
+- On validation failure, response returns `status = "failed"` and artifact fields are `null`.
+
+Response (success):
+```json
+{
+  "entry_id": 12345,
+  "status": "completed",
+  "summary": "One-paragraph Tier-2 summary",
+  "excerpt": "Optional grounded excerpt",
+  "why_it_matters": "Why this should matter later.",
+  "stance": "analytical"
+}
+```
+
+Response (validation or generation failure):
+```json
+{
+  "entry_id": 12345,
+  "status": "failed",
+  "summary": null,
+  "excerpt": null,
+  "why_it_matters": null,
+  "stance": null,
+  "error_code": "excerpt_not_grounded"
+}
+```
+
 ## Backlog Import
 
 ### `POST /import/email/mbox`
@@ -911,6 +961,12 @@ Optional:
 - `OPENAI_BASE_URL` (recommended: `http://litellm:4000/v1`)
 - `T1_DEFAULT_MODEL` (recommended: `t1-default`)
 - `T1_BATCH_MODEL` (recommended: `t1-batch`)
+- `T2_MODEL_DIRECT` (recommended: `t2-direct`)
+- `T2_MODEL_CHUNK_NOTE` (recommended: `t2-chunk-note`)
+- `T2_MODEL_SYNTHESIS` (recommended: `t2-synthesis`)
+- `T2_MODEL_SYNC_DIRECT` (recommended: `t2-sync-direct`)
+- `T2_RETRY_ENABLED` (`true` default)
+- `T2_RETRY_MAX_ATTEMPTS` (`2` default)
 
 LLM auth:
 - `LITELLM_MASTER_KEY` (required; used as Bearer token for LiteLLM)

@@ -217,10 +217,7 @@ async function getBatchItemRequests(schema, batchId) {
   if (!id) throw new Error('batch_id is required');
   const itemsTable = tableName(schema, 't1_batch_items');
   try {
-    const sql = `SELECT custom_id, prompt, prompt_mode, title, author, content_type
-FROM ${itemsTable}
-WHERE batch_id = $1
-ORDER BY created_at ASC`;
+    const sql = sb.buildT1BatchItemRequests({ itemsTable });
     const res = await runQuery(
       't1_batch_items_get_requests',
       { schema, table: itemsTable, batch_id: id },
