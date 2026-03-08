@@ -52,6 +52,7 @@ Hard rules:
 ### src/n8n/ (n8n workflow code)  [Target location]
 Owns:
 - Code used by n8n Code nodes (externalized JS)
+- Workflow JSON under `src/n8n/workflows`
 
 Hard rules:
 - No direct DB access
@@ -78,13 +79,20 @@ Rules:
 
 ---
 
-## workflows/ (n8n workflow JSON)
+## scripts/n8n/ (active n8n sync scripts)
 Owns:
-- Workflow wiring, triggers, node configuration
+- Active n8n sync and cutover scripts
 
 Rules:
-- Wiring changes: edit in n8n UI → export JSON → commit
-- Avoid embedding large business logic in workflow JSON Code nodes
+- Use `scripts/n8n/sync_workflows.sh` as the orchestrator
+- Keep legacy/retired helpers out of this folder
+
+## scripts/archive/n8n/ (retired scripts)
+Owns:
+- Deprecated n8n scripts kept only for history/reference
+
+Rules:
+- Do not use these scripts for normal operations
 
 ---
 

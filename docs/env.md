@@ -231,6 +231,9 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 - Mount: repo → `/data` (read-only)
 - Canonical docs (in this project):
   - `n8n_sync.md` (canonical n8n<->Git sync flow)
+- Local shell env for n8n API automation (recommended in `~/.zshrc`):
+  - `N8N_API_BASE_URL` (typically `http://127.0.0.1:5678` on Pi host)
+  - `N8N_API_KEY` (user-scoped API key from n8n)
 
 ---
 

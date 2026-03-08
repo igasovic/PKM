@@ -68,6 +68,8 @@ export N8N_API_BASE_URL='http://127.0.0.1:5678'
 export N8N_API_KEY='...'
 ```
 
+Persist once in `~/.zshrc` (recommended) so `--mode push/full` works without re-exporting each shell.
+
 Quick auth check:
 ```bash
 curl -sS -o /dev/null -w "HTTP %{http_code}\n" \
