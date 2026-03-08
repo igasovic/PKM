@@ -14,6 +14,9 @@
   - added Tier‑2 columns to backend insert/update type map
   - added DB helpers for Tier‑2 candidate/detail reads and sync persistence
   - added Tier‑2 SQL builders in `src/libs/sql-builder.js`
+- Added Tier‑2 stale-detection maintenance cycle in backend startup:
+  - marks `distill_status = stale` for outdated completed artifacts in `pkm.entries`
+  - controlled by `T2_STALE_MARK_ENABLED` and `T2_STALE_MARK_INTERVAL_MS`
 - Expanded shared config with `distill.*` keys and Tier‑2 model/retry settings.
 - Added Jest coverage for Tier‑2 control-plane, chunking, and validation modules.
 - Updated docs:

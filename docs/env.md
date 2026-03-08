@@ -272,6 +272,9 @@ Recommended wiring (so **pkm-server never calls OpenAI directly**):
 - Tier-2 retry controls:
   - `T2_RETRY_ENABLED=true`
   - `T2_RETRY_MAX_ATTEMPTS=2`
+- Tier-2 stale detection controls:
+  - `T2_STALE_MARK_ENABLED=true` (default)
+  - `T2_STALE_MARK_INTERVAL_MS=86400000` (default 24h)
 
 **Notion ingest**
 - `NOTION_API_TOKEN=<notion integration token>` (required for server-side Notion block collection in `POST /normalize/notion` when only page id is provided)

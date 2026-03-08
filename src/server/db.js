@@ -1652,6 +1652,23 @@ async function prunePipelineEvents(days) {
   };
 }
 
+async function markTier2StaleInProd() {
+  const entriesTable = getEntriesTableBySchema('pkm');
+  const sql = sb.buildTier2MarkStale({ entriesTable });
+  let res;
+  try {
+    res = await exec(sql, {
+      op: 'tier2_mark_stale',
+      table: entriesTable,
+    });
+  } catch (err) {
+    throw wrapTier2EntriesError(err, entriesTable);
+  }
+  return {
+    updated: Number(res.rowCount || 0),
+  };
+}
+
 module.exports = {
   getPool,
   insert,
@@ -1672,6 +1689,7 @@ module.exports = {
   getPipelineRun,
   getLastPipelineRun,
   prunePipelineEvents,
+  markTier2StaleInProd,
   getTier2Candidates,
   getTier2DetailsByIds,
   getTier2SyncEntryByEntryId,

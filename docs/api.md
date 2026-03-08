@@ -967,6 +967,8 @@ Optional:
 - `T2_MODEL_SYNC_DIRECT` (recommended: `t2-sync-direct`)
 - `T2_RETRY_ENABLED` (`true` default)
 - `T2_RETRY_MAX_ATTEMPTS` (`2` default)
+- `T2_STALE_MARK_ENABLED` (`true` default)
+- `T2_STALE_MARK_INTERVAL_MS` (`86400000` default)
 
 LLM auth:
 - `LITELLM_MASTER_KEY` (required; used as Bearer token for LiteLLM)

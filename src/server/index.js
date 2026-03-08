@@ -573,6 +573,28 @@ function start() {
   pruneOnce();
   const pruneTimer = setInterval(pruneOnce, 24 * 60 * 60 * 1000);
   if (typeof pruneTimer.unref === 'function') pruneTimer.unref();
+
+  const staleEnabled = String(process.env.T2_STALE_MARK_ENABLED || 'true').toLowerCase() !== 'false';
+  const staleIntervalRaw = Number(process.env.T2_STALE_MARK_INTERVAL_MS || 24 * 60 * 60 * 1000);
+  const staleIntervalMs = Number.isFinite(staleIntervalRaw) && staleIntervalRaw >= 60_000
+    ? Math.trunc(staleIntervalRaw)
+    : 24 * 60 * 60 * 1000;
+  const runStaleMark = async () => {
+    if (!staleEnabled) return;
+    try {
+      await logger.step(
+        'maintenance.tier2.stale_mark',
+        async () => db.markTier2StaleInProd(),
+        { output: (out) => out, meta: { schedule: 'tier2_stale_mark' } }
+      );
+    } catch (_err) {
+      // stale mark is best-effort only
+    }
+  };
+  runStaleMark();
+  const staleTimer = setInterval(runStaleMark, staleIntervalMs);
+  if (typeof staleTimer.unref === 'function') staleTimer.unref();
+
   const server = createServer();
   server.listen(port, '0.0.0.0', () => {
     // eslint-disable-next-line no-console
@@ -581,6 +603,7 @@ function start() {
   const shutdown = () => {
     stopTier1BatchWorker();
     clearInterval(pruneTimer);
+    clearInterval(staleTimer);
     server.close(() => process.exit(0));
   };
   process.on('SIGINT', shutdown);

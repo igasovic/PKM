@@ -290,6 +290,9 @@ Primary objective:
   - optional `distill_excerpt` must be non-empty and grounded in source when present
 - Successful persistence must write artifact fields and `distill_status = completed` together.
 - Failed validation/generation must persist `distill_status = failed` with compact error metadata.
+- Tier‑2 stale detection must run as backend maintenance:
+  - mark `completed -> stale` when `content_hash IS DISTINCT FROM distill_created_from_hash`
+  - update status only (keep existing distill artifact fields)
 
 ## Tier-1 batch visibility requirements
 - Backend must expose read-only status APIs for current Tier‑1 batch jobs.

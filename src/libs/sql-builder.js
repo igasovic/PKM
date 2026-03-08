@@ -237,6 +237,7 @@ module.exports = {
   buildGetRecentPipelineRuns,
   buildGetLastPipelineRunId,
   buildPrunePipelineEvents,
+  buildTier2MarkStale,
 };
 
 /**
@@ -644,6 +645,21 @@ function buildPrunePipelineEvents(opts) {
   }
   return `DELETE FROM ${eventsTable}
 WHERE ts < now() - ($1::int * interval '1 day')`;
+}
+
+function buildTier2MarkStale(opts) {
+  const entriesTable = opts && opts.entriesTable;
+  if (!entriesTable || typeof entriesTable !== 'string') {
+    throw new Error('buildTier2MarkStale: entriesTable must be a non-empty string');
+  }
+  return `UPDATE ${entriesTable}
+SET
+  distill_status = 'stale',
+  distill_metadata = COALESCE(distill_metadata, '{}'::jsonb) || jsonb_build_object('stale_marked_at', now())
+WHERE
+  distill_status = 'completed'
+  AND content_hash IS DISTINCT FROM distill_created_from_hash
+RETURNING id`;
 }
 
 /**
