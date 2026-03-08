@@ -13,6 +13,38 @@ Before proposing changes or writing code, read:
 For any n8n-related change (workflows, code nodes, sync scripts), reading
 `docs/n8n_sync.md` and `docs/n8n_node_style_guide.md` is mandatory.
 
+
+## 0a) PRDs (required process)
+
+- PRDs live under `docs/PRD/`.
+- Use an existing PRD in `docs/PRD/` as the starting point when one already covers the surface you are changing.
+- New major functionality:
+  - create a new PRD file
+- Minor functionality:
+  - update the existing PRD that already owns that surface
+  - do not create a new PRD unless the change clearly establishes a new major surface area
+- Backfilling missing PRDs after the fact:
+  - create a retrospective PRD in `docs/PRD/`
+  - capture the currently known behavior and boundaries first
+  - leave unresolved details in a `TBD` section for later reconciliation
+
+### Recommended PRD structure
+- Title + baseline / status
+- Control plane / execution flow
+- Data model / schema changes
+- Validation + state transitions
+- Config surface
+- API / operational surfaces
+- Migration / backfill plan
+- Work packages
+- `TBD`
+
+### PRD update rules
+- If a change affects an existing PRD-owned surface, update that PRD in the same change.
+- If API / schema / env / requirements contracts change, update the corresponding docs in the same change set.
+- Work packages should reference specific PRD sections.
+- Use the current Distill PRD as the style / depth starting point for future PRDs.
+
 ## 1) System boundaries (hard rules)
 
 ### Integration boundary
