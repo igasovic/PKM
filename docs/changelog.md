@@ -1,4 +1,17 @@
 # changelog
+## 2026-03-09 — Tier-2 sync failure no longer downgrades current completed artifacts
+
+### What changed
+- Updated `src/server/tier2/service.js` failure handling:
+  - generation/validation failures now preserve an existing current completed artifact
+    (`distill_status=completed` + matching `distill_created_from_hash`)
+  - in that path, failure response includes `preserved_current_artifact: true`
+  - no `failed` status write is persisted for preserved-current rows
+- Added service tests in `test/server/tier2.service.test.js` for:
+  - generation failure with preserved current artifact
+  - validation failure with preserved current artifact
+- Updated `docs/api.md` and `docs/requirements.md` to document this preservation behavior.
+
 ## 2026-03-09 — Tier-2 batch dispatch now marks selected entries queued
 
 ### What changed

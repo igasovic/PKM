@@ -304,6 +304,7 @@ Primary objective:
 - Successful persistence must be guarded by currentness (`content_hash` must still match `distill_created_from_hash` at write time).
 - On currentness mismatch, Tier‑2 sync must return `error_code = currentness_mismatch` and must not overwrite existing distill state.
 - Failed validation/generation must persist `distill_status = failed` with compact error metadata.
+- Exception: when a row already has a current completed artifact, sync failures must not downgrade that row to `failed`.
 - Tier‑2 stale detection must run as backend maintenance:
   - mark `completed -> stale` when `content_hash IS DISTINCT FROM distill_created_from_hash`
   - update status only (keep existing distill artifact fields)

@@ -327,6 +327,129 @@ describe('tier2 sync service', () => {
     }));
   });
 
+  test('preserves current completed artifact on generation failure', async () => {
+    const sendMessage = jest.fn().mockRejectedValue(new Error('litellm timeout'));
+    const persistTier2SyncSuccess = jest.fn().mockResolvedValue({ rowCount: 0 });
+    const persistTier2SyncFailure = jest.fn().mockResolvedValue({ rowCount: 1 });
+
+    jest.doMock('../../src/libs/config.js', () => ({
+      getConfig: () => ({
+        distill: {
+          direct_chunk_threshold_words: 5000,
+          models: {
+            sync_direct: 't2-sync-direct',
+          },
+        },
+      }),
+    }));
+
+    jest.doMock('../../src/server/db.js', () => ({
+      getTier2SyncEntryByEntryId: async () => ({
+        entry_id: 706,
+        title: 'Current completed artifact',
+        author: 'PKM',
+        content_type: 'newsletter',
+        clean_text: 'alpha insight appears in this clean source text for grounding checks.',
+        clean_word_count: 12,
+        content_hash: 'hash_completed_1',
+        distill_status: 'completed',
+        distill_created_from_hash: 'hash_completed_1',
+      }),
+      persistTier2SyncSuccess,
+      persistTier2SyncFailure,
+    }));
+
+    jest.doMock('../../src/server/litellm-client.js', () => ({
+      LiteLLMClient: jest.fn().mockImplementation(() => ({
+        sendMessage,
+      })),
+    }));
+
+    jest.doMock('../../src/server/logger/index.js', () => ({
+      getLogger: () => createLoggerStub(),
+    }));
+
+    const { distillTier2SingleEntrySync } = require('../../src/server/tier2/service.js');
+    const out = await distillTier2SingleEntrySync(706);
+
+    expect(out).toEqual({
+      entry_id: 706,
+      status: 'failed',
+      summary: null,
+      excerpt: null,
+      why_it_matters: null,
+      stance: null,
+      error_code: 'generation_error',
+      message: 'litellm timeout',
+      preserved_current_artifact: true,
+    });
+    expect(persistTier2SyncFailure).not.toHaveBeenCalled();
+    expect(persistTier2SyncSuccess).not.toHaveBeenCalled();
+  });
+
+  test('preserves current completed artifact on validation failure', async () => {
+    const sendMessage = jest.fn().mockResolvedValue({
+      text: buildFinalOutput({
+        distill_excerpt: 'ungrounded excerpt phrase',
+      }),
+    });
+    const persistTier2SyncSuccess = jest.fn().mockResolvedValue({ rowCount: 0 });
+    const persistTier2SyncFailure = jest.fn().mockResolvedValue({ rowCount: 1 });
+
+    jest.doMock('../../src/libs/config.js', () => ({
+      getConfig: () => ({
+        distill: {
+          direct_chunk_threshold_words: 5000,
+          models: {
+            sync_direct: 't2-sync-direct',
+          },
+        },
+      }),
+    }));
+
+    jest.doMock('../../src/server/db.js', () => ({
+      getTier2SyncEntryByEntryId: async () => ({
+        entry_id: 707,
+        title: 'Current completed artifact',
+        author: 'PKM',
+        content_type: 'newsletter',
+        clean_text: 'alpha insight appears in this clean source text for grounding checks.',
+        clean_word_count: 12,
+        content_hash: 'hash_completed_2',
+        distill_status: 'completed',
+        distill_created_from_hash: 'hash_completed_2',
+      }),
+      persistTier2SyncSuccess,
+      persistTier2SyncFailure,
+    }));
+
+    jest.doMock('../../src/server/litellm-client.js', () => ({
+      LiteLLMClient: jest.fn().mockImplementation(() => ({
+        sendMessage,
+      })),
+    }));
+
+    jest.doMock('../../src/server/logger/index.js', () => ({
+      getLogger: () => createLoggerStub(),
+    }));
+
+    const { distillTier2SingleEntrySync } = require('../../src/server/tier2/service.js');
+    const out = await distillTier2SingleEntrySync(707);
+
+    expect(out).toEqual({
+      entry_id: 707,
+      status: 'failed',
+      summary: null,
+      excerpt: null,
+      why_it_matters: null,
+      stance: null,
+      error_code: 'excerpt_not_grounded',
+      preserved_current_artifact: true,
+    });
+    expect(persistTier2SyncFailure).not.toHaveBeenCalled();
+    expect(persistTier2SyncSuccess).not.toHaveBeenCalled();
+  });
+
   test('currentness mismatch returns failed status without overriding row', async () => {
     const sendMessage = jest.fn().mockResolvedValue({
       text: buildFinalOutput(),

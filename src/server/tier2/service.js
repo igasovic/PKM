@@ -59,6 +59,13 @@ function parseRetryCount(value) {
   return Math.trunc(n);
 }
 
+function hasCurrentCompletedArtifact(row) {
+  const status = String((row && row.distill_status) || '').trim().toLowerCase();
+  const currentHash = String((row && row.content_hash) || '').trim();
+  const createdFromHash = String((row && row.distill_created_from_hash) || '').trim();
+  return status === 'completed' && !!currentHash && currentHash === createdFromHash;
+}
+
 async function requestStructuredOutput({
   requestType,
   systemPrompt,
@@ -308,8 +315,11 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
       ? await generateChunkedArtifact(entry, logger)
       : await generateDirectArtifact(entry, logger);
   } catch (err) {
-    await persistGenerationFailure(entryId, err, generated, retryCount, logger);
-    return {
+    const preserveCurrent = hasCurrentCompletedArtifact(entry);
+    if (!preserveCurrent) {
+      await persistGenerationFailure(entryId, err, generated, retryCount, logger);
+    }
+    const failed = {
       entry_id: entryId,
       status: 'failed',
       summary: null,
@@ -319,6 +329,8 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
       error_code: 'generation_error',
       message: err && err.message ? err.message : null,
     };
+    if (preserveCurrent) failed.preserved_current_artifact = true;
+    return failed;
   }
 
   const distillConfig = getDistillConfig();
@@ -356,8 +368,11 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
         at: new Date().toISOString(),
       },
     };
-    await persistValidationFailure(entryId, validation, generated, retryCount, logger);
-    return {
+    const preserveCurrent = hasCurrentCompletedArtifact(entry);
+    if (!preserveCurrent) {
+      await persistValidationFailure(entryId, validation, generated, retryCount, logger);
+    }
+    const failed = {
       entry_id: entryId,
       status: 'failed',
       summary: null,
@@ -366,6 +381,8 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
       stance: null,
       error_code: validation.error_code,
     };
+    if (preserveCurrent) failed.preserved_current_artifact = true;
+    return failed;
   }
 
   const persistResult = await logger.step(
