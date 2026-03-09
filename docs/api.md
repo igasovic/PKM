@@ -977,6 +977,13 @@ Rules:
 
 ## Read
 
+Read hit rows (where `is_meta=false`) include retrieval/context fields used by shared context-pack rendering:
+- `keywords`
+- `distill_summary`
+- `distill_why_it_matters`
+- `gist`
+- `excerpt`
+
 ### `POST /db/read/last`
 Builds and executes the `/last` query.
 
@@ -1040,7 +1047,15 @@ Body:
 All `/db/*` endpoints return **only the rows** from SQL:
 ```json
 [
-  { "id": "...", "entry_id": 123 }
+  {
+    "id": "...",
+    "entry_id": 123,
+    "keywords": ["k1", "k2"],
+    "distill_summary": "Primary Tier-2 summary when present.",
+    "distill_why_it_matters": "Why this should matter later.",
+    "gist": "Tier-1 gist fallback.",
+    "excerpt": "Retrieval excerpt/snippet."
+  }
 ]
 ```
 

@@ -10,6 +10,9 @@
 - Extended read SQL projections (`/db/read/continue`, `/db/read/find`, `/db/read/last`, `/db/read/pull`) to include `distill_why_it_matters` in row payloads.
 - Added server-side tests for context-pack priority behavior:
   - `test/server/context-pack-builder.test.js`
+- Added server-side SQL projection tests for read endpoints:
+  - `test/server/read-sql-distill-projection.test.js`
+- Updated `docs/api.md` read section to document `distill_summary` / `distill_why_it_matters` hit-row fields.
 - Updated requirements + PRD contracts to document summary-first retrieval and early-row `why_it_matters` inclusion.
 
 ## 2026-03-09 — Tier-2 batch retry policy + LLM metadata enrichment
