@@ -508,4 +508,54 @@ describe('tier2 sync service', () => {
     expect(persistTier2SyncSuccess).toHaveBeenCalledTimes(1);
     expect(persistTier2SyncFailure).not.toHaveBeenCalled();
   });
+
+  test('sync succeeds for rows without content_hash when persist accepts null currentness', async () => {
+    const sendMessage = jest.fn().mockResolvedValue({
+      text: buildFinalOutput(),
+    });
+    const persistTier2SyncSuccess = jest.fn().mockResolvedValue({ rowCount: 1 });
+    const persistTier2SyncFailure = jest.fn().mockResolvedValue({ rowCount: 0 });
+
+    jest.doMock('../../src/libs/config.js', () => ({
+      getConfig: () => ({
+        distill: {
+          direct_chunk_threshold_words: 5000,
+          models: {
+            sync_direct: 't2-sync-direct',
+          },
+        },
+      }),
+    }));
+
+    jest.doMock('../../src/server/db.js', () => ({
+      getTier2SyncEntryByEntryId: async () => ({
+        entry_id: 708,
+        title: 'Null hash sample',
+        author: 'PKM',
+        content_type: 'newsletter',
+        clean_text: 'alpha insight appears in this clean source text for grounding checks.',
+        clean_word_count: 12,
+        content_hash: null,
+      }),
+      persistTier2SyncSuccess,
+      persistTier2SyncFailure,
+    }));
+
+    jest.doMock('../../src/server/litellm-client.js', () => ({
+      LiteLLMClient: jest.fn().mockImplementation(() => ({
+        sendMessage,
+      })),
+    }));
+
+    jest.doMock('../../src/server/logger/index.js', () => ({
+      getLogger: () => createLoggerStub(),
+    }));
+
+    const { distillTier2SingleEntrySync } = require('../../src/server/tier2/service.js');
+    const out = await distillTier2SingleEntrySync(708);
+
+    expect(out.status).toBe('completed');
+    expect(persistTier2SyncSuccess).toHaveBeenCalledTimes(1);
+    expect(persistTier2SyncFailure).not.toHaveBeenCalled();
+  });
 });

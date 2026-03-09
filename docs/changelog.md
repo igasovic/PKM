@@ -1,4 +1,12 @@
 # changelog
+## 2026-03-09 — Fix Tier-2 sync currentness guard for null/empty source hashes
+
+### What changed
+- Fixed `persistTier2SyncSuccess(...)` currentness guard in `src/server/db.js`:
+  - expected source hash now normalizes empty/whitespace values to `NULL` before guard comparison.
+  - prevents false `currentness_mismatch` responses when rows have `content_hash IS NULL`.
+- Added Tier‑2 service regression coverage in `test/server/tier2.service.test.js` for null-`content_hash` sync success path.
+
 ## 2026-03-09 — Tier-2 sync failure no longer downgrades current completed artifacts
 
 ### What changed
