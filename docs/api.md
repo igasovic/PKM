@@ -471,6 +471,7 @@ Response:
 
 Notes:
 - For `stage=t2`, failed runs may include `metadata.error` with a compact run-level failure summary.
+- For `stage=t2` dry-run jobs, `counts.pending` is `0` and planned work size is reported as `metadata.will_process_count`.
 
 ### `GET /status/batch/:batch_id`
 Returns one batch by id for a stage (`t1` or `t2`), with aggregate counters and optional item-level statuses.

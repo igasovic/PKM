@@ -55,7 +55,7 @@ describe('tier2 status surfaces', () => {
     expect(detail.items[0]).toHaveProperty('entry_id');
   });
 
-  test('dry-run status stores pending planned items', async () => {
+  test('dry-run status stores planned count in metadata', async () => {
     jest.doMock('../../src/server/tier2/planner.js', () => ({
       runTier2ControlPlanePlan: async () => ({
         candidate_count: 2,
@@ -78,7 +78,8 @@ describe('tier2 status surfaces', () => {
     expect(run.mode).toBe('dry_run');
     const detail = await t2.getTier2BatchStatus(run.batch_id, { include_items: true });
     expect(detail.status).toBe('dry_run');
-    expect(detail.counts.pending).toBe(1);
+    expect(detail.counts.pending).toBe(0);
+    expect(detail.metadata.will_process_count).toBe(1);
     expect(detail.items[0].status).toBe('planned');
   });
 

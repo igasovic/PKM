@@ -1,4 +1,13 @@
 # changelog
+## 2026-03-09 — Tier-2 dry-run status counts clarification
+
+### What changed
+- Updated Tier‑2 batch status recording so dry-run batches report:
+  - `counts.pending = 0`
+  - `metadata.will_process_count = <planned item count>`
+- Added/updated test coverage in `test/server/tier2.status.test.js` for the dry-run status contract.
+- Updated `docs/api.md` notes for `GET /status/batch/:batch_id` to document dry-run count semantics for `stage=t2`.
+
 ## 2026-03-09 — Read context-pack Tier-2 summary + why-it-matters integration
 
 ### What changed
