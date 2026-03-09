@@ -259,6 +259,9 @@ function createTier2BatchRunner(deps) {
             error_code: errorCode,
           };
           if (out && out.message) final.message = out.message;
+          if (out && out.preserved_current_artifact === true) {
+            final.preserved_current_artifact = true;
+          }
           continue;
         }
 

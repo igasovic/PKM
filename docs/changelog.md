@@ -1,4 +1,13 @@
 # changelog
+## 2026-03-09 — Tier-2 run results now propagate preserved-current failure marker
+
+### What changed
+- Updated `src/server/tier2-enrichment.js` result shaping to preserve
+  `preserved_current_artifact` on failed per-entry run results.
+- Added runner-level coverage in `test/server/tier2.enrichment.test.js`.
+- Added HTTP contract coverage for `/distill/run` failed result passthrough in `test/server/tier2.api-contract.test.js`.
+- Updated `docs/api.md` run response example to include optional `message` and `preserved_current_artifact` on failed results.
+
 ## 2026-03-09 — Tier-2 retry hardening for deterministic failures
 
 ### What changed

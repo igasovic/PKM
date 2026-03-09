@@ -682,7 +682,13 @@ Response:
   "failed_count": 4,
   "results": [
     { "entry_id": 12345, "status": "completed", "error_code": null },
-    { "entry_id": 12346, "status": "failed", "error_code": "generation_error" }
+    {
+      "entry_id": 12346,
+      "status": "failed",
+      "error_code": "generation_error",
+      "message": "Optional failure message",
+      "preserved_current_artifact": true
+    }
   ]
 }
 ```

@@ -382,6 +382,57 @@ describe('tier2 API contract', () => {
     expect(statusBody.metadata.error).toContain('planner unavailable');
   });
 
+  test('POST /distill/run passes preserved_current_artifact in failed results', async () => {
+    jest.doMock('../../src/server/tier2/planner.js', () => ({
+      runTier2ControlPlanePlan: async () => ({
+        target_schema: 'pkm',
+        candidate_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 706 }],
+      }),
+    }));
+
+    jest.doMock('../../src/server/tier2/service.js', () => ({
+      distillTier2SingleEntrySync: async (entryId) => ({
+        entry_id: Number(entryId),
+        status: 'failed',
+        error_code: 'generation_error',
+        message: 'litellm timeout',
+        preserved_current_artifact: true,
+      }),
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/run',
+      JSON.stringify({ dry_run: false, max_sync_items: 1 }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.mode).toBe('run');
+    expect(parsed.failed_count).toBe(1);
+    expect(parsed.results).toEqual([
+      {
+        entry_id: 706,
+        status: 'failed',
+        error_code: 'generation_error',
+        message: 'litellm timeout',
+        preserved_current_artifact: true,
+      },
+    ]);
+  });
+
   test('POST /distill/plan requires admin secret', async () => {
     await startServerWithMocks();
     if (listenDenied) return;

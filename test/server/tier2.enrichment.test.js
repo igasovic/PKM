@@ -301,6 +301,51 @@ describe('tier2 enrichment batch runner', () => {
     });
   });
 
+  test('preserves current-artifact marker in failed batch results', async () => {
+    const syncCalls = [];
+    const runner = createTier2BatchRunner({
+      runPlan: async () => ({
+        candidate_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 451 }],
+      }),
+      distillOne: async (entryId) => {
+        syncCalls.push(entryId);
+        return {
+          entry_id: entryId,
+          status: 'failed',
+          error_code: 'generation_error',
+          preserved_current_artifact: true,
+        };
+      },
+      getConfig: () => ({
+        distill: {
+          retry: {
+            enabled: true,
+            max_attempts: 3,
+            retryable_error_codes: ['generation_error'],
+            non_retryable_error_codes: ['generation_error'],
+          },
+        },
+      }),
+      getLogger: () => ({
+        child() { return this; },
+        async step(_name, fn) { return fn(); },
+      }),
+    });
+
+    const out = await runner.runTier2BatchCycle({ max_sync_items: 1 });
+    expect(syncCalls).toEqual([451]);
+    expect(out.results[0]).toEqual({
+      entry_id: 451,
+      status: 'failed',
+      error_code: 'generation_error',
+      preserved_current_artifact: true,
+    });
+  });
+
   test('stops retrying when max_attempts is reached', async () => {
     const syncCalls = [];
     const runner = createTier2BatchRunner({
