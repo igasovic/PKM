@@ -269,6 +269,13 @@
             "node": "PKM Distill Sync",
             "type": "main"
           }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Distill Run",
+            "type": "main"
+          }
         ]
       ]
     },
@@ -306,6 +313,28 @@
       ]
     },
     "Format Distill Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send MarkdownV2 Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Distill Run": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Distill Run Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Distill Run Message": {
       "main": [
         [
           {
@@ -693,6 +722,31 @@
                 }
               },
               "outputKey": "distill",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "9f1acfb2-2bde-4235-9f7f-4a0decd68578",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "distillrun"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "distillrun",
               "renameOutput": true
             }
           ]
@@ -1174,6 +1228,50 @@
       "position": [
         1792,
         576
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "6ad4ef14-ff4b-4332-8e68-a13a6ed8c58e",
+      "name": "PKM Distill Run",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "your-long-random-secretdfdsfdsfdsfsdf"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => ({ candidate_limit: $json.candidate_limit, max_sync_items: $json.max_sync_items, persist_eligibility: $json.persist_eligibility, dry_run: $json.dry_run }))()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/distill/run"
+      },
+      "position": [
+        1568,
+        672
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "b9f00fcd-a5ed-462f-a8d0-3e49c20eca11",
+      "name": "Format Distill Run Message",
+      "parameters": {
+        "jsCode": "const r = $json || {};\\n\\nconst mode = String(r.mode || \"run\").toLowerCase();\\nconst d = r.decision_counts || {};\\n\\nconst lines = [];\\nlines.push(`*Tier\\\\_2 run ${mode === \"dry_run\" ? \"\\\\(dry\\\\ run\\\\)\" : \"\"}*`);\\nlines.push(\"\");\\nlines.push(`*Candidates:* ${r.candidate_count ?? 0}`);\\nlines.push(`*Planned:* ${r.planned_selected_count ?? 0}`);\\nif (mode === \"dry_run\") {\\n  lines.push(`*Would process:* ${r.will_process_count ?? 0}`);\\n} else {\\n  lines.push(`*Processed:* ${r.processed_count ?? 0}`);\\n  lines.push(`✅ Completed: ${r.completed_count ?? 0}`);\\n  lines.push(`❌ Failed: ${r.failed_count ?? 0}`);\\n}\\nlines.push(\"\");\\nlines.push(`*Decisions*`);\\nlines.push(`• Proceed: ${d.proceed ?? 0}`);\\nlines.push(`• Skipped: ${d.skipped ?? 0}`);\\nlines.push(`• Not\\\\_eligible: ${d.not_eligible ?? 0}`);\\n\\nreturn { telegram_message: lines.join(\"\\\\n\") };\\n"
+      },
+      "position": [
+        1792,
+        672
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2

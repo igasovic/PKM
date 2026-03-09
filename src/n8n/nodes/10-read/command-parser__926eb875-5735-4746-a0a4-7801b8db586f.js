@@ -35,12 +35,18 @@ const defaults = {
   move: { days: null, limit: null },
   debug: { days: null, limit: null },
   distill: { days: null, limit: null },
+  distillrun: { days: null, limit: null },
   status: { days: null, limit: null },
   help: { days: null, limit: null },
 };
 
-const mCmd = text.match(/^\/([a-zA-Z_]+)/);
-const cmd = (mCmd?.[1] || '').toLowerCase();
+const mCmd = text.match(/^\/([a-zA-Z][a-zA-Z0-9_-]*)/);
+const cmdRaw = (mCmd?.[1] || '').toLowerCase();
+const cmdAlias = {
+  'distill-run': 'distillrun',
+  'distill_run': 'distillrun',
+};
+const cmd = cmdAlias[cmdRaw] || cmdRaw;
 
 if (!defaults[cmd]) {
   return [{
@@ -59,6 +65,7 @@ if (!defaults[cmd]) {
         `/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
         `/debug <run_id|last>\n` +
         `/distill <entry_id>\n` +
+        `/distill-run [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n` +
         `/status [t1|t2] [--limit M] [--active-only]`
     }
   }];
@@ -154,6 +161,34 @@ if (cmd === 'distill') {
     json: {
       cmd,
       entry_id: mId[1],
+      chat_id
+    }
+  }];
+}
+
+// Special case: /distill-run [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]
+if (cmd === 'distillrun') {
+  const parsePositiveIntArg = (flag) => {
+    const re = new RegExp(`--${flag}\\s+(\\d+)`, 'i');
+    const m = text.match(re);
+    if (!m) return null;
+    const n = parseInt(m[1], 10);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return n;
+  };
+
+  const candidate_limit = parsePositiveIntArg('candidate-limit');
+  const max_sync_items = parsePositiveIntArg('max-sync-items');
+  const dry_run = /--dry-run\b/i.test(text);
+  const persist_eligibility = !/--no-persist-eligibility\b/i.test(text);
+
+  return [{
+    json: {
+      cmd,
+      dry_run,
+      candidate_limit,
+      max_sync_items,
+      persist_eligibility,
       chat_id
     }
   }];

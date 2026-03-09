@@ -24,12 +24,16 @@
   - added optional stage argument: `/status [t1|t2]`
   - added optional flags: `--limit M`, `--active-only`
   - added `/distill <entry_id>` command parsing for Tier‑2 sync trigger
+  - added `/distill-run` parsing (supports `--dry-run`, `--candidate-limit`, `--max-sync-items`, `--no-persist-eligibility`)
 - Updated Read workflow status request node:
   - switched from `GET /status/t1/batch` to generic `GET /status/batch`
   - request now passes stage/limit/include-terminal from parsed command fields
 - Added Tier‑2 sync branch in Read workflow:
   - `PKM Distill Sync` HTTP node calls `POST /distill/sync` (admin header required)
   - `Format Distill Message` node returns success/failure Telegram output
+- Added Tier‑2 run branch in Read workflow:
+  - `PKM Distill Run` HTTP node calls `POST /distill/run` (admin header required)
+  - `Format Distill Run Message` node returns run/dry-run summary in Telegram output
 - Updated status message label from `T1 Batch summary` to generic `Batch summary`.
 
 ## 2026-03-08 — Tier-2 foundation: sync distillation endpoint + control-plane utilities
