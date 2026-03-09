@@ -241,4 +241,103 @@ describe('tier2 API contract', () => {
       },
     ]);
   });
+
+  test('POST /distill/plan requires admin secret', async () => {
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/plan',
+      JSON.stringify({ candidate_limit: 25 }),
+      { 'Content-Type': 'application/json' },
+    );
+
+    expect(res.status).toBe(403);
+    expect(JSON.parse(res.body)).toEqual({ error: 'forbidden', message: 'forbidden' });
+  });
+
+  test('POST /distill/plan forwards request payload to planner', async () => {
+    const plannerInputs = [];
+    jest.doMock('../../src/server/tier2/planner.js', () => ({
+      runTier2ControlPlanePlan: async (input) => {
+        plannerInputs.push(input);
+        return {
+          target_schema: 'active',
+          candidate_count: 0,
+          decision_counts: { proceed: 0, skipped: 0, not_eligible: 0 },
+          persisted_eligibility: { updated: 0, groups: [] },
+          selected_count: 0,
+          selected: [],
+        };
+      },
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const payload = {
+      candidate_limit: 25,
+      persist_eligibility: 'false',
+      include_details: 'true',
+    };
+    const res = await request(
+      port,
+      'POST',
+      '/distill/plan',
+      JSON.stringify(payload),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    expect(plannerInputs).toEqual([payload]);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.selected_count).toBe(0);
+  });
+
+  test('POST /distill/sync returns failure message payload from service', async () => {
+    jest.doMock('../../src/server/tier2/service.js', () => ({
+      distillTier2SingleEntrySync: async (entryId) => ({
+        entry_id: Number(entryId),
+        status: 'failed',
+        summary: null,
+        excerpt: null,
+        why_it_matters: null,
+        stance: null,
+        error_code: 'generation_error',
+        message: 'LiteLLM chat completion error: invalid model',
+      }),
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/sync',
+      JSON.stringify({ entry_id: 797 }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed).toEqual({
+      entry_id: 797,
+      status: 'failed',
+      summary: null,
+      excerpt: null,
+      why_it_matters: null,
+      stance: null,
+      error_code: 'generation_error',
+      message: 'LiteLLM chat completion error: invalid model',
+    });
+  });
 });
