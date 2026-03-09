@@ -55,6 +55,7 @@
   - `/status/batch/:batch_id?stage=t2` query forwarding + not-found behavior
   - `/distill/run` string-boolean option handling end-to-end
   - `/distill/run` normalized runtime-failure payload
+  - `/distill/run` run-id response header propagation (`X-PKM-Run-Id`)
   - `/distill/plan` admin-secret enforcement + request forwarding
   - `/distill/sync` failed response `message` passthrough
   - `/distill/sync` admin-secret enforcement + input validation + 404 mapping

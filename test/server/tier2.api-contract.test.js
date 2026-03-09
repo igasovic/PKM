@@ -15,7 +15,7 @@ function request(port, method, path, body, headers = {}) {
       res.on('data', (chunk) => chunks.push(chunk));
       res.on('end', () => {
         const text = Buffer.concat(chunks).toString('utf8');
-        resolve({ status: res.statusCode, body: text });
+        resolve({ status: res.statusCode, body: text, headers: res.headers });
       });
     });
     req.on('error', reject);
@@ -133,6 +133,39 @@ describe('tier2 API contract', () => {
     expect(res.status).toBe(403);
     const parsed = JSON.parse(res.body);
     expect(parsed).toEqual({ error: 'forbidden', message: 'forbidden' });
+  });
+
+  test('POST /distill/run returns X-PKM-Run-Id from body run_id', async () => {
+    jest.doMock('../../src/server/tier2-enrichment.js', () => ({
+      runTier2BatchWorkerCycle: async () => ({
+        mode: 'skipped',
+        target_schema: 'pkm',
+        skipped: true,
+        reason: 'worker_busy',
+        message: 'Tier-2 batch worker is busy. Try again shortly.',
+      }),
+      getTier2BatchStatusList: async () => ({ summary: {}, jobs: [] }),
+      getTier2BatchStatus: async () => null,
+      startTier2BatchWorker: () => {},
+      stopTier2BatchWorker: () => {},
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/run',
+      JSON.stringify({ run_id: 'run-tier2-123', dry_run: false }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers['x-pkm-run-id']).toBe('run-tier2-123');
   });
 
   test('GET /status/batch passes stage=t2 query fields to status service', async () => {
