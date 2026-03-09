@@ -703,6 +703,8 @@ Notes:
   - `message` (when available)
   - `preserved_current_artifact = true` (when failure preserved an existing current artifact)
 - `preserved_current_count` is the run-level count of failed rows with `preserved_current_artifact = true`.
+- For terminal `currentness_mismatch` failures in batch mode, backend clears `queued` by persisting `failed`
+  unless `preserved_current_artifact = true`.
 
 Response (worker busy):
 ```json

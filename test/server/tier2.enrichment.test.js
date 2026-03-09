@@ -348,6 +348,111 @@ describe('tier2 enrichment batch runner', () => {
     });
   });
 
+  test('persists failed status when currentness mismatch is terminal in batch mode', async () => {
+    const syncCalls = [];
+    const persistFailureCalls = [];
+    const runner = createTier2BatchRunner({
+      runPlan: async () => ({
+        candidate_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 461 }],
+      }),
+      distillOne: async (entryId) => {
+        syncCalls.push(entryId);
+        return {
+          entry_id: entryId,
+          status: 'failed',
+          error_code: 'currentness_mismatch',
+          message: 'entry content changed during distillation; no write was applied',
+        };
+      },
+      persistFailure: async (entryId, opts) => {
+        persistFailureCalls.push({ entryId, opts });
+        return { rowCount: 1 };
+      },
+      getConfig: () => ({
+        distill: {
+          retry: {
+            enabled: true,
+            max_attempts: 2,
+            retryable_error_codes: [],
+            non_retryable_error_codes: [],
+          },
+        },
+      }),
+      getLogger: () => ({
+        child() { return this; },
+        async step(_name, fn) { return fn(); },
+      }),
+    });
+
+    const out = await runner.runTier2BatchCycle({ max_sync_items: 1 });
+    expect(syncCalls).toEqual([461]);
+    expect(persistFailureCalls).toHaveLength(1);
+    expect(persistFailureCalls[0].entryId).toBe(461);
+    expect(persistFailureCalls[0].opts).toEqual(expect.objectContaining({
+      status: 'failed',
+      metadata: expect.objectContaining({
+        error: expect.objectContaining({
+          code: 'currentness_mismatch',
+        }),
+      }),
+    }));
+    expect(out.results[0]).toEqual(expect.objectContaining({
+      entry_id: 461,
+      status: 'failed',
+      error_code: 'currentness_mismatch',
+    }));
+  });
+
+  test('does not persist failed status for preserved currentness mismatch', async () => {
+    const persistFailureCalls = [];
+    const runner = createTier2BatchRunner({
+      runPlan: async () => ({
+        candidate_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 462 }],
+      }),
+      distillOne: async (entryId) => ({
+        entry_id: entryId,
+        status: 'failed',
+        error_code: 'currentness_mismatch',
+        preserved_current_artifact: true,
+      }),
+      persistFailure: async (entryId, opts) => {
+        persistFailureCalls.push({ entryId, opts });
+        return { rowCount: 1 };
+      },
+      getConfig: () => ({
+        distill: {
+          retry: {
+            enabled: true,
+            max_attempts: 2,
+            retryable_error_codes: [],
+            non_retryable_error_codes: [],
+          },
+        },
+      }),
+      getLogger: () => ({
+        child() { return this; },
+        async step(_name, fn) { return fn(); },
+      }),
+    });
+
+    const out = await runner.runTier2BatchCycle({ max_sync_items: 1 });
+    expect(persistFailureCalls).toHaveLength(0);
+    expect(out.results[0]).toEqual(expect.objectContaining({
+      entry_id: 462,
+      status: 'failed',
+      error_code: 'currentness_mismatch',
+      preserved_current_artifact: true,
+    }));
+  });
+
   test('stops retrying when max_attempts is reached', async () => {
     const syncCalls = [];
     const runner = createTier2BatchRunner({

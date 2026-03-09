@@ -117,6 +117,7 @@ function createTier2BatchRunner(deps) {
   const runPlan = dependencies.runPlan || runTier2ControlPlanePlan;
   const distillOne = dependencies.distillOne || distillTier2SingleEntrySync;
   const markQueued = dependencies.markQueued || (async () => ({ rowCount: 0 }));
+  const persistFailure = dependencies.persistFailure || db.persistTier2SyncFailure;
   const getLoggerFn = dependencies.getLogger || getLogger;
   const getConfigFn = dependencies.getConfig || getConfig;
 
@@ -253,6 +254,29 @@ function createTier2BatchRunner(deps) {
         );
 
         if (!retryDecision.retry) {
+          if (errorCode === 'currentness_mismatch' && out.preserved_current_artifact !== true) {
+            await logger.step(
+              't2.batch.persist.currentness_mismatch_failed',
+              async () => persistFailure(row.entry_id, {
+                status: 'failed',
+                metadata: {
+                  error: {
+                    code: 'currentness_mismatch',
+                    details: out && out.message ? { message: String(out.message) } : null,
+                    at: new Date().toISOString(),
+                  },
+                },
+              }),
+              {
+                input: {
+                  entry_id: row.entry_id,
+                  error_code: errorCode,
+                },
+                output: (value) => ({ rowCount: value && value.rowCount ? value.rowCount : 0 }),
+                meta: { entry_id: row.entry_id },
+              }
+            );
+          }
           final = {
             entry_id: row.entry_id,
             status: 'failed',

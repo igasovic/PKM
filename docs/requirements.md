@@ -298,6 +298,8 @@ Primary objective:
 - Deterministic Tier‑2 failures must remain non-retryable even under permissive retry config:
   - validation contract errors (for example `excerpt_not_grounded`, `summary_empty`, similar `DISTILL_VALIDATION_ERROR_CODES`)
   - `currentness_mismatch`
+- For batch mode, terminal `currentness_mismatch` failures must not leave rows in `queued`:
+  - batch runner must persist terminal failure state (`failed`) unless `preserved_current_artifact = true`.
 - Tier‑2 batch execution runtime failures must return a normalized response payload (with `error`) and preserve status inspectability via `batch_id`.
 - Route selection must be deterministic from `clean_word_count` and `distill.direct_chunk_threshold_words`.
 - Tier‑2 output must validate deterministically before persistence:

@@ -1,4 +1,15 @@
 # changelog
+## 2026-03-09 — Batch currentness mismatch now clears queued status
+
+### What changed
+- Updated `src/server/tier2-enrichment.js`:
+  - terminal batch `currentness_mismatch` now triggers a failure persistence write to avoid rows remaining `queued`.
+  - this cleanup is skipped when `preserved_current_artifact = true`.
+- Added runner tests in `test/server/tier2.enrichment.test.js` for:
+  - cleanup persistence on terminal currentness mismatch
+  - skip cleanup when preserved-current marker is set.
+- Updated `docs/requirements.md` and `docs/api.md` with this batch-mode status-clearing rule.
+
 ## 2026-03-09 — Status summary now shows preserved-current aggregate
 
 ### What changed
