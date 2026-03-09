@@ -485,7 +485,13 @@ async function runTier2BatchWorkerCycle(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
   const result = await tier2WorkerRuntime.runCycle(options);
   if (result && result.skipped && result.reason === 'worker_busy') {
-    return result;
+    return {
+      mode: 'skipped',
+      target_schema: 'pkm',
+      skipped: true,
+      reason: 'worker_busy',
+      message: 'Tier-2 batch worker is busy. Try again shortly.',
+    };
   }
   const endedAt = new Date().toISOString();
   const record = recordTier2BatchRun(result || {}, startedAt, endedAt);

@@ -563,7 +563,8 @@ Response (validation or generation failure):
   "excerpt": null,
   "why_it_matters": null,
   "stance": null,
-  "error_code": "excerpt_not_grounded"
+  "error_code": "excerpt_not_grounded",
+  "message": "Optional failure message (present for generation/runtime errors)."
 }
 ```
 
@@ -640,6 +641,10 @@ Notes:
 - `candidate_limit` and `max_sync_items` must be positive integers when provided.
 - `dry_run=true` runs planning only and does not call Tier‑2 sync generation.
 - This endpoint always targets production schema for execution.
+- If a run is requested while the Tier‑2 batch worker loop is already active, the response is:
+  - `mode = "skipped"`
+  - `reason = "worker_busy"`
+  - no batch-history record is written for that skipped call.
 
 Response:
 ```json
@@ -665,6 +670,17 @@ Response:
     { "entry_id": 12345, "status": "completed", "error_code": null },
     { "entry_id": 12346, "status": "failed", "error_code": "generation_error" }
   ]
+}
+```
+
+Response (worker busy):
+```json
+{
+  "mode": "skipped",
+  "target_schema": "pkm",
+  "skipped": true,
+  "reason": "worker_busy",
+  "message": "Tier-2 batch worker is busy. Try again shortly."
 }
 ```
 

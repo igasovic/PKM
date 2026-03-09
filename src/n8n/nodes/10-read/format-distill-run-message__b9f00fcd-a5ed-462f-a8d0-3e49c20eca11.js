@@ -13,8 +13,24 @@ module.exports = async function run(ctx) {
   const r = $json || {};
   const mode = String(r.mode || 'run').toLowerCase();
   const d = r.decision_counts || {};
+  const mdv2 = (v) =>
+    String(v ?? '')
+      .replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 
   const lines = [];
+  if (r.skipped === true && String(r.reason || '').toLowerCase() === 'worker_busy') {
+    lines.push('*Tier\\_2 run skipped*');
+    lines.push('');
+    lines.push('• Reason: worker\\_busy');
+    lines.push(`• Message: ${mdv2(r.message || 'Tier-2 batch worker is busy. Try again shortly.')}`);
+    return [{
+      json: {
+        ...r,
+        telegram_message: lines.join('\n'),
+      },
+    }];
+  }
+
   lines.push(`*Tier\\_2 run ${mode === 'dry_run' ? '\\(dry\\ run\\)' : ''}*`);
   lines.push('');
   lines.push(`*Candidates:* ${r.candidate_count ?? 0}`);

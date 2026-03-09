@@ -27,6 +27,14 @@
   - `test/server/tier2.enrichment.test.js`
   - `test/server/tier2.planner.test.js`
 
+## 2026-03-09 — Tier-2 run busy-response normalization
+
+### What changed
+- Normalized `/distill/run` busy-overlap response shape:
+  - returns `mode = "skipped"` with `reason = "worker_busy"` and a user-facing `message`.
+- Updated `Format Distill Run Message` node logic to render a dedicated Telegram message for worker-busy skips.
+- Updated `docs/api.md` to document the worker-busy response variant for `POST /distill/run`.
+
 ## 2026-03-09 — Tier-2 batch retry policy + LLM metadata enrichment
 
 ### What changed
