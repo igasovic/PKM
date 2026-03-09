@@ -31,6 +31,21 @@ module.exports = async function run(ctx) {
     }];
   }
 
+  if (r.error) {
+    lines.push('*Tier\\_2 run failed*');
+    lines.push('');
+    if (r.batch_id) {
+      lines.push(`• Batch\\_id: ${mdv2(r.batch_id)}`);
+    }
+    lines.push(`• Error: ${mdv2(r.error)}`);
+    return [{
+      json: {
+        ...r,
+        telegram_message: lines.join('\n'),
+      },
+    }];
+  }
+
   lines.push(`*Tier\\_2 run ${mode === 'dry_run' ? '\\(dry\\ run\\)' : ''}*`);
   lines.push('');
   lines.push(`*Candidates:* ${r.candidate_count ?? 0}`);

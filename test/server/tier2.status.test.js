@@ -81,4 +81,32 @@ describe('tier2 status surfaces', () => {
     expect(detail.counts.pending).toBe(1);
     expect(detail.items[0].status).toBe('planned');
   });
+
+  test('normalizes runtime errors into failed run records', async () => {
+    jest.doMock('../../src/server/tier2/planner.js', () => ({
+      runTier2ControlPlanePlan: async () => {
+        throw new Error('planner unavailable');
+      },
+    }));
+
+    jest.doMock('../../src/server/tier2/service.js', () => ({
+      distillTier2SingleEntrySync: async () => {
+        throw new Error('should not be called');
+      },
+    }));
+
+    const t2 = require('../../src/server/tier2-enrichment.js');
+    const run = await t2.runTier2BatchWorkerCycle({ dry_run: false, max_sync_items: 2 });
+
+    expect(run.mode).toBe('run');
+    expect(run.error).toContain('planner unavailable');
+    expect(run.batch_id).toBeTruthy();
+    expect(run.failed_count).toBe(1);
+
+    const detail = await t2.getTier2BatchStatus(run.batch_id, { include_items: true });
+    expect(detail).toBeTruthy();
+    expect(detail.status).toBe('failed');
+    expect(detail.counts.error).toBe(1);
+    expect(detail.items).toHaveLength(0);
+  });
 });

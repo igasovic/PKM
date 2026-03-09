@@ -19,4 +19,20 @@ describe('n8n format-distill-run-message', () => {
     expect(out[0].json.telegram_message).toContain('Reason: worker\\_busy');
     expect(out[0].json.telegram_message).toContain('Tier\\-2 batch worker is busy\\. Try again shortly\\.');
   });
+
+  test('formats run-level errors with batch id and message', async () => {
+    const out = await formatDistillRunMessage({
+      $json: {
+        mode: 'run',
+        batch_id: 't2_123_abcd',
+        error: 'planner failed: timeout',
+      },
+    });
+
+    expect(Array.isArray(out)).toBe(true);
+    expect(out).toHaveLength(1);
+    expect(out[0].json.telegram_message).toContain('*Tier\\_2 run failed*');
+    expect(out[0].json.telegram_message).toContain('Batch\\_id: t2\\_123\\_abcd');
+    expect(out[0].json.telegram_message).toContain('Error: planner failed: timeout');
+  });
 });

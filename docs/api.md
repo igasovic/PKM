@@ -686,6 +686,32 @@ Response (worker busy):
 }
 ```
 
+Response (runtime failure, normalized):
+```json
+{
+  "mode": "run",
+  "target_schema": "pkm",
+  "batch_id": "t2_1739420000000_ab12cd",
+  "processing_limit": 25,
+  "candidate_count": 0,
+  "decision_counts": {
+    "proceed": 0,
+    "skipped": 0,
+    "not_eligible": 0
+  },
+  "persisted_eligibility": {
+    "updated": 0,
+    "groups": []
+  },
+  "planned_selected_count": 0,
+  "processed_count": 0,
+  "completed_count": 0,
+  "failed_count": 1,
+  "results": [],
+  "error": "planner unavailable"
+}
+```
+
 ## Backlog Import
 
 ### `POST /import/email/mbox`

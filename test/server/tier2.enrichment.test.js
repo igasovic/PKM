@@ -1,6 +1,7 @@
 'use strict';
 
 const {
+  buildTier2RunErrorResponse,
   buildTier2WorkerBusyResponse,
   createTier2BatchRunner,
 } = require('../../src/server/tier2-enrichment.js');
@@ -13,6 +14,23 @@ describe('tier2 enrichment batch runner', () => {
       skipped: true,
       reason: 'worker_busy',
       message: 'Tier-2 batch worker is busy. Try again shortly.',
+    });
+  });
+
+  test('buildTier2RunErrorResponse normalizes run-mode failures', () => {
+    expect(buildTier2RunErrorResponse({ dry_run: false, max_sync_items: 7 }, 'planner failed')).toEqual({
+      mode: 'run',
+      target_schema: 'pkm',
+      processing_limit: 7,
+      candidate_count: 0,
+      decision_counts: { proceed: 0, skipped: 0, not_eligible: 0 },
+      persisted_eligibility: { updated: 0, groups: [] },
+      planned_selected_count: 0,
+      processed_count: 0,
+      completed_count: 0,
+      failed_count: 1,
+      results: [],
+      error: 'planner failed',
     });
   });
 

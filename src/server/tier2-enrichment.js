@@ -284,6 +284,48 @@ function buildTier2WorkerBusyResponse() {
   };
 }
 
+function buildTier2RunErrorResponse(rawOptions, errorValue) {
+  const options = rawOptions && typeof rawOptions === 'object' ? rawOptions : {};
+  const dryRun = parseBooleanDefault(options.dry_run, false);
+  const maxSyncItemsRaw = Number(options.max_sync_items);
+  const processingLimit = Number.isFinite(maxSyncItemsRaw) && maxSyncItemsRaw > 0
+    ? Math.trunc(maxSyncItemsRaw)
+    : resolveDefaultRunLimit();
+  const error = String(errorValue || 'worker_cycle_error');
+  const emptyDecisions = { proceed: 0, skipped: 0, not_eligible: 0 };
+  const emptyEligibility = { updated: 0, groups: [] };
+
+  if (dryRun) {
+    return {
+      mode: 'dry_run',
+      target_schema: 'pkm',
+      processing_limit: processingLimit,
+      candidate_count: 0,
+      decision_counts: emptyDecisions,
+      persisted_eligibility: emptyEligibility,
+      planned_selected_count: 0,
+      will_process_count: 0,
+      selected: [],
+      error,
+    };
+  }
+
+  return {
+    mode: 'run',
+    target_schema: 'pkm',
+    processing_limit: processingLimit,
+    candidate_count: 0,
+    decision_counts: emptyDecisions,
+    persisted_eligibility: emptyEligibility,
+    planned_selected_count: 0,
+    processed_count: 0,
+    completed_count: 0,
+    failed_count: 1,
+    results: [],
+    error,
+  };
+}
+
 function buildTier2BatchId() {
   const ts = Date.now();
   const rand = Math.random().toString(36).slice(2, 8);
@@ -301,6 +343,17 @@ function computeTier2RunStatus(result) {
 }
 
 function buildTier2Counts(result) {
+  if (result && result.error) {
+    return {
+      total_items: 0,
+      processed: 0,
+      ok: 0,
+      parse_error: 0,
+      error: 1,
+      pending: 0,
+    };
+  }
+
   const planned = Number(result && result.planned_selected_count ? result.planned_selected_count : 0);
   const processed = Number(result && result.processed_count ? result.processed_count : 0);
   const completed = Number(result && result.completed_count ? result.completed_count : 0);
@@ -497,10 +550,14 @@ async function runTier2BatchWorkerCycle(opts) {
   if (result && result.skipped && result.reason === 'worker_busy') {
     return buildTier2WorkerBusyResponse();
   }
+
   const endedAt = new Date().toISOString();
-  const record = recordTier2BatchRun(result || {}, startedAt, endedAt);
+  const normalized = result && result.error
+    ? buildTier2RunErrorResponse(options, result.error)
+    : (result || {});
+  const record = recordTier2BatchRun(normalized, startedAt, endedAt);
   return {
-    ...result,
+    ...normalized,
     batch_id: record.batch_id,
   };
 }
@@ -546,6 +603,7 @@ async function getTier2BatchStatus(batchId, opts) {
 }
 
 module.exports = {
+  buildTier2RunErrorResponse,
   buildTier2WorkerBusyResponse,
   createTier2BatchRunner,
   resolveTier2RetryConfig,

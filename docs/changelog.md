@@ -32,9 +32,14 @@
 ### What changed
 - Normalized `/distill/run` busy-overlap response shape:
   - returns `mode = "skipped"` with `reason = "worker_busy"` and a user-facing `message`.
+- Normalized `/distill/run` runtime-error response shape:
+  - returns structured run payload with `error` and `failed_count = 1`
+  - persists a failed run record with `batch_id` so `/status/batch` can still inspect the failure.
 - Updated `Format Distill Run Message` node logic to render a dedicated Telegram message for worker-busy skips.
+- Updated `Format Distill Run Message` node logic to render run-level error payloads clearly.
 - Updated `docs/api.md` to document the worker-busy response variant for `POST /distill/run`.
 - Updated `docs/api.md` to clarify that non-busy `/distill/run` responses include `batch_id` for status lookup.
+- Updated `docs/api.md` with normalized runtime-failure response shape for `POST /distill/run`.
 - Added backend test coverage for worker-busy response contract in `test/server/tier2.enrichment.test.js`.
 - Added HTTP contract tests for Tier‑2 endpoints in `test/server/tier2.api-contract.test.js`:
   - `/distill/run` busy payload
@@ -42,6 +47,7 @@
   - `/status/batch?stage=t2` query forwarding
   - `/status/batch/:batch_id?stage=t2` query forwarding + not-found behavior
   - `/distill/run` string-boolean option handling end-to-end
+  - `/distill/run` normalized runtime-failure payload
   - `/distill/plan` admin-secret enforcement + request forwarding
   - `/distill/sync` failed response `message` passthrough
 

@@ -309,6 +309,36 @@ describe('tier2 API contract', () => {
     ]);
   });
 
+  test('POST /distill/run returns normalized payload when planner errors', async () => {
+    jest.doMock('../../src/server/tier2/planner.js', () => ({
+      runTier2ControlPlanePlan: async () => {
+        throw new Error('planner unavailable');
+      },
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/run',
+      JSON.stringify({ dry_run: false, max_sync_items: 3 }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.mode).toBe('run');
+    expect(parsed.error).toContain('planner unavailable');
+    expect(parsed.failed_count).toBe(1);
+    expect(typeof parsed.batch_id).toBe('string');
+    expect(parsed.batch_id).toMatch(/^t2_/);
+  });
+
   test('POST /distill/plan requires admin secret', async () => {
     await startServerWithMocks();
     if (listenDenied) return;
