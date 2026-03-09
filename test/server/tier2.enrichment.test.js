@@ -34,6 +34,21 @@ describe('tier2 enrichment batch runner', () => {
     });
   });
 
+  test('buildTier2RunErrorResponse preserves dry_run mode on failures', () => {
+    expect(buildTier2RunErrorResponse({ dry_run: true, max_sync_items: 4 }, 'planner failed')).toEqual({
+      mode: 'dry_run',
+      target_schema: 'pkm',
+      processing_limit: 4,
+      candidate_count: 0,
+      decision_counts: { proceed: 0, skipped: 0, not_eligible: 0 },
+      persisted_eligibility: { updated: 0, groups: [] },
+      planned_selected_count: 0,
+      will_process_count: 0,
+      selected: [],
+      error: 'planner failed',
+    });
+  });
+
   test('runs plan + sync and summarizes results', async () => {
     const syncCalls = [];
     const runner = createTier2BatchRunner({

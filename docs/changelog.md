@@ -48,6 +48,7 @@
 - Updated `docs/api.md` with normalized runtime-failure response shape for `POST /distill/run`.
 - Updated `docs/api.md` to document `metadata.error` availability on failed `stage=t2` status rows.
 - Added backend test coverage for worker-busy response contract in `test/server/tier2.enrichment.test.js`.
+- Expanded backend test coverage for runtime-error response normalization in `test/server/tier2.enrichment.test.js` (run + dry-run modes).
 - Added HTTP contract tests for Tier‑2 endpoints in `test/server/tier2.api-contract.test.js`:
   - `/distill/run` busy payload
   - `/distill/run` admin-secret enforcement
