@@ -28,4 +28,17 @@ describe('tier2 planner sql', () => {
     expect(sql).toContain("'decision', 'not_eligible'::text");
     expect(sql).toContain("'reason_code', 'wrong_content_type'::text");
   });
+
+  test('status update builder supports queued dispatch status', () => {
+    const sql = sb.buildTier2PersistEligibilityStatus({
+      entries_table: '"pkm"."entries"',
+      ids: ['11111111-1111-4111-8111-111111111111'],
+      status: 'queued',
+      reason_code: 'batch_dispatch',
+    });
+
+    expect(sql).toContain("distill_status = 'queued'::text");
+    expect(sql).toContain("'decision', 'queued'::text");
+    expect(sql).toContain("'reason_code', 'batch_dispatch'::text");
+  });
 });

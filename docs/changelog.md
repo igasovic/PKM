@@ -10,6 +10,7 @@
   - queued marking occurs for run mode
   - dry-run does not mark queued
   - queued marking respects `max_sync_items` cutoff
+- Added SQL-builder coverage for queued status persistence in `test/server/tier2.plan-sql.test.js`.
 - Updated `docs/api.md` and `docs/requirements.md` to document queued-on-dispatch behavior for `POST /distill/run`.
 
 ## 2026-03-09 — Read workflow status formatter externalized + dry-run planned count
