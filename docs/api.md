@@ -559,6 +559,58 @@ Response (validation or generation failure):
 }
 ```
 
+### `POST /distill/plan`
+Runs Tier‑2 control-plane selection for the active schema, persists eligibility outcomes (`skipped` / `not_eligible`) when enabled, and returns the selected workset.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Body (all fields optional):
+```json
+{
+  "candidate_limit": 250,
+  "persist_eligibility": true,
+  "include_details": false
+}
+```
+
+Notes:
+- `candidate_limit` must be a positive integer when provided.
+- `persist_eligibility` defaults to `true`.
+- `include_details=true` runs the second pre-dispatch detail query and returns selected rows projected without `clean_text`.
+
+Response:
+```json
+{
+  "candidate_count": 120,
+  "decision_counts": {
+    "proceed": 42,
+    "skipped": 55,
+    "not_eligible": 23
+  },
+  "persisted_eligibility": {
+    "updated": 78,
+    "groups": [
+      { "status": "skipped", "reason_code": "missing_clean_text", "count": 55, "updated": 55 },
+      { "status": "not_eligible", "reason_code": "wrong_content_type", "count": 23, "updated": 23 }
+    ]
+  },
+  "selected_count": 25,
+  "selected": [
+    {
+      "id": "00000000-0000-4000-8000-000000000000",
+      "entry_id": 12345,
+      "route": "direct",
+      "chunking_strategy": "direct",
+      "priority_score": 74,
+      "clean_word_count": 1800,
+      "distill_status": "pending",
+      "created_at": "2026-03-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
 ## Backlog Import
 
 ### `POST /import/email/mbox`

@@ -10,10 +10,12 @@
   - sync distillation service
 - Added Tier‑2 sync API endpoint:
   - `POST /distill/sync` (admin-protected)
+- Added Tier‑2 control-plane planning API endpoint:
+  - `POST /distill/plan` (admin-protected)
 - Extended DB/API runtime support for Tier‑2 fields:
   - added Tier‑2 columns to backend insert/update type map
-  - added DB helpers for Tier‑2 candidate/detail reads and sync persistence
-  - added Tier‑2 SQL builders in `src/libs/sql-builder.js`
+  - added DB helpers for Tier‑2 candidate/detail reads, eligibility persistence, and sync persistence
+  - added Tier‑2 SQL builders in `src/libs/sql-builder.js` for candidate selection and eligibility state writes
 - Added Tier‑2 stale-detection maintenance cycle in backend startup:
   - marks `distill_status = stale` for outdated completed artifacts in `pkm.entries`
   - controlled by `T2_STALE_MARK_ENABLED` and `T2_STALE_MARK_INTERVAL_MS`

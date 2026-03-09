@@ -282,8 +282,15 @@ Primary objective:
 
 ## Tier-2 distillation requirements (sync v1)
 - Tier‑2 sync distillation must run through backend API only (`POST /distill/sync`).
+- Tier‑2 control-plane planning must run through backend API only (`POST /distill/plan`).
 - Sync distillation must target prod schema (`pkm`) only.
 - Sync distillation requires existing row `clean_text`; if absent, request fails.
+- Control-plane planning must deterministically apply:
+  - eligibility gate (`proceed|skipped|not_eligible`)
+  - priority scoring
+  - run budget
+  - route selection (`direct|chunked`)
+- Control-plane planning must persist eligibility outcomes (`skipped` / `not_eligible`) with compact reason metadata when persistence is enabled.
 - Route selection must be deterministic from `clean_word_count` and `distill.direct_chunk_threshold_words`.
 - Tier‑2 output must validate deterministically before persistence:
   - required fields: `distill_summary`, `distill_why_it_matters`, `distill_stance`, `distill_version`, `distill_created_from_hash`, `distill_metadata`

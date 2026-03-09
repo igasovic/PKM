@@ -24,6 +24,9 @@ const {
 const {
   distillTier2SingleEntrySync,
 } = require('./tier2/service.js');
+const {
+  runTier2ControlPlanePlan,
+} = require('./tier2/planner.js');
 const { importEmailMbox } = require('./email-importer.js');
 const {
   getBraintrustLogger,
@@ -291,6 +294,35 @@ async function handleRequest(req, res) {
       const result = await logger.step(
         'api.distill.sync',
         async () => distillTier2SingleEntrySync(body.entry_id),
+        { input: body, output: (out) => out, meta: { route: url.pathname } }
+      );
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      const errorCode = status === 403
+        ? 'forbidden'
+        : status === 404
+          ? 'not_found'
+          : 'bad_request';
+      return json(res, status, { error: errorCode, message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/distill/plan') {
+    try {
+      requireAdminSecret(req);
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const result = await logger.step(
+        'api.distill.plan',
+        async () => runTier2ControlPlanePlan({
+          candidate_limit: body.candidate_limit,
+          persist_eligibility: body.persist_eligibility,
+          include_details: body.include_details,
+        }),
         { input: body, output: (out) => out, meta: { route: url.pathname } }
       );
       return json(res, 200, result);

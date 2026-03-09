@@ -222,6 +222,7 @@ module.exports = {
   buildTier2CandidateDiscovery,
   buildTier2SelectedDetailQuery,
   buildTier2EntryByEntryId,
+  buildTier2PersistEligibilityStatus,
   buildT1BatchUpsert,
   buildT1BatchItemsInsert,
   buildT1BatchResultsUpsert,
@@ -1392,15 +1393,17 @@ SELECT
   (COALESCE(length(btrim(e.clean_text)), 0) > 0) AS has_usable_clean_text
 FROM ${entries_table} e
 WHERE
-  e.content_type = 'newsletter'
-  AND COALESCE(length(btrim(e.clean_text)), 0) > 0
-  AND COALESCE(e.distill_status, 'pending') <> 'queued'
+  COALESCE(e.distill_status, 'pending') <> 'queued'
   AND (
     e.content_hash IS NULL
     OR e.distill_created_from_hash IS NULL
     OR e.content_hash IS DISTINCT FROM e.distill_created_from_hash
   )
-ORDER BY e.created_at ASC, e.id ASC
+ORDER BY
+  CASE WHEN e.content_type = 'newsletter' THEN 0 ELSE 1 END,
+  CASE WHEN COALESCE(length(btrim(e.clean_text)), 0) > 0 THEN 0 ELSE 1 END,
+  e.created_at ASC,
+  e.id ASC
 LIMIT ${limit};
 `.trim();
 }
@@ -1463,5 +1466,51 @@ SELECT
 FROM ${entries_table} e
 WHERE e.entry_id = ${bigIntLit(entry_id)}::bigint
 LIMIT 1;
+`.trim();
+}
+
+function buildTier2PersistEligibilityStatus(opts) {
+  const entries_table = opts && opts.entries_table;
+  if (!entries_table || typeof entries_table !== 'string') {
+    throw new Error('buildTier2PersistEligibilityStatus: entries_table must be a non-empty string');
+  }
+  const ids = Array.isArray(opts && opts.ids) ? opts.ids : [];
+  if (!ids.length) {
+    throw new Error('buildTier2PersistEligibilityStatus: ids must be a non-empty array');
+  }
+  const status = String((opts && opts.status) || '').trim();
+  if (!status) {
+    throw new Error('buildTier2PersistEligibilityStatus: status must be a non-empty string');
+  }
+  const reasonCodeRaw = opts && Object.prototype.hasOwnProperty.call(opts, 'reason_code')
+    ? opts.reason_code
+    : null;
+  const reasonCode = reasonCodeRaw === null || reasonCodeRaw === undefined
+    ? null
+    : String(reasonCodeRaw).trim();
+
+  const valuesRows = ids.map((id) => `(${lit(id)}::uuid)`).join(',\n    ');
+  return `
+WITH target_ids (id) AS (
+  VALUES
+    ${valuesRows}
+),
+updated AS (
+  UPDATE ${entries_table} e
+  SET
+    distill_status = ${lit(status)}::text,
+    distill_metadata = COALESCE(e.distill_metadata, '{}'::jsonb) || jsonb_build_object(
+      'eligibility',
+      jsonb_build_object(
+        'decision', ${lit(status)}::text,
+        'reason_code', ${lit(reasonCode)}::text,
+        'at', now()
+      )
+    )
+  FROM target_ids t
+  WHERE e.id = t.id
+  RETURNING e.id, e.entry_id, e.distill_status
+)
+SELECT * FROM updated;
 `.trim();
 }

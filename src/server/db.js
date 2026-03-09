@@ -1463,6 +1463,40 @@ async function getTier2DetailsByIds(ids, opts) {
   return exec(sql, { op: 'tier2_details', table: entries_table, ids: uuidList.length });
 }
 
+async function persistTier2EligibilityStatusByIds(ids, opts) {
+  const uuidList = parseUuidList(ids, 'ids');
+  if (!uuidList.length) {
+    return { rows: [], rowCount: 0 };
+  }
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const status = String(options.status || '').trim();
+  if (!['skipped', 'not_eligible'].includes(status)) {
+    throw new Error('status must be skipped|not_eligible');
+  }
+  const reasonCode = options.reason_code === null || options.reason_code === undefined
+    ? null
+    : String(options.reason_code).trim();
+
+  const config = await getConfigWithTestMode();
+  const entriesTable = await getEntriesTableFromConfig(config);
+  const sql = sb.buildTier2PersistEligibilityStatus({
+    entries_table: entriesTable,
+    ids: uuidList,
+    status,
+    reason_code: reasonCode,
+  });
+  try {
+    return await exec(sql, {
+      op: 'tier2_eligibility_status_update',
+      table: entriesTable,
+      status,
+      ids: uuidList.length,
+    });
+  } catch (err) {
+    throw wrapTier2EntriesError(err, entriesTable);
+  }
+}
+
 async function getTier2SyncEntryByEntryId(entryId) {
   const normalized = parsePositiveBigintString(entryId, 'entry_id');
   const entriesTable = getEntriesTableBySchema('pkm');
@@ -1692,6 +1726,7 @@ module.exports = {
   markTier2StaleInProd,
   getTier2Candidates,
   getTier2DetailsByIds,
+  persistTier2EligibilityStatusByIds,
   getTier2SyncEntryByEntryId,
   persistTier2SyncSuccess,
   persistTier2SyncFailure,
