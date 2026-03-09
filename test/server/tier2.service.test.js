@@ -326,4 +326,63 @@ describe('tier2 sync service', () => {
       }),
     }));
   });
+
+  test('currentness mismatch returns failed status without overriding row', async () => {
+    const sendMessage = jest.fn().mockResolvedValue({
+      text: buildFinalOutput(),
+    });
+    const persistTier2SyncSuccess = jest.fn().mockResolvedValue({ rowCount: 0 });
+    const persistTier2SyncFailure = jest.fn().mockResolvedValue({ rowCount: 0 });
+
+    jest.doMock('../../src/libs/config.js', () => ({
+      getConfig: () => ({
+        distill: {
+          direct_chunk_threshold_words: 5000,
+          models: {
+            sync_direct: 't2-sync-direct',
+          },
+        },
+      }),
+    }));
+
+    jest.doMock('../../src/server/db.js', () => ({
+      getTier2SyncEntryByEntryId: async () => ({
+        entry_id: 705,
+        title: 'Currentness mismatch sample',
+        author: 'PKM',
+        content_type: 'newsletter',
+        clean_text: 'alpha insight appears in this clean source text for grounding checks.',
+        clean_word_count: 12,
+        content_hash: 'hash_before_generation',
+      }),
+      persistTier2SyncSuccess,
+      persistTier2SyncFailure,
+    }));
+
+    jest.doMock('../../src/server/litellm-client.js', () => ({
+      LiteLLMClient: jest.fn().mockImplementation(() => ({
+        sendMessage,
+      })),
+    }));
+
+    jest.doMock('../../src/server/logger/index.js', () => ({
+      getLogger: () => createLoggerStub(),
+    }));
+
+    const { distillTier2SingleEntrySync } = require('../../src/server/tier2/service.js');
+    const out = await distillTier2SingleEntrySync(705);
+
+    expect(out).toEqual({
+      entry_id: 705,
+      status: 'failed',
+      summary: null,
+      excerpt: null,
+      why_it_matters: null,
+      stance: null,
+      error_code: 'currentness_mismatch',
+      message: 'entry content changed during distillation; no write was applied',
+    });
+    expect(persistTier2SyncSuccess).toHaveBeenCalledTimes(1);
+    expect(persistTier2SyncFailure).not.toHaveBeenCalled();
+  });
 });

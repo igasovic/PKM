@@ -368,7 +368,7 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
     };
   }
 
-  await logger.step(
+  const persistResult = await logger.step(
     't2.sync.persist.completed',
     async () => db.persistTier2SyncSuccess(entryId, artifact),
     {
@@ -380,6 +380,19 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
       output: (out) => ({ rowCount: out && out.rowCount ? out.rowCount : 0 }),
     }
   );
+
+  if (!persistResult || Number(persistResult.rowCount || 0) < 1) {
+    return {
+      entry_id: entryId,
+      status: 'failed',
+      summary: null,
+      excerpt: null,
+      why_it_matters: null,
+      stance: null,
+      error_code: 'currentness_mismatch',
+      message: 'entry content changed during distillation; no write was applied',
+    };
+  }
 
   return {
     entry_id: entryId,

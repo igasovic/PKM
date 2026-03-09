@@ -548,6 +548,8 @@ Notes:
 - It requires existing usable `clean_text` on the target row.
 - It applies Tier‑2 route selection (`direct` vs `chunked`) from backend config.
 - On validation failure, response returns `status = "failed"` and artifact fields are `null`.
+- Final persistence is guarded by currentness (`content_hash` must still match the generated artifact source hash).
+  - If source content changed mid-run, response returns `error_code = "currentness_mismatch"` and no write is applied.
 
 Response (success):
 ```json

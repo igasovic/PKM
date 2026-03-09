@@ -300,6 +300,8 @@ Primary objective:
   - required fields: `distill_summary`, `distill_why_it_matters`, `distill_stance`, `distill_version`, `distill_created_from_hash`, `distill_metadata`
   - optional `distill_excerpt` must be non-empty and grounded in source when present
 - Successful persistence must write artifact fields and `distill_status = completed` together.
+- Successful persistence must be guarded by currentness (`content_hash` must still match `distill_created_from_hash` at write time).
+- On currentness mismatch, Tier‑2 sync must return `error_code = currentness_mismatch` and must not overwrite existing distill state.
 - Failed validation/generation must persist `distill_status = failed` with compact error metadata.
 - Tier‑2 stale detection must run as backend maintenance:
   - mark `completed -> stale` when `content_hash IS DISTINCT FROM distill_created_from_hash`

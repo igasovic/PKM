@@ -1539,6 +1539,12 @@ async function persistTier2SyncSuccess(entryId, artifact) {
   const normalized = parsePositiveBigintString(entryId, 'entry_id');
   const entriesTable = getEntriesTableBySchema('pkm');
   const payload = artifact && typeof artifact === 'object' ? artifact : {};
+  const expectedContentHash = Object.prototype.hasOwnProperty.call(payload, 'distill_created_from_hash')
+    ? payload.distill_created_from_hash
+    : null;
+  const expectedContentHashValue = expectedContentHash === null || expectedContentHash === undefined
+    ? null
+    : String(expectedContentHash);
   const set = [
     `distill_summary = ${toSqlValue('text', payload.distill_summary || null)}`,
     `distill_excerpt = ${toSqlValue('text', payload.distill_excerpt || null)}`,
@@ -1552,14 +1558,18 @@ async function persistTier2SyncSuccess(entryId, artifact) {
   const sql = sb.buildUpdate({
     table: entriesTable,
     set,
-    where: `entry_id = ${toSqlValue('bigint', normalized)}`,
-    returning: ['entry_id', 'distill_status'],
+    where: [
+      `entry_id = ${toSqlValue('bigint', normalized)}`,
+      `content_hash IS NOT DISTINCT FROM ${toSqlValue('text', expectedContentHashValue)}`,
+    ].join(' AND '),
+    returning: ['entry_id', 'distill_status', 'content_hash'],
   });
   try {
     return await exec(sql, {
       op: 'tier2_sync_persist_completed',
       table: entriesTable,
       entry_id: normalized,
+      expected_content_hash: expectedContentHashValue,
     });
   } catch (err) {
     throw wrapTier2EntriesError(err, entriesTable);

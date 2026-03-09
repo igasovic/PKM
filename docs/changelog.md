@@ -1,4 +1,17 @@
 # changelog
+## 2026-03-09 — Tier-2 currentness guard on final sync write
+
+### What changed
+- Added a currentness guard to Tier‑2 final persistence (`src/server/db.js`):
+  - sync success writes now require both `entry_id` and matching `content_hash` (`distill_created_from_hash`) at update time.
+- Updated Tier‑2 sync service (`src/server/tier2/service.js`) to handle no-op guarded writes as:
+  - `status = "failed"`
+  - `error_code = "currentness_mismatch"`
+  - message indicating source content changed during distillation
+  - no fallback failure overwrite is applied in this path.
+- Added service-level test coverage for currentness mismatch in `test/server/tier2.service.test.js`.
+- Updated `docs/api.md` and `docs/requirements.md` to document the guarded write behavior.
+
 ## 2026-03-09 — Tier-2 sync service execution-path coverage
 
 ### What changed
