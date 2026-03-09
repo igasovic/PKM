@@ -52,6 +52,7 @@
   - `/distill/run` normalized runtime-failure payload
   - `/distill/plan` admin-secret enforcement + request forwarding
   - `/distill/sync` failed response `message` passthrough
+  - `/distill/sync` admin-secret enforcement + input validation + 404 mapping
 
 ## 2026-03-09 — Tier-2 batch retry policy + LLM metadata enrichment
 

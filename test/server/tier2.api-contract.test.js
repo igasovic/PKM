@@ -447,4 +447,71 @@ describe('tier2 API contract', () => {
       message: 'LiteLLM chat completion error: invalid model',
     });
   });
+
+  test('POST /distill/sync requires admin secret', async () => {
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/sync',
+      JSON.stringify({ entry_id: 123 }),
+      { 'Content-Type': 'application/json' },
+    );
+
+    expect(res.status).toBe(403);
+    expect(JSON.parse(res.body)).toEqual({ error: 'forbidden', message: 'forbidden' });
+  });
+
+  test('POST /distill/sync validates entry_id before service work', async () => {
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/sync',
+      JSON.stringify({ entry_id: 'abc' }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(400);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.error).toBe('bad_request');
+    expect(parsed.message).toContain('entry_id must be a positive integer');
+  });
+
+  test('POST /distill/sync maps service 404 to not_found', async () => {
+    jest.doMock('../../src/server/tier2/service.js', () => ({
+      distillTier2SingleEntrySync: async () => {
+        const err = new Error('entry_id not found: 999999');
+        err.statusCode = 404;
+        throw err;
+      },
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/sync',
+      JSON.stringify({ entry_id: 999999 }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(404);
+    expect(JSON.parse(res.body)).toEqual({
+      error: 'not_found',
+      message: 'entry_id not found: 999999',
+    });
+  });
 });
