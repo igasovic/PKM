@@ -10,6 +10,7 @@
 - Added service tests in `test/server/tier2.service.test.js` for:
   - generation failure with preserved current artifact
   - validation failure with preserved current artifact
+- Added HTTP contract coverage for `preserved_current_artifact` passthrough in `test/server/tier2.api-contract.test.js`.
 - Updated `docs/api.md` and `docs/requirements.md` to document this preservation behavior.
 
 ## 2026-03-09 — Tier-2 batch dispatch now marks selected entries queued

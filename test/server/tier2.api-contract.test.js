@@ -522,6 +522,49 @@ describe('tier2 API contract', () => {
     });
   });
 
+  test('POST /distill/sync returns preserved_current_artifact flag', async () => {
+    jest.doMock('../../src/server/tier2/service.js', () => ({
+      distillTier2SingleEntrySync: async (entryId) => ({
+        entry_id: Number(entryId),
+        status: 'failed',
+        summary: null,
+        excerpt: null,
+        why_it_matters: null,
+        stance: null,
+        error_code: 'generation_error',
+        message: 'litellm timeout',
+        preserved_current_artifact: true,
+      }),
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/sync',
+      JSON.stringify({ entry_id: 799 }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({
+      entry_id: 799,
+      status: 'failed',
+      summary: null,
+      excerpt: null,
+      why_it_matters: null,
+      stance: null,
+      error_code: 'generation_error',
+      message: 'litellm timeout',
+      preserved_current_artifact: true,
+    });
+  });
+
   test('POST /distill/sync requires admin secret', async () => {
     await startServerWithMocks();
     if (listenDenied) return;
