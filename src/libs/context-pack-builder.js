@@ -65,6 +65,9 @@ function deriveExcerptFromRecord(record, opts) {
   const maxLen = Number(options.maxLen || 800);
   const includeFallbackKeys = options.includeFallbackKeys !== false;
 
+  const distillSummary = pick(obj, ['distill_summary']);
+  if (distillSummary) return snip(distillSummary, maxLen);
+
   const gist = pick(obj, ['gist']);
   if (gist) return snip(gist, maxLen);
 
@@ -100,6 +103,7 @@ function toContextPackItem(record, opts) {
     topic_primary: pick(obj, ['topic_primary']) || '-',
     topic_secondary: pick(obj, ['topic_secondary']) || '-',
     keywords: normalizeKeywords(pickAny(obj, ['keywords'])),
+    why_it_matters: pick(obj, ['distill_why_it_matters']) || '-',
     content: deriveExcerptFromRecord(obj, {
       maxLen: maxContentLen,
       includeFallbackKeys: true,
@@ -123,11 +127,21 @@ function buildContextPackMarkdown(items, meta, opts) {
   const options = opts || {};
   const markdownV2 = Boolean(options.markdownV2);
   const maxContentLen = Number(options.maxContentLen || 800);
+  const whyItMattersShareRaw = Number(options.whyItMattersShare);
+  const whyItMattersShare = Number.isFinite(whyItMattersShareRaw)
+    ? Math.min(1, Math.max(0, whyItMattersShareRaw))
+    : 0.25;
   const layout = String(options.layout || (markdownV2 ? 'telegram' : 'ui')).toLowerCase();
   const rows = Array.isArray(items) ? items : [];
   const normalizedItems = rows
     .filter((row) => !(row && typeof row === 'object' && row.is_meta === true))
     .map((row) => toContextPackItem(row, { maxContentLen }));
+  const whyItMattersCount = normalizedItems.length > 0
+    ? Math.min(
+      normalizedItems.length,
+      Math.max(1, Math.round(normalizedItems.length * whyItMattersShare)),
+    )
+    : 0;
 
   // Context pack template:
   // CONTEXT PACK
@@ -143,13 +157,17 @@ function buildContextPackMarkdown(items, meta, opts) {
     lines.push('## Context Pack');
     lines.push(`retrieval: ${buildRetrievalLine(meta)}`);
     lines.push('');
-    normalizedItems.forEach((item) => {
+    normalizedItems.forEach((item, index) => {
       const keywords = item.keywords.length ? item.keywords.join(', ') : '-';
+      const includeWhyItMatters = index < whyItMattersCount && item.why_it_matters !== '-';
       lines.push(`Entry ${item.entry_id} | ${item.content_type} | ${item.author} | ${item.title} | ${item.date}`);
       lines.push(`topic: ${item.topic_primary} -> ${item.topic_secondary}`);
       lines.push(`keywords: ${keywords}`);
       lines.push(`url: ${item.url || '-'}`);
       lines.push(`content: ${item.content}`);
+      if (includeWhyItMatters) {
+        lines.push(`why_it_matters: ${item.why_it_matters}`);
+      }
       lines.push('');
     });
     if (normalizedItems.length === 0) {
@@ -159,12 +177,16 @@ function buildContextPackMarkdown(items, meta, opts) {
     lines.push('CONTEXT PACK');
     lines.push(`Retrieval: ${buildRetrievalLine(meta)}`);
     lines.push('Top matches (most relevant first):');
-    normalizedItems.forEach((item) => {
+    normalizedItems.forEach((item, index) => {
       const keywords = item.keywords.length ? item.keywords.join(', ') : '-';
+      const includeWhyItMatters = index < whyItMattersCount && item.why_it_matters !== '-';
       lines.push(`- ${item.entry_id} | ${item.content_type} | ${item.author} | ${item.title} | ${item.date}`);
       lines.push(`  - Topic: ${item.topic_primary} -> ${item.topic_secondary}`);
       lines.push(`  - Keywords: ${keywords}`);
       lines.push(`  - Content: ${item.content}`);
+      if (includeWhyItMatters) {
+        lines.push(`  - Why it matters: ${item.why_it_matters}`);
+      }
     });
     if (normalizedItems.length === 0) {
       lines.push('- (no matches)');

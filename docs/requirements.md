@@ -358,6 +358,8 @@ Primary objective:
   - UI: regular Markdown using the UI-specific compact layout below
   - n8n Telegram: MarkdownV2-safe (escaped)
 - Read endpoints (`/db/read/continue`, `/db/read/find`, `/db/read/last`) must include `keywords` in hit rows.
+- Read endpoints (`/db/read/continue`, `/db/read/find`, `/db/read/last`) must include `distill_summary` in hit rows when present.
+- Read endpoints (`/db/read/continue`, `/db/read/find`, `/db/read/last`) must include `distill_why_it_matters` in hit rows when present.
 - Context-pack builder must skip meta row(s) (`is_meta=true`) and include only hit rows.
 - UI context-pack template is fixed:
   - `## Context Pack`
@@ -367,8 +369,10 @@ Primary objective:
   - `keywords: {k1, k2, k3_or_-}`
   - `url: {url_or_-}`
   - `content: {selected_content}`
+  - for top ~25% of ranked hit rows, include `why_it_matters: {distill_why_it_matters}` when present
 - `run_id` must not be included inside context-pack text.
 - Content selection priority is mandatory:
+  - `distill_summary`
   - `gist`
   - `retrieval_excerpt`
   - `snippet`

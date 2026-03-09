@@ -644,7 +644,9 @@ Source baseline: `PKM Tier 2 - Distillation`
 
 - `distill_summary text null`
   - Main Tier 2 summary artifact.
-  - Downstream consumption / context-pack use is parked for now.
+  - Read context-pack consumption is enabled:
+    - `distill_summary` is the primary content field when present.
+    - for top-ranked read hits, include `distill_why_it_matters` on roughly the first quarter of rows (target 20-30%, implemented at 25%).
 
 - `distill_excerpt text null`
   - Optional bounded passage when wording, evidence, or texture matters.

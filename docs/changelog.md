@@ -1,4 +1,17 @@
 # changelog
+## 2026-03-09 — Read context-pack Tier-2 summary + why-it-matters integration
+
+### What changed
+- Updated shared context-pack content selection priority in `src/libs/context-pack-builder.js`:
+  - now prefers `distill_summary` before `gist` / `retrieval_excerpt` / raw text fallbacks.
+- Updated shared context-pack rendering to include `distill_why_it_matters` for top-ranked rows:
+  - includes `why_it_matters` on roughly the first quarter of hit rows (25% target) when present.
+- Extended read SQL projections (`/db/read/continue`, `/db/read/find`, `/db/read/last`, `/db/read/pull`) to include `distill_summary` in row payloads.
+- Extended read SQL projections (`/db/read/continue`, `/db/read/find`, `/db/read/last`, `/db/read/pull`) to include `distill_why_it_matters` in row payloads.
+- Added server-side tests for context-pack priority behavior:
+  - `test/server/context-pack-builder.test.js`
+- Updated requirements + PRD contracts to document summary-first retrieval and early-row `why_it_matters` inclusion.
+
 ## 2026-03-09 — Tier-2 batch retry policy + LLM metadata enrichment
 
 ### What changed
