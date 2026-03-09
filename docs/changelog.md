@@ -35,6 +35,10 @@
   - `PKM Distill Run` HTTP node calls `POST /distill/run` (admin header required)
   - `Format Distill Run Message` node returns run/dry-run summary in Telegram output
 - Updated status message label from `T1 Batch summary` to generic `Batch summary`.
+- Fixed Tier‑2 telegram formatter rendering:
+  - moved distill formatter code nodes to externalized files under `src/n8n/nodes/10-read/`
+  - replaced broken inline escaped JS strings with thin wrapper imports in workflow JSON
+- Improved `/distill/sync` failure response payload with `message` for generation failures (in addition to `error_code`).
 
 ## 2026-03-08 — Tier-2 foundation: sync distillation endpoint + control-plane utilities
 

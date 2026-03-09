@@ -1223,7 +1223,7 @@
       "id": "ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca",
       "name": "Format Distill Message",
       "parameters": {
-        "jsCode": "const r = $json || {};\\n\\nconst mdv2 = (v) =>\\n  String(v ?? \"\")\\n    .replace(/([_*\\\\[\\\\]()~`>#+\\\\-=|{}.!\\\\\\\\])/g, \"\\\\\\\\$1\");\\n\\nconst status = String(r.status || \"\").toLowerCase();\\nif (status === \"completed\") {\\n  return {\\n    telegram_message:\\n`*✅ Tier\\\\_2 distill completed*\\n• Entry\\\\_id: ${r.entry_id ?? \"-\"}\\n• Stance: ${mdv2(r.stance || \"-\")}\\n\\n*Summary*\\n${mdv2(r.summary || \"-\")}`\\n  };\\n}\\n\\nreturn {\\n  telegram_message:\\n`*❌ Tier\\\\_2 distill failed*\\n• Entry\\\\_id: ${r.entry_id ?? \"-\"}\\n• Error: ${mdv2(r.error_code || \"unknown_error\")}`\\n};\\n"
+        "jsCode": "try{const fn=require(\"/data/src/n8n/nodes/10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js\");return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=\"[extjs:10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js] \"+e.message;throw e;}"
       },
       "position": [
         1792,
@@ -1267,7 +1267,7 @@
       "id": "b9f00fcd-a5ed-462f-a8d0-3e49c20eca11",
       "name": "Format Distill Run Message",
       "parameters": {
-        "jsCode": "const r = $json || {};\\n\\nconst mode = String(r.mode || \"run\").toLowerCase();\\nconst d = r.decision_counts || {};\\n\\nconst lines = [];\\nlines.push(`*Tier\\\\_2 run ${mode === \"dry_run\" ? \"\\\\(dry\\\\ run\\\\)\" : \"\"}*`);\\nlines.push(\"\");\\nlines.push(`*Candidates:* ${r.candidate_count ?? 0}`);\\nlines.push(`*Planned:* ${r.planned_selected_count ?? 0}`);\\nif (mode === \"dry_run\") {\\n  lines.push(`*Would process:* ${r.will_process_count ?? 0}`);\\n} else {\\n  lines.push(`*Processed:* ${r.processed_count ?? 0}`);\\n  lines.push(`✅ Completed: ${r.completed_count ?? 0}`);\\n  lines.push(`❌ Failed: ${r.failed_count ?? 0}`);\\n}\\nlines.push(\"\");\\nlines.push(`*Decisions*`);\\nlines.push(`• Proceed: ${d.proceed ?? 0}`);\\nlines.push(`• Skipped: ${d.skipped ?? 0}`);\\nlines.push(`• Not\\\\_eligible: ${d.not_eligible ?? 0}`);\\n\\nreturn { telegram_message: lines.join(\"\\\\n\") };\\n"
+        "jsCode": "try{const fn=require(\"/data/src/n8n/nodes/10-read/format-distill-run-message__b9f00fcd-a5ed-462f-a8d0-3e49c20eca11.js\");return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=\"[extjs:10-read/format-distill-run-message__b9f00fcd-a5ed-462f-a8d0-3e49c20eca11.js] \"+e.message;throw e;}"
       },
       "position": [
         1792,

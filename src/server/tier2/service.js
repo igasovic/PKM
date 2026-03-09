@@ -317,6 +317,7 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
       why_it_matters: null,
       stance: null,
       error_code: 'generation_error',
+      message: err && err.message ? err.message : null,
     };
   }
 
