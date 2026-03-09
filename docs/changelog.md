@@ -34,6 +34,7 @@
   - returns `mode = "skipped"` with `reason = "worker_busy"` and a user-facing `message`.
 - Updated `Format Distill Run Message` node logic to render a dedicated Telegram message for worker-busy skips.
 - Updated `docs/api.md` to document the worker-busy response variant for `POST /distill/run`.
+- Updated `docs/api.md` to clarify that non-busy `/distill/run` responses include `batch_id` for status lookup.
 
 ## 2026-03-09 — Tier-2 batch retry policy + LLM metadata enrichment
 

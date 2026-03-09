@@ -641,6 +641,7 @@ Notes:
 - `candidate_limit` and `max_sync_items` must be positive integers when provided.
 - `dry_run=true` runs planning only and does not call Tier‑2 sync generation.
 - This endpoint always targets production schema for execution.
+- Non-busy responses include `batch_id` for `/status/batch` lookup.
 - If a run is requested while the Tier‑2 batch worker loop is already active, the response is:
   - `mode = "skipped"`
   - `reason = "worker_busy"`
@@ -651,6 +652,7 @@ Response:
 {
   "mode": "run",
   "target_schema": "pkm",
+  "batch_id": "t2_1739420000000_ab12cd",
   "processing_limit": 25,
   "candidate_count": 120,
   "decision_counts": {
