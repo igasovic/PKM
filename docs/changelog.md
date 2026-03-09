@@ -16,6 +16,18 @@
   - non-retryable failure -> no retry
   - max-attempts stop condition
 
+## 2026-03-09 — Read workflow status command wiring (n8n)
+
+### What changed
+- Updated `src/n8n/nodes/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js`:
+  - fixed `/status` parsing so it no longer falls through to query-required command handling
+  - added optional stage argument: `/status [t1|t2]`
+  - added optional flags: `--limit M`, `--active-only`
+- Updated Read workflow status request node:
+  - switched from `GET /status/t1/batch` to generic `GET /status/batch`
+  - request now passes stage/limit/include-terminal from parsed command fields
+- Updated status message label from `T1 Batch summary` to generic `Batch summary`.
+
 ## 2026-03-08 — Tier-2 foundation: sync distillation endpoint + control-plane utilities
 
 ### What changed

@@ -57,7 +57,7 @@ if (!defaults[cmd]) {
         `/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
         `/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
         `/debug <run_id|last>\n` +
-        `/status`
+        `/status [t1|t2] [--limit M] [--active-only]`
     }
   }];
 }
@@ -130,6 +130,48 @@ if (cmd === 'debug') {
         ? '/debug/run/last'
         : `/debug/run/${encodeURIComponent(token)}`,
       debug_method: 'GET',
+      chat_id
+    }
+  }];
+}
+
+// Special case: /status [t1|t2] [--limit M] [--active-only]
+if (cmd === 'status') {
+  const rest = text.replace(/^\/\w+/i, '').trim();
+  const tokens = rest
+    .replace(/--limit\s+\d+/ig, '')
+    .replace(/--active-only\b/ig, '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  let status_stage = 't1';
+  if (tokens.length > 0) {
+    const stage = String(tokens[0]).toLowerCase();
+    if (stage !== 't1' && stage !== 't2') {
+      return [{
+        json: {
+          _reply_now: true,
+          chat_id,
+          telegram_message: `Usage:\n/status [t1|t2] [--limit M] [--active-only]`
+        }
+      }];
+    }
+    status_stage = stage;
+  }
+
+  let status_limit = 50;
+  const mLimit = text.match(/--limit\s+(\d+)/i);
+  if (mLimit) status_limit = Math.min(200, Math.max(1, parseInt(mLimit[1], 10)));
+
+  const status_include_terminal = /--active-only\b/i.test(text) ? false : null;
+
+  return [{
+    json: {
+      cmd,
+      status_stage,
+      status_limit,
+      status_include_terminal,
       chat_id
     }
   }];
