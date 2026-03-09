@@ -1,4 +1,11 @@
 # changelog
+## 2026-03-09 — Distill run Telegram message now shows preserved-current count
+
+### What changed
+- Updated `src/n8n/nodes/10-read/format-distill-run-message__b9f00fcd-a5ed-462f-a8d0-3e49c20eca11.js`:
+  - for run mode, message now includes `Preserved current: N` when failed results include `preserved_current_artifact=true`.
+- Added formatter coverage in `test/server/n8n.format-distill-run-message.test.js`.
+
 ## 2026-03-09 — Tier-2 run results now propagate preserved-current failure marker
 
 ### What changed

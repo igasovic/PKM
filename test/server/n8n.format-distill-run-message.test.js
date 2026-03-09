@@ -55,4 +55,31 @@ describe('n8n format-distill-run-message', () => {
     expect(out[0].json.telegram_message).toContain('*Batch\\_id:* t2\\_1700000000\\_ab12cd');
     expect(out[0].json.telegram_message).toContain('*Processed:* 10');
   });
+
+  test('includes preserved-current count when failed results carry marker', async () => {
+    const out = await formatDistillRunMessage({
+      $json: {
+        mode: 'run',
+        batch_id: 't2_1700000000_xy12ab',
+        candidate_count: 1,
+        planned_selected_count: 1,
+        processed_count: 1,
+        completed_count: 0,
+        failed_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        results: [
+          {
+            entry_id: 701,
+            status: 'failed',
+            error_code: 'generation_error',
+            preserved_current_artifact: true,
+          },
+        ],
+      },
+    });
+
+    expect(out).toHaveLength(1);
+    expect(out[0].json.telegram_message).toContain('Failed: 1');
+    expect(out[0].json.telegram_message).toContain('Preserved current: 1');
+  });
 });

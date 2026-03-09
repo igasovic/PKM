@@ -18,6 +18,8 @@ module.exports = async function run(ctx) {
       .replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 
   const lines = [];
+  const results = Array.isArray(r.results) ? r.results : [];
+  const preservedCurrentCount = results.filter((row) => row && row.preserved_current_artifact === true).length;
   if (r.skipped === true && String(r.reason || '').toLowerCase() === 'worker_busy') {
     lines.push('*Tier\\_2 run skipped*');
     lines.push('');
@@ -59,6 +61,9 @@ module.exports = async function run(ctx) {
     lines.push(`*Processed:* ${r.processed_count ?? 0}`);
     lines.push(`Completed: ${r.completed_count ?? 0}`);
     lines.push(`Failed: ${r.failed_count ?? 0}`);
+    if (preservedCurrentCount > 0) {
+      lines.push(`Preserved current: ${preservedCurrentCount}`);
+    }
   }
   lines.push('');
   lines.push('*Decisions*');
