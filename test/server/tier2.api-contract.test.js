@@ -179,4 +179,66 @@ describe('tier2 API contract', () => {
       },
     ]);
   });
+
+  test('POST /distill/run applies boolean-like string options end-to-end', async () => {
+    const plannerInputs = [];
+    const distillCalls = [];
+
+    jest.doMock('../../src/server/tier2/planner.js', () => ({
+      runTier2ControlPlanePlan: async (input) => {
+        plannerInputs.push(input);
+        return {
+          target_schema: 'pkm',
+          candidate_count: 2,
+          decision_counts: { proceed: 1, skipped: 1, not_eligible: 0 },
+          persisted_eligibility: { updated: 0, groups: [] },
+          selected_count: 1,
+          selected: [{ id: 'a', entry_id: 701 }],
+        };
+      },
+    }));
+
+    jest.doMock('../../src/server/tier2/service.js', () => ({
+      distillTier2SingleEntrySync: async (entryId) => {
+        distillCalls.push(entryId);
+        return { entry_id: entryId, status: 'completed' };
+      },
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/run',
+      JSON.stringify({
+        dry_run: 'false',
+        persist_eligibility: 'false',
+        max_sync_items: 1,
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.mode).toBe('run');
+    expect(parsed.processed_count).toBe(1);
+    expect(parsed.completed_count).toBe(1);
+    expect(parsed.failed_count).toBe(0);
+    expect(typeof parsed.batch_id).toBe('string');
+    expect(parsed.batch_id).toMatch(/^t2_/);
+    expect(distillCalls).toEqual([701]);
+    expect(plannerInputs).toEqual([
+      {
+        candidate_limit: undefined,
+        persist_eligibility: false,
+        include_details: false,
+        target_schema: 'pkm',
+      },
+    ]);
+  });
 });

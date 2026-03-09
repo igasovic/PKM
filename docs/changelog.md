@@ -40,6 +40,7 @@
   - `/distill/run` busy payload
   - `/distill/run` admin-secret enforcement
   - `/status/batch?stage=t2` query forwarding
+  - `/distill/run` string-boolean option handling end-to-end
 
 ## 2026-03-09 — Tier-2 batch retry policy + LLM metadata enrichment
 
