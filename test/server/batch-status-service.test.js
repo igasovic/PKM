@@ -62,6 +62,35 @@ describe('batch status service', () => {
     ]);
   });
 
+  test('unrecognized include_terminal values fall back to stage default', async () => {
+    const calls = [];
+    const service = createBatchStatusService({
+      getAdapter: (stage) => {
+        expect(stage).toBe('t2');
+        return {
+          getStatusList: async (opts) => {
+            calls.push(opts);
+            return { summary: {}, jobs: [] };
+          },
+          getStatus: async () => null,
+        };
+      },
+    });
+
+    await service.getBatchStatusList({
+      stage: 't2',
+      limit: 3,
+      include_terminal: 'maybe',
+    });
+
+    expect(calls).toEqual([
+      {
+        limit: 3,
+        include_terminal: true,
+      },
+    ]);
+  });
+
   test('getBatchStatus forwards parsed item options', async () => {
     const calls = [];
     const service = createBatchStatusService({
@@ -92,6 +121,36 @@ describe('batch status service', () => {
         opts: {
           include_items: true,
           items_limit: '50',
+        },
+      },
+    ]);
+  });
+
+  test('getBatchStatus falls back include_items to false for unknown values', async () => {
+    const calls = [];
+    const service = createBatchStatusService({
+      getAdapter: () => ({
+        getStatusList: async () => ({ summary: {}, jobs: [] }),
+        getStatus: async (batchId, opts) => {
+          calls.push({ batchId, opts });
+          return { batch_id: batchId, status: 'completed' };
+        },
+      }),
+    });
+
+    await service.getBatchStatus({
+      stage: 't2',
+      batch_id: 'b_456',
+      include_items: 'maybe',
+      items_limit: '10',
+    });
+
+    expect(calls).toEqual([
+      {
+        batchId: 'b_456',
+        opts: {
+          include_items: false,
+          items_limit: '10',
         },
       },
     ]);

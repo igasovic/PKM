@@ -23,9 +23,13 @@
   - `dry_run`
   - `persist_eligibility`
   - `include_details`
+- Hardened batch status boolean parsing to treat unrecognized values as fallback defaults:
+  - `include_terminal`
+  - `include_items`
 - Added tests covering string boolean behavior:
   - `test/server/tier2.enrichment.test.js`
   - `test/server/tier2.planner.test.js`
+  - `test/server/batch-status-service.test.js`
 
 ## 2026-03-09 — Tier-2 run busy-response normalization
 

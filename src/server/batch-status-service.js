@@ -5,7 +5,9 @@ const { getBatchStageAdapter, normalizeStage } = require('./batch-stage-registry
 function parseBool(value, fallback) {
   if (value === null || value === undefined || value === '') return fallback;
   const v = String(value).trim().toLowerCase();
-  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+  if (v === '1' || v === 'true' || v === 'yes' || v === 'on') return true;
+  if (v === '0' || v === 'false' || v === 'no' || v === 'off') return false;
+  return fallback;
 }
 
 function createBatchStatusService(deps) {
