@@ -88,6 +88,37 @@ describe('tier2 enrichment batch runner', () => {
     expect(out.selected).toHaveLength(1);
   });
 
+  test('treats boolean-like string options deterministically', async () => {
+    let syncCalled = false;
+    const runner = createTier2BatchRunner({
+      runPlan: async () => ({
+        candidate_count: 2,
+        decision_counts: { proceed: 1, skipped: 1, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 301 }],
+      }),
+      distillOne: async () => {
+        syncCalled = true;
+        return { entry_id: 301, status: 'completed' };
+      },
+      getLogger: () => ({
+        child() { return this; },
+        async step(_name, fn) { return fn(); },
+      }),
+    });
+
+    const out = await runner.runTier2BatchCycle({
+      dry_run: 'false',
+      persist_eligibility: 'false',
+      max_sync_items: 1,
+    });
+
+    expect(syncCalled).toBe(true);
+    expect(out.mode).toBe('run');
+    expect(out.persisted_eligibility).toEqual({ updated: 0, groups: [] });
+  });
+
   test('respects max_sync_items limit', async () => {
     const syncCalls = [];
     const runner = createTier2BatchRunner({

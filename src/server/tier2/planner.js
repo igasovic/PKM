@@ -14,6 +14,15 @@ function toPositiveIntOrNull(value) {
   return Math.trunc(n);
 }
 
+function parseBooleanDefault(value, defaultValue) {
+  if (value === null || value === undefined || value === '') return defaultValue;
+  if (typeof value === 'boolean') return value;
+  const raw = String(value).trim().toLowerCase();
+  if (raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on') return true;
+  if (raw === '0' || raw === 'false' || raw === 'no' || raw === 'off') return false;
+  return defaultValue;
+}
+
 function summarizeDecisionCounts(decisions) {
   const out = {
     proceed: 0,
@@ -134,8 +143,8 @@ function createTier2Planner(deps) {
   async function runTier2ControlPlanePlan(rawOptions) {
     const options = rawOptions && typeof rawOptions === 'object' ? rawOptions : {};
     const candidateLimit = toPositiveIntOrNull(options.candidate_limit);
-    const persistEligibility = options.persist_eligibility !== false;
-    const includeDetails = options.include_details === true;
+    const persistEligibility = parseBooleanDefault(options.persist_eligibility, true);
+    const includeDetails = parseBooleanDefault(options.include_details, false);
     const targetSchema = String(options.target_schema || '').trim() || null;
 
     const logger = getLoggerFn().child({ pipeline: 't2.control_plane.plan' });

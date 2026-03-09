@@ -169,6 +169,57 @@ describe('tier2 planner', () => {
     expect(out.selected_count).toBe(1);
   });
 
+  test('parses boolean-like string options for persistence/details flags', async () => {
+    let persistCalled = false;
+    let detailsCalled = false;
+    const fakeDb = {
+      async getTier2Candidates() {
+        return {
+          rows: [
+            {
+              id: '11111111-1111-4111-8111-111111111111',
+              entry_id: 101,
+              content_type: 'newsletter',
+              clean_word_count: 6200,
+              has_usable_clean_text: true,
+              intent: 'archive',
+              quality_score: 0.8,
+              topic_primary_confidence: 0.8,
+              topic_secondary_confidence: 0.8,
+              distill_status: 'pending',
+              content_hash: 'a1',
+              distill_created_from_hash: null,
+              created_at: '2026-03-01T00:00:00.000Z',
+            },
+          ],
+          rowCount: 1,
+        };
+      },
+      async persistTier2EligibilityStatusByIds() {
+        persistCalled = true;
+        return { rowCount: 1, rows: [] };
+      },
+      async getTier2DetailsByIds() {
+        detailsCalled = true;
+        return { rows: [], rowCount: 0 };
+      },
+    };
+
+    const planner = createTier2Planner({
+      db: fakeDb,
+      getLogger: () => makeLogger(),
+      getConfig: () => ({ distill: { max_entries_per_run: 10, direct_chunk_threshold_words: 5000 } }),
+    });
+
+    await planner.runTier2ControlPlanePlan({
+      persist_eligibility: 'false',
+      include_details: 'true',
+    });
+
+    expect(persistCalled).toBe(false);
+    expect(detailsCalled).toBe(true);
+  });
+
   test('groups eligibility persistence by status and reason code', () => {
     const groups = buildEligibilityPersistenceGroups([
       { id: '1', decision: 'skipped', reason_code: 'already_current' },

@@ -16,6 +16,17 @@
 - Updated `docs/api.md` read section to document `distill_summary` / `distill_why_it_matters` hit-row fields.
 - Updated requirements + PRD contracts to document summary-first retrieval and early-row `why_it_matters` inclusion.
 
+## 2026-03-09 — Tier-2 boolean option parsing hardening
+
+### What changed
+- Hardened Tier‑2 option parsing for plan/run flows to accept boolean-like string values consistently:
+  - `dry_run`
+  - `persist_eligibility`
+  - `include_details`
+- Added tests covering string boolean behavior:
+  - `test/server/tier2.enrichment.test.js`
+  - `test/server/tier2.planner.test.js`
+
 ## 2026-03-09 — Tier-2 batch retry policy + LLM metadata enrichment
 
 ### What changed

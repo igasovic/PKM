@@ -18,7 +18,11 @@ function parsePositiveIntOrNull(value, fieldName) {
 
 function parseBooleanDefault(value, defaultValue) {
   if (value === null || value === undefined || value === '') return defaultValue;
-  return value !== false;
+  if (typeof value === 'boolean') return value;
+  const raw = String(value).trim().toLowerCase();
+  if (raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on') return true;
+  if (raw === '0' || raw === 'false' || raw === 'no' || raw === 'off') return false;
+  return defaultValue;
 }
 
 function resolveDefaultRunLimit() {
@@ -103,7 +107,7 @@ function createTier2BatchRunner(deps) {
     const candidateLimit = parsePositiveIntOrNull(options.candidate_limit, 'candidate_limit');
     const maxSyncItems = parsePositiveIntOrNull(options.max_sync_items, 'max_sync_items') || resolveDefaultRunLimit();
     const persistEligibility = parseBooleanDefault(options.persist_eligibility, true);
-    const dryRun = options.dry_run === true;
+    const dryRun = parseBooleanDefault(options.dry_run, false);
 
     const logger = getLoggerFn().child({ pipeline: 't2.distill.batch' });
     const retryConfig = resolveTier2RetryConfig(getConfigFn());
