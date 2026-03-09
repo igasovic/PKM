@@ -349,6 +349,7 @@ async function handleRequest(req, res) {
       const result = await logger.step(
         'api.distill.run',
         async () => runTier2BatchWorkerCycle({
+          execution_mode: body.execution_mode || body.mode,
           candidate_limit: body.candidate_limit,
           max_sync_items: body.max_sync_items,
           persist_eligibility: body.persist_eligibility,

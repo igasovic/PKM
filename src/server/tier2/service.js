@@ -39,6 +39,15 @@ function getModelForRequestType(distillConfig, requestType) {
   if (requestType === 'final_synthesis') {
     return models.synthesis || models.direct || process.env.T2_MODEL_SYNTHESIS || process.env.T2_MODEL_DIRECT || 't2-direct';
   }
+  if (requestType === 'batch_direct_generation') {
+    return models.batch_direct
+      || models.sync_direct
+      || models.direct
+      || process.env.T2_MODEL_BATCH_DIRECT
+      || process.env.T2_MODEL_SYNC_DIRECT
+      || process.env.T2_MODEL_DIRECT
+      || 't2-direct';
+  }
   if (requestType === 'sync_direct_generation') {
     return models.sync_direct || models.direct || process.env.T2_MODEL_SYNC_DIRECT || process.env.T2_MODEL_DIRECT || 't2-direct';
   }
@@ -59,6 +68,19 @@ function parseRetryCount(value) {
   return Math.trunc(n);
 }
 
+function parseExecutionMode(value, fallback) {
+  const fb = String(fallback || 'sync').trim().toLowerCase() === 'batch' ? 'batch' : 'sync';
+  if (value === null || value === undefined || value === '') return fb;
+  const raw = String(value).trim().toLowerCase();
+  if (raw === 'batch') return 'batch';
+  if (raw === 'sync') return 'sync';
+  return fb;
+}
+
+function stepPrefixForMode(executionMode) {
+  return executionMode === 'sync' ? 't2.sync' : 't2.batch.entry';
+}
+
 function hasCurrentCompletedArtifact(row) {
   const status = String((row && row.distill_status) || '').trim().toLowerCase();
   const currentHash = String((row && row.content_hash) || '').trim();
@@ -70,6 +92,7 @@ async function requestStructuredOutput({
   requestType,
   systemPrompt,
   userPrompt,
+  stepPrefix,
   metadata,
   logger,
 }) {
@@ -77,9 +100,10 @@ async function requestStructuredOutput({
   const model = getModelForRequestType(distillConfig, requestType);
   const client = getLiteLLMClient();
   const meta = metadata && typeof metadata === 'object' ? metadata : {};
+  const prefix = String(stepPrefix || 't2.sync').trim();
 
   const result = await logger.step(
-    `t2.sync.llm.${requestType}`,
+    `${prefix}.llm.${requestType}`,
     async () => client.sendMessage(userPrompt, {
       model,
       systemPrompt,
@@ -113,15 +137,23 @@ async function requestStructuredOutput({
   };
 }
 
-async function generateDirectArtifact(entry, logger) {
+async function generateDirectArtifact(entry, logger, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const executionMode = parseExecutionMode(opts.execution_mode, 'sync');
+  const stepPrefix = stepPrefixForMode(executionMode);
+  const requestType = executionMode === 'sync'
+    ? 'sync_direct_generation'
+    : 'batch_direct_generation';
   const prompt = buildDirectDistillPrompt(entry);
   const response = await requestStructuredOutput({
-    requestType: 'sync_direct_generation',
+    requestType,
     systemPrompt: prompt.systemPrompt,
     userPrompt: prompt.userPrompt,
+    stepPrefix,
     metadata: {
       route: 'direct',
       substage: 'direct_generation',
+      execution_mode: executionMode,
       entry_id: entry && entry.entry_id,
       clean_word_count: entry && entry.clean_word_count,
     },
@@ -138,7 +170,10 @@ async function generateDirectArtifact(entry, logger) {
   };
 }
 
-async function generateChunkedArtifact(entry, logger) {
+async function generateChunkedArtifact(entry, logger, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const executionMode = parseExecutionMode(opts.execution_mode, 'sync');
+  const stepPrefix = stepPrefixForMode(executionMode);
   const chunks = chunkTextForTier2(entry.clean_text, getConfig());
   if (!chunks.length) {
     throw new Error('chunked generation requires non-empty chunks');
@@ -157,9 +192,11 @@ async function generateChunkedArtifact(entry, logger) {
       requestType: prompt.request_type,
       systemPrompt: prompt.systemPrompt,
       userPrompt: prompt.userPrompt,
+      stepPrefix,
       metadata: {
         route: 'chunked',
         substage: 'chunk_note_generation',
+        execution_mode: executionMode,
         entry_id: entry && entry.entry_id,
         clean_word_count: entry && entry.clean_word_count,
         chunk_index: chunk.index,
@@ -181,9 +218,11 @@ async function generateChunkedArtifact(entry, logger) {
     requestType: synthesisPrompt.request_type,
     systemPrompt: synthesisPrompt.systemPrompt,
     userPrompt: synthesisPrompt.userPrompt,
+    stepPrefix,
     metadata: {
       route: 'chunked',
       substage: 'final_synthesis',
+      execution_mode: executionMode,
       entry_id: entry && entry.entry_id,
       clean_word_count: entry && entry.clean_word_count,
       chunk_count: chunks.length,
@@ -215,9 +254,10 @@ function toFailureMetadata(errorCode, details, model, chunkingStrategy, retryCou
   };
 }
 
-async function persistValidationFailure(entryId, validation, generated, retryCount, logger) {
+async function persistValidationFailure(entryId, validation, generated, retryCount, logger, stepPrefix) {
+  const prefix = String(stepPrefix || 't2.sync').trim();
   await logger.step(
-    't2.sync.persist.failed',
+    `${prefix}.persist.failure_state`,
     async () => db.persistTier2SyncFailure(entryId, {
       status: 'failed',
       metadata: toFailureMetadata(
@@ -238,9 +278,10 @@ async function persistValidationFailure(entryId, validation, generated, retryCou
   );
 }
 
-async function persistGenerationFailure(entryId, err, generated, retryCount, logger) {
+async function persistGenerationFailure(entryId, err, generated, retryCount, logger, stepPrefix) {
+  const prefix = String(stepPrefix || 't2.sync').trim();
   await logger.step(
-    't2.sync.persist.failed',
+    `${prefix}.persist.failure_state`,
     async () => db.persistTier2SyncFailure(entryId, {
       status: 'failed',
       metadata: toFailureMetadata(
@@ -252,15 +293,19 @@ async function persistGenerationFailure(entryId, err, generated, retryCount, log
       ),
     }),
     {
-      input: { entry_id: entryId },
+      input: {
+        entry_id: entryId,
+        error_code: 'generation_error',
+      },
       output: (out) => ({ rowCount: out && out.rowCount ? out.rowCount : 0 }),
     }
   );
 }
 
-async function loadEntryForSync(entryId, logger) {
+async function loadEntryForSync(entryId, logger, stepPrefix) {
+  const prefix = String(stepPrefix || 't2.sync').trim();
   const row = await logger.step(
-    't2.sync.load_entry',
+    `${prefix}.load_entry`,
     async () => db.getTier2SyncEntryByEntryId(entryId),
     {
       input: { entry_id: entryId },
@@ -289,22 +334,25 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
   const entryId = normalizeEntryId(rawEntryId);
   const options = rawOptions && typeof rawOptions === 'object' ? rawOptions : {};
   const retryCount = parseRetryCount(options.retry_count);
+  const executionMode = parseExecutionMode(options.execution_mode, 'sync');
+  const stepPrefix = stepPrefixForMode(executionMode);
   const logger = getLogger().child({
-    pipeline: 't2.distill.sync',
+    pipeline: executionMode === 'sync' ? 't2.distill.sync' : 't2.distill.batch_item',
     entry_id: entryId,
   });
 
-  const entry = await loadEntryForSync(entryId, logger);
+  const entry = await loadEntryForSync(entryId, logger, stepPrefix);
   const routeDecision = resolveTier2Route(entry, getConfig());
   let generated = null;
 
   await logger.step(
-    't2.sync.route_selection',
+    `${stepPrefix}.route_selection`,
     async () => routeDecision,
     {
       input: {
         entry_id: entryId,
         clean_word_count: entry.clean_word_count,
+        execution_mode: executionMode,
       },
       output: (out) => out,
     }
@@ -312,12 +360,12 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
 
   try {
     generated = routeDecision.route === 'chunked'
-      ? await generateChunkedArtifact(entry, logger)
-      : await generateDirectArtifact(entry, logger);
+      ? await generateChunkedArtifact(entry, logger, { execution_mode: executionMode })
+      : await generateDirectArtifact(entry, logger, { execution_mode: executionMode });
   } catch (err) {
     const preserveCurrent = hasCurrentCompletedArtifact(entry);
     if (!preserveCurrent) {
-      await persistGenerationFailure(entryId, err, generated, retryCount, logger);
+      await persistGenerationFailure(entryId, err, generated, retryCount, logger, stepPrefix);
     }
     const failed = {
       entry_id: entryId,
@@ -344,7 +392,7 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
   });
 
   const validation = await logger.step(
-    't2.sync.validate',
+    `${stepPrefix}.validate`,
     async () => validateTier2Artifact({
       artifact,
       clean_text: entry.clean_text,
@@ -370,7 +418,7 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
     };
     const preserveCurrent = hasCurrentCompletedArtifact(entry);
     if (!preserveCurrent) {
-      await persistValidationFailure(entryId, validation, generated, retryCount, logger);
+      await persistValidationFailure(entryId, validation, generated, retryCount, logger, stepPrefix);
     }
     const failed = {
       entry_id: entryId,
@@ -386,7 +434,7 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
   }
 
   const persistResult = await logger.step(
-    't2.sync.persist.completed',
+    `${stepPrefix}.persist.completed`,
     async () => db.persistTier2SyncSuccess(entryId, artifact),
     {
       input: {

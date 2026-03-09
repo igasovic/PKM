@@ -39,6 +39,15 @@ function parseBooleanDefault(value, defaultValue) {
   return defaultValue;
 }
 
+function parseExecutionMode(value, fallback) {
+  const fb = String(fallback || 'batch').trim().toLowerCase() === 'sync' ? 'sync' : 'batch';
+  if (value === null || value === undefined || value === '') return fb;
+  const raw = String(value).trim().toLowerCase();
+  if (raw === 'sync') return 'sync';
+  if (raw === 'batch') return 'batch';
+  throw new Error('execution_mode must be one of: batch, sync');
+}
+
 function resolveDefaultRunLimit() {
   const cfg = getConfig();
   const n = Number(cfg && cfg.distill && cfg.distill.max_entries_per_run);
@@ -86,6 +95,17 @@ function normalizeErrorCode(value) {
   return String(value || 'worker_error').trim().toLowerCase() || 'worker_error';
 }
 
+function buildErrorCodeCounts(results) {
+  const out = {};
+  const rows = Array.isArray(results) ? results : [];
+  for (const row of rows) {
+    if (!row || row.status === 'completed') continue;
+    const code = normalizeErrorCode(row.error_code || row.status || 'worker_error');
+    out[code] = Number(out[code] || 0) + 1;
+  }
+  return out;
+}
+
 function shouldRetryTier2Failure(retryConfig, errorCode, attemptCount) {
   const cfg = retryConfig || {
     enabled: false,
@@ -127,6 +147,7 @@ function createTier2BatchRunner(deps) {
     const maxSyncItems = parsePositiveIntOrNull(options.max_sync_items, 'max_sync_items') || resolveDefaultRunLimit();
     const persistEligibility = parseBooleanDefault(options.persist_eligibility, true);
     const dryRun = parseBooleanDefault(options.dry_run, false);
+    const executionMode = parseExecutionMode(options.execution_mode || options.mode, 'batch');
 
     const logger = getLoggerFn().child({ pipeline: 't2.distill.batch' });
     const retryConfig = resolveTier2RetryConfig(getConfigFn());
@@ -145,6 +166,7 @@ function createTier2BatchRunner(deps) {
           persist_eligibility: persistEligibility,
           max_sync_items: maxSyncItems,
           dry_run: dryRun,
+          execution_mode: executionMode,
         },
         output: (out) => ({
           candidate_count: out && out.candidate_count,
@@ -159,6 +181,7 @@ function createTier2BatchRunner(deps) {
     if (dryRun) {
       return {
         mode: 'dry_run',
+        execution_mode: executionMode,
         target_schema: 'pkm',
         processing_limit: maxSyncItems,
         candidate_count: Number(plan && plan.candidate_count ? plan.candidate_count : 0),
@@ -200,13 +223,17 @@ function createTier2BatchRunner(deps) {
         let out;
         try {
           out = await logger.step(
-            't2.batch.sync_one',
-            async () => distillOne(row.entry_id, { retry_count: attempts - 1 }),
+            't2.batch.process_one',
+            async () => distillOne(row.entry_id, {
+              retry_count: attempts - 1,
+              execution_mode: executionMode,
+            }),
             {
               input: {
                 entry_id: row.entry_id,
                 attempt: attempts,
                 retry_count: attempts - 1,
+                execution_mode: executionMode,
               },
               output: (value) => ({
                 entry_id: value && value.entry_id,
@@ -310,9 +337,11 @@ function createTier2BatchRunner(deps) {
     const completedCount = results.filter((row) => row.status === 'completed').length;
     const failedCount = results.length - completedCount;
     const preservedCurrentCount = results.filter((row) => row.preserved_current_artifact === true).length;
+    const errorCodeCounts = buildErrorCodeCounts(results);
 
     return {
       mode: 'run',
+      execution_mode: executionMode,
       target_schema: 'pkm',
       processing_limit: maxSyncItems,
       candidate_count: Number(plan && plan.candidate_count ? plan.candidate_count : 0),
@@ -323,6 +352,7 @@ function createTier2BatchRunner(deps) {
       completed_count: completedCount,
       failed_count: failedCount,
       preserved_current_count: preservedCurrentCount,
+      error_code_counts: errorCodeCounts,
       results,
     };
   }
@@ -356,6 +386,12 @@ function buildTier2WorkerBusyResponse() {
 function buildTier2RunErrorResponse(rawOptions, errorValue) {
   const options = rawOptions && typeof rawOptions === 'object' ? rawOptions : {};
   const dryRun = parseBooleanDefault(options.dry_run, false);
+  let executionMode = 'batch';
+  try {
+    executionMode = parseExecutionMode(options.execution_mode || options.mode, 'batch');
+  } catch (_err) {
+    executionMode = 'batch';
+  }
   const maxSyncItemsRaw = Number(options.max_sync_items);
   const processingLimit = Number.isFinite(maxSyncItemsRaw) && maxSyncItemsRaw > 0
     ? Math.trunc(maxSyncItemsRaw)
@@ -367,6 +403,7 @@ function buildTier2RunErrorResponse(rawOptions, errorValue) {
   if (dryRun) {
     return {
       mode: 'dry_run',
+      execution_mode: executionMode,
       target_schema: 'pkm',
       processing_limit: processingLimit,
       candidate_count: 0,
@@ -381,6 +418,7 @@ function buildTier2RunErrorResponse(rawOptions, errorValue) {
 
   return {
     mode: 'run',
+    execution_mode: executionMode,
     target_schema: 'pkm',
     processing_limit: processingLimit,
     candidate_count: 0,
@@ -450,6 +488,8 @@ function buildTier2Counts(result) {
 }
 
 function buildTier2Items(result, createdAt, updatedAt) {
+  const executionMode = parseExecutionMode(result && result.execution_mode, 'batch');
+  const promptMode = executionMode === 'sync' ? 't2_sync' : 't2_batch';
   if (result && result.mode === 'dry_run') {
     const selected = Array.isArray(result.selected) ? result.selected : [];
     return selected.map((row) => ({
@@ -462,7 +502,7 @@ function buildTier2Items(result, createdAt, updatedAt) {
       title: null,
       author: null,
       content_type: 'newsletter',
-      prompt_mode: 't2_sync',
+      prompt_mode: promptMode,
       has_error: false,
       created_at: createdAt,
       updated_at: updatedAt,
@@ -482,7 +522,7 @@ function buildTier2Items(result, createdAt, updatedAt) {
       title: null,
       author: null,
       content_type: 'newsletter',
-      prompt_mode: 't2_sync',
+      prompt_mode: promptMode,
       has_error: row.status !== 'completed',
       created_at: createdAt,
       updated_at: updatedAt,
@@ -512,12 +552,14 @@ function recordTier2BatchRun(result, startedAt, endedAt) {
     error_file_id: null,
     metadata: {
       mode: result && result.mode ? result.mode : null,
+      execution_mode: parseExecutionMode(result && result.execution_mode, 'batch'),
       candidate_count: Number(result && result.candidate_count ? result.candidate_count : 0),
       decision_counts: result && result.decision_counts ? result.decision_counts : { proceed: 0, skipped: 0, not_eligible: 0 },
       persisted_eligibility: result && result.persisted_eligibility ? result.persisted_eligibility : { updated: 0, groups: [] },
       processing_limit: Number(result && result.processing_limit ? result.processing_limit : resolveDefaultRunLimit()),
       will_process_count: Number(result && result.will_process_count ? result.will_process_count : 0),
       preserved_current_count: Number(result && result.preserved_current_count ? result.preserved_current_count : 0),
+      error_code_counts: result && result.error_code_counts ? result.error_code_counts : {},
       error: result && result.error ? String(result.error) : null,
     },
     created_at: startedAt,
@@ -619,6 +661,7 @@ const tier2WorkerRuntime = createBatchWorkerRuntime({
   isEnabled: isTier2WorkerEnabled,
   resolveIntervalMs: resolveTier2WorkerIntervalMs,
   buildScheduledOptions: () => ({
+    execution_mode: 'batch',
     max_sync_items: resolveTier2WorkerSyncLimitFromEnv(),
   }),
   runCycle: async (options) => runner.runTier2BatchCycle(options || {}),

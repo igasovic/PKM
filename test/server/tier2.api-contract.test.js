@@ -342,6 +342,57 @@ describe('tier2 API contract', () => {
     ]);
   });
 
+  test('POST /distill/run forwards explicit execution_mode=sync', async () => {
+    const distillCalls = [];
+    jest.doMock('../../src/server/tier2/planner.js', () => ({
+      runTier2ControlPlanePlan: async () => ({
+        target_schema: 'pkm',
+        candidate_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 991 }],
+      }),
+    }));
+
+    jest.doMock('../../src/server/tier2/service.js', () => ({
+      distillTier2SingleEntrySync: async (entryId, options) => {
+        distillCalls.push({ entryId, options });
+        return { entry_id: entryId, status: 'completed' };
+      },
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/run',
+      JSON.stringify({
+        execution_mode: 'sync',
+        max_sync_items: 1,
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.execution_mode).toBe('sync');
+    expect(distillCalls).toEqual([
+      {
+        entryId: 991,
+        options: expect.objectContaining({
+          retry_count: 0,
+          execution_mode: 'sync',
+        }),
+      },
+    ]);
+  });
+
   test('POST /distill/run returns normalized payload when planner errors', async () => {
     jest.doMock('../../src/server/tier2/planner.js', () => ({
       runTier2ControlPlanePlan: async () => {

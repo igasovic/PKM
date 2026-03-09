@@ -471,10 +471,9 @@ Response:
 
 Notes:
 - For `stage=t2`, failed runs may include `metadata.error` with a compact run-level failure summary.
-- For `stage=t2` with `include_items=true`, item rows may include:
-  - `error_code`
-  - `message`
-  - `preserved_current_artifact`
+- For `stage=t2`, job metadata may include:
+  - `execution_mode` (`batch` or `sync`)
+  - `error_code_counts` (per-run failure-code aggregate map)
 - For `stage=t2` dry-run jobs, `counts.pending` is `0` and planned work size is reported as `metadata.will_process_count`.
 
 ### `GET /status/batch/:batch_id`
@@ -527,6 +526,10 @@ Response:
 
 Notes:
 - For `stage=t2`, failed runs may include `metadata.error` with a compact run-level failure summary.
+- For `stage=t2` with `include_items=true`, item rows may include:
+  - `error_code`
+  - `message`
+  - `preserved_current_artifact`
 
 Legacy aliases kept for backward compatibility:
 - `GET /status/t1/batch` (equivalent to `GET /status/batch?stage=t1`)
@@ -637,7 +640,7 @@ Response:
 ```
 
 ### `POST /distill/run`
-Runs one Tier‑2 batch cycle for production schema (`pkm`): control-plane planning followed by sync distillation for selected entries (or planning-only in dry-run mode).
+Runs one Tier‑2 batch cycle for production schema (`pkm`): control-plane planning followed by entry processing for selected rows (or planning-only in dry-run mode).
 
 Headers:
 - `x-pkm-admin-secret: <secret>` (required)
@@ -645,6 +648,7 @@ Headers:
 Body (all fields optional):
 ```json
 {
+  "execution_mode": "batch",
   "candidate_limit": 250,
   "max_sync_items": 25,
   "persist_eligibility": true,
@@ -653,8 +657,11 @@ Body (all fields optional):
 ```
 
 Notes:
+- `execution_mode` supports:
+  - `batch` (default): standard `/distill/run` execution path.
+  - `sync`: explicit synchronous mode (use only when intentionally requested).
 - `candidate_limit` and `max_sync_items` must be positive integers when provided.
-- `dry_run=true` runs planning only and does not call Tier‑2 sync generation.
+- `dry_run=true` runs planning only and does not call Tier‑2 generation.
 - This endpoint always targets production schema for execution.
 - In non-dry-run mode, dispatched entries are marked `distill_status = queued` before sync attempts.
 - Non-busy responses include `batch_id` for `/status/batch` lookup.
@@ -667,6 +674,7 @@ Response:
 ```json
 {
   "mode": "run",
+  "execution_mode": "batch",
   "target_schema": "pkm",
   "batch_id": "t2_1739420000000_ab12cd",
   "processing_limit": 25,
@@ -685,6 +693,10 @@ Response:
   "completed_count": 21,
   "failed_count": 4,
   "preserved_current_count": 1,
+  "error_code_counts": {
+    "excerpt_not_grounded": 3,
+    "generation_error": 1
+  },
   "results": [
     { "entry_id": 12345, "status": "completed", "error_code": null },
     {
@@ -721,6 +733,7 @@ Response (runtime failure, normalized):
 ```json
 {
   "mode": "run",
+  "execution_mode": "batch",
   "target_schema": "pkm",
   "batch_id": "t2_1739420000000_ab12cd",
   "processing_limit": 25,
@@ -1165,6 +1178,7 @@ Optional:
 - `T2_MODEL_CHUNK_NOTE` (recommended: `t2-chunk-note`)
 - `T2_MODEL_SYNTHESIS` (recommended: `t2-synthesis`)
 - `T2_MODEL_SYNC_DIRECT` (recommended: `t2-sync-direct`)
+- `T2_MODEL_BATCH_DIRECT` (recommended: `t2-batch-direct`; falls back to sync/direct route if unset)
 - `T2_RETRY_ENABLED` (`true` default)
 - `T2_RETRY_MAX_ATTEMPTS` (`2` default)
 - `T2_STALE_MARK_ENABLED` (`true` default)

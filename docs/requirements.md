@@ -284,6 +284,7 @@ Primary objective:
 - Tier‑2 sync distillation must run through backend API only (`POST /distill/sync`).
 - Tier‑2 control-plane planning must run through backend API only (`POST /distill/plan`).
 - Tier‑2 manual batch execution must run through backend API only (`POST /distill/run`).
+- Tier‑2 `/distill/run` must default to `execution_mode = batch`; sync execution is allowed only when explicitly requested (`execution_mode = sync`).
 - Sync distillation must target prod schema (`pkm`) only.
 - Sync distillation requires existing row `clean_text`; if absent, request fails.
 - Control-plane planning must deterministically apply:
@@ -314,6 +315,7 @@ Primary objective:
   - mark `completed -> stale` when `content_hash IS DISTINCT FROM distill_created_from_hash`
   - update status only (keep existing distill artifact fields)
 - Tier‑2 status surfaces should include compact run-level failure summary in `metadata.error` when a batch run fails before per-entry execution.
+- Tier‑2 status surfaces should include per-run failure-code aggregation in `metadata.error_code_counts` for quick diagnosis.
 
 ## Tier-1 batch visibility requirements
 - Backend must expose read-only status APIs for current Tier‑1 batch jobs.
@@ -398,6 +400,11 @@ Primary objective:
 - Large string guardrails:
   - never render full heavy payload strings inline
   - show compact size/hash summaries instead
+
+## Telegram command UX requirements
+- Read workflow command parser must support `--help` (and `-h`) on user-facing commands and return command-specific usage without calling backend APIs.
+- `/help` output must include Tier‑2 distill commands and current option flags.
+- `/distill-run` must default to batch execution semantics and allow explicit sync override via command flag (`--sync`).
 
 ## Non-goals
 - No duplicate side-table tracking in place of uniqueness constraints.

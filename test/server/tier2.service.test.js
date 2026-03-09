@@ -185,6 +185,56 @@ describe('tier2 sync service', () => {
     }));
   });
 
+  test('batch execution mode uses batch-direct model route', async () => {
+    const sendMessage = jest.fn().mockResolvedValue({
+      text: buildFinalOutput(),
+    });
+    const persistTier2SyncSuccess = jest.fn().mockResolvedValue({ rowCount: 1 });
+
+    jest.doMock('../../src/libs/config.js', () => ({
+      getConfig: () => ({
+        distill: {
+          version: 'distill_v2',
+          direct_chunk_threshold_words: 5000,
+          models: {
+            batch_direct: 't2-batch-direct',
+          },
+        },
+      }),
+    }));
+
+    jest.doMock('../../src/server/db.js', () => ({
+      getTier2SyncEntryByEntryId: async () => ({
+        entry_id: 709,
+        title: 'Batch mode sample',
+        author: 'PKM',
+        content_type: 'newsletter',
+        clean_text: 'alpha insight appears in this clean source text for grounding checks.',
+        clean_word_count: 12,
+        content_hash: 'hash_batch_1',
+      }),
+      persistTier2SyncSuccess,
+      persistTier2SyncFailure: jest.fn().mockResolvedValue({ rowCount: 0 }),
+    }));
+
+    jest.doMock('../../src/server/litellm-client.js', () => ({
+      LiteLLMClient: jest.fn().mockImplementation(() => ({
+        sendMessage,
+      })),
+    }));
+
+    jest.doMock('../../src/server/logger/index.js', () => ({
+      getLogger: () => createLoggerStub(),
+    }));
+
+    const { distillTier2SingleEntrySync } = require('../../src/server/tier2/service.js');
+    const out = await distillTier2SingleEntrySync(709, { execution_mode: 'batch' });
+
+    expect(out.status).toBe('completed');
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(sendMessage.mock.calls[0][1].model).toBe('t2-batch-direct');
+  });
+
   test('validation failure persists failed status with validation error code', async () => {
     const sendMessage = jest.fn().mockResolvedValue({
       text: buildFinalOutput({

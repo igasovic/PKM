@@ -1,4 +1,32 @@
 # changelog
+## 2026-03-09 — Distill run mode controls, failure surfacing, and command help updates
+
+### What changed
+- Updated Tier‑2 sync service logging in `src/server/tier2/service.js`:
+  - renamed persistence failure step from `t2.sync.persist.failed` to `*.persist.failure_state` to avoid ambiguity.
+  - batch-triggered single-entry execution now logs under batch-prefixed steps (`t2.batch.entry.*`) instead of sync-prefixed names.
+  - added `batch_direct_generation` request type/model route support (`T2_MODEL_BATCH_DIRECT` fallback chain).
+- Updated Tier‑2 run orchestration in `src/server/tier2-enrichment.js` and API wiring in `src/server/index.js`:
+  - `POST /distill/run` now accepts `execution_mode` (`batch` default, `sync` explicit opt-in).
+  - run payloads/status metadata now include `execution_mode`.
+  - run payloads/status metadata now include `error_code_counts` aggregation for failed entries.
+  - batch loop step name updated from `t2.batch.sync_one` to `t2.batch.process_one`.
+- Updated Read workflow n8n command/parser behavior:
+  - `src/n8n/nodes/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js` now supports:
+    - command-specific `--help`/`-h` for major commands
+    - richer `/help` output
+    - `/distill-run` mode flags: `--batch` (default) and `--sync`
+    - conflict guard for `--batch` + `--sync`
+  - `src/n8n/workflows/10-read__dq9Nex-IR8AToJvHksphj.json` now sends `execution_mode` in `/distill/run` HTTP body.
+- Updated Telegram status formatting:
+  - `format-distill-run-message` now renders execution mode and top failure-code counts.
+  - `format-status-message` now renders aggregated top failure codes from status metadata.
+- Added/updated tests:
+  - `test/server/n8n.command-parser.test.js` (new)
+  - `test/server/n8n.format-distill-run-message.test.js`
+  - `test/server/n8n.format-status-message.test.js`
+  - `test/server/tier2.enrichment.test.js`
+
 ## 2026-03-09 — Batch currentness mismatch now clears queued status
 
 ### What changed

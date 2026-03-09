@@ -19,11 +19,27 @@ module.exports = async function run(ctx) {
 
   const lines = [];
   const results = Array.isArray(r.results) ? r.results : [];
+  const executionMode = String(r.execution_mode || 'batch').toLowerCase() === 'sync' ? 'sync' : 'batch';
   const preservedCurrentCountFromResults = results.filter((row) => row && row.preserved_current_artifact === true).length;
   const preservedCurrentCountRaw = Number(r.preserved_current_count);
   const preservedCurrentCount = Number.isFinite(preservedCurrentCountRaw)
     ? preservedCurrentCountRaw
     : preservedCurrentCountFromResults;
+  const errorCodeCounts = (() => {
+    if (r && r.error_code_counts && typeof r.error_code_counts === 'object' && !Array.isArray(r.error_code_counts)) {
+      return r.error_code_counts;
+    }
+    const out = {};
+    for (const row of results) {
+      if (!row || row.status === 'completed') continue;
+      const code = String(row.error_code || row.status || 'worker_error').trim().toLowerCase() || 'worker_error';
+      out[code] = Number(out[code] || 0) + 1;
+    }
+    return out;
+  })();
+  const topFailureCodes = Object.entries(errorCodeCounts)
+    .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
+    .slice(0, 3);
   if (r.skipped === true && String(r.reason || '').toLowerCase() === 'worker_busy') {
     lines.push('*Tier\\_2 run skipped*');
     lines.push('');
@@ -56,6 +72,7 @@ module.exports = async function run(ctx) {
   if (r.batch_id) {
     lines.push(`*Batch\\_id:* ${mdv2(r.batch_id)}`);
   }
+  lines.push(`*Execution:* ${mdv2(executionMode)}`);
   lines.push('');
   lines.push(`*Candidates:* ${r.candidate_count ?? 0}`);
   lines.push(`*Planned:* ${r.planned_selected_count ?? 0}`);
@@ -67,6 +84,9 @@ module.exports = async function run(ctx) {
     lines.push(`Failed: ${r.failed_count ?? 0}`);
     if (preservedCurrentCount > 0) {
       lines.push(`Preserved current: ${preservedCurrentCount}`);
+    }
+    if (topFailureCodes.length > 0) {
+      lines.push(`Top failures: ${topFailureCodes.map(([code, count]) => `${mdv2(code)} (${Number(count || 0)})`).join(', ')}`);
     }
   }
   lines.push('');

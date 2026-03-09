@@ -1248,7 +1248,7 @@
             }
           ]
         },
-        "jsonBody": "={{ JSON.stringify((() => ({ candidate_limit: $json.candidate_limit, max_sync_items: $json.max_sync_items, persist_eligibility: $json.persist_eligibility, dry_run: $json.dry_run }))()) }}",
+        "jsonBody": "={{ JSON.stringify((() => ({ execution_mode: $json.execution_mode, candidate_limit: $json.candidate_limit, max_sync_items: $json.max_sync_items, persist_eligibility: $json.persist_eligibility, dry_run: $json.dry_run }))()) }}",
         "method": "POST",
         "options": {},
         "sendBody": true,

@@ -47,33 +47,73 @@ const cmdAlias = {
   'distill_run': 'distillrun',
 };
 const cmd = cmdAlias[cmdRaw] || cmdRaw;
+const hasHelpFlag = /(?:^|\s)(?:--help|-h)(?:\s|$)/i.test(text);
+
+const HELP_OVERVIEW =
+  `Commands:\n` +
+  `/help\n` +
+  `/pull <id> [--excerpt]\n` +
+  `/last "phrase" [--days N] [--limit M]\n` +
+  `/find "needle" [--days N] [--limit M]\n` +
+  `/continue topic [--days N] [--limit M]\n` +
+  `/with person topic [--days N] [--limit M]\n` +
+  `/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
+  `/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
+  `/debug <run_id|last>\n` +
+  `/distill <entry_id>\n` +
+  `/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n` +
+  `/status [t1|t2] [--limit M] [--active-only]\n\n` +
+  `Tip: append --help to any command for command-specific help.`;
+
+const COMMAND_HELP = {
+  help: HELP_OVERVIEW,
+  pull: `Usage:\n/pull <id> [--excerpt]\n/pull --help`,
+  last: `Usage:\n/last <query> [--days N] [--limit M]\nExamples:\n/last "LangGraph"\n/last agents --days 30 --limit 5`,
+  find: `Usage:\n/find <query> [--days N] [--limit M]\nExamples:\n/find "currentness_mismatch"\n/find litellm --days 90`,
+  continue: `Usage:\n/continue <query> [--days N] [--limit M]\nExample:\n/continue tier2 retries --days 30`,
+  with: `Usage:\n/with <query> [--days N] [--limit M]\nExample:\n/with igor t2 status`,
+  delete: `Usage:\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\nExample:\n/delete prod 100-120 --dry-run`,
+  move: `Usage:\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\nExample:\n/move test prod 100,101 --dry-run`,
+  debug: `Usage:\n/debug <run_id|last>\n/debug --help\nExamples:\n/debug last\n/debug n8n-123456`,
+  distill: `Usage:\n/distill <entry_id>\n/distill --help\nExample:\n/distill 12345`,
+  distillrun: `Usage:\n/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n/distill-run --help\nExamples:\n/distill-run --dry-run --candidate-limit 50 --max-sync-items 10\n/distill-run --sync --max-sync-items 1`,
+  status: `Usage:\n/status [t1|t2] [--limit M] [--active-only]\n/status --help\nExamples:\n/status\n/status t2 --limit 20 --active-only`,
+};
+
+function usageFor(commandName) {
+  const key = String(commandName || '').trim().toLowerCase();
+  return COMMAND_HELP[key] || HELP_OVERVIEW;
+}
 
 if (!defaults[cmd]) {
   return [{
     json: {
       _reply_now: true,
       chat_id,
-      telegram_message:
-        `Unknown command.\n\nCommands:\n` +
-        `/help\n` +
-        `/pull <id> [--excerpt]\n` +
-        `/last "phrase" [--days N] [--limit M]\n` +
-        `/find "needle" [--days N] [--limit M]\n` +
-        `/continue topic [--days N] [--limit M]\n` +
-        `/with person topic [--days N] [--limit M]\n` +
-        `/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
-        `/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
-        `/debug <run_id|last>\n` +
-        `/distill <entry_id>\n` +
-        `/distill-run [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n` +
-        `/status [t1|t2] [--limit M] [--active-only]`
+      telegram_message: `Unknown command.\n\n${HELP_OVERVIEW}`
     }
   }];
 }
 
-// Special case: /help always goes to switch (no reply_now)
+if (hasHelpFlag) {
+  return [{
+    json: {
+      _reply_now: true,
+      chat_id,
+      telegram_message: usageFor(cmd),
+    },
+  }];
+}
+
+// Special case: /help returns immediate usage block.
 if (cmd === 'help') {
-  return [{ json: { cmd: 'help', chat_id } }];
+  return [{
+    json: {
+      _reply_now: true,
+      chat_id,
+      telegram_message: usageFor('help'),
+    },
+  }];
 }
 
 // Special case: /pull <entry_id> [--excerpt]
@@ -87,7 +127,7 @@ if (cmd === 'pull') {
       json: {
         _reply_now: true,
         chat_id,
-        telegram_message: `Usage:\n/pull <id> [--excerpt]\nExample: /pull 12345 --excerpt`
+        telegram_message: usageFor('pull'),
       }
     }];
   }
@@ -112,7 +152,7 @@ if (cmd === 'debug') {
       json: {
         _reply_now: true,
         chat_id,
-        telegram_message: `Usage:\n/debug <run_id|last>\nExamples:\n/debug last\n/debug n8n-123456`
+        telegram_message: usageFor('debug'),
       }
     }];
   }
@@ -123,7 +163,7 @@ if (cmd === 'debug') {
       json: {
         _reply_now: true,
         chat_id,
-        telegram_message: `Usage:\n/debug <run_id|last>`
+        telegram_message: usageFor('debug'),
       }
     }];
   }
@@ -152,7 +192,7 @@ if (cmd === 'distill') {
       json: {
         _reply_now: true,
         chat_id,
-        telegram_message: `Usage:\n/distill <entry_id>\nExample: /distill 12345`
+        telegram_message: usageFor('distill'),
       }
     }];
   }
@@ -166,7 +206,7 @@ if (cmd === 'distill') {
   }];
 }
 
-// Special case: /distill-run [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]
+// Special case: /distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]
 if (cmd === 'distillrun') {
   const parsePositiveIntArg = (flag) => {
     const re = new RegExp(`--${flag}\\s+(\\d+)`, 'i');
@@ -181,6 +221,36 @@ if (cmd === 'distillrun') {
   const max_sync_items = parsePositiveIntArg('max-sync-items');
   const dry_run = /--dry-run\b/i.test(text);
   const persist_eligibility = !/--no-persist-eligibility\b/i.test(text);
+  const forceSync = /--sync\b/i.test(text);
+  const forceBatch = /--batch\b/i.test(text);
+  const modeMatch = text.match(/--mode\s+(batch|sync)\b/i);
+  const modeFromFlag = modeMatch ? String(modeMatch[1]).toLowerCase() : null;
+  let execution_mode = 'batch';
+
+  if (forceSync && forceBatch) {
+    return [{
+      json: {
+        _reply_now: true,
+        chat_id,
+        telegram_message: usageFor('distillrun'),
+      },
+    }];
+  }
+  if (forceSync) execution_mode = 'sync';
+  if (forceBatch) execution_mode = 'batch';
+
+  if (modeFromFlag) {
+    if ((forceSync && modeFromFlag !== 'sync') || (forceBatch && modeFromFlag !== 'batch')) {
+      return [{
+        json: {
+          _reply_now: true,
+          chat_id,
+          telegram_message: usageFor('distillrun'),
+        },
+      }];
+    }
+    execution_mode = modeFromFlag;
+  }
 
   return [{
     json: {
@@ -189,6 +259,7 @@ if (cmd === 'distillrun') {
       candidate_limit,
       max_sync_items,
       persist_eligibility,
+      execution_mode,
       chat_id
     }
   }];
@@ -212,7 +283,7 @@ if (cmd === 'status') {
         json: {
           _reply_now: true,
           chat_id,
-          telegram_message: `Usage:\n/status [t1|t2] [--limit M] [--active-only]`
+          telegram_message: usageFor('status'),
         }
       }];
     }
@@ -410,7 +481,7 @@ if (!q) {
     json: {
       _reply_now: true,
       chat_id,
-      telegram_message: `Usage:\n/${cmd} <query> [--days N] [--limit M]`
+      telegram_message: usageFor(cmd),
     }
   }];
 }

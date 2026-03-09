@@ -53,6 +53,7 @@ describe('n8n format-distill-run-message', () => {
     expect(out).toHaveLength(1);
     expect(out[0].json.telegram_message).toContain('*Tier\\_2 run *');
     expect(out[0].json.telegram_message).toContain('*Batch\\_id:* t2\\_1700000000\\_ab12cd');
+    expect(out[0].json.telegram_message).toContain('*Execution:* batch');
     expect(out[0].json.telegram_message).toContain('*Processed:* 10');
   });
 
@@ -101,5 +102,28 @@ describe('n8n format-distill-run-message', () => {
     expect(out).toHaveLength(1);
     expect(out[0].json.telegram_message).toContain('Failed: 2');
     expect(out[0].json.telegram_message).toContain('Preserved current: 1');
+  });
+
+  test('shows top failure code counts and sync execution mode when provided', async () => {
+    const out = await formatDistillRunMessage({
+      $json: {
+        mode: 'run',
+        execution_mode: 'sync',
+        candidate_count: 4,
+        planned_selected_count: 4,
+        processed_count: 4,
+        completed_count: 1,
+        failed_count: 3,
+        decision_counts: { proceed: 4, skipped: 0, not_eligible: 0 },
+        error_code_counts: {
+          excerpt_not_grounded: 2,
+          generation_error: 1,
+        },
+      },
+    });
+
+    expect(out).toHaveLength(1);
+    expect(out[0].json.telegram_message).toContain('*Execution:* sync');
+    expect(out[0].json.telegram_message).toContain('Top failures: excerpt\\_not\\_grounded (2), generation\\_error (1)');
   });
 });

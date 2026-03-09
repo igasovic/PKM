@@ -86,4 +86,38 @@ describe('n8n format-status-message', () => {
     expect(message).toContain('❌ Error: 2');
     expect(message).toContain('• Preserved current: 3');
   });
+
+  test('includes top failure-code breakdown when metadata provides counts', async () => {
+    const out = await formatStatusMessage({
+      $json: {
+        summary: {
+          jobs: 1,
+          in_progress: 0,
+          terminal: 1,
+          total_items: 10,
+          processed: 10,
+          pending: 0,
+          ok: 2,
+          parse_error: 0,
+          error: 8,
+        },
+        jobs: [
+          {
+            status: 'partial_failed',
+            metadata: {
+              error_code_counts: {
+                excerpt_not_grounded: 5,
+                generation_error: 3,
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    const message = out[0].json.telegram_message;
+    expect(message).toContain('Top failures');
+    expect(message).toContain('excerpt\\_not\\_grounded \\(5\\)');
+    expect(message).toContain('generation\\_error \\(3\\)');
+  });
 });

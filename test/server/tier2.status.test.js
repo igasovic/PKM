@@ -50,6 +50,10 @@ describe('tier2 status surfaces', () => {
     expect(list.jobs[0].counts.total_items).toBe(2);
     expect(list.jobs[0].counts.ok).toBe(1);
     expect(list.jobs[0].counts.error).toBe(1);
+    expect(list.jobs[0].metadata.execution_mode).toBe('batch');
+    expect(list.jobs[0].metadata.error_code_counts).toEqual({
+      generation_error: 1,
+    });
 
     const detail = await t2.getTier2BatchStatus(run.batch_id, {
       include_items: true,

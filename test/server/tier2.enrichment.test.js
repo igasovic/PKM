@@ -21,6 +21,7 @@ describe('tier2 enrichment batch runner', () => {
   test('buildTier2RunErrorResponse normalizes run-mode failures', () => {
     expect(buildTier2RunErrorResponse({ dry_run: false, max_sync_items: 7 }, 'planner failed')).toEqual({
       mode: 'run',
+      execution_mode: 'batch',
       target_schema: 'pkm',
       processing_limit: 7,
       candidate_count: 0,
@@ -39,6 +40,7 @@ describe('tier2 enrichment batch runner', () => {
   test('buildTier2RunErrorResponse preserves dry_run mode on failures', () => {
     expect(buildTier2RunErrorResponse({ dry_run: true, max_sync_items: 4 }, 'planner failed')).toEqual({
       mode: 'dry_run',
+      execution_mode: 'batch',
       target_schema: 'pkm',
       processing_limit: 4,
       candidate_count: 0,
@@ -105,6 +107,7 @@ describe('tier2 enrichment batch runner', () => {
     ]);
     expect(syncCalls).toEqual([101, 102]);
     expect(out.mode).toBe('run');
+    expect(out.execution_mode).toBe('batch');
     expect(out.target_schema).toBe('pkm');
     expect(out.candidate_count).toBe(10);
     expect(out.planned_selected_count).toBe(2);
@@ -149,6 +152,7 @@ describe('tier2 enrichment batch runner', () => {
     expect(syncCalled).toBe(false);
     expect(markQueuedCalled).toBe(false);
     expect(out.mode).toBe('dry_run');
+    expect(out.execution_mode).toBe('batch');
     expect(out.will_process_count).toBe(1);
     expect(out.selected).toHaveLength(1);
   });
@@ -181,7 +185,39 @@ describe('tier2 enrichment batch runner', () => {
 
     expect(syncCalled).toBe(true);
     expect(out.mode).toBe('run');
+    expect(out.execution_mode).toBe('batch');
     expect(out.persisted_eligibility).toEqual({ updated: 0, groups: [] });
+  });
+
+  test('forwards explicit sync execution mode into distill calls', async () => {
+    const callOptions = [];
+    const runner = createTier2BatchRunner({
+      runPlan: async () => ({
+        candidate_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 9901 }],
+      }),
+      distillOne: async (_entryId, options) => {
+        callOptions.push(options || {});
+        return { entry_id: 9901, status: 'completed' };
+      },
+      getLogger: () => ({
+        child() { return this; },
+        async step(_name, fn) { return fn(); },
+      }),
+    });
+
+    const out = await runner.runTier2BatchCycle({ max_sync_items: 1, execution_mode: 'sync' });
+
+    expect(out.execution_mode).toBe('sync');
+    expect(callOptions).toEqual([
+      expect.objectContaining({
+        retry_count: 0,
+        execution_mode: 'sync',
+      }),
+    ]);
   });
 
   test('respects max_sync_items limit', async () => {
