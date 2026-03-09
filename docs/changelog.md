@@ -38,6 +38,7 @@
 - Tier‑2 status records now include `metadata.error` for failed run-level errors.
 - Updated `Format Distill Run Message` node logic to render a dedicated Telegram message for worker-busy skips.
 - Updated `Format Distill Run Message` node logic to render run-level error payloads clearly.
+- Updated `Format Distill Run Message` node output to include `batch_id` on non-skipped runs for easier `/status` follow-up.
 - Updated `docs/api.md` to document the worker-busy response variant for `POST /distill/run`.
 - Updated `docs/api.md` to clarify that non-busy `/distill/run` responses include `batch_id` for status lookup.
 - Updated `docs/api.md` with normalized runtime-failure response shape for `POST /distill/run`.

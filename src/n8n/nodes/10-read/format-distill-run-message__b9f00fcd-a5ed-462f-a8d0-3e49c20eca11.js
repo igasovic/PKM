@@ -47,6 +47,9 @@ module.exports = async function run(ctx) {
   }
 
   lines.push(`*Tier\\_2 run ${mode === 'dry_run' ? '\\(dry\\ run\\)' : ''}*`);
+  if (r.batch_id) {
+    lines.push(`*Batch\\_id:* ${mdv2(r.batch_id)}`);
+  }
   lines.push('');
   lines.push(`*Candidates:* ${r.candidate_count ?? 0}`);
   lines.push(`*Planned:* ${r.planned_selected_count ?? 0}`);

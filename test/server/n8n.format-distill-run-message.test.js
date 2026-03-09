@@ -35,4 +35,24 @@ describe('n8n format-distill-run-message', () => {
     expect(out[0].json.telegram_message).toContain('Batch\\_id: t2\\_123\\_abcd');
     expect(out[0].json.telegram_message).toContain('Error: planner failed: timeout');
   });
+
+  test('formats successful run with batch_id for status follow-up', async () => {
+    const out = await formatDistillRunMessage({
+      $json: {
+        mode: 'run',
+        batch_id: 't2_1700000000_ab12cd',
+        candidate_count: 20,
+        planned_selected_count: 10,
+        processed_count: 10,
+        completed_count: 9,
+        failed_count: 1,
+        decision_counts: { proceed: 15, skipped: 3, not_eligible: 2 },
+      },
+    });
+
+    expect(out).toHaveLength(1);
+    expect(out[0].json.telegram_message).toContain('*Tier\\_2 run *');
+    expect(out[0].json.telegram_message).toContain('*Batch\\_id:* t2\\_1700000000\\_ab12cd');
+    expect(out[0].json.telegram_message).toContain('*Processed:* 10');
+  });
 });
