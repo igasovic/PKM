@@ -74,4 +74,29 @@ describe('context-pack builder', () => {
     expect(md).toContain('why_it_matters: Why 2');
     expect(md).not.toContain('why_it_matters: Why 3');
   });
+
+  test('telegram layout includes why-it-matters only for first quarter', () => {
+    const rows = Array.from({ length: 4 }, (_, idx) => ({
+      id: `00000000-0000-4000-8000-00000000001${idx + 1}`,
+      entry_id: idx + 1,
+      content_type: 'newsletter',
+      author: 'Author',
+      title: `Title ${idx + 1}`,
+      created_at: '2026-03-09T00:00:00.000Z',
+      topic_primary: 'ai',
+      topic_secondary: 'agents',
+      keywords: ['pkm'],
+      distill_summary: `Summary ${idx + 1}`,
+      distill_why_it_matters: `Why ${idx + 1}`,
+    }));
+
+    const md = buildContextPackMarkdown(
+      rows,
+      { method: 'continue', query: 'pkm', days: 90, limit: 10 },
+      { layout: 'telegram', markdownV2: false, maxContentLen: 300 },
+    );
+
+    expect(md).toContain('  - Why it matters: Why 1');
+    expect(md).not.toContain('  - Why it matters: Why 2');
+  });
 });

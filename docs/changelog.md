@@ -10,6 +10,7 @@
 - Extended read SQL projections (`/db/read/continue`, `/db/read/find`, `/db/read/last`, `/db/read/pull`) to include `distill_why_it_matters` in row payloads.
 - Added server-side tests for context-pack priority behavior:
   - `test/server/context-pack-builder.test.js`
+  - includes UI + Telegram layout checks for top-ranked `why_it_matters` inclusion behavior
 - Added server-side SQL projection tests for read endpoints:
   - `test/server/read-sql-distill-projection.test.js`
 - Updated `docs/api.md` read section to document `distill_summary` / `distill_why_it_matters` hit-row fields.
