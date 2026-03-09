@@ -60,4 +60,30 @@ describe('n8n format-status-message', () => {
     expect(message).toContain('• Pending: 0');
     expect(message).toContain('• Would process \\(dry\\_run\\): 10');
   });
+
+  test('includes preserved-current aggregate when available', async () => {
+    const out = await formatStatusMessage({
+      $json: {
+        summary: {
+          jobs: 2,
+          in_progress: 0,
+          terminal: 2,
+          total_items: 2,
+          processed: 2,
+          pending: 0,
+          ok: 0,
+          parse_error: 0,
+          error: 2,
+        },
+        jobs: [
+          { status: 'failed', metadata: { preserved_current_count: 1 } },
+          { status: 'partial_failed', metadata: { preserved_current_count: 2 } },
+        ],
+      },
+    });
+
+    const message = out[0].json.telegram_message;
+    expect(message).toContain('❌ Error: 2');
+    expect(message).toContain('• Preserved current: 3');
+  });
 });

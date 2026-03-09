@@ -1,4 +1,12 @@
 # changelog
+## 2026-03-09 — Status summary now shows preserved-current aggregate
+
+### What changed
+- Updated `src/n8n/nodes/10-read/format-status-message__075f1d02-d3af-43dc-a694-f387f757ba3d.js`:
+  - status summary now aggregates `metadata.preserved_current_count` across jobs
+  - message includes `Preserved current: N` in results when non-zero.
+- Added formatter coverage in `test/server/n8n.format-status-message.test.js`.
+
 ## 2026-03-09 — Tier-2 run/status now preserve current-artifact failure details
 
 ### What changed

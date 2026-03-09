@@ -21,9 +21,17 @@ module.exports = async function run(ctx) {
     const count = Number(metadata.will_process_count || 0);
     return total + (Number.isFinite(count) ? count : 0);
   }, 0);
+  const preservedCurrentCount = jobs.reduce((total, job) => {
+    const metadata = job && typeof job.metadata === 'object' ? job.metadata : {};
+    const count = Number(metadata.preserved_current_count || 0);
+    return total + (Number.isFinite(count) ? count : 0);
+  }, 0);
 
   const dryRunLine = dryRunWouldProcess > 0
     ? `\n• Would process \\(dry\\_run\\): ${dryRunWouldProcess}`
+    : '';
+  const preservedLine = preservedCurrentCount > 0
+    ? `\n• Preserved current: ${preservedCurrentCount}`
     : '';
 
   return [{
@@ -43,7 +51,7 @@ module.exports = async function run(ctx) {
 *Results*
 ✅ OK: ${summary.ok}
 ⚠️ Parse\\_error: ${summary.parse_error}
-❌ Error: ${summary.error}`,
+❌ Error: ${summary.error}${preservedLine}`,
     },
   }];
 };
