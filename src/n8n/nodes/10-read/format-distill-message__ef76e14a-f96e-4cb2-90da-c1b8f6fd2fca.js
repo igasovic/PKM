@@ -17,6 +17,9 @@ module.exports = async function run(ctx) {
 
   const status = String(r.status || '').toLowerCase();
   if (status === 'completed') {
+    const whyBlock = `\n\n*Why it matters*\n${mdv2(r.why_it_matters || '-')}`;
+    const excerptText = String(r.excerpt || '').trim();
+    const excerptBlock = excerptText ? `\n\n*Excerpt*\n${mdv2(excerptText)}` : '';
     return [{
       json: {
         ...r,
@@ -26,7 +29,7 @@ module.exports = async function run(ctx) {
 • Stance: ${mdv2(r.stance || '-')}
 
 *Summary*
-${mdv2(r.summary || '-')}`,
+${mdv2(r.summary || '-')}${whyBlock}${excerptBlock}`,
       },
     }];
   }

@@ -1,4 +1,14 @@
 # changelog
+## 2026-03-09 — Distill sync Telegram success message now includes why-it-matters and excerpt
+
+### What changed
+- Updated `src/n8n/nodes/10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js`:
+  - completed `/distill` responses now render:
+    - `Summary`
+    - `Why it matters`
+    - optional `Excerpt` (only when present/non-empty)
+- Added formatter tests in `test/server/n8n.format-distill-message.test.js`.
+
 ## 2026-03-09 — Fix Tier-2 sync currentness guard for null/empty source hashes
 
 ### What changed
