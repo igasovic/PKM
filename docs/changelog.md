@@ -20,6 +20,14 @@
   - added Tier‑2 SQL builders in `src/libs/sql-builder.js` for candidate selection and eligibility state writes
 - Added optional Tier‑2 background batch worker controls (`T2_BATCH_WORKER_*`) and worker lifecycle wiring in backend startup/shutdown.
 - Extracted shared worker loop runtime in backend and migrated both Tier‑1 and Tier‑2 workers to use it (common timer, busy-guard, and error handling behavior).
+- Refactored batch status API to be stage-generic:
+  - new canonical endpoints:
+    - `GET /status/batch?stage=t1|t2`
+    - `GET /status/batch/:batch_id?stage=t1|t2`
+  - legacy Tier‑1 aliases remain available:
+    - `GET /status/t1/batch`
+    - `GET /status/t1/batch/:batch_id`
+  - n8n migration note: switch status reads to `/status/batch` and pass explicit `stage` query param.
 - Added Tier‑2 stale-detection maintenance cycle in backend startup:
   - marks `distill_status = stale` for outdated completed artifacts in `pkm.entries`
   - controlled by `T2_STALE_MARK_ENABLED` and `T2_STALE_MARK_INTERVAL_MS`

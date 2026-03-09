@@ -29,6 +29,8 @@ const {
 } = require('./tier2/planner.js');
 const {
   runTier2BatchWorkerCycle,
+  getTier2BatchStatusList,
+  getTier2BatchStatus,
   startTier2BatchWorker,
   stopTier2BatchWorker,
 } = require('./tier2-enrichment.js');
@@ -73,6 +75,22 @@ function parseBoolParam(value, fallback = false) {
   if (value === null || value === undefined || value === '') return fallback;
   const v = String(value).trim().toLowerCase();
   return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
+function parseBatchStageParam(url, fallback = 't1') {
+  const raw = String((url && url.searchParams && url.searchParams.get('stage')) || fallback).trim().toLowerCase();
+  if (raw === 't1' || raw === 't2') return raw;
+  throw new Error('stage must be t1|t2');
+}
+
+async function getBatchStatusListByStage(stage, opts) {
+  if (stage === 't2') return getTier2BatchStatusList(opts || {});
+  return getTier1BatchStatusList(opts || {});
+}
+
+async function getBatchStatusByStage(stage, batchId, opts) {
+  if (stage === 't2') return getTier2BatchStatus(batchId, opts || {});
+  return getTier1BatchStatus(batchId, opts || {});
 }
 
 function readAdminSecret(req) {
@@ -394,12 +412,18 @@ async function handleRequest(req, res) {
     }
   }
 
-  if (method === 'GET' && url.pathname === '/status/t1/batch') {
+  const isLegacyT1BatchStatusList = method === 'GET' && url.pathname === '/status/t1/batch';
+  const isGenericBatchStatusList = method === 'GET' && url.pathname === '/status/batch';
+  if (isLegacyT1BatchStatusList || isGenericBatchStatusList) {
     try {
+      const stage = isLegacyT1BatchStatusList ? 't1' : parseBatchStageParam(url, 't1');
       const limit = Number(url.searchParams.get('limit') || 50);
-      const schema = url.searchParams.get('schema') || undefined;
-      const include_terminal = parseBoolParam(url.searchParams.get('include_terminal'), false);
-      const result = await getTier1BatchStatusList({
+      const schema = stage === 't1' ? (url.searchParams.get('schema') || undefined) : undefined;
+      const include_terminal = parseBoolParam(
+        url.searchParams.get('include_terminal'),
+        stage === 't2'
+      );
+      const result = await getBatchStatusListByStage(stage, {
         limit,
         schema,
         include_terminal,
@@ -412,15 +436,18 @@ async function handleRequest(req, res) {
   }
 
   const batchStatusMatch = (method === 'GET')
-    ? url.pathname.match(/^\/status\/t1\/batch\/([^/]+)$/)
+    ? (url.pathname.match(/^\/status\/batch\/([^/]+)$/)
+      || url.pathname.match(/^\/status\/t1\/batch\/([^/]+)$/))
     : null;
   if (batchStatusMatch) {
     try {
+      const isLegacyRoute = /^\/status\/t1\/batch\//.test(url.pathname);
+      const stage = isLegacyRoute ? 't1' : parseBatchStageParam(url, 't1');
       const batch_id = decodeURIComponent(batchStatusMatch[1]);
-      const schema = url.searchParams.get('schema') || undefined;
+      const schema = stage === 't1' ? (url.searchParams.get('schema') || undefined) : undefined;
       const include_items = parseBoolParam(url.searchParams.get('include_items'), false);
       const items_limit = Number(url.searchParams.get('items_limit') || 200);
-      const result = await getTier1BatchStatus(batch_id, {
+      const result = await getBatchStatusByStage(stage, batch_id, {
         schema,
         include_items,
         items_limit,

@@ -417,13 +417,16 @@ Response:
 
 Batch completion handling is internal to backend workers. External callers only enqueue via `/enrich/t1/batch`.
 
-### `GET /status/t1/batch`
-Returns current Tier‑1 batch job status (supports both `pkm` and `pkm_test`).
+### `GET /status/batch`
+Returns current batch job status for a stage (`t1` or `t2`).
 
 Query params:
+- `stage` optional (`t1` default, `t2` supported)
 - `limit` optional, default `50`, max `200`
-- `schema` optional (`pkm` or `pkm_test`); if omitted, both are scanned
-- `include_terminal` optional boolean, default `false`
+- `schema` optional (`pkm` or `pkm_test`), used only for `stage=t1`
+- `include_terminal` optional boolean
+  - `stage=t1` default `false`
+  - `stage=t2` default `true`
 
 Response:
 ```json
@@ -466,11 +469,12 @@ Response:
 }
 ```
 
-### `GET /status/t1/batch/:batch_id`
-Returns one Tier‑1 batch with aggregate counters; can include item-level statuses.
+### `GET /status/batch/:batch_id`
+Returns one batch by id for a stage (`t1` or `t2`), with aggregate counters and optional item-level statuses.
 
 Query params:
-- `schema` optional (`pkm` or `pkm_test`)
+- `stage` optional (`t1` default, `t2` supported)
+- `schema` optional (`pkm` or `pkm_test`), used only for `stage=t1`
 - `include_items` optional boolean, default `false`
 - `items_limit` optional, default `200`, max `1000` (used only when `include_items=true`)
 
@@ -512,6 +516,10 @@ Response:
   ]
 }
 ```
+
+Legacy aliases kept for backward compatibility:
+- `GET /status/t1/batch` (equivalent to `GET /status/batch?stage=t1`)
+- `GET /status/t1/batch/:batch_id` (equivalent to `GET /status/batch/:batch_id?stage=t1`)
 
 ## Tier-2 Distillation
 
