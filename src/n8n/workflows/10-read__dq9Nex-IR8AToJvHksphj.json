@@ -1039,7 +1039,7 @@
       "id": "075f1d02-d3af-43dc-a694-f387f757ba3d",
       "name": "Format Status Message",
       "parameters": {
-        "jsCode": "const s = $json.summary || {};\n\nreturn {\n  telegram_message:\n`*Batch summary*\n\n*Jobs:* ${s.jobs}\n*In\\\\_progress:* ${s.in_progress}\n*Terminal:* ${s.terminal}\n\n*Items*\n• Total: ${s.total_items}\n• Processed: ${s.processed}\n• Pending: ${s.pending}\n\n*Results*\n✅ OK: ${s.ok}\n⚠️ Parse\\\\_error: ${s.parse_error}\n❌ Error: ${s.error}`\n};\n"
+        "jsCode": "try{const fn=require(\"/data/src/n8n/nodes/10-read/format-status-message__075f1d02-d3af-43dc-a694-f387f757ba3d.js\");return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=\"[extjs:10-read/format-status-message__075f1d02-d3af-43dc-a694-f387f757ba3d.js] \"+e.message;throw e;}"
       },
       "position": [
         1792,

@@ -1,4 +1,16 @@
 # changelog
+## 2026-03-09 — Read workflow status formatter externalized + dry-run planned count
+
+### What changed
+- Externalized Read workflow `Format Status Message` Code node to:
+  - `src/n8n/nodes/10-read/format-status-message__075f1d02-d3af-43dc-a694-f387f757ba3d.js`
+- Updated workflow wrapper in:
+  - `src/n8n/workflows/10-read__dq9Nex-IR8AToJvHksphj.json`
+- Status formatter now includes an extra line when Tier‑2 dry-run jobs are present:
+  - `Would process (dry_run): <sum(metadata.will_process_count)>`
+- Added formatter tests in:
+  - `test/server/n8n.format-status-message.test.js`
+
 ## 2026-03-09 — Tier-2 currentness guard on final sync write
 
 ### What changed
