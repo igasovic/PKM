@@ -107,6 +107,7 @@ describe('tier2 status surfaces', () => {
     expect(detail).toBeTruthy();
     expect(detail.status).toBe('failed');
     expect(detail.counts.error).toBe(1);
+    expect(detail.metadata.error).toContain('planner unavailable');
     expect(detail.items).toHaveLength(0);
   });
 });

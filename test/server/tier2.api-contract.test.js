@@ -337,6 +337,16 @@ describe('tier2 API contract', () => {
     expect(parsed.failed_count).toBe(1);
     expect(typeof parsed.batch_id).toBe('string');
     expect(parsed.batch_id).toMatch(/^t2_/);
+
+    const statusRes = await request(
+      port,
+      'GET',
+      `/status/batch/${parsed.batch_id}?stage=t2`,
+    );
+    expect(statusRes.status).toBe(200);
+    const statusBody = JSON.parse(statusRes.body);
+    expect(statusBody.status).toBe('failed');
+    expect(statusBody.metadata.error).toContain('planner unavailable');
   });
 
   test('POST /distill/plan requires admin secret', async () => {

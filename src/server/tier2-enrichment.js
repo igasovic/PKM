@@ -437,6 +437,7 @@ function recordTier2BatchRun(result, startedAt, endedAt) {
       decision_counts: result && result.decision_counts ? result.decision_counts : { proceed: 0, skipped: 0, not_eligible: 0 },
       persisted_eligibility: result && result.persisted_eligibility ? result.persisted_eligibility : { updated: 0, groups: [] },
       processing_limit: Number(result && result.processing_limit ? result.processing_limit : resolveDefaultRunLimit()),
+      error: result && result.error ? String(result.error) : null,
     },
     created_at: startedAt,
     updated_at: endedAt,

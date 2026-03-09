@@ -469,6 +469,9 @@ Response:
 }
 ```
 
+Notes:
+- For `stage=t2`, failed runs may include `metadata.error` with a compact run-level failure summary.
+
 ### `GET /status/batch/:batch_id`
 Returns one batch by id for a stage (`t1` or `t2`), with aggregate counters and optional item-level statuses.
 
@@ -516,6 +519,9 @@ Response:
   ]
 }
 ```
+
+Notes:
+- For `stage=t2`, failed runs may include `metadata.error` with a compact run-level failure summary.
 
 Legacy aliases kept for backward compatibility:
 - `GET /status/t1/batch` (equivalent to `GET /status/batch?stage=t1`)
