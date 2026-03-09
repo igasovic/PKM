@@ -738,6 +738,7 @@ Response (runtime failure, normalized):
   "processed_count": 0,
   "completed_count": 0,
   "failed_count": 1,
+  "preserved_current_count": 0,
   "results": [],
   "error": "planner unavailable"
 }
