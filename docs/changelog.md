@@ -28,6 +28,10 @@
     - `GET /status/t1/batch`
     - `GET /status/t1/batch/:batch_id`
   - n8n migration note: switch status reads to `/status/batch` and pass explicit `stage` query param.
+- Internal backend refactor:
+  - added stage registry + batch status service modules
+  - moved stage routing logic out of `index.js` handlers
+  - no API contract change from the previous generic status endpoint rollout
 - Added Tier‑2 stale-detection maintenance cycle in backend startup:
   - marks `distill_status = stale` for outdated completed artifacts in `pkm.entries`
   - controlled by `T2_STALE_MARK_ENABLED` and `T2_STALE_MARK_INTERVAL_MS`

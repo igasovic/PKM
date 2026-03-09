@@ -16,8 +16,6 @@ const {
 const {
   enrichTier1,
   enqueueTier1Batch,
-  getTier1BatchStatusList,
-  getTier1BatchStatus,
   startTier1BatchWorker,
   stopTier1BatchWorker,
 } = require('./tier1-enrichment.js');
@@ -29,11 +27,12 @@ const {
 } = require('./tier2/planner.js');
 const {
   runTier2BatchWorkerCycle,
-  getTier2BatchStatusList,
-  getTier2BatchStatus,
   startTier2BatchWorker,
   stopTier2BatchWorker,
 } = require('./tier2-enrichment.js');
+const {
+  createBatchStatusService,
+} = require('./batch-status-service.js');
 const { importEmailMbox } = require('./email-importer.js');
 const {
   getBraintrustLogger,
@@ -50,6 +49,7 @@ const {
 } = require('./logger/context.js');
 
 const testModeService = new TestModeService();
+const batchStatusService = createBatchStatusService();
 
 function json(res, status, payload) {
   const body = JSON.stringify(payload);
@@ -69,28 +69,6 @@ function json(res, status, payload) {
 
 function notFound(res) {
   json(res, 404, { error: 'not_found' });
-}
-
-function parseBoolParam(value, fallback = false) {
-  if (value === null || value === undefined || value === '') return fallback;
-  const v = String(value).trim().toLowerCase();
-  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
-}
-
-function parseBatchStageParam(url, fallback = 't1') {
-  const raw = String((url && url.searchParams && url.searchParams.get('stage')) || fallback).trim().toLowerCase();
-  if (raw === 't1' || raw === 't2') return raw;
-  throw new Error('stage must be t1|t2');
-}
-
-async function getBatchStatusListByStage(stage, opts) {
-  if (stage === 't2') return getTier2BatchStatusList(opts || {});
-  return getTier1BatchStatusList(opts || {});
-}
-
-async function getBatchStatusByStage(stage, batchId, opts) {
-  if (stage === 't2') return getTier2BatchStatus(batchId, opts || {});
-  return getTier1BatchStatus(batchId, opts || {});
 }
 
 function readAdminSecret(req) {
@@ -416,17 +394,13 @@ async function handleRequest(req, res) {
   const isGenericBatchStatusList = method === 'GET' && url.pathname === '/status/batch';
   if (isLegacyT1BatchStatusList || isGenericBatchStatusList) {
     try {
-      const stage = isLegacyT1BatchStatusList ? 't1' : parseBatchStageParam(url, 't1');
+      const stage = isLegacyT1BatchStatusList ? 't1' : (url.searchParams.get('stage') || 't1');
       const limit = Number(url.searchParams.get('limit') || 50);
-      const schema = stage === 't1' ? (url.searchParams.get('schema') || undefined) : undefined;
-      const include_terminal = parseBoolParam(
-        url.searchParams.get('include_terminal'),
-        stage === 't2'
-      );
-      const result = await getBatchStatusListByStage(stage, {
+      const result = await batchStatusService.getBatchStatusList({
+        stage,
         limit,
-        schema,
-        include_terminal,
+        schema: url.searchParams.get('schema') || undefined,
+        include_terminal: url.searchParams.get('include_terminal'),
       });
       return json(res, 200, result);
     } catch (err) {
@@ -442,15 +416,14 @@ async function handleRequest(req, res) {
   if (batchStatusMatch) {
     try {
       const isLegacyRoute = /^\/status\/t1\/batch\//.test(url.pathname);
-      const stage = isLegacyRoute ? 't1' : parseBatchStageParam(url, 't1');
+      const stage = isLegacyRoute ? 't1' : (url.searchParams.get('stage') || 't1');
       const batch_id = decodeURIComponent(batchStatusMatch[1]);
-      const schema = stage === 't1' ? (url.searchParams.get('schema') || undefined) : undefined;
-      const include_items = parseBoolParam(url.searchParams.get('include_items'), false);
-      const items_limit = Number(url.searchParams.get('items_limit') || 200);
-      const result = await getBatchStatusByStage(stage, batch_id, {
-        schema,
-        include_items,
-        items_limit,
+      const result = await batchStatusService.getBatchStatus({
+        stage,
+        batch_id,
+        schema: url.searchParams.get('schema') || undefined,
+        include_items: url.searchParams.get('include_items'),
+        items_limit: url.searchParams.get('items_limit'),
       });
       if (!result) return notFound(res);
       return json(res, 200, result);
