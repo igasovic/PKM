@@ -353,6 +353,13 @@ class LiteLLMClient {
       Authorization: `Bearer ${this.apiKey}`,
     };
     const defaultReasoningEffort = getReasoningEffort();
+    const callMetadata = options.metadata && typeof options.metadata === 'object'
+      ? options.metadata
+      : {};
+    const withCallMetadata = (metadata) => ({
+      ...callMetadata,
+      ...(metadata || {}),
+    });
     const methodStart = Date.now();
 
     const makeBody = (reasoningEffort) => ({
@@ -383,9 +390,9 @@ class LiteLLMClient {
             prompt_chars: prompt.length,
           },
           err,
-          {
+          withCallMetadata({
             endpoint: 'chat.completions',
-          }
+          })
         );
         throw err;
       }
@@ -405,11 +412,11 @@ class LiteLLMClient {
             prompt_chars: prompt.length,
           },
           err,
-          {
+          withCallMetadata({
             endpoint: 'chat.completions',
             status_code: res.status,
             response_preview: truncate(msg, 350),
-          },
+          }),
           {
             duration_ms,
           }
@@ -435,10 +442,10 @@ class LiteLLMClient {
         {
           response_chars: String(responseText || '').length,
         },
-        {
+        withCallMetadata({
           endpoint: 'chat.completions',
           status_code: res.status,
-        },
+        }),
         {
           ...buildLlmMetrics(json, duration_ms, usage),
           ...usage,
@@ -475,10 +482,10 @@ class LiteLLMClient {
         {
           response_chars: String(result.text || '').length,
         },
-        {
+        withCallMetadata({
           endpoint: 'chat.completions',
           reasoning_effort: result.reasoning_effort,
-        },
+        }),
         {
           ...buildLlmMetrics(result.json, Date.now() - methodStart, result.usage),
           ...result.usage,
@@ -494,9 +501,9 @@ class LiteLLMClient {
           prompt_chars: prompt.length,
         },
         err,
-        {
+        withCallMetadata({
           endpoint: 'chat.completions',
-        },
+        }),
         {
           llm_duration_ms: Date.now() - methodStart,
           duration_ms: Date.now() - methodStart,

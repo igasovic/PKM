@@ -33,11 +33,70 @@ function parseLimit(value, fallback, max) {
   return Math.min(Math.trunc(n), max);
 }
 
+function toNormalizedCodeSet(value) {
+  if (!Array.isArray(value)) return new Set();
+  return new Set(
+    value
+      .map((item) => String(item || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+function resolveTier2RetryConfig(config) {
+  const cfg = config && config.distill ? config.distill : {};
+  const retry = cfg && cfg.retry ? cfg.retry : {};
+  const maxAttemptsRaw = Number(retry.max_attempts);
+  const maxAttempts = Number.isFinite(maxAttemptsRaw) && maxAttemptsRaw > 0
+    ? Math.trunc(maxAttemptsRaw)
+    : 2;
+  const retryableCodes = toNormalizedCodeSet(retry.retryable_error_codes);
+  const nonRetryableCodes = toNormalizedCodeSet(retry.non_retryable_error_codes);
+
+  return {
+    enabled: retry.enabled !== false,
+    max_attempts: maxAttempts,
+    retryable_codes: retryableCodes,
+    has_retryable_filter: retryableCodes.size > 0,
+    non_retryable_codes: nonRetryableCodes,
+  };
+}
+
+function normalizeErrorCode(value) {
+  return String(value || 'worker_error').trim().toLowerCase() || 'worker_error';
+}
+
+function shouldRetryTier2Failure(retryConfig, errorCode, attemptCount) {
+  const cfg = retryConfig || {
+    enabled: false,
+    max_attempts: 1,
+    retryable_codes: new Set(),
+    has_retryable_filter: false,
+    non_retryable_codes: new Set(),
+  };
+  const code = normalizeErrorCode(errorCode);
+  const attempts = Number.isFinite(Number(attemptCount)) ? Number(attemptCount) : 1;
+
+  if (!cfg.enabled) {
+    return { retry: false, reason: 'retry_disabled', error_code: code };
+  }
+  if (attempts >= cfg.max_attempts) {
+    return { retry: false, reason: 'max_attempts_reached', error_code: code };
+  }
+  if (cfg.non_retryable_codes.has(code)) {
+    return { retry: false, reason: 'non_retryable_error_code', error_code: code };
+  }
+  if (cfg.has_retryable_filter && !cfg.retryable_codes.has(code)) {
+    return { retry: false, reason: 'not_in_retryable_error_codes', error_code: code };
+  }
+  return { retry: true, reason: 'retryable', error_code: code };
+}
+
 function createTier2BatchRunner(deps) {
   const dependencies = deps && typeof deps === 'object' ? deps : {};
   const runPlan = dependencies.runPlan || runTier2ControlPlanePlan;
   const distillOne = dependencies.distillOne || distillTier2SingleEntrySync;
   const getLoggerFn = dependencies.getLogger || getLogger;
+  const getConfigFn = dependencies.getConfig || getConfig;
 
   async function runTier2BatchCycle(rawOptions) {
     const options = rawOptions && typeof rawOptions === 'object' ? rawOptions : {};
@@ -47,6 +106,7 @@ function createTier2BatchRunner(deps) {
     const dryRun = options.dry_run === true;
 
     const logger = getLoggerFn().child({ pipeline: 't2.distill.batch' });
+    const retryConfig = resolveTier2RetryConfig(getConfigFn());
 
     const plan = await logger.step(
       't2.batch.plan',
@@ -89,29 +149,93 @@ function createTier2BatchRunner(deps) {
 
     const results = [];
     for (const row of toProcess) {
-      try {
-        const out = await logger.step(
-          't2.batch.sync_one',
-          async () => distillOne(row.entry_id),
+      let attempts = 0;
+      let final = null;
+
+      while (!final) {
+        attempts += 1;
+        let out;
+        try {
+          out = await logger.step(
+            't2.batch.sync_one',
+            async () => distillOne(row.entry_id, { retry_count: attempts - 1 }),
+            {
+              input: {
+                entry_id: row.entry_id,
+                attempt: attempts,
+                retry_count: attempts - 1,
+              },
+              output: (value) => ({
+                entry_id: value && value.entry_id,
+                status: value && value.status,
+                error_code: value && value.error_code,
+              }),
+              meta: { entry_id: row.entry_id },
+            }
+          );
+        } catch (err) {
+          out = {
+            entry_id: row.entry_id,
+            status: 'failed',
+            error_code: 'worker_error',
+            message: err && err.message ? err.message : String(err),
+          };
+        }
+
+        const status = out && out.status ? out.status : 'failed';
+        const errorCode = normalizeErrorCode(out && out.error_code);
+
+        if (status === 'completed') {
+          final = {
+            entry_id: row.entry_id,
+            status: 'completed',
+            error_code: null,
+          };
+          continue;
+        }
+
+        const retryDecision = await logger.step(
+          't2.batch.retry.evaluate',
+          async () => shouldRetryTier2Failure(retryConfig, errorCode, attempts),
           {
-            input: { entry_id: row.entry_id },
-            output: (value) => ({ entry_id: value && value.entry_id, status: value && value.status, error_code: value && value.error_code }),
+            input: {
+              entry_id: row.entry_id,
+              attempt: attempts,
+              error_code: errorCode,
+              retry_enabled: retryConfig.enabled,
+              max_attempts: retryConfig.max_attempts,
+            },
+            output: (value) => value,
             meta: { entry_id: row.entry_id },
           }
         );
-        results.push({
-          entry_id: row.entry_id,
-          status: out && out.status ? out.status : 'failed',
-          error_code: out && out.error_code ? out.error_code : null,
-        });
-      } catch (err) {
-        results.push({
-          entry_id: row.entry_id,
-          status: 'failed',
-          error_code: 'runner_error',
-          message: err && err.message ? err.message : String(err),
-        });
+
+        if (!retryDecision.retry) {
+          final = {
+            entry_id: row.entry_id,
+            status: 'failed',
+            error_code: errorCode,
+          };
+          if (out && out.message) final.message = out.message;
+          continue;
+        }
+
+        await logger.step(
+          't2.batch.retry.dispatch',
+          async () => ({ entry_id: row.entry_id, retry_count: attempts }),
+          {
+            input: {
+              entry_id: row.entry_id,
+              error_code: errorCode,
+              next_retry_count: attempts,
+            },
+            output: (value) => value,
+            meta: { entry_id: row.entry_id },
+          }
+        );
       }
+
+      results.push(final);
     }
 
     const completedCount = results.filter((row) => row.status === 'completed').length;
@@ -409,6 +533,8 @@ async function getTier2BatchStatus(batchId, opts) {
 
 module.exports = {
   createTier2BatchRunner,
+  resolveTier2RetryConfig,
+  shouldRetryTier2Failure,
   runTier2BatchCycle: runner.runTier2BatchCycle,
   runTier2BatchWorkerCycle,
   getTier2BatchStatusList,

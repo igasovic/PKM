@@ -53,19 +53,34 @@ function normalizeEntryId(value) {
   return Math.trunc(n);
 }
 
+function parseRetryCount(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.trunc(n);
+}
+
 async function requestStructuredOutput({
   requestType,
   systemPrompt,
   userPrompt,
+  metadata,
   logger,
 }) {
   const distillConfig = getDistillConfig();
   const model = getModelForRequestType(distillConfig, requestType);
   const client = getLiteLLMClient();
+  const meta = metadata && typeof metadata === 'object' ? metadata : {};
 
   const result = await logger.step(
     `t2.sync.llm.${requestType}`,
-    async () => client.sendMessage(userPrompt, { model, systemPrompt }),
+    async () => client.sendMessage(userPrompt, {
+      model,
+      systemPrompt,
+      metadata: {
+        stage: 'distill',
+        ...meta,
+      },
+    }),
     {
       input: {
         request_type: requestType,
@@ -80,6 +95,7 @@ async function requestStructuredOutput({
       meta: {
         stage: 'distill',
         substage: requestType,
+        ...meta,
       },
     }
   );
@@ -96,6 +112,12 @@ async function generateDirectArtifact(entry, logger) {
     requestType: 'sync_direct_generation',
     systemPrompt: prompt.systemPrompt,
     userPrompt: prompt.userPrompt,
+    metadata: {
+      route: 'direct',
+      substage: 'direct_generation',
+      entry_id: entry && entry.entry_id,
+      clean_word_count: entry && entry.clean_word_count,
+    },
     logger,
   });
   const parsed = parseTier2FinalOutput(response.text);
@@ -128,6 +150,14 @@ async function generateChunkedArtifact(entry, logger) {
       requestType: prompt.request_type,
       systemPrompt: prompt.systemPrompt,
       userPrompt: prompt.userPrompt,
+      metadata: {
+        route: 'chunked',
+        substage: 'chunk_note_generation',
+        entry_id: entry && entry.entry_id,
+        clean_word_count: entry && entry.clean_word_count,
+        chunk_index: chunk.index,
+        chunk_count: chunks.length,
+      },
       logger,
     });
     const note = parseTier2ChunkNoteOutput(response.text);
@@ -144,6 +174,13 @@ async function generateChunkedArtifact(entry, logger) {
     requestType: synthesisPrompt.request_type,
     systemPrompt: synthesisPrompt.systemPrompt,
     userPrompt: synthesisPrompt.userPrompt,
+    metadata: {
+      route: 'chunked',
+      substage: 'final_synthesis',
+      entry_id: entry && entry.entry_id,
+      clean_word_count: entry && entry.clean_word_count,
+      chunk_count: chunks.length,
+    },
     logger,
   });
 
@@ -158,7 +195,7 @@ async function generateChunkedArtifact(entry, logger) {
   };
 }
 
-function toFailureMetadata(errorCode, details, model, chunkingStrategy) {
+function toFailureMetadata(errorCode, details, model, chunkingStrategy, retryCount) {
   return {
     error: {
       code: errorCode || 'generation_error',
@@ -167,10 +204,11 @@ function toFailureMetadata(errorCode, details, model, chunkingStrategy) {
     },
     model: model || null,
     chunking_strategy: chunkingStrategy || null,
+    retry_count: parseRetryCount(retryCount),
   };
 }
 
-async function persistValidationFailure(entryId, validation, generated, logger) {
+async function persistValidationFailure(entryId, validation, generated, retryCount, logger) {
   await logger.step(
     't2.sync.persist.failed',
     async () => db.persistTier2SyncFailure(entryId, {
@@ -179,7 +217,8 @@ async function persistValidationFailure(entryId, validation, generated, logger) 
         validation && validation.error_code,
         validation && validation.error_details,
         generated && generated.model,
-        generated && generated.chunking_strategy
+        generated && generated.chunking_strategy,
+        retryCount
       ),
     }),
     {
@@ -192,7 +231,7 @@ async function persistValidationFailure(entryId, validation, generated, logger) 
   );
 }
 
-async function persistGenerationFailure(entryId, err, generated, logger) {
+async function persistGenerationFailure(entryId, err, generated, retryCount, logger) {
   await logger.step(
     't2.sync.persist.failed',
     async () => db.persistTier2SyncFailure(entryId, {
@@ -201,7 +240,8 @@ async function persistGenerationFailure(entryId, err, generated, logger) {
         'generation_error',
         { message: err && err.message ? err.message : String(err) },
         generated && generated.model,
-        generated && generated.chunking_strategy
+        generated && generated.chunking_strategy,
+        retryCount
       ),
     }),
     {
@@ -238,8 +278,10 @@ async function loadEntryForSync(entryId, logger) {
   return row;
 }
 
-async function distillTier2SingleEntrySync(rawEntryId) {
+async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
   const entryId = normalizeEntryId(rawEntryId);
+  const options = rawOptions && typeof rawOptions === 'object' ? rawOptions : {};
+  const retryCount = parseRetryCount(options.retry_count);
   const logger = getLogger().child({
     pipeline: 't2.distill.sync',
     entry_id: entryId,
@@ -266,7 +308,7 @@ async function distillTier2SingleEntrySync(rawEntryId) {
       ? await generateChunkedArtifact(entry, logger)
       : await generateDirectArtifact(entry, logger);
   } catch (err) {
-    await persistGenerationFailure(entryId, err, generated, logger);
+    await persistGenerationFailure(entryId, err, generated, retryCount, logger);
     return {
       entry_id: entryId,
       status: 'failed',
@@ -285,7 +327,7 @@ async function distillTier2SingleEntrySync(rawEntryId) {
     chunking_strategy: generated.chunking_strategy,
     content_hash: entry.content_hash,
     distill_version: distillConfig.version || 'distill_v1',
-    retry_count: 0,
+    retry_count: retryCount,
   });
 
   const validation = await logger.step(
@@ -313,7 +355,7 @@ async function distillTier2SingleEntrySync(rawEntryId) {
         at: new Date().toISOString(),
       },
     };
-    await persistValidationFailure(entryId, validation, generated, logger);
+    await persistValidationFailure(entryId, validation, generated, retryCount, logger);
     return {
       entry_id: entryId,
       status: 'failed',

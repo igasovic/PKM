@@ -1,4 +1,21 @@
 # changelog
+## 2026-03-09 — Tier-2 batch retry policy + LLM metadata enrichment
+
+### What changed
+- Tier‑2 batch execution (`POST /distill/run`) now applies config-driven retry decisions for per-entry failures:
+  - reads retry settings from `distill.retry.*`
+  - evaluates retryable/non-retryable error codes and max attempts
+  - retries only when policy allows; otherwise marks terminal failure for the entry
+- Tier‑2 sync service now accepts optional retry context from the batch runner and persists `distill_metadata.retry_count` for both success and failure writes.
+- Added lightweight Tier‑2 retry transition logging steps in pipeline events:
+  - `t2.batch.retry.evaluate`
+  - `t2.batch.retry.dispatch`
+- Enriched Tier‑2 LiteLLM telemetry metadata by forwarding distillation context (stage/route/substage/entry/chunk metadata) into `litellm-client` logs.
+- Expanded Tier‑2 batch runner tests to cover:
+  - retryable failure -> retry -> success
+  - non-retryable failure -> no retry
+  - max-attempts stop condition
+
 ## 2026-03-08 — Tier-2 foundation: sync distillation endpoint + control-plane utilities
 
 ### What changed

@@ -56,6 +56,7 @@ const CONFIG_V1 = {
         return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 2;
       })(),
       retryable_error_codes: [
+        'generation_error',
         'network_error',
         'timeout',
         'rate_limited',

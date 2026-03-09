@@ -23,6 +23,16 @@ describe('tier2 enrichment batch runner', () => {
         }
         return { entry_id: entryId, status: 'completed' };
       },
+      getConfig: () => ({
+        distill: {
+          retry: {
+            enabled: false,
+            max_attempts: 1,
+            retryable_error_codes: ['generation_error'],
+            non_retryable_error_codes: [],
+          },
+        },
+      }),
       getLogger: () => ({
         child() { return this; },
         async step(_name, fn) { return fn(); },
@@ -105,5 +115,129 @@ describe('tier2 enrichment batch runner', () => {
     const out = await runner.runTier2BatchCycle({ max_sync_items: 2 });
     expect(syncCalls).toEqual([1, 2]);
     expect(out.processed_count).toBe(2);
+  });
+
+  test('retries retryable failures and succeeds on a later attempt', async () => {
+    const syncCalls = [];
+    const runner = createTier2BatchRunner({
+      runPlan: async () => ({
+        candidate_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 301 }],
+      }),
+      distillOne: async (entryId) => {
+        syncCalls.push(entryId);
+        if (syncCalls.length === 1) {
+          return { entry_id: entryId, status: 'failed', error_code: 'generation_error' };
+        }
+        return { entry_id: entryId, status: 'completed' };
+      },
+      getConfig: () => ({
+        distill: {
+          retry: {
+            enabled: true,
+            max_attempts: 2,
+            retryable_error_codes: ['generation_error'],
+            non_retryable_error_codes: [],
+          },
+        },
+      }),
+      getLogger: () => ({
+        child() { return this; },
+        async step(_name, fn) { return fn(); },
+      }),
+    });
+
+    const out = await runner.runTier2BatchCycle({ max_sync_items: 1 });
+    expect(syncCalls).toEqual([301, 301]);
+    expect(out.completed_count).toBe(1);
+    expect(out.failed_count).toBe(0);
+    expect(out.results).toEqual([
+      { entry_id: 301, status: 'completed', error_code: null },
+    ]);
+  });
+
+  test('does not retry non-retryable failure codes', async () => {
+    const syncCalls = [];
+    const runner = createTier2BatchRunner({
+      runPlan: async () => ({
+        candidate_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 401 }],
+      }),
+      distillOne: async (entryId) => {
+        syncCalls.push(entryId);
+        return { entry_id: entryId, status: 'failed', error_code: 'missing_clean_text' };
+      },
+      getConfig: () => ({
+        distill: {
+          retry: {
+            enabled: true,
+            max_attempts: 3,
+            retryable_error_codes: ['generation_error'],
+            non_retryable_error_codes: ['missing_clean_text'],
+          },
+        },
+      }),
+      getLogger: () => ({
+        child() { return this; },
+        async step(_name, fn) { return fn(); },
+      }),
+    });
+
+    const out = await runner.runTier2BatchCycle({ max_sync_items: 1 });
+    expect(syncCalls).toEqual([401]);
+    expect(out.completed_count).toBe(0);
+    expect(out.failed_count).toBe(1);
+    expect(out.results[0]).toEqual({
+      entry_id: 401,
+      status: 'failed',
+      error_code: 'missing_clean_text',
+    });
+  });
+
+  test('stops retrying when max_attempts is reached', async () => {
+    const syncCalls = [];
+    const runner = createTier2BatchRunner({
+      runPlan: async () => ({
+        candidate_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 501 }],
+      }),
+      distillOne: async (entryId) => {
+        syncCalls.push(entryId);
+        return { entry_id: entryId, status: 'failed', error_code: 'generation_error' };
+      },
+      getConfig: () => ({
+        distill: {
+          retry: {
+            enabled: true,
+            max_attempts: 2,
+            retryable_error_codes: ['generation_error'],
+            non_retryable_error_codes: [],
+          },
+        },
+      }),
+      getLogger: () => ({
+        child() { return this; },
+        async step(_name, fn) { return fn(); },
+      }),
+    });
+
+    const out = await runner.runTier2BatchCycle({ max_sync_items: 1 });
+    expect(syncCalls).toEqual([501, 501]);
+    expect(out.completed_count).toBe(0);
+    expect(out.failed_count).toBe(1);
+    expect(out.results[0]).toEqual({
+      entry_id: 501,
+      status: 'failed',
+      error_code: 'generation_error',
+    });
   });
 });
