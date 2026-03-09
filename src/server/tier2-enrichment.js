@@ -7,6 +7,19 @@ const { getLogger } = require('./logger/index.js');
 const { createBatchWorkerRuntime } = require('./batch-worker-runtime.js');
 const { runTier2ControlPlanePlan } = require('./tier2/planner.js');
 const { distillTier2SingleEntrySync } = require('./tier2/service.js');
+const { DISTILL_VALIDATION_ERROR_CODES } = require('./tier2/constants.js');
+
+const DETERMINISTIC_NON_RETRYABLE_CODES = new Set([
+  ...Object.values(DISTILL_VALIDATION_ERROR_CODES || {}),
+  'currentness_mismatch',
+  'missing_clean_text',
+  'wrong_content_type',
+  'already_current',
+  'already_queued',
+  'invalid_config',
+  'invalid_route',
+  'validation_contract_mismatch',
+]);
 
 function parsePositiveIntOrNull(value, fieldName) {
   if (value === null || value === undefined || value === '') return null;
@@ -55,7 +68,10 @@ function resolveTier2RetryConfig(config) {
     ? Math.trunc(maxAttemptsRaw)
     : 2;
   const retryableCodes = toNormalizedCodeSet(retry.retryable_error_codes);
-  const nonRetryableCodes = toNormalizedCodeSet(retry.non_retryable_error_codes);
+  const nonRetryableCodes = new Set([
+    ...DETERMINISTIC_NON_RETRYABLE_CODES,
+    ...toNormalizedCodeSet(retry.non_retryable_error_codes),
+  ]);
 
   return {
     enabled: retry.enabled !== false,

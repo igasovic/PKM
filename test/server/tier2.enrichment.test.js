@@ -4,6 +4,7 @@ const {
   buildTier2RunErrorResponse,
   buildTier2WorkerBusyResponse,
   createTier2BatchRunner,
+  resolveTier2RetryConfig,
 } = require('../../src/server/tier2-enrichment.js');
 
 describe('tier2 enrichment batch runner', () => {
@@ -338,6 +339,63 @@ describe('tier2 enrichment batch runner', () => {
       entry_id: 501,
       status: 'failed',
       error_code: 'generation_error',
+    });
+  });
+
+  test('deterministic validation/currentness failures remain non-retryable', () => {
+    const cfg = resolveTier2RetryConfig({
+      distill: {
+        retry: {
+          enabled: true,
+          max_attempts: 5,
+          retryable_error_codes: [],
+          non_retryable_error_codes: [],
+        },
+      },
+    });
+
+    expect(cfg.non_retryable_codes.has('excerpt_not_grounded')).toBe(true);
+    expect(cfg.non_retryable_codes.has('summary_empty')).toBe(true);
+    expect(cfg.non_retryable_codes.has('currentness_mismatch')).toBe(true);
+  });
+
+  test('does not retry deterministic failures even with permissive retry config', async () => {
+    const syncCalls = [];
+    const runner = createTier2BatchRunner({
+      runPlan: async () => ({
+        candidate_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 601 }],
+      }),
+      distillOne: async (entryId) => {
+        syncCalls.push(entryId);
+        return { entry_id: entryId, status: 'failed', error_code: 'excerpt_not_grounded' };
+      },
+      getConfig: () => ({
+        distill: {
+          retry: {
+            enabled: true,
+            max_attempts: 5,
+            retryable_error_codes: [],
+            non_retryable_error_codes: [],
+          },
+        },
+      }),
+      getLogger: () => ({
+        child() { return this; },
+        async step(_name, fn) { return fn(); },
+      }),
+    });
+
+    const out = await runner.runTier2BatchCycle({ max_sync_items: 1 });
+    expect(syncCalls).toEqual([601]);
+    expect(out.failed_count).toBe(1);
+    expect(out.results[0]).toEqual({
+      entry_id: 601,
+      status: 'failed',
+      error_code: 'excerpt_not_grounded',
     });
   });
 });

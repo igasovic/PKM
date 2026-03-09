@@ -1,4 +1,15 @@
 # changelog
+## 2026-03-09 — Tier-2 retry hardening for deterministic failures
+
+### What changed
+- Updated `src/server/tier2-enrichment.js` retry config resolution:
+  - always treats deterministic failures as non-retryable, regardless of runtime retry config.
+  - includes all `DISTILL_VALIDATION_ERROR_CODES` plus `currentness_mismatch` and deterministic gating codes.
+- Added/expanded tests in `test/server/tier2.enrichment.test.js`:
+  - validates deterministic codes are in resolved non-retryable set
+  - ensures `excerpt_not_grounded` is not retried even with permissive retry config.
+- Updated `docs/requirements.md` to codify deterministic non-retryable behavior.
+
 ## 2026-03-09 — Added /distill sync success HTTP contract coverage
 
 ### What changed
