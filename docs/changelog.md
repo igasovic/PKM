@@ -46,6 +46,7 @@
 - Updated `docs/api.md` to document the worker-busy response variant for `POST /distill/run`.
 - Updated `docs/api.md` to clarify that non-busy `/distill/run` responses include `batch_id` for status lookup.
 - Updated `docs/api.md` with normalized runtime-failure response shape for `POST /distill/run`.
+- Updated `docs/requirements.md` to codify normalized Tier‑2 run-failure payloads and `metadata.error` status behavior.
 - Updated `docs/api.md` to document `metadata.error` availability on failed `stage=t2` status rows.
 - Added backend test coverage for worker-busy response contract in `test/server/tier2.enrichment.test.js`.
 - Expanded backend test coverage for runtime-error response normalization in `test/server/tier2.enrichment.test.js` (run + dry-run modes).

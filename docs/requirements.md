@@ -294,6 +294,7 @@ Primary objective:
 - Control-plane planning must persist eligibility outcomes (`skipped` / `not_eligible`) with compact reason metadata when persistence is enabled.
 - Tier‑2 batch execution must target prod schema and report per-entry outcomes (`completed` / `failed`) for processed selected entries.
 - Tier‑2 batch execution (`POST /distill/run`) must apply config-driven retry decisions from `distill.retry.*` for failed per-entry attempts (sync endpoint remains single-attempt).
+- Tier‑2 batch execution runtime failures must return a normalized response payload (with `error`) and preserve status inspectability via `batch_id`.
 - Route selection must be deterministic from `clean_word_count` and `distill.direct_chunk_threshold_words`.
 - Tier‑2 output must validate deterministically before persistence:
   - required fields: `distill_summary`, `distill_why_it_matters`, `distill_stance`, `distill_version`, `distill_created_from_hash`, `distill_metadata`
@@ -303,6 +304,7 @@ Primary objective:
 - Tier‑2 stale detection must run as backend maintenance:
   - mark `completed -> stale` when `content_hash IS DISTINCT FROM distill_created_from_hash`
   - update status only (keep existing distill artifact fields)
+- Tier‑2 status surfaces should include compact run-level failure summary in `metadata.error` when a batch run fails before per-entry execution.
 
 ## Tier-1 batch visibility requirements
 - Backend must expose read-only status APIs for current Tier‑1 batch jobs.
