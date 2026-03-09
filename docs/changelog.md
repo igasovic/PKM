@@ -36,6 +36,10 @@
 - Updated `docs/api.md` to document the worker-busy response variant for `POST /distill/run`.
 - Updated `docs/api.md` to clarify that non-busy `/distill/run` responses include `batch_id` for status lookup.
 - Added backend test coverage for worker-busy response contract in `test/server/tier2.enrichment.test.js`.
+- Added HTTP contract tests for Tier‑2 endpoints in `test/server/tier2.api-contract.test.js`:
+  - `/distill/run` busy payload
+  - `/distill/run` admin-secret enforcement
+  - `/status/batch?stage=t2` query forwarding
 
 ## 2026-03-09 — Tier-2 batch retry policy + LLM metadata enrichment
 
