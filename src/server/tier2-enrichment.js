@@ -274,6 +274,16 @@ function resolveTier2StatusHistoryLimit() {
   return parseLimit(process.env.T2_BATCH_STATUS_HISTORY_LIMIT, T2_STATUS_HISTORY_DEFAULT, T2_STATUS_HISTORY_MAX);
 }
 
+function buildTier2WorkerBusyResponse() {
+  return {
+    mode: 'skipped',
+    target_schema: 'pkm',
+    skipped: true,
+    reason: 'worker_busy',
+    message: 'Tier-2 batch worker is busy. Try again shortly.',
+  };
+}
+
 function buildTier2BatchId() {
   const ts = Date.now();
   const rand = Math.random().toString(36).slice(2, 8);
@@ -485,13 +495,7 @@ async function runTier2BatchWorkerCycle(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
   const result = await tier2WorkerRuntime.runCycle(options);
   if (result && result.skipped && result.reason === 'worker_busy') {
-    return {
-      mode: 'skipped',
-      target_schema: 'pkm',
-      skipped: true,
-      reason: 'worker_busy',
-      message: 'Tier-2 batch worker is busy. Try again shortly.',
-    };
+    return buildTier2WorkerBusyResponse();
   }
   const endedAt = new Date().toISOString();
   const record = recordTier2BatchRun(result || {}, startedAt, endedAt);
@@ -542,6 +546,7 @@ async function getTier2BatchStatus(batchId, opts) {
 }
 
 module.exports = {
+  buildTier2WorkerBusyResponse,
   createTier2BatchRunner,
   resolveTier2RetryConfig,
   shouldRetryTier2Failure,

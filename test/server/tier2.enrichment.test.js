@@ -1,8 +1,21 @@
 'use strict';
 
-const { createTier2BatchRunner } = require('../../src/server/tier2-enrichment.js');
+const {
+  buildTier2WorkerBusyResponse,
+  createTier2BatchRunner,
+} = require('../../src/server/tier2-enrichment.js');
 
 describe('tier2 enrichment batch runner', () => {
+  test('buildTier2WorkerBusyResponse returns stable skipped contract', () => {
+    expect(buildTier2WorkerBusyResponse()).toEqual({
+      mode: 'skipped',
+      target_schema: 'pkm',
+      skipped: true,
+      reason: 'worker_busy',
+      message: 'Tier-2 batch worker is busy. Try again shortly.',
+    });
+  });
+
   test('runs plan + sync and summarizes results', async () => {
     const syncCalls = [];
     const runner = createTier2BatchRunner({
