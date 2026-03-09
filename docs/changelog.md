@@ -1,4 +1,14 @@
 # changelog
+## 2026-03-09 — Tier-2 sync service execution-path coverage
+
+### What changed
+- Added focused Jest coverage for `src/server/tier2/service.js` in `test/server/tier2.service.test.js`:
+  - direct-route successful sync persistence
+  - chunked-route generation flow (chunk notes + final synthesis)
+  - validation-failure persistence path (`excerpt_not_grounded`)
+  - generation-failure persistence path (`generation_error`)
+- Validated model-selection wiring per request type (`sync_direct`, `chunk_note`, `synthesis`) and failure metadata persistence fields (`error`, `retry_count`, `chunking_strategy`).
+
 ## 2026-03-09 — Tier-2 dry-run status counts clarification
 
 ### What changed
