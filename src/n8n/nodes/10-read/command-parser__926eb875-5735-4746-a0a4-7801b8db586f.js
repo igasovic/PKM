@@ -34,6 +34,7 @@ const defaults = {
   delete: { days: null, limit: null },
   move: { days: null, limit: null },
   debug: { days: null, limit: null },
+  distill: { days: null, limit: null },
   status: { days: null, limit: null },
   help: { days: null, limit: null },
 };
@@ -57,6 +58,7 @@ if (!defaults[cmd]) {
         `/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
         `/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
         `/debug <run_id|last>\n` +
+        `/distill <entry_id>\n` +
         `/status [t1|t2] [--limit M] [--active-only]`
     }
   }];
@@ -130,6 +132,28 @@ if (cmd === 'debug') {
         ? '/debug/run/last'
         : `/debug/run/${encodeURIComponent(token)}`,
       debug_method: 'GET',
+      chat_id
+    }
+  }];
+}
+
+// Special case: /distill <entry_id>
+if (cmd === 'distill') {
+  const mId = text.match(/^\/distill\s+(\d+)\b/i);
+  if (!mId?.[1]) {
+    return [{
+      json: {
+        _reply_now: true,
+        chat_id,
+        telegram_message: `Usage:\n/distill <entry_id>\nExample: /distill 12345`
+      }
+    }];
+  }
+
+  return [{
+    json: {
+      cmd,
+      entry_id: mId[1],
       chat_id
     }
   }];

@@ -262,6 +262,13 @@
             "node": "PKM Debug",
             "type": "main"
           }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Distill Sync",
+            "type": "main"
+          }
         ]
       ]
     },
@@ -282,6 +289,28 @@
           {
             "index": 0,
             "node": "PKM Config",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Distill Sync": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Distill Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Distill Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -639,6 +668,31 @@
                 }
               },
               "outputKey": "debug",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "742c11a1-9ec7-47ef-90b8-5607bc68f9e6",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "distill"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "distill",
               "renameOutput": true
             }
           ]
@@ -1079,6 +1133,50 @@
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
+    },
+    {
+      "id": "a3f6501f-7a9f-46b5-b8a6-e0f1828f0ea0",
+      "name": "PKM Distill Sync",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "your-long-random-secretdfdsfdsfdsfsdf"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={ \"entry_id\" : \"{{$json.entry_id}}\"}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/distill/sync"
+      },
+      "position": [
+        1568,
+        576
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca",
+      "name": "Format Distill Message",
+      "parameters": {
+        "jsCode": "const r = $json || {};\\n\\nconst mdv2 = (v) =>\\n  String(v ?? \"\")\\n    .replace(/([_*\\\\[\\\\]()~`>#+\\\\-=|{}.!\\\\\\\\])/g, \"\\\\\\\\$1\");\\n\\nconst status = String(r.status || \"\").toLowerCase();\\nif (status === \"completed\") {\\n  return {\\n    telegram_message:\\n`*✅ Tier\\\\_2 distill completed*\\n• Entry\\\\_id: ${r.entry_id ?? \"-\"}\\n• Stance: ${mdv2(r.stance || \"-\")}\\n\\n*Summary*\\n${mdv2(r.summary || \"-\")}`\\n  };\\n}\\n\\nreturn {\\n  telegram_message:\\n`*❌ Tier\\\\_2 distill failed*\\n• Entry\\\\_id: ${r.entry_id ?? \"-\"}\\n• Error: ${mdv2(r.error_code || \"unknown_error\")}`\\n};\\n"
+      },
+      "position": [
+        1792,
+        576
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
