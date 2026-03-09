@@ -3,11 +3,9 @@
 const { getConfig } = require('../libs/config.js');
 const { getBraintrustLogger } = require('./observability.js');
 const { getLogger } = require('./logger/index.js');
+const { createBatchWorkerRuntime } = require('./batch-worker-runtime.js');
 const { runTier2ControlPlanePlan } = require('./tier2/planner.js');
 const { distillTier2SingleEntrySync } = require('./tier2/service.js');
-
-let workerTimer = null;
-let workerActive = false;
 
 function parsePositiveIntOrNull(value, fieldName) {
   if (value === null || value === undefined || value === '') return null;
@@ -135,15 +133,8 @@ function createTier2BatchRunner(deps) {
 
 const runner = createTier2BatchRunner();
 
-async function runTier2BatchWorkerCycle(opts) {
-  if (workerActive) {
-    return { skipped: true, reason: 'worker_busy' };
-  }
-
-  workerActive = true;
+function logTier2WorkerError(err) {
   try {
-    return await runner.runTier2BatchCycle(opts || {});
-  } catch (err) {
     getBraintrustLogger().log({
       error: {
         name: err && err.name,
@@ -155,38 +146,48 @@ async function runTier2BatchWorkerCycle(opts) {
         event: 'cycle_error',
       },
     });
-    return { error: err && err.message ? err.message : String(err) };
-  } finally {
-    workerActive = false;
+  } catch (_err) {
+    // best-effort worker error logging
   }
+}
+
+function resolveTier2WorkerIntervalMs() {
+  const intervalRaw = Number(process.env.T2_BATCH_SYNC_INTERVAL_MS || 10 * 60_000);
+  return Number.isFinite(intervalRaw) && intervalRaw >= 5_000 ? intervalRaw : 60_000;
+}
+
+function resolveTier2WorkerSyncLimitFromEnv() {
+  const syncLimitRaw = Number(process.env.T2_BATCH_SYNC_LIMIT || resolveDefaultRunLimit());
+  return Number.isFinite(syncLimitRaw) && syncLimitRaw > 0
+    ? Math.trunc(syncLimitRaw)
+    : resolveDefaultRunLimit();
+}
+
+function isTier2WorkerEnabled() {
+  return String(process.env.T2_BATCH_WORKER_ENABLED || 'false').toLowerCase() === 'true';
+}
+
+const tier2WorkerRuntime = createBatchWorkerRuntime({
+  isEnabled: isTier2WorkerEnabled,
+  resolveIntervalMs: resolveTier2WorkerIntervalMs,
+  buildScheduledOptions: () => ({
+    max_sync_items: resolveTier2WorkerSyncLimitFromEnv(),
+  }),
+  runCycle: async (options) => runner.runTier2BatchCycle(options || {}),
+  onError: logTier2WorkerError,
+});
+
+async function runTier2BatchWorkerCycle(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  return tier2WorkerRuntime.runCycle(options);
 }
 
 function startTier2BatchWorker() {
-  if (workerTimer) return;
-
-  const enabled = String(process.env.T2_BATCH_WORKER_ENABLED || 'false').toLowerCase() === 'true';
-  if (!enabled) return;
-
-  const intervalRaw = Number(process.env.T2_BATCH_SYNC_INTERVAL_MS || 10 * 60_000);
-  const intervalMs = Number.isFinite(intervalRaw) && intervalRaw >= 5_000 ? intervalRaw : 60_000;
-  const syncLimitRaw = Number(process.env.T2_BATCH_SYNC_LIMIT || resolveDefaultRunLimit());
-  const syncLimit = Number.isFinite(syncLimitRaw) && syncLimitRaw > 0
-    ? Math.trunc(syncLimitRaw)
-    : resolveDefaultRunLimit();
-
-  runTier2BatchWorkerCycle({ max_sync_items: syncLimit });
-  workerTimer = setInterval(() => {
-    runTier2BatchWorkerCycle({ max_sync_items: syncLimit });
-  }, intervalMs);
-  if (typeof workerTimer.unref === 'function') {
-    workerTimer.unref();
-  }
+  tier2WorkerRuntime.start();
 }
 
 function stopTier2BatchWorker() {
-  if (!workerTimer) return;
-  clearInterval(workerTimer);
-  workerTimer = null;
+  tier2WorkerRuntime.stop();
 }
 
 module.exports = {
