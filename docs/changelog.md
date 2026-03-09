@@ -1,4 +1,10 @@
 # changelog
+## 2026-03-09 — Added /distill sync success HTTP contract coverage
+
+### What changed
+- Added `test/server/tier2.api-contract.test.js` coverage for successful `POST /distill/sync` responses:
+  - verifies presence of `summary`, `why_it_matters`, `stance`, and optional `excerpt`.
+
 ## 2026-03-09 — Distill failure Telegram message now shows preserved-current flag
 
 ### What changed

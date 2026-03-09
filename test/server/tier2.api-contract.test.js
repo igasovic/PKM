@@ -481,6 +481,43 @@ describe('tier2 API contract', () => {
     });
   });
 
+  test('POST /distill/sync returns completed payload with why_it_matters and excerpt', async () => {
+    jest.doMock('../../src/server/tier2/service.js', () => ({
+      distillTier2SingleEntrySync: async (entryId) => ({
+        entry_id: Number(entryId),
+        status: 'completed',
+        summary: 'Distilled summary.',
+        excerpt: 'Grounded excerpt.',
+        why_it_matters: 'Important for future retrieval.',
+        stance: 'analytical',
+      }),
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/distill/sync',
+      JSON.stringify({ entry_id: 794 }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({
+      entry_id: 794,
+      status: 'completed',
+      summary: 'Distilled summary.',
+      excerpt: 'Grounded excerpt.',
+      why_it_matters: 'Important for future retrieval.',
+      stance: 'analytical',
+    });
+  });
+
   test('POST /distill/sync returns currentness_mismatch payload', async () => {
     jest.doMock('../../src/server/tier2/service.js', () => ({
       distillTier2SingleEntrySync: async (entryId) => ({
