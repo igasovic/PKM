@@ -43,4 +43,23 @@ describe('n8n format-distill-message', () => {
     expect(message).toContain('*Why it matters*');
     expect(message).not.toContain('*Excerpt*');
   });
+
+  test('formats failure with preserved-current indicator when provided', async () => {
+    const out = await formatDistillMessage({
+      $json: {
+        entry_id: 797,
+        status: 'failed',
+        error_code: 'generation_error',
+        message: 'provider timeout',
+        preserved_current_artifact: true,
+      },
+    });
+
+    expect(out).toHaveLength(1);
+    const message = out[0].json.telegram_message;
+    expect(message).toContain('*Tier\\_2 distill failed*');
+    expect(message).toContain('• Error: generation\\_error');
+    expect(message).toContain('• Message: provider timeout');
+    expect(message).toContain('• Current artifact preserved: true');
+  });
 });

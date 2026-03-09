@@ -1,4 +1,11 @@
 # changelog
+## 2026-03-09 — Distill failure Telegram message now shows preserved-current flag
+
+### What changed
+- Updated `src/n8n/nodes/10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js` failure rendering:
+  - includes `Current artifact preserved: true` when `preserved_current_artifact` is returned by backend.
+- Added formatter coverage in `test/server/n8n.format-distill-message.test.js`.
+
 ## 2026-03-09 — Distill sync Telegram success message now includes why-it-matters and excerpt
 
 ### What changed

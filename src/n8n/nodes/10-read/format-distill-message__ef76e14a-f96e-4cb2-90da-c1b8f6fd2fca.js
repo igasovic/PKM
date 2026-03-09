@@ -35,13 +35,16 @@ ${mdv2(r.summary || '-')}${whyBlock}${excerptBlock}`,
   }
 
   const errMsg = r.message ? `\n• Message: ${mdv2(r.message)}` : '';
+  const preserved = r.preserved_current_artifact === true
+    ? '\n• Current artifact preserved: true'
+    : '';
   return [{
     json: {
       ...r,
       telegram_message:
 `*Tier\\_2 distill failed*
 • Entry\\_id: ${r.entry_id ?? '-'}
-• Error: ${mdv2(r.error_code || 'unknown_error')}${errMsg}`,
+• Error: ${mdv2(r.error_code || 'unknown_error')}${errMsg}${preserved}`,
     },
   }];
 };
