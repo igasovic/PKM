@@ -422,6 +422,7 @@ describe('tier2 API contract', () => {
     const parsed = JSON.parse(res.body);
     expect(parsed.mode).toBe('run');
     expect(parsed.failed_count).toBe(1);
+    expect(parsed.preserved_current_count).toBe(1);
     expect(parsed.results).toEqual([
       {
         entry_id: 706,

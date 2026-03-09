@@ -1,4 +1,27 @@
 # changelog
+## 2026-03-09 — Tier-2 run/status now preserve current-artifact failure details
+
+### What changed
+- Updated `src/server/tier2-enrichment.js`:
+  - run-level responses now include `preserved_current_count`
+  - failed result rows now carry `preserved_current_artifact` and `message` when present
+  - status item rows (`/status/batch/:batch_id?stage=t2&include_items=true`) now retain:
+    - `error_code`
+    - `message`
+    - `preserved_current_artifact`
+  - status metadata now includes `preserved_current_count`
+- Updated `src/n8n/nodes/10-read/format-distill-run-message__b9f00fcd-a5ed-462f-a8d0-3e49c20eca11.js`:
+  - preserved-current line now reads from `preserved_current_count` (fallback to counting `results[]`).
+- Added/updated tests:
+  - `test/server/tier2.enrichment.test.js`
+  - `test/server/tier2.status.test.js`
+  - `test/server/tier2.api-contract.test.js`
+  - `test/server/n8n.format-distill-run-message.test.js`
+- Updated `docs/api.md` to document:
+  - `/distill/run` `preserved_current_count`
+  - optional failed-result fields (`message`, `preserved_current_artifact`)
+  - optional stage=t2 item detail fields on status endpoints.
+
 ## 2026-03-09 — Distill run Telegram message now shows preserved-current count
 
 ### What changed

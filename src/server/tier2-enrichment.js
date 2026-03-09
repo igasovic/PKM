@@ -285,6 +285,7 @@ function createTier2BatchRunner(deps) {
 
     const completedCount = results.filter((row) => row.status === 'completed').length;
     const failedCount = results.length - completedCount;
+    const preservedCurrentCount = results.filter((row) => row.preserved_current_artifact === true).length;
 
     return {
       mode: 'run',
@@ -297,6 +298,7 @@ function createTier2BatchRunner(deps) {
       processed_count: results.length,
       completed_count: completedCount,
       failed_count: failedCount,
+      preserved_current_count: preservedCurrentCount,
       results,
     };
   }
@@ -364,6 +366,7 @@ function buildTier2RunErrorResponse(rawOptions, errorValue) {
     processed_count: 0,
     completed_count: 0,
     failed_count: 1,
+    preserved_current_count: 0,
     results: [],
     error,
   };
@@ -429,6 +432,9 @@ function buildTier2Items(result, createdAt, updatedAt) {
       custom_id: `entry_${row.entry_id}`,
       entry_id: row.entry_id,
       status: 'planned',
+      error_code: null,
+      message: null,
+      preserved_current_artifact: false,
       title: null,
       author: null,
       content_type: 'newsletter',
@@ -440,18 +446,24 @@ function buildTier2Items(result, createdAt, updatedAt) {
   }
 
   const results = Array.isArray(result && result.results) ? result.results : [];
-  return results.map((row) => ({
-    custom_id: `entry_${row.entry_id}`,
-    entry_id: row.entry_id,
-    status: row.status === 'completed' ? 'ok' : (row.error_code || row.status || 'error'),
-    title: null,
-    author: null,
-    content_type: 'newsletter',
-    prompt_mode: 't2_sync',
-    has_error: row.status !== 'completed',
-    created_at: createdAt,
-    updated_at: updatedAt,
-  }));
+  return results.map((row) => {
+    const errorCode = row.status === 'completed' ? null : (row.error_code || row.status || 'error');
+    return {
+      custom_id: `entry_${row.entry_id}`,
+      entry_id: row.entry_id,
+      status: row.status === 'completed' ? 'ok' : errorCode,
+      error_code: errorCode,
+      message: row && row.message ? String(row.message) : null,
+      preserved_current_artifact: row.preserved_current_artifact === true,
+      title: null,
+      author: null,
+      content_type: 'newsletter',
+      prompt_mode: 't2_sync',
+      has_error: row.status !== 'completed',
+      created_at: createdAt,
+      updated_at: updatedAt,
+    };
+  });
 }
 
 function trimTier2History() {
@@ -481,6 +493,7 @@ function recordTier2BatchRun(result, startedAt, endedAt) {
       persisted_eligibility: result && result.persisted_eligibility ? result.persisted_eligibility : { updated: 0, groups: [] },
       processing_limit: Number(result && result.processing_limit ? result.processing_limit : resolveDefaultRunLimit()),
       will_process_count: Number(result && result.will_process_count ? result.will_process_count : 0),
+      preserved_current_count: Number(result && result.preserved_current_count ? result.preserved_current_count : 0),
       error: result && result.error ? String(result.error) : null,
     },
     created_at: startedAt,

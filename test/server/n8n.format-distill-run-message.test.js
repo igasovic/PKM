@@ -82,4 +82,24 @@ describe('n8n format-distill-run-message', () => {
     expect(out[0].json.telegram_message).toContain('Failed: 1');
     expect(out[0].json.telegram_message).toContain('Preserved current: 1');
   });
+
+  test('uses preserved_current_count field when results are omitted', async () => {
+    const out = await formatDistillRunMessage({
+      $json: {
+        mode: 'run',
+        batch_id: 't2_1700000000_zz11yy',
+        candidate_count: 2,
+        planned_selected_count: 2,
+        processed_count: 2,
+        completed_count: 0,
+        failed_count: 2,
+        preserved_current_count: 1,
+        decision_counts: { proceed: 2, skipped: 0, not_eligible: 0 },
+      },
+    });
+
+    expect(out).toHaveLength(1);
+    expect(out[0].json.telegram_message).toContain('Failed: 2');
+    expect(out[0].json.telegram_message).toContain('Preserved current: 1');
+  });
 });

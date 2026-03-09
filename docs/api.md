@@ -471,6 +471,10 @@ Response:
 
 Notes:
 - For `stage=t2`, failed runs may include `metadata.error` with a compact run-level failure summary.
+- For `stage=t2` with `include_items=true`, item rows may include:
+  - `error_code`
+  - `message`
+  - `preserved_current_artifact`
 - For `stage=t2` dry-run jobs, `counts.pending` is `0` and planned work size is reported as `metadata.will_process_count`.
 
 ### `GET /status/batch/:batch_id`
@@ -680,6 +684,7 @@ Response:
   "processed_count": 25,
   "completed_count": 21,
   "failed_count": 4,
+  "preserved_current_count": 1,
   "results": [
     { "entry_id": 12345, "status": "completed", "error_code": null },
     {
@@ -692,6 +697,12 @@ Response:
   ]
 }
 ```
+
+Notes:
+- Failed result rows may include:
+  - `message` (when available)
+  - `preserved_current_artifact = true` (when failure preserved an existing current artifact)
+- `preserved_current_count` is the run-level count of failed rows with `preserved_current_artifact = true`.
 
 Response (worker busy):
 ```json

@@ -19,7 +19,11 @@ module.exports = async function run(ctx) {
 
   const lines = [];
   const results = Array.isArray(r.results) ? r.results : [];
-  const preservedCurrentCount = results.filter((row) => row && row.preserved_current_artifact === true).length;
+  const preservedCurrentCountFromResults = results.filter((row) => row && row.preserved_current_artifact === true).length;
+  const preservedCurrentCountRaw = Number(r.preserved_current_count);
+  const preservedCurrentCount = Number.isFinite(preservedCurrentCountRaw)
+    ? preservedCurrentCountRaw
+    : preservedCurrentCountFromResults;
   if (r.skipped === true && String(r.reason || '').toLowerCase() === 'worker_busy') {
     lines.push('*Tier\\_2 run skipped*');
     lines.push('');

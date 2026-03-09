@@ -60,6 +60,10 @@ describe('tier2 status surfaces', () => {
     expect(Array.isArray(detail.items)).toBe(true);
     expect(detail.items).toHaveLength(2);
     expect(detail.items[0]).toHaveProperty('entry_id');
+    const failedItem = detail.items.find((item) => item.entry_id === 102);
+    expect(failedItem).toBeTruthy();
+    expect(failedItem.error_code).toBe('generation_error');
+    expect(failedItem.has_error).toBe(true);
   });
 
   test('dry-run status stores planned count in metadata', async () => {
@@ -119,5 +123,42 @@ describe('tier2 status surfaces', () => {
     expect(detail.counts.error).toBe(1);
     expect(detail.metadata.error).toContain('planner unavailable');
     expect(detail.items).toHaveLength(0);
+  });
+
+  test('status detail keeps preserved-current marker on failed items', async () => {
+    mockQueuedMarkerDb();
+    jest.doMock('../../src/server/tier2/planner.js', () => ({
+      runTier2ControlPlanePlan: async () => ({
+        candidate_count: 1,
+        decision_counts: { proceed: 1, skipped: 0, not_eligible: 0 },
+        persisted_eligibility: { updated: 0, groups: [] },
+        selected_count: 1,
+        selected: [{ id: 'a', entry_id: 301 }],
+      }),
+    }));
+
+    jest.doMock('../../src/server/tier2/service.js', () => ({
+      distillTier2SingleEntrySync: async () => ({
+        entry_id: 301,
+        status: 'failed',
+        error_code: 'generation_error',
+        message: 'provider timeout',
+        preserved_current_artifact: true,
+      }),
+    }));
+
+    const t2 = require('../../src/server/tier2-enrichment.js');
+    const run = await t2.runTier2BatchWorkerCycle({ dry_run: false, max_sync_items: 1 });
+    const detail = await t2.getTier2BatchStatus(run.batch_id, { include_items: true });
+
+    expect(detail.metadata.preserved_current_count).toBe(1);
+    expect(detail.items).toHaveLength(1);
+    expect(detail.items[0]).toEqual(expect.objectContaining({
+      entry_id: 301,
+      status: 'generation_error',
+      error_code: 'generation_error',
+      message: 'provider timeout',
+      preserved_current_artifact: true,
+    }));
   });
 });

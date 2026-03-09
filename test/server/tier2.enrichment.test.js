@@ -30,6 +30,7 @@ describe('tier2 enrichment batch runner', () => {
       processed_count: 0,
       completed_count: 0,
       failed_count: 1,
+      preserved_current_count: 0,
       results: [],
       error: 'planner failed',
     });
@@ -338,6 +339,7 @@ describe('tier2 enrichment batch runner', () => {
 
     const out = await runner.runTier2BatchCycle({ max_sync_items: 1 });
     expect(syncCalls).toEqual([451]);
+    expect(out.preserved_current_count).toBe(1);
     expect(out.results[0]).toEqual({
       entry_id: 451,
       status: 'failed',
