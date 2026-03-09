@@ -5,7 +5,14 @@ describe('tier2 status surfaces', () => {
     jest.resetModules();
   });
 
+  function mockQueuedMarkerDb() {
+    jest.doMock('../../src/server/db.js', () => ({
+      persistTier2QueuedStatusByIds: async () => ({ rowCount: 0 }),
+    }));
+  }
+
   test('records run history and returns list/detail payloads', async () => {
+    mockQueuedMarkerDb();
     jest.doMock('../../src/server/tier2/planner.js', () => ({
       runTier2ControlPlanePlan: async () => ({
         candidate_count: 3,
@@ -56,6 +63,7 @@ describe('tier2 status surfaces', () => {
   });
 
   test('dry-run status stores planned count in metadata', async () => {
+    mockQueuedMarkerDb();
     jest.doMock('../../src/server/tier2/planner.js', () => ({
       runTier2ControlPlanePlan: async () => ({
         candidate_count: 2,
@@ -84,6 +92,7 @@ describe('tier2 status surfaces', () => {
   });
 
   test('normalizes runtime errors into failed run records', async () => {
+    mockQueuedMarkerDb();
     jest.doMock('../../src/server/tier2/planner.js', () => ({
       runTier2ControlPlanePlan: async () => {
         throw new Error('planner unavailable');

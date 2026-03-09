@@ -1,4 +1,17 @@
 # changelog
+## 2026-03-09 — Tier-2 batch dispatch now marks selected entries queued
+
+### What changed
+- Tier‑2 batch runner now marks dispatched selected entries as queued before sync execution:
+  - added `t2.batch.mark_queued` transition step in `src/server/tier2-enrichment.js`
+  - uses new DB helper `persistTier2QueuedStatusByIds(...)` in `src/server/db.js`
+- Extended DB status persistence validation to allow `queued` in `persistTier2EligibilityStatusByIds(...)` and added queued convenience wrapper.
+- Added/updated Tier‑2 runner tests in `test/server/tier2.enrichment.test.js` to verify:
+  - queued marking occurs for run mode
+  - dry-run does not mark queued
+  - queued marking respects `max_sync_items` cutoff
+- Updated `docs/api.md` and `docs/requirements.md` to document queued-on-dispatch behavior for `POST /distill/run`.
+
 ## 2026-03-09 — Read workflow status formatter externalized + dry-run planned count
 
 ### What changed

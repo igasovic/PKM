@@ -1,5 +1,6 @@
 'use strict';
 
+const db = require('./db.js');
 const { getConfig } = require('../libs/config.js');
 const { getBraintrustLogger } = require('./observability.js');
 const { getLogger } = require('./logger/index.js');
@@ -99,6 +100,7 @@ function createTier2BatchRunner(deps) {
   const dependencies = deps && typeof deps === 'object' ? deps : {};
   const runPlan = dependencies.runPlan || runTier2ControlPlanePlan;
   const distillOne = dependencies.distillOne || distillTier2SingleEntrySync;
+  const markQueued = dependencies.markQueued || (async () => ({ rowCount: 0 }));
   const getLoggerFn = dependencies.getLogger || getLogger;
   const getConfigFn = dependencies.getConfig || getConfig;
 
@@ -149,6 +151,26 @@ function createTier2BatchRunner(deps) {
         will_process_count: toProcess.length,
         selected: toProcess,
       };
+    }
+
+    const toProcessIds = toProcess
+      .map((row) => (row && row.id ? String(row.id).trim() : ''))
+      .filter(Boolean);
+    if (toProcessIds.length > 0) {
+      await logger.step(
+        't2.batch.mark_queued',
+        async () => markQueued(toProcessIds, {
+          schema: 'pkm',
+          reason_code: 'batch_dispatch',
+        }),
+        {
+          input: {
+            ids: toProcessIds.length,
+            target_schema: 'pkm',
+          },
+          output: (out) => ({ rowCount: out && out.rowCount ? out.rowCount : 0 }),
+        }
+      );
     }
 
     const results = [];
@@ -265,7 +287,9 @@ function createTier2BatchRunner(deps) {
   };
 }
 
-const runner = createTier2BatchRunner();
+const runner = createTier2BatchRunner({
+  markQueued: db.persistTier2QueuedStatusByIds,
+});
 const T2_STATUS_HISTORY_MAX = 1000;
 const T2_STATUS_HISTORY_DEFAULT = 200;
 let tier2BatchHistory = [];

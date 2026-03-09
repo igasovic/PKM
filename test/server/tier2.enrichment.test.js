@@ -51,6 +51,7 @@ describe('tier2 enrichment batch runner', () => {
 
   test('runs plan + sync and summarizes results', async () => {
     const syncCalls = [];
+    const markQueuedCalls = [];
     const runner = createTier2BatchRunner({
       runPlan: async () => ({
         candidate_count: 10,
@@ -68,6 +69,10 @@ describe('tier2 enrichment batch runner', () => {
           return { entry_id: 102, status: 'failed', error_code: 'generation_error' };
         }
         return { entry_id: entryId, status: 'completed' };
+      },
+      markQueued: async (ids, opts) => {
+        markQueuedCalls.push({ ids, opts });
+        return { rowCount: ids.length };
       },
       getConfig: () => ({
         distill: {
@@ -90,6 +95,12 @@ describe('tier2 enrichment batch runner', () => {
       persist_eligibility: true,
     });
 
+    expect(markQueuedCalls).toEqual([
+      {
+        ids: ['a', 'b'],
+        opts: { schema: 'pkm', reason_code: 'batch_dispatch' },
+      },
+    ]);
     expect(syncCalls).toEqual([101, 102]);
     expect(out.mode).toBe('run');
     expect(out.target_schema).toBe('pkm');
@@ -106,6 +117,7 @@ describe('tier2 enrichment batch runner', () => {
 
   test('dry_run skips sync execution', async () => {
     let syncCalled = false;
+    let markQueuedCalled = false;
     const runner = createTier2BatchRunner({
       runPlan: async () => ({
         candidate_count: 3,
@@ -120,6 +132,10 @@ describe('tier2 enrichment batch runner', () => {
         syncCalled = true;
         return { entry_id: 201, status: 'completed' };
       },
+      markQueued: async () => {
+        markQueuedCalled = true;
+        return { rowCount: 1 };
+      },
       getLogger: () => ({
         child() { return this; },
         async step(_name, fn) { return fn(); },
@@ -129,6 +145,7 @@ describe('tier2 enrichment batch runner', () => {
     const out = await runner.runTier2BatchCycle({ dry_run: true, max_sync_items: 1 });
 
     expect(syncCalled).toBe(false);
+    expect(markQueuedCalled).toBe(false);
     expect(out.mode).toBe('dry_run');
     expect(out.will_process_count).toBe(1);
     expect(out.selected).toHaveLength(1);
@@ -167,6 +184,7 @@ describe('tier2 enrichment batch runner', () => {
 
   test('respects max_sync_items limit', async () => {
     const syncCalls = [];
+    const markQueuedCalls = [];
     const runner = createTier2BatchRunner({
       runPlan: async () => ({
         candidate_count: 5,
@@ -183,6 +201,10 @@ describe('tier2 enrichment batch runner', () => {
         syncCalls.push(entryId);
         return { entry_id: entryId, status: 'completed' };
       },
+      markQueued: async (ids) => {
+        markQueuedCalls.push(ids);
+        return { rowCount: ids.length };
+      },
       getLogger: () => ({
         child() { return this; },
         async step(_name, fn) { return fn(); },
@@ -190,6 +212,7 @@ describe('tier2 enrichment batch runner', () => {
     });
 
     const out = await runner.runTier2BatchCycle({ max_sync_items: 2 });
+    expect(markQueuedCalls).toEqual([['a', 'b']]);
     expect(syncCalls).toEqual([1, 2]);
     expect(out.processed_count).toBe(2);
   });

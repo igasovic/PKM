@@ -1485,8 +1485,8 @@ async function persistTier2EligibilityStatusByIds(ids, opts) {
   }
   const options = opts && typeof opts === 'object' ? opts : {};
   const status = String(options.status || '').trim();
-  if (!['skipped', 'not_eligible'].includes(status)) {
-    throw new Error('status must be skipped|not_eligible');
+  if (!['queued', 'skipped', 'not_eligible'].includes(status)) {
+    throw new Error('status must be queued|skipped|not_eligible');
   }
   const reasonCode = options.reason_code === null || options.reason_code === undefined
     ? null
@@ -1513,6 +1513,15 @@ async function persistTier2EligibilityStatusByIds(ids, opts) {
   } catch (err) {
     throw wrapTier2EntriesError(err, entriesTable);
   }
+}
+
+async function persistTier2QueuedStatusByIds(ids, opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  return persistTier2EligibilityStatusByIds(ids, {
+    status: 'queued',
+    reason_code: String(options.reason_code || 'batch_dispatch').trim() || 'batch_dispatch',
+    schema: options.schema,
+  });
 }
 
 async function getTier2SyncEntryByEntryId(entryId) {
@@ -1755,6 +1764,7 @@ module.exports = {
   getTier2Candidates,
   getTier2DetailsByIds,
   persistTier2EligibilityStatusByIds,
+  persistTier2QueuedStatusByIds,
   getTier2SyncEntryByEntryId,
   persistTier2SyncSuccess,
   persistTier2SyncFailure,

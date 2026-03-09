@@ -650,6 +650,7 @@ Notes:
 - `candidate_limit` and `max_sync_items` must be positive integers when provided.
 - `dry_run=true` runs planning only and does not call Tier‑2 sync generation.
 - This endpoint always targets production schema for execution.
+- In non-dry-run mode, dispatched entries are marked `distill_status = queued` before sync attempts.
 - Non-busy responses include `batch_id` for `/status/batch` lookup.
 - If a run is requested while the Tier‑2 batch worker loop is already active, the response is:
   - `mode = "skipped"`

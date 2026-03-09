@@ -293,6 +293,7 @@ Primary objective:
   - route selection (`direct|chunked`)
 - Control-plane planning must persist eligibility outcomes (`skipped` / `not_eligible`) with compact reason metadata when persistence is enabled.
 - Tier‑2 batch execution must target prod schema and report per-entry outcomes (`completed` / `failed`) for processed selected entries.
+- Tier‑2 batch execution must mark dispatched selected entries as `queued` before sync attempts begin.
 - Tier‑2 batch execution (`POST /distill/run`) must apply config-driven retry decisions from `distill.retry.*` for failed per-entry attempts (sync endpoint remains single-attempt).
 - Tier‑2 batch execution runtime failures must return a normalized response payload (with `error`) and preserve status inspectability via `batch_id`.
 - Route selection must be deterministic from `clean_word_count` and `distill.direct_chunk_threshold_words`.
