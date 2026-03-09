@@ -22,6 +22,7 @@
   - message indicating source content changed during distillation
   - no fallback failure overwrite is applied in this path.
 - Added service-level test coverage for currentness mismatch in `test/server/tier2.service.test.js`.
+- Added `/distill/sync` HTTP contract coverage for `currentness_mismatch` passthrough in `test/server/tier2.api-contract.test.js`.
 - Updated `docs/api.md` and `docs/requirements.md` to document the guarded write behavior.
 
 ## 2026-03-09 — Tier-2 sync service execution-path coverage
