@@ -275,6 +275,10 @@ Recommended wiring (so **pkm-server never calls OpenAI directly**):
 - Tier-2 stale detection controls:
   - `T2_STALE_MARK_ENABLED=true` (default)
   - `T2_STALE_MARK_INTERVAL_MS=86400000` (default 24h)
+- Tier-2 batch worker controls:
+  - `T2_BATCH_WORKER_ENABLED=false` (default)
+  - `T2_BATCH_SYNC_INTERVAL_MS=600000` (default 10m)
+  - `T2_BATCH_SYNC_LIMIT=25` (default from `distill.max_entries_per_run`)
 
 **Notion ingest**
 - `NOTION_API_TOKEN=<notion integration token>` (required for server-side Notion block collection in `POST /normalize/notion` when only page id is provided)

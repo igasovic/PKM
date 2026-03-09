@@ -12,10 +12,13 @@
   - `POST /distill/sync` (admin-protected)
 - Added Tier‑2 control-plane planning API endpoint:
   - `POST /distill/plan` (admin-protected)
+- Added Tier‑2 batch-run API endpoint:
+  - `POST /distill/run` (admin-protected)
 - Extended DB/API runtime support for Tier‑2 fields:
   - added Tier‑2 columns to backend insert/update type map
-  - added DB helpers for Tier‑2 candidate/detail reads, eligibility persistence, and sync persistence
+  - added DB helpers for Tier‑2 candidate/detail reads, schema override routing, eligibility persistence, and sync persistence
   - added Tier‑2 SQL builders in `src/libs/sql-builder.js` for candidate selection and eligibility state writes
+- Added optional Tier‑2 background batch worker controls (`T2_BATCH_WORKER_*`) and worker lifecycle wiring in backend startup/shutdown.
 - Added Tier‑2 stale-detection maintenance cycle in backend startup:
   - marks `distill_status = stale` for outdated completed artifacts in `pkm.entries`
   - controlled by `T2_STALE_MARK_ENABLED` and `T2_STALE_MARK_INTERVAL_MS`

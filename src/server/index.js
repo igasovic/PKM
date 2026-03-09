@@ -27,6 +27,11 @@ const {
 const {
   runTier2ControlPlanePlan,
 } = require('./tier2/planner.js');
+const {
+  runTier2BatchWorkerCycle,
+  startTier2BatchWorker,
+  stopTier2BatchWorker,
+} = require('./tier2-enrichment.js');
 const { importEmailMbox } = require('./email-importer.js');
 const {
   getBraintrustLogger,
@@ -339,6 +344,36 @@ async function handleRequest(req, res) {
     }
   }
 
+  if (method === 'POST' && url.pathname === '/distill/run') {
+    try {
+      requireAdminSecret(req);
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const result = await logger.step(
+        'api.distill.run',
+        async () => runTier2BatchWorkerCycle({
+          candidate_limit: body.candidate_limit,
+          max_sync_items: body.max_sync_items,
+          persist_eligibility: body.persist_eligibility,
+          dry_run: body.dry_run,
+        }),
+        { input: body, output: (out) => out, meta: { route: url.pathname } }
+      );
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      const errorCode = status === 403
+        ? 'forbidden'
+        : status === 404
+          ? 'not_found'
+          : 'bad_request';
+      return json(res, status, { error: errorCode, message: err.message });
+    }
+  }
+
   if (method === 'POST' && url.pathname === '/enrich/t1/batch') {
     try {
       const raw = await readBody(req);
@@ -583,6 +618,7 @@ function start() {
   // Hard-fail startup if Braintrust can't initialize.
   getBraintrustLogger();
   startTier1BatchWorker();
+  startTier2BatchWorker();
   const retentionDaysRaw = Number(process.env.PKM_PIPELINE_EVENTS_RETENTION_DAYS || 30);
   const retentionDays = Number.isFinite(retentionDaysRaw) && retentionDaysRaw > 0
     ? Math.trunc(retentionDaysRaw)
@@ -634,6 +670,7 @@ function start() {
   });
   const shutdown = () => {
     stopTier1BatchWorker();
+    stopTier2BatchWorker();
     clearInterval(pruneTimer);
     clearInterval(staleTimer);
     server.close(() => process.exit(0));

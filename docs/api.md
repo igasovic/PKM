@@ -582,6 +582,7 @@ Notes:
 Response:
 ```json
 {
+  "target_schema": "active",
   "candidate_count": 120,
   "decision_counts": {
     "proceed": 42,
@@ -607,6 +608,54 @@ Response:
       "distill_status": "pending",
       "created_at": "2026-03-01T00:00:00.000Z"
     }
+  ]
+}
+```
+
+### `POST /distill/run`
+Runs one Tier‑2 batch cycle for production schema (`pkm`): control-plane planning followed by sync distillation for selected entries (or planning-only in dry-run mode).
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Body (all fields optional):
+```json
+{
+  "candidate_limit": 250,
+  "max_sync_items": 25,
+  "persist_eligibility": true,
+  "dry_run": false
+}
+```
+
+Notes:
+- `candidate_limit` and `max_sync_items` must be positive integers when provided.
+- `dry_run=true` runs planning only and does not call Tier‑2 sync generation.
+- This endpoint always targets production schema for execution.
+
+Response:
+```json
+{
+  "mode": "run",
+  "target_schema": "pkm",
+  "processing_limit": 25,
+  "candidate_count": 120,
+  "decision_counts": {
+    "proceed": 42,
+    "skipped": 55,
+    "not_eligible": 23
+  },
+  "persisted_eligibility": {
+    "updated": 78,
+    "groups": []
+  },
+  "planned_selected_count": 25,
+  "processed_count": 25,
+  "completed_count": 21,
+  "failed_count": 4,
+  "results": [
+    { "entry_id": 12345, "status": "completed", "error_code": null },
+    { "entry_id": 12346, "status": "failed", "error_code": "generation_error" }
   ]
 }
 ```
@@ -1021,6 +1070,9 @@ Optional:
 - `T2_RETRY_MAX_ATTEMPTS` (`2` default)
 - `T2_STALE_MARK_ENABLED` (`true` default)
 - `T2_STALE_MARK_INTERVAL_MS` (`86400000` default)
+- `T2_BATCH_WORKER_ENABLED` (`false` default)
+- `T2_BATCH_SYNC_INTERVAL_MS` (`600000` default)
+- `T2_BATCH_SYNC_LIMIT` (`distill.max_entries_per_run` default)
 
 LLM auth:
 - `LITELLM_MASTER_KEY` (required; used as Bearer token for LiteLLM)

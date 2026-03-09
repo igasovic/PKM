@@ -1433,9 +1433,12 @@ function parseUuidList(list, fieldName) {
 
 async function getTier2Candidates(opts) {
   const options = opts || {};
-  const config = await getConfigWithTestMode();
-  const entries_table = await getEntriesTableFromConfig(config);
-  const distillCfg = config && config.distill ? config.distill : {};
+  const schemaOverride = String(options.schema || '').trim();
+  const entries_table = schemaOverride
+    ? getEntriesTableBySchema(schemaOverride)
+    : await getEntriesTableFromConfig(await getConfigWithTestMode());
+  const staticConfig = getConfig();
+  const distillCfg = staticConfig && staticConfig.distill ? staticConfig.distill : {};
   const defaultScanLimit = Math.max(
     Number(distillCfg.max_entries_per_run || 0) * 5,
     100
@@ -1445,22 +1448,34 @@ async function getTier2Candidates(opts) {
     ? Math.min(Math.trunc(scanLimitRaw), 2000)
     : 250;
   const sql = sb.buildTier2CandidateDiscovery({ entries_table, limit: scanLimit });
-  return exec(sql, { op: 'tier2_candidates', table: entries_table, limit: scanLimit });
+  return exec(sql, {
+    op: 'tier2_candidates',
+    table: entries_table,
+    schema: schemaOverride || 'active',
+    limit: scanLimit,
+  });
 }
 
 async function getTier2DetailsByIds(ids, opts) {
-  void opts;
+  const options = opts || {};
   const uuidList = parseUuidList(ids, 'ids');
   if (!uuidList.length) {
     return { rows: [], rowCount: 0 };
   }
-  const config = await getConfigWithTestMode();
-  const entries_table = await getEntriesTableFromConfig(config);
+  const schemaOverride = String(options.schema || '').trim();
+  const entries_table = schemaOverride
+    ? getEntriesTableBySchema(schemaOverride)
+    : await getEntriesTableFromConfig(await getConfigWithTestMode());
   const sql = sb.buildTier2SelectedDetailQuery({
     entries_table,
     ids: uuidList,
   });
-  return exec(sql, { op: 'tier2_details', table: entries_table, ids: uuidList.length });
+  return exec(sql, {
+    op: 'tier2_details',
+    table: entries_table,
+    schema: schemaOverride || 'active',
+    ids: uuidList.length,
+  });
 }
 
 async function persistTier2EligibilityStatusByIds(ids, opts) {
@@ -1477,8 +1492,10 @@ async function persistTier2EligibilityStatusByIds(ids, opts) {
     ? null
     : String(options.reason_code).trim();
 
-  const config = await getConfigWithTestMode();
-  const entriesTable = await getEntriesTableFromConfig(config);
+  const schemaOverride = String(options.schema || '').trim();
+  const entriesTable = schemaOverride
+    ? getEntriesTableBySchema(schemaOverride)
+    : await getEntriesTableFromConfig(await getConfigWithTestMode());
   const sql = sb.buildTier2PersistEligibilityStatus({
     entries_table: entriesTable,
     ids: uuidList,
@@ -1489,6 +1506,7 @@ async function persistTier2EligibilityStatusByIds(ids, opts) {
     return await exec(sql, {
       op: 'tier2_eligibility_status_update',
       table: entriesTable,
+      schema: schemaOverride || 'active',
       status,
       ids: uuidList.length,
     });

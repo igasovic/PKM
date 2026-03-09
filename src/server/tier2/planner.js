@@ -94,7 +94,7 @@ function createTier2Planner(deps) {
   const getConfigFn = dependencies.getConfig || getConfig;
   const getLoggerFn = dependencies.getLogger || getLogger;
 
-  async function persistEligibilityGroups(groups, logger) {
+  async function persistEligibilityGroups(groups, logger, targetSchema) {
     const persistedGroups = [];
     let updated = 0;
 
@@ -106,11 +106,13 @@ function createTier2Planner(deps) {
         async () => dbClient.persistTier2EligibilityStatusByIds(ids, {
           status: group.status,
           reason_code: group.reason_code,
+          schema: targetSchema || undefined,
         }),
         {
           input: {
             status: group.status,
             reason_code: group.reason_code,
+            target_schema: targetSchema || null,
             ids: ids.length,
           },
           output: (out) => ({ rowCount: out && out.rowCount ? out.rowCount : 0 }),
@@ -134,15 +136,19 @@ function createTier2Planner(deps) {
     const candidateLimit = toPositiveIntOrNull(options.candidate_limit);
     const persistEligibility = options.persist_eligibility !== false;
     const includeDetails = options.include_details === true;
+    const targetSchema = String(options.target_schema || '').trim() || null;
 
     const logger = getLoggerFn().child({ pipeline: 't2.control_plane.plan' });
     const config = getConfigFn();
 
     const candidateResult = await logger.step(
       't2.plan.load_candidates',
-      async () => dbClient.getTier2Candidates({ limit: candidateLimit || undefined }),
+      async () => dbClient.getTier2Candidates({
+        limit: candidateLimit || undefined,
+        schema: targetSchema || undefined,
+      }),
       {
-        input: { candidate_limit: candidateLimit },
+        input: { candidate_limit: candidateLimit, target_schema: targetSchema },
         output: (out) => ({ rowCount: out && out.rowCount ? out.rowCount : 0 }),
       }
     );
@@ -155,7 +161,7 @@ function createTier2Planner(deps) {
     let persisted = { updated: 0, groups: [] };
     if (persistEligibility) {
       const groups = buildEligibilityPersistenceGroups(decisions);
-      persisted = await persistEligibilityGroups(groups, logger);
+      persisted = await persistEligibilityGroups(groups, logger, targetSchema);
     }
 
     let selectedOutput = projectSelectedRows(selected);
@@ -163,9 +169,11 @@ function createTier2Planner(deps) {
       const selectedIds = selected.map((row) => row.id).filter(Boolean);
       const detailResult = await logger.step(
         't2.plan.load_selected_details',
-        async () => dbClient.getTier2DetailsByIds(selectedIds),
+        async () => dbClient.getTier2DetailsByIds(selectedIds, {
+          schema: targetSchema || undefined,
+        }),
         {
-          input: { ids: selectedIds.length },
+          input: { ids: selectedIds.length, target_schema: targetSchema },
           output: (out) => ({ rowCount: out && out.rowCount ? out.rowCount : 0 }),
         }
       );
@@ -173,6 +181,7 @@ function createTier2Planner(deps) {
     }
 
     return {
+      target_schema: targetSchema || 'active',
       candidate_count: candidates.length,
       decision_counts: summarizeDecisionCounts(decisions),
       persisted_eligibility: persisted,
