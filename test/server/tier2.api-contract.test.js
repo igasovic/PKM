@@ -180,6 +180,73 @@ describe('tier2 API contract', () => {
     ]);
   });
 
+  test('GET /status/batch/:batch_id passes detail query fields for stage=t2', async () => {
+    const captured = [];
+    jest.doMock('../../src/server/batch-status-service.js', () => ({
+      createBatchStatusService: () => ({
+        getBatchStatusList: async () => ({ summary: {}, jobs: [] }),
+        getBatchStatus: async (input) => {
+          captured.push(input);
+          return {
+            schema: 'pkm',
+            batch_id: input.batch_id,
+            status: 'completed',
+            is_terminal: true,
+            counts: {
+              total_items: 1,
+              processed: 1,
+              ok: 1,
+              parse_error: 0,
+              error: 0,
+              pending: 0,
+            },
+          };
+        },
+      }),
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'GET',
+      '/status/batch/t2_abc123?stage=t2&include_items=true&items_limit=15&schema=pkm_test',
+    );
+
+    expect(res.status).toBe(200);
+    expect(captured).toEqual([
+      {
+        stage: 't2',
+        batch_id: 't2_abc123',
+        schema: 'pkm_test',
+        include_items: 'true',
+        items_limit: '15',
+      },
+    ]);
+  });
+
+  test('GET /status/batch/:batch_id returns not_found when missing', async () => {
+    jest.doMock('../../src/server/batch-status-service.js', () => ({
+      createBatchStatusService: () => ({
+        getBatchStatusList: async () => ({ summary: {}, jobs: [] }),
+        getBatchStatus: async () => null,
+      }),
+    }));
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'GET',
+      '/status/batch/does_not_exist?stage=t2',
+    );
+
+    expect(res.status).toBe(404);
+    expect(JSON.parse(res.body)).toEqual({ error: 'not_found' });
+  });
+
   test('POST /distill/run applies boolean-like string options end-to-end', async () => {
     const plannerInputs = [];
     const distillCalls = [];

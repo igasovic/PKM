@@ -40,6 +40,7 @@
   - `/distill/run` busy payload
   - `/distill/run` admin-secret enforcement
   - `/status/batch?stage=t2` query forwarding
+  - `/status/batch/:batch_id?stage=t2` query forwarding + not-found behavior
   - `/distill/run` string-boolean option handling end-to-end
   - `/distill/plan` admin-secret enforcement + request forwarding
   - `/distill/sync` failed response `message` passthrough
