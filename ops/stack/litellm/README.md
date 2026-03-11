@@ -6,5 +6,5 @@ Expected canonical file:
 - `config.yaml`
 
 Use:
-- `updatecfg litellm --pull` to import runtime config
+- `importcfg litellm` (or `updatecfg litellm --pull`) to import runtime config
 - `updatecfg litellm --push` to apply + restart service

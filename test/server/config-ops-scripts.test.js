@@ -126,6 +126,13 @@ describe('config ops scripts', () => {
     expect(res.stderr).toContain('Usage: importcfg <surface>');
   });
 
+  test('importcfg rejects unknown surfaces clearly', () => {
+    const res = runScript(importcfgPath, ['unknown-surface']);
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('Unknown surface: unknown-surface');
+    expect(res.stderr).toContain('- backend');
+  });
+
   test('checkcfg litellm returns clean when repo and runtime match', () => {
     const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
     const repoFile = path.join(tempRepoRoot, 'ops/stack/litellm/config.yaml');
@@ -269,6 +276,15 @@ describe('config ops scripts', () => {
     expect(updatedRepo).toContain('imported');
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
+  test('importcfg backend is blocked (no runtime-to-repo import path)', () => {
+    const res = runScript(importcfgPath, ['backend']);
+    expect(res.code).toBe(4);
+    expect(res.stdout).toContain('Surface: backend');
+    expect(res.stdout).toContain('Mode: pull');
+    expect(res.stdout).toContain('Status: blocked');
+    expect(res.stdout).toContain('pull mode is not supported');
   });
 
   test('checkcfg backend reports readiness when deploy script exists', () => {

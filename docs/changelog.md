@@ -32,6 +32,9 @@
   - `docs/PRD/config-PRD.md`
   - `docs/PRD/config_working_packages.md`
   - `test/server/config-ops-scripts.test.js` backend deploy-script expectation path + docker apply-scope coverage + importcfg coverage
+- Added importcfg guard coverage and operator readme alignment:
+  - `test/server/config-ops-scripts.test.js` now covers unknown surface and backend-blocked behavior for `importcfg`
+  - `ops/stack/*` readmes now recommend `importcfg` as the runtime->repo import alias
 
 ## 2026-03-09 — Tier-2 async provider-batch runtime and durable status tables
 
