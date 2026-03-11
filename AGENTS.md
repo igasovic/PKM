@@ -2,31 +2,31 @@
 
 ## 0) Read-first (non-negotiable)
 Before proposing changes or writing code, read:
-- docs/env.md
-- docs/api.md
-- docs/database_schema.md
-- docs/n8n_sync.md
-- docs/n8n_node_style_guide.md
-- docs/requirements.md + docs/changelog.md
-- docs/repo-map.md
+- `docs/env.md`
+- `docs/api.md`
+- `docs/database_schema.md`
+- `docs/n8n_sync.md`
+- `docs/n8n_node_style_guide.md`
+- `docs/requirements.md`
+- `docs/changelog.md`
+- `docs/repo-map.md`
+- `docs/config_operations.md`
 
-For any n8n-related change (workflows, code nodes, sync scripts), reading
-`docs/n8n_sync.md` and `docs/n8n_node_style_guide.md` is mandatory.
+For any n8n-related change, reading `docs/n8n_sync.md` and `docs/n8n_node_style_guide.md` is mandatory.
 
+For any config, infra, Docker, cloudflared, LiteLLM, Postgres init or backend-loader change, reading `docs/config_operations.md` is mandatory.
+
+---
 
 ## 0a) PRDs (required process)
 
 - PRDs live under `docs/PRD/`.
-- Use an existing PRD in `docs/PRD/` as the starting point when one already covers the surface you are changing.
+- Use an existing PRD when one already covers the surface you are changing.
 - New major functionality:
   - create a new PRD file
 - Minor functionality:
-  - update the existing PRD that already owns that surface
-  - do not create a new PRD unless the change clearly establishes a new major surface area
-- Backfilling missing PRDs after the fact:
-  - create a retrospective PRD in `docs/PRD/`
-  - capture the currently known behavior and boundaries first
-  - leave unresolved details in a `TBD` section for later reconciliation
+  - update the existing PRD that owns that surface
+- Backfilled PRDs must first describe current behavior and boundaries, then leave unresolved items in `TBD`.
 
 ### Recommended PRD structure
 - Title + baseline / status
@@ -41,67 +41,130 @@ For any n8n-related change (workflows, code nodes, sync scripts), reading
 
 ### PRD update rules
 - If a change affects an existing PRD-owned surface, update that PRD in the same change.
-- If API / schema / env / requirements contracts change, update the corresponding docs in the same change set.
+- If API, schema, env, requirements, or config-location contracts change, update the corresponding docs in the same change set.
 - Work packages should reference specific PRD sections.
-- Use the current Distill PRD as the style / depth starting point for future PRDs.
+
+---
 
 ## 1) System boundaries (hard rules)
 
 ### Integration boundary
-- UI and n8n must call backend ONLY through endpoints documented in docs/api.md.
-- Do not create new endpoints or change request/response shapes without updating docs/api.md in the same change.
+- UI and n8n must call backend only through endpoints documented in `docs/api.md`.
+- Do not create new endpoints or change request or response shapes without updating `docs/api.md` in the same change.
 
-### Database safety (non-negotiable)
+### Database safety
 - No raw SQL outside:
-  - src/libs/sql-builder.js
-  - src/server/db.js
-- Business logic must call DB module methods (e.g., db.insertPipelineEvent(...))
-  rather than issuing SQL directly.
+  - `src/libs/sql-builder.js`
+  - `src/server/db.js`
+- Business logic must call DB module methods rather than issuing SQL directly.
 
-### Logging and observability (non-negotiable)
-- Use the shared backend logger: src/server/logger for pipeline transition logs.
-- Do not log heavy payloads. Summarize with counts + hashes, not raw fields.
+### Logging and observability
+- Use the shared backend logger: `src/server/logger`.
+- Do not log heavy payloads. Summarize with counts and hashes, not raw fields.
 - Telemetry destinations:
   - LLM telemetry → Braintrust
-  - Transition telemetry → Postgres pipeline_events
+  - transition telemetry → Postgres `pipeline_events`
 
 ### Repository ownership and placement
-- Follow docs/repo-map.md for where code belongs.
-- n8n code migration policy (Hybrid):
-  - New features: put new n8n logic under src/n8n/
-  - Existing modules may be edited in js/ when needed, but prefer opportunistic migration to src/n8n/
-  - Do not add *new* files under js/ (unless explicitly requested)
+- Follow `docs/repo-map.md`.
+- New n8n logic belongs under `src/n8n/`.
+- Existing `js/` modules may be edited when needed, but do not add new files under `js/` unless explicitly requested.
 
-### Runtime/environment boundary
-- docs/env.md is authoritative for service topology, ports, mounts, container names.
+### Runtime and environment boundary
+- `docs/env.md` is authoritative for service topology, ports, mounts, container names, and runtime stack root.
 - Do not assume paths, mounts, or ports not documented there.
 
-## 2) Default workflow (how work gets done)
+---
 
-### Change proposal (required for non-trivial changes)
-Before coding, output a short plan:
-- Goal + non-goals
-- Components touched (UI / n8n / backend / DB / infra)
-- Contracts touched (docs/api.md? docs/database_schema.md? docs/env.md?)
-- Tests you will add/update (Jest) and how you will run them
-- Files you expect to change
+## 2) Configuration governance (hard rules)
+
+### Repo-first rule
+Anything that should be reviewed, diffed, rollbackable, and safely editable by agents should live in the repo unless it is secret, runtime-mutable, or persistent service state.
+
+### Secrets rule
+Secrets and credentials must stay off-repo.
+
+### Loader rule
+Backend code must read configuration only through the approved config loader, except for minimal bootstrap internals.
+
+### No scattered defaults rule
+Do not introduce business defaults in backend modules, n8n node code, or scripts when they belong in shared config.
+
+### Config-location registry rule (mandatory)
+Any time you discover a new configuration surface, you must:
+1. add it to the config-location registry in `docs/config_operations.md`
+2. classify it as `authoritative`, `derived`, `legacy`, or `deprecated`
+3. mark whether it is `secret`, `versioned`, `host-local`, or `runtime-mutable`
+4. note the owning component
+5. update related docs if contract-relevant
+
+### Current in-scope config surfaces
+At minimum, treat these as active config surfaces:
+- `/home/igasovic/stack/docker-compose.yml`
+- `/home/igasovic/stack/.env`
+- `/home/igasovic/stack/postgres/`
+- `/home/igasovic/stack/postgres-init/`
+- `/home/igasovic/stack/n8n/`
+- `/home/igasovic/stack/litellm/config.yaml`
+- `src/libs/config.js` and its future replacement under `src/libs/config/`
+- `src/server/**` direct env reads
+- `src/n8n/workflows/`
+- `src/n8n/nodes/`
+- `js/workflows/`
+- `scripts/n8n/**`
+- `scripts/db/**`
+- `pkm.runtime_config`
+- shell exports for `N8N_API_*`
+- known UI-local env files
+
+### Source-of-truth defaults
+- Repo-owned files are the source of truth for versioned, non-secret config.
+- Host-local files own secrets, credentials, runtime mutable state, and persistent data.
+- `pkm.runtime_config` stays narrow; do not turn it into a general config store without a PRD.
+- cloudflared target state is locally managed repo config plus host-local credentials.
+- Home Assistant and Matter Server are out of scope for this config program unless explicitly pulled in.
+
+---
+
+## 3) Default workflow
+
+Before coding non-trivial changes, provide a short plan covering:
+- goal and non-goals
+- components touched
+- contracts touched
+- tests you will add or update
+- files you expect to change
 
 ### n8n workflow editing model
-- Workflow wiring changes: edit in n8n UI → export JSON → commit.
+- Workflow wiring changes: edit in n8n UI, export JSON, commit.
 - Code node logic: externalize into repo files and keep Code nodes thin wrappers.
 
-## 3) Quality gates (must-do)
-- Run scripts/CI/check.sh before committing changes.
-- If behavior changes: add/update Jest tests.
-- If boundaries/contracts change: update the relevant docs in the same change.
-- Prefer refactoring to avoid duplication rather than copying code.
-- Run scripts/CI/check.sh before committing changes (or before declaring work “done”).
+### Config and infra workflow
+- Author versioned config in repo first.
+- Validate before apply.
+- Do not silently edit runtime stack files as the primary authored surface.
+- Keep apply logic explicit and reviewable.
 
-## 4) “Do not do” list (common failure modes)
-- Do not bypass docs/api.md by calling undocumented endpoints.
-- Do not introduce cross-component coupling (UI↔DB, n8n↔DB).
-- Do not log raw payloads or large objects; log summaries (counts + hashes).
-- Do not send transition telemetry anywhere except Postgres pipeline_events.
-- Do not write raw SQL outside src/libs/sql-builder.js and src/server/db.js.
+---
+
+## 4) Quality gates
+
+- Run `scripts/CI/check.sh` before committing changes.
+- If behavior changes, add or update tests.
+- If boundaries or contracts change, update the relevant docs in the same change set.
+- Prefer refactoring to avoid duplication rather than copying code.
+- If config ownership changes, update both the PRD and `docs/config_operations.md`.
+
+---
+
+## 5) Do not do
+
+- Do not bypass `docs/api.md` by calling undocumented endpoints.
+- Do not introduce cross-component coupling such as UI↔DB or n8n↔DB.
+- Do not log raw payloads or large objects.
+- Do not send transition telemetry anywhere except Postgres `pipeline_events`.
+- Do not write raw SQL outside approved files.
 - Do not bypass DB module methods from business logic.
-- Do not ship changes without a minimal test plan and at least smoke coverage.
+- Do not commit secrets.
+- Do not reintroduce hidden config through `docker-compose.yml`, ad hoc `.env` growth, or duplicated defaults in code.
+- Do not add new files under legacy `js/` unless explicitly requested.
