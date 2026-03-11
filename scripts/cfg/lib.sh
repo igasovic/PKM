@@ -137,6 +137,107 @@ resolve_python_bin() {
 }
 
 # -------------------------
+# Progress reporting
+# -------------------------
+
+CFG_PROGRESS="${CFG_PROGRESS:-1}"
+CFG_PROGRESS_WIDTH="${CFG_PROGRESS_WIDTH:-24}"
+
+PROGRESS_ACTIVE=0
+PROGRESS_LABEL=""
+PROGRESS_TOTAL=0
+PROGRESS_CURRENT=0
+PROGRESS_START_TS=0
+
+progress_is_enabled() {
+  [[ "$CFG_PROGRESS" != "0" ]]
+}
+
+progress_start() {
+  local label="$1"
+  local total="$2"
+  if ! progress_is_enabled; then
+    return 0
+  fi
+  PROGRESS_ACTIVE=1
+  PROGRESS_LABEL="$label"
+  PROGRESS_TOTAL="$total"
+  PROGRESS_CURRENT=0
+  PROGRESS_START_TS="$(date +%s)"
+  echo "[$PROGRESS_LABEL] starting ($PROGRESS_TOTAL steps)..." >&2
+}
+
+progress_render() {
+  local status="$1"
+  local message="$2"
+  if ! progress_is_enabled || [[ "$PROGRESS_ACTIVE" -ne 1 ]]; then
+    return 0
+  fi
+
+  local total="$PROGRESS_TOTAL"
+  if [[ "$total" -le 0 ]]; then
+    total=1
+  fi
+
+  local current="$PROGRESS_CURRENT"
+  if [[ "$current" -lt 0 ]]; then
+    current=0
+  fi
+  if [[ "$current" -gt "$total" ]]; then
+    current="$total"
+  fi
+
+  local pct=$(( current * 100 / total ))
+  local width="$CFG_PROGRESS_WIDTH"
+  if [[ "$width" -le 0 ]]; then
+    width=24
+  fi
+  local filled=$(( pct * width / 100 ))
+  local empty=$(( width - filled ))
+  local bar_fill bar_empty
+  printf -v bar_fill '%*s' "$filled" ''
+  printf -v bar_empty '%*s' "$empty" ''
+  bar_fill=${bar_fill// /#}
+  bar_empty=${bar_empty// /-}
+
+  local now elapsed
+  now="$(date +%s)"
+  elapsed=$(( now - PROGRESS_START_TS ))
+
+  printf '[%s] %3d%% [%s%s] (%d/%d) %s +%ss\n' \
+    "$PROGRESS_LABEL" "$pct" "$bar_fill" "$bar_empty" \
+    "$current" "$total" "$status: $message" "$elapsed" >&2
+}
+
+progress_step() {
+  local message="$1"
+  if ! progress_is_enabled || [[ "$PROGRESS_ACTIVE" -ne 1 ]]; then
+    return 0
+  fi
+  PROGRESS_CURRENT=$(( PROGRESS_CURRENT + 1 ))
+  progress_render "STEP" "$message"
+}
+
+progress_done() {
+  local message="${1:-completed}"
+  if ! progress_is_enabled || [[ "$PROGRESS_ACTIVE" -ne 1 ]]; then
+    return 0
+  fi
+  PROGRESS_CURRENT="$PROGRESS_TOTAL"
+  progress_render "DONE" "$message"
+  PROGRESS_ACTIVE=0
+}
+
+progress_fail() {
+  local message="${1:-failed}"
+  if ! progress_is_enabled || [[ "$PROGRESS_ACTIVE" -ne 1 ]]; then
+    return 0
+  fi
+  progress_render "FAIL" "$message"
+  PROGRESS_ACTIVE=0
+}
+
+# -------------------------
 # Check report state
 # -------------------------
 
@@ -493,6 +594,8 @@ check_surface_n8n() {
   add_check_repo_source "$CFG_REPO_N8N_WORKFLOWS_DIR"
   add_check_repo_source "$CFG_REPO_N8N_NODES_DIR"
   add_check_runtime_target "live n8n workflow state"
+  progress_start "checkcfg:n8n" 9
+  progress_step "validate prerequisites"
 
   local required=(
     "$CFG_REPO_ROOT/scripts/n8n/export_workflows.sh"
@@ -504,18 +607,21 @@ check_surface_n8n() {
   for f in "${required[@]}"; do
     if [[ ! -f "$f" ]]; then
       mark_check_blocked "n8n check prerequisite missing: $f"
+      progress_fail "missing prerequisite"
       return 0
     fi
   done
 
   if ! command -v docker >/dev/null 2>&1; then
     mark_check_blocked "n8n check requires docker in PATH."
+    progress_fail "docker missing"
     return 0
   fi
 
   local py_bin
   if ! py_bin="$(resolve_python_bin)"; then
     mark_check_blocked "n8n check requires python3 or python in PATH."
+    progress_fail "python missing"
     return 0
   fi
 
@@ -528,38 +634,48 @@ check_surface_n8n() {
   mkdir -p "$tmp_workflows" "$tmp_raw" "$tmp_patched" "$tmp_nodes"
 
   local out
+  progress_step "export normalized workflows from n8n"
   if ! run_capture out "$CFG_REPO_ROOT/scripts/n8n/export_workflows.sh" "$tmp_workflows"; then
     mark_check_blocked "n8n export failed."
     add_check_detail "  $(preview_lines "$out" 20)"
     rm -rf "$tmp_root"
+    progress_fail "export failed"
     return 0
   fi
 
+  progress_step "prepare raw workflow export in container"
   if ! run_capture out docker exec -u node n8n sh -lc 'rm -rf /tmp/workflows_raw_cfg && mkdir -p /tmp/workflows_raw_cfg'; then
     mark_check_blocked "n8n raw export prep failed."
     add_check_detail "  $(preview_lines "$out" 20)"
     rm -rf "$tmp_root"
+    progress_fail "raw prep failed"
     return 0
   fi
 
+  progress_step "export raw workflows from n8n"
   if ! run_capture out docker exec -u node n8n n8n export:workflow --backup --output=/tmp/workflows_raw_cfg; then
     mark_check_blocked "n8n raw export failed."
     add_check_detail "  $(preview_lines "$out" 20)"
     rm -rf "$tmp_root"
+    progress_fail "raw export failed"
     return 0
   fi
 
+  progress_step "copy raw workflows into temp workspace"
   if ! run_capture out docker cp n8n:/tmp/workflows_raw_cfg/. "$tmp_raw/"; then
     mark_check_blocked "n8n raw export copy failed."
     add_check_detail "  $(preview_lines "$out" 20)"
     rm -rf "$tmp_root"
+    progress_fail "raw copy failed"
     return 0
   fi
 
+  progress_step "rename exported workflow files"
   if ! run_capture out "$CFG_REPO_ROOT/scripts/n8n/rename_workflows_by_name.sh" "$tmp_raw"; then
     mark_check_blocked "n8n raw rename failed."
     add_check_detail "  $(preview_lines "$out" 20)"
     rm -rf "$tmp_root"
+    progress_fail "rename failed"
     return 0
   fi
 
@@ -576,31 +692,39 @@ check_surface_n8n() {
     sync_args+=("$CFG_REPO_ROOT/js/workflows")
   fi
 
+  progress_step "externalize and sync code-node sources"
   if ! run_capture out "${sync_args[@]}"; then
     mark_check_blocked "n8n code-node sync failed."
     add_check_detail "  $(preview_lines "$out" 20)"
     rm -rf "$tmp_root"
+    progress_fail "code-node sync failed"
     return 0
   fi
 
+  progress_step "normalize generated workflows"
   if ! run_capture out "$CFG_REPO_ROOT/scripts/n8n/normalize_workflows.sh" "$tmp_workflows"; then
     mark_check_blocked "n8n normalization failed."
     add_check_detail "  $(preview_lines "$out" 20)"
     rm -rf "$tmp_root"
+    progress_fail "normalize failed"
     return 0
   fi
 
+  progress_step "compare repo workflows/nodes with live snapshot"
   compare_dir_for_check "$CFG_REPO_N8N_WORKFLOWS_DIR" "$tmp_workflows" "n8n workflow JSON"
   compare_dir_for_check "$CFG_REPO_N8N_NODES_DIR" "$tmp_nodes" "n8n externalized code"
 
   rm -rf "$tmp_root"
+  progress_done "comparison complete"
 }
 
 check_surface_docker() {
-  compare_file_for_check "$CFG_REPO_DOCKER_COMPOSE" "$CFG_COMPOSE_FILE" "docker compose"
-
   if [[ ! -d "$CFG_REPO_DOCKER_ENV_DIR" ]]; then
+    progress_start "checkcfg:docker" 1
+    progress_step "compare docker compose file"
+    compare_file_for_check "$CFG_REPO_DOCKER_COMPOSE" "$CFG_COMPOSE_FILE" "docker compose"
     mark_check_drift "docker env source dir missing ($CFG_REPO_DOCKER_ENV_DIR)."
+    progress_done "comparison complete"
     return 0
   fi
 
@@ -608,48 +732,75 @@ check_surface_docker() {
   local env_files=("$CFG_REPO_DOCKER_ENV_DIR"/*.env)
   shopt -u nullglob
 
+  local total=$(( 1 + ${#env_files[@]} ))
+  progress_start "checkcfg:docker" "$total"
+  progress_step "compare docker compose file"
+  compare_file_for_check "$CFG_REPO_DOCKER_COMPOSE" "$CFG_COMPOSE_FILE" "docker compose"
+
   if [[ ${#env_files[@]} -eq 0 ]]; then
     add_check_repo_source "$CFG_REPO_DOCKER_ENV_DIR"
     add_check_runtime_target "$CFG_STACK_ROOT"
     add_check_detail "docker env: no managed *.env files found in repo source dir"
+    progress_done "comparison complete"
     return 0
   fi
 
   local f
   for f in "${env_files[@]}"; do
+    progress_step "compare $(basename "$f")"
     compare_file_for_check "$f" "$CFG_STACK_ROOT/$(basename "$f")" "docker env $(basename "$f")"
   done
+  progress_done "comparison complete"
 }
 
 check_surface_litellm() {
+  progress_start "checkcfg:litellm" 1
+  progress_step "compare litellm config"
   compare_file_for_check "$CFG_REPO_LITELLM_FILE" "$CFG_RUNTIME_LITELLM_FILE" "litellm config"
+  progress_done "comparison complete"
 }
 
 check_surface_postgres() {
+  local total=1
+  local conf
+  for conf in postgresql.conf pg_hba.conf; do
+    if [[ -f "$CFG_REPO_POSTGRES_CONF_DIR/$conf" || -f "$CFG_RUNTIME_POSTGRES_CONF_DIR/$conf" ]]; then
+      total=$(( total + 1 ))
+    fi
+  done
+  progress_start "checkcfg:postgres" "$total"
+  progress_step "compare postgres init directory"
   compare_dir_for_check "$CFG_REPO_POSTGRES_INIT_DIR" "$CFG_RUNTIME_POSTGRES_INIT_DIR" "postgres init dir"
 
-  local conf
   for conf in postgresql.conf pg_hba.conf; do
     local src="$CFG_REPO_POSTGRES_CONF_DIR/$conf"
     local dst="$CFG_RUNTIME_POSTGRES_CONF_DIR/$conf"
     if [[ -f "$src" || -f "$dst" ]]; then
+      progress_step "compare $conf"
       compare_file_for_check "$src" "$dst" "postgres config $conf"
     fi
   done
+  progress_done "comparison complete"
 }
 
 check_surface_cloudflared() {
+  progress_start "checkcfg:cloudflared" 2
+  progress_step "compare cloudflared config"
   compare_file_for_check "$CFG_REPO_CLOUDFLARED_FILE" "$CFG_RUNTIME_CLOUDFLARED_FILE" "cloudflared config"
 
+  progress_step "verify cloudflared credentials"
   add_check_runtime_target "$CFG_CLOUDFLARED_CREDENTIALS_FILE"
   if [[ -f "$CFG_CLOUDFLARED_CREDENTIALS_FILE" ]]; then
     add_check_detail "cloudflared credentials: present"
   else
     mark_check_drift "cloudflared credentials missing ($CFG_CLOUDFLARED_CREDENTIALS_FILE)."
   fi
+  progress_done "comparison complete"
 }
 
 check_surface_backend() {
+  progress_start "checkcfg:backend" 2
+  progress_step "verify backend deploy script"
   add_check_repo_source "$CFG_REPO_ROOT/src/libs/config.js"
   add_check_repo_source "$CFG_REPO_ROOT/src/libs/config/"
   add_check_repo_source "$CFG_REPO_ROOT/src/server/"
@@ -658,15 +809,19 @@ check_surface_backend() {
 
   if [[ ! -f "$CFG_BACKEND_DEPLOY_SCRIPT" ]]; then
     mark_check_blocked "backend deploy script missing ($CFG_BACKEND_DEPLOY_SCRIPT)."
+    progress_fail "deploy script missing"
     return 0
   fi
   if [[ ! -x "$CFG_BACKEND_DEPLOY_SCRIPT" ]]; then
     mark_check_blocked "backend deploy script is not executable ($CFG_BACKEND_DEPLOY_SCRIPT)."
+    progress_fail "deploy script not executable"
     return 0
   fi
 
+  progress_step "finalize readiness check"
   add_check_detail "backend readiness: deploy script present and executable"
   add_check_detail "backend readiness: updatecfg backend --push will run scripts/redeploy"
+  progress_done "readiness complete"
 }
 
 run_surface_check() {
@@ -724,12 +879,16 @@ restart_service() {
 
 update_surface_n8n() {
   local mode="$1"
+  progress_start "updatecfg:n8n:$mode" 2
+  progress_step "validate n8n sync script"
   if [[ ! -x "$CFG_N8N_SYNC_SCRIPT" ]]; then
     mark_update_blocked "n8n sync script missing or not executable ($CFG_N8N_SYNC_SCRIPT)."
+    progress_fail "sync script missing"
     return 0
   fi
 
   local out
+  progress_step "run n8n sync in $mode mode"
   if run_capture out "$CFG_N8N_SYNC_SCRIPT" --mode "$mode"; then
     if [[ "$mode" == "push" ]]; then
       record_restarted_service "n8n API sync"
@@ -740,15 +899,30 @@ update_surface_n8n() {
       add_update_detail "n8n pull sync completed"
     fi
     add_update_detail "  $(preview_lines "$out" 20)"
+    progress_done "sync complete"
     return 0
   fi
 
   mark_update_blocked "n8n $mode sync failed"
   add_update_detail "  $(preview_lines "$out" 20)"
+  progress_fail "sync failed"
 }
 
 update_surface_docker() {
   local mode="$1"
+  local env_count=0
+  if [[ -d "$CFG_REPO_DOCKER_ENV_DIR" ]]; then
+    shopt -s nullglob
+    local _env_preview=("$CFG_REPO_DOCKER_ENV_DIR"/*.env)
+    shopt -u nullglob
+    env_count="${#_env_preview[@]}"
+  fi
+  local total=$(( 1 + env_count ))
+  if [[ "$mode" == "push" ]]; then
+    total=$(( total + 1 ))
+  fi
+  progress_start "updatecfg:docker:$mode" "$total"
+  progress_step "sync docker compose file ($mode)"
 
   if [[ "$mode" == "push" ]]; then
     copy_file_if_changed "$CFG_REPO_DOCKER_COMPOSE" "$CFG_COMPOSE_FILE" "docker compose"
@@ -762,6 +936,7 @@ update_surface_docker() {
     shopt -u nullglob
     local f
     for f in "${env_files[@]}"; do
+      progress_step "sync $(basename "$f") ($mode)"
       if [[ "$mode" == "push" ]]; then
         copy_file_if_changed "$f" "$CFG_STACK_ROOT/$(basename "$f")" "docker env $(basename "$f")"
       else
@@ -770,31 +945,39 @@ update_surface_docker() {
     done
   else
     mark_update_blocked "docker env source dir missing ($CFG_REPO_DOCKER_ENV_DIR)."
+    progress_fail "env source missing"
   fi
 
   if [[ "$UPDATE_STATE" == "blocked" ]]; then
+    progress_fail "update blocked"
     return 0
   fi
 
   if [[ "$mode" == "pull" ]]; then
     add_update_detail "docker pull mode does not restart services"
+    progress_done "pull complete"
     return 0
   fi
 
   local out
+  progress_step "apply docker changes with compose up -d"
   if run_capture out docker compose -f "$CFG_COMPOSE_FILE" --project-directory "$CFG_STACK_ROOT" up -d; then
     record_restarted_service "docker surface (compose up -d)"
     add_update_detail "docker compose up -d completed"
     add_update_detail "  $(preview_lines "$out" 20)"
+    progress_done "push complete"
     return 0
   fi
 
   mark_update_blocked "docker compose up -d failed"
   add_update_detail "  $(preview_lines "$out" 20)"
+  progress_fail "compose apply failed"
 }
 
 update_surface_litellm() {
   local mode="$1"
+  progress_start "updatecfg:litellm:$mode" 2
+  progress_step "sync litellm config ($mode)"
   if [[ "$mode" == "push" ]]; then
     copy_file_if_changed "$CFG_REPO_LITELLM_FILE" "$CFG_RUNTIME_LITELLM_FILE" "litellm config"
   else
@@ -802,35 +985,56 @@ update_surface_litellm() {
   fi
 
   if [[ "$UPDATE_STATE" == "blocked" ]]; then
+    progress_fail "update blocked"
     return 0
   fi
 
   if [[ "$mode" == "pull" ]]; then
+    progress_step "skip restart for pull mode"
     add_update_detail "litellm pull mode does not restart services"
+    progress_done "pull complete"
     return 0
   fi
 
+  progress_step "restart litellm service"
   restart_service litellm
+  if [[ "$UPDATE_STATE" == "blocked" ]]; then
+    progress_fail "restart failed"
+    return 0
+  fi
+  progress_done "push complete"
 }
 
 update_surface_postgres() {
   local mode="$1"
+  local total=1
+  local conf
+  for conf in postgresql.conf pg_hba.conf; do
+    if [[ "$mode" == "push" ]]; then
+      [[ -f "$CFG_REPO_POSTGRES_CONF_DIR/$conf" ]] && total=$(( total + 1 ))
+    else
+      [[ -f "$CFG_RUNTIME_POSTGRES_CONF_DIR/$conf" ]] && total=$(( total + 1 ))
+    fi
+  done
+  progress_start "updatecfg:postgres:$mode" "$total"
+  progress_step "sync postgres init directory ($mode)"
   if [[ "$mode" == "push" ]]; then
     sync_dir_if_changed "$CFG_REPO_POSTGRES_INIT_DIR" "$CFG_RUNTIME_POSTGRES_INIT_DIR" "postgres init dir"
   else
     sync_dir_runtime_to_repo_if_changed "$CFG_RUNTIME_POSTGRES_INIT_DIR" "$CFG_REPO_POSTGRES_INIT_DIR" "postgres init dir"
   fi
 
-  local conf
   for conf in postgresql.conf pg_hba.conf; do
     local src="$CFG_REPO_POSTGRES_CONF_DIR/$conf"
     local dst="$CFG_RUNTIME_POSTGRES_CONF_DIR/$conf"
     if [[ "$mode" == "push" ]]; then
       if [[ -f "$src" ]]; then
+        progress_step "sync $conf"
         copy_file_if_changed "$src" "$dst" "postgres config $conf"
       fi
     else
       if [[ -f "$dst" ]]; then
+        progress_step "sync $conf"
         copy_file_runtime_to_repo_if_changed "$dst" "$src" "postgres config $conf"
       fi
     fi
@@ -842,13 +1046,21 @@ update_surface_postgres() {
   else
     add_update_detail "postgres pull mode excludes live data and copies only init/config files to repo"
   fi
+  if [[ "$UPDATE_STATE" == "blocked" ]]; then
+    progress_fail "update blocked"
+    return 0
+  fi
+  progress_done "$mode complete"
 }
 
 update_surface_cloudflared() {
   local mode="$1"
+  progress_start "updatecfg:cloudflared:$mode" 2
+  progress_step "sync cloudflared config ($mode)"
   if [[ "$mode" == "push" ]]; then
     if [[ ! -f "$CFG_CLOUDFLARED_CREDENTIALS_FILE" ]]; then
       mark_update_blocked "cloudflared credentials missing ($CFG_CLOUDFLARED_CREDENTIALS_FILE)."
+      progress_fail "credentials missing"
       return 0
     fi
     copy_file_if_changed "$CFG_REPO_CLOUDFLARED_FILE" "$CFG_RUNTIME_CLOUDFLARED_FILE" "cloudflared config"
@@ -857,39 +1069,55 @@ update_surface_cloudflared() {
   fi
 
   if [[ "$UPDATE_STATE" == "blocked" ]]; then
+    progress_fail "update blocked"
     return 0
   fi
 
   if [[ "$mode" == "pull" ]]; then
+    progress_step "skip restart for pull mode"
     add_update_detail "cloudflared pull mode does not restart services"
+    progress_done "pull complete"
     return 0
   fi
 
+  progress_step "restart cloudflared service"
   restart_service cloudflared
+  if [[ "$UPDATE_STATE" == "blocked" ]]; then
+    progress_fail "restart failed"
+    return 0
+  fi
+  progress_done "push complete"
 }
 
 update_surface_backend() {
   local mode="$1"
+  progress_start "updatecfg:backend:$mode" 2
+  progress_step "validate backend deploy mode"
   if [[ "$mode" == "pull" ]]; then
     mark_update_blocked "backend pull mode is not supported (no runtime-to-repo import path)."
+    progress_fail "pull not supported"
     return 0
   fi
 
   if [[ ! -x "$CFG_BACKEND_DEPLOY_SCRIPT" ]]; then
     mark_update_blocked "backend deploy script missing or not executable ($CFG_BACKEND_DEPLOY_SCRIPT)."
+    progress_fail "deploy script missing"
     return 0
   fi
 
   local out
+  progress_step "run backend deploy script"
   if run_capture out "$CFG_BACKEND_DEPLOY_SCRIPT"; then
     record_restarted_service "pkm-server (scripts/redeploy)"
     add_update_detail "backend push deploy completed via scripts/redeploy"
     add_update_detail "  $(preview_lines "$out" 20)"
+    progress_done "push complete"
     return 0
   fi
 
   mark_update_blocked "backend push deploy failed"
   add_update_detail "  $(preview_lines "$out" 20)"
+  progress_fail "deploy failed"
 }
 
 run_surface_update() {
