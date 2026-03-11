@@ -13,6 +13,7 @@ Commands live under `scripts/cfg/`:
 - `scripts/cfg/checkcfg`
 - `scripts/cfg/updatecfg`
 - `scripts/cfg/importcfg` (runtime->repo alias wrapper)
+- `scripts/cfg/bootstrapcfg` (multi-surface bootstrap import helper)
 - shared registry/adapters: `scripts/cfg/lib.sh`
 
 Both commands accept exactly one surface and fail clearly for unknown/multi-surface input.
@@ -57,6 +58,13 @@ Exit codes:
 Convenience wrapper for runtime-to-repo import:
 - equivalent to `updatecfg <surface> --pull`
 - same surface adapters, report format, and exit codes as pull mode
+
+### `bootstrapcfg`
+Bootstrap helper for first-time runtime->repo import:
+- default surfaces: `docker litellm postgres cloudflared`
+- optional `--include-n8n` to include n8n import in the same run
+- calls `importcfg <surface>` for each selected surface in sequence
+- does not support `backend` (no runtime->repo import path)
 
 ## 3. Surface registry (authoritative map)
 
@@ -110,10 +118,23 @@ Notes:
 ## 5. Not implemented yet
 - `updatecfg --full` is not implemented.
 
-## 6. Why there is no auto-apply cron
+## 6. First-time import from Pi
+Run this on the Pi host after pulling latest repo changes:
+
+```bash
+./scripts/cfg/bootstrapcfg
+```
+
+If you also want n8n imported into repo in the same run:
+
+```bash
+./scripts/cfg/bootstrapcfg --include-n8n
+```
+
+## 7. Why there is no auto-apply cron
 `updatecfg` remains explicit operator action in this phase. Config apply may require validation order, restart sequencing, or secret readiness. Read-only automation may run `checkcfg` later, but blind auto-apply is out of scope.
 
-## 7. Living config inventory
+## 8. Living config inventory
 Keep this list updated whenever a new surface is discovered or ownership changes.
 
 - `/home/igasovic/stack/docker-compose.yml`

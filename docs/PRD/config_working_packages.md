@@ -17,6 +17,8 @@
   - `updatecfg backend --pull` remains intentionally blocked
 - WP11 is implemented as a command wrapper:
   - `scripts/cfg/importcfg` delegates runtime->repo imports through existing pull adapters (`updatecfg --pull` path)
+- Bootstrap helper is implemented:
+  - `scripts/cfg/bootstrapcfg` runs first-time multi-surface runtime->repo imports via `importcfg`
 - WP9 scaffolding is in repo:
   - `ops/stack/` structure with per-surface documentation
   - backend config module moved to `src/libs/config/` with compatibility entrypoint `src/libs/config.js`

@@ -4,6 +4,10 @@ Repo-owned configuration surface for stack-level runtime targets.
 
 This tree is intentionally versioned and non-secret.
 
+First-time baseline import from Pi runtime:
+- `./scripts/cfg/bootstrapcfg`
+- optional n8n in same run: `./scripts/cfg/bootstrapcfg --include-n8n`
+
 Populate/update these files with:
 - `scripts/cfg/importcfg <surface>` to import managed runtime config into repo
   (equivalent to `scripts/cfg/updatecfg <surface> --pull`)

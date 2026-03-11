@@ -6,6 +6,10 @@
   - dedicated runtime->repo import command for one surface
   - implemented as a thin wrapper over existing `updatecfg <surface> --pull` adapter path
   - reuses the same report and exit semantics as pull mode
+- Added `scripts/cfg/bootstrapcfg`:
+  - first-time multi-surface runtime->repo bootstrap import helper
+  - defaults to `docker litellm postgres cloudflared` and supports `--include-n8n`
+  - reuses existing `importcfg` adapter path for each surface
 - Added `scripts/n8n/export_workflows_snapshot.sh`:
   - performs one n8n workflow export and fans out to normalized + raw trees
   - reuses existing rename/normalize scripts to avoid duplicate export passes
@@ -35,6 +39,8 @@
 - Added importcfg guard coverage and operator readme alignment:
   - `test/server/config-ops-scripts.test.js` now covers unknown surface and backend-blocked behavior for `importcfg`
   - `ops/stack/*` readmes now recommend `importcfg` as the runtime->repo import alias
+- Added bootstrapcfg coverage:
+  - `test/server/config-ops-scripts.test.js` now covers backend rejection and multi-surface bootstrap import flow
 
 ## 2026-03-09 — Tier-2 async provider-batch runtime and durable status tables
 

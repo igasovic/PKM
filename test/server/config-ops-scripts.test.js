@@ -9,6 +9,7 @@ const repoRoot = path.resolve(__dirname, '../..');
 const checkcfgPath = path.join(repoRoot, 'scripts/cfg/checkcfg');
 const updatecfgPath = path.join(repoRoot, 'scripts/cfg/updatecfg');
 const importcfgPath = path.join(repoRoot, 'scripts/cfg/importcfg');
+const bootstrapcfgPath = path.join(repoRoot, 'scripts/cfg/bootstrapcfg');
 
 function runScript(scriptPath, args = [], env = {}) {
   try {
@@ -124,6 +125,12 @@ describe('config ops scripts', () => {
     expect(res.code).toBe(2);
     expect(res.stderr).toContain('Unknown option: --pull');
     expect(res.stderr).toContain('Usage: importcfg <surface>');
+  });
+
+  test('bootstrapcfg rejects backend surface', () => {
+    const res = runScript(bootstrapcfgPath, ['--surface', 'backend']);
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('does not support backend import');
   });
 
   test('importcfg rejects unknown surfaces clearly', () => {
@@ -285,6 +292,46 @@ describe('config ops scripts', () => {
     expect(res.stdout).toContain('Mode: pull');
     expect(res.stdout).toContain('Status: blocked');
     expect(res.stdout).toContain('pull mode is not supported');
+  });
+
+  test('bootstrapcfg imports selected surfaces via importcfg', () => {
+    const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
+
+    const repoLitellm = path.join(tempRepoRoot, 'ops/stack/litellm/config.yaml');
+    const runtimeLitellm = path.join(tempStackRoot, 'litellm/config.yaml');
+    const repoCloudflared = path.join(tempRepoRoot, 'ops/stack/cloudflared/config.yml');
+    const runtimeCloudflared = path.join(tempStackRoot, 'cloudflared/config.yml');
+
+    fs.mkdirSync(path.dirname(repoLitellm), { recursive: true });
+    fs.mkdirSync(path.dirname(runtimeLitellm), { recursive: true });
+    fs.mkdirSync(path.dirname(repoCloudflared), { recursive: true });
+    fs.mkdirSync(path.dirname(runtimeCloudflared), { recursive: true });
+
+    fs.writeFileSync(repoLitellm, 'model_list:\n  - model_name: old\n', 'utf8');
+    fs.writeFileSync(runtimeLitellm, 'model_list:\n  - model_name: imported_litellm\n', 'utf8');
+    fs.writeFileSync(repoCloudflared, 'ingress:\n  - service: old\n', 'utf8');
+    fs.writeFileSync(runtimeCloudflared, 'ingress:\n  - service: imported_cloudflared\n', 'utf8');
+
+    const res = runScript(
+      bootstrapcfgPath,
+      ['--surface', 'litellm', '--surface', 'cloudflared'],
+      {
+        CFG_REPO_ROOT: tempRepoRoot,
+        CFG_STACK_ROOT: tempStackRoot,
+      },
+    );
+
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('[1/2] importcfg litellm');
+    expect(res.stdout).toContain('[2/2] importcfg cloudflared');
+    expect(res.stdout).toContain('Bootstrap import complete.');
+
+    const litellmRepo = fs.readFileSync(repoLitellm, 'utf8');
+    const cloudflaredRepo = fs.readFileSync(repoCloudflared, 'utf8');
+    expect(litellmRepo).toContain('imported_litellm');
+    expect(cloudflaredRepo).toContain('imported_cloudflared');
+
+    fs.rmSync(tempRoot, { recursive: true, force: true });
   });
 
   test('checkcfg backend reports readiness when deploy script exists', () => {
