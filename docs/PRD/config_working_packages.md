@@ -5,11 +5,11 @@
   - `scripts/cfg/checkcfg`
   - `scripts/cfg/updatecfg`
   - `scripts/cfg/lib.sh`
-- `updatecfg` now supports direction modes: `--mode push|pull` (default `push`).
+- `updatecfg` now supports direction flags: `--push|--pull` (default `--push`).
 - WP8 is partially implemented:
   - `checkcfg backend` readiness checks deploy script prerequisites
-  - `updatecfg backend --mode push` runs `scripts/redeploy`
-  - `updatecfg backend --mode pull` remains intentionally blocked
+  - `updatecfg backend --push` runs `scripts/redeploy`
+  - `updatecfg backend --pull` remains intentionally blocked
 - WP9 scaffolding is in repo:
   - `ops/stack/` structure with per-surface documentation
   - backend config module moved to `src/libs/config/` with compatibility entrypoint `src/libs/config.js`
@@ -24,7 +24,7 @@
 **Acceptance:**
 - unknown surfaces fail clearly
 - each command operates on one surface only
-- `updatecfg` supports explicit direction via `--mode push|pull`
+- `updatecfg` supports explicit direction via `--push|--pull`
 - output tells the operator what happened and what to do next
 
 **Implementation status:** baseline complete (single-surface enforcement, push/pull modes, clear output, exit codes, shared surface registry).
@@ -86,7 +86,7 @@
 **Acceptance:**
 - every in-scope surface has a clear repo source path and runtime target path
 
-**Current state:** scaffolded and active; runtime content can be imported with `updatecfg <surface> --mode pull`.
+**Current state:** scaffolded and active; runtime content can be imported with `updatecfg <surface> --pull`.
 
 ## WP10 — operational docs
 **Goal:** document surface registry, compare/apply behavior, and operator commands in `config_operations.md`.  

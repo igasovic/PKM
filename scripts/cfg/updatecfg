@@ -8,43 +8,50 @@ source "$SCRIPT_DIR/lib.sh"
 usage() {
   local exit_code="${1:-2}"
   cat >&2 <<EOF
-Usage: updatecfg <surface> [--mode <push|pull>]
+Usage: updatecfg <surface> [--push|--pull]
 
 Options:
-  --mode <push|pull>   Default: push
+  --push               repo -> runtime (default)
+  --pull               runtime -> repo
 EOF
   echo "Supported surfaces:" >&2
   print_supported_surfaces >&2
-  echo "Supported modes:" >&2
-  print_supported_update_modes >&2
   exit "$exit_code"
 }
 
 mode="push"
 positionals=()
+seen_push=0
+seen_pull=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --mode)
-      if [[ $# -lt 2 ]]; then
-        echo "Missing value for --mode" >&2
-        usage 2
-      fi
-      mode="${2:-}"
-      shift 2
+    --push)
+      mode="push"
+      seen_push=1
+      shift
+      ;;
+    --pull)
+      mode="pull"
+      seen_pull=1
+      shift
       ;;
     -h|--help)
       usage 0
       ;;
     *)
+      if [[ "$1" == --* ]]; then
+        echo "Unknown option: $1" >&2
+        usage 2
+      fi
       positionals+=("$1")
       shift
       ;;
   esac
 done
 
-if ! is_supported_update_mode "$mode"; then
-  echo "Unknown update mode: $mode" >&2
+if [[ "$seen_push" -eq 1 && "$seen_pull" -eq 1 ]]; then
+  echo "Options --push and --pull are mutually exclusive." >&2
   usage 2
 fi
 

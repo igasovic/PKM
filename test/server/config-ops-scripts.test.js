@@ -61,11 +61,17 @@ describe('config ops scripts', () => {
     expect(res.stderr).toContain('Usage: updatecfg <surface>');
   });
 
-  test('updatecfg rejects unknown modes', () => {
-    const res = runScript(updatecfgPath, ['litellm', '--mode', 'sideways']);
+  test('updatecfg rejects unknown options', () => {
+    const res = runScript(updatecfgPath, ['litellm', '--sideways']);
     expect(res.code).toBe(2);
-    expect(res.stderr).toContain('Unknown update mode: sideways');
-    expect(res.stderr).toContain('Supported modes:');
+    expect(res.stderr).toContain('Unknown option: --sideways');
+    expect(res.stderr).toContain('Usage: updatecfg <surface> [--push|--pull]');
+  });
+
+  test('updatecfg rejects conflicting --push and --pull', () => {
+    const res = runScript(updatecfgPath, ['litellm', '--push', '--pull']);
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('mutually exclusive');
   });
 
   test('checkcfg litellm returns clean when repo and runtime match', () => {
@@ -128,7 +134,7 @@ describe('config ops scripts', () => {
     fs.writeFileSync(repoFile, 'model_list:\n  - model_name: old\n', 'utf8');
     fs.writeFileSync(runtimeFile, 'model_list:\n  - model_name: from_runtime\n', 'utf8');
 
-    const res = runScript(updatecfgPath, ['litellm', '--mode', 'pull'], {
+    const res = runScript(updatecfgPath, ['litellm', '--pull'], {
       CFG_REPO_ROOT: tempRepoRoot,
       CFG_STACK_ROOT: tempStackRoot,
     });

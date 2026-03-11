@@ -5,7 +5,7 @@
 2. Agent commits and pushes.
 3. Agent reports changed surfaces explicitly.
 4. Operator runs `checkcfg <surface>` for each reported surface.
-5. Operator runs `updatecfg <surface> --mode <push|pull>` only for approved direction/surface pairs.
+5. Operator runs `updatecfg <surface> --push|--pull` only for approved direction/surface pairs.
 6. Operator reruns `checkcfg <surface>` to confirm clean state.
 
 ## 2. Command interface (implemented)
@@ -33,7 +33,7 @@ Exit codes:
 - `4` blocked (missing prerequisites)
 - `2` usage/unknown surface
 
-### `updatecfg <surface> --mode <push|pull>`
+### `updatecfg <surface> --push|--pull`
 Applies one surface in one direction.
 
 Modes (same nomenclature as n8n sync):
@@ -54,7 +54,7 @@ Exit codes:
 
 ## 3. Surface registry (authoritative map)
 
-| Surface | Repo source | Runtime target / live target | Class | Attributes | Owner | `checkcfg` | `updatecfg --mode push` | `updatecfg --mode pull` |
+| Surface | Repo source | Runtime target / live target | Class | Attributes | Owner | `checkcfg` | `updatecfg --push` | `updatecfg --pull` |
 |---|---|---|---|---|---|---|---|---|
 | `n8n` | `src/n8n/workflows/`, `src/n8n/nodes/` | live n8n workflow state | authoritative | versioned, non-secret | n8n | live export+normalize+externalize snapshot compare | `scripts/n8n/sync_workflows.sh --mode push` | `scripts/n8n/sync_workflows.sh --mode pull` |
 | `docker` | `ops/stack/docker-compose.yml`, `ops/stack/env/*.env` | `/home/igasovic/stack/docker-compose.yml`, `/home/igasovic/stack/*.env` (managed non-secret env only) | authoritative | versioned, non-secret | infra | file drift compare | copy managed files + `docker compose up -d` | copy managed runtime files to repo |
@@ -72,17 +72,17 @@ Notes:
 
 ### n8n
 - `checkcfg n8n` compares repo workflows/nodes against a fresh live snapshot built with existing n8n sync tooling.
-- `updatecfg n8n --mode push|pull` delegates to the same mode in `scripts/n8n/sync_workflows.sh`.
+- `updatecfg n8n --push|--pull` delegates to the same mode in `scripts/n8n/sync_workflows.sh`.
 
 ### docker
 - `checkcfg docker` compares managed repo Compose/env files to stack runtime files.
-- `updatecfg docker --mode push` applies runtime files and runs compose apply.
-- `updatecfg docker --mode pull` pulls managed runtime files into repo.
+- `updatecfg docker --push` applies runtime files and runs compose apply.
+- `updatecfg docker --pull` pulls managed runtime files into repo.
 
 ### litellm
 - `checkcfg litellm` compares one config file.
-- `updatecfg litellm --mode push` restarts `litellm` after apply.
-- `updatecfg litellm --mode pull` does not restart services.
+- `updatecfg litellm --push` restarts `litellm` after apply.
+- `updatecfg litellm --pull` does not restart services.
 
 ### postgres
 - `checkcfg postgres` compares init/config files only.
@@ -90,17 +90,17 @@ Notes:
 
 ### cloudflared
 - `checkcfg cloudflared` validates config drift and credential-file presence.
-- `updatecfg cloudflared --mode push` requires credentials and restarts `cloudflared`.
-- `updatecfg cloudflared --mode pull` does not restart services.
+- `updatecfg cloudflared --push` requires credentials and restarts `cloudflared`.
+- `updatecfg cloudflared --pull` does not restart services.
 
 ### backend
 - `checkcfg backend` is readiness-only (deploy script check), not runtime parity.
-- `updatecfg backend --mode push` runs `scripts/redeploy`.
-- `updatecfg backend --mode pull` is intentionally blocked.
+- `updatecfg backend --push` runs `scripts/redeploy`.
+- `updatecfg backend --pull` is intentionally blocked.
 
 ## 5. Not implemented yet
 - `importcfg <surface>` is planned but not implemented.
-- `updatecfg --mode full` is not implemented.
+- `updatecfg --full` is not implemented.
 
 ## 6. Why there is no auto-apply cron
 `updatecfg` remains explicit operator action in this phase. Config apply may require validation order, restart sequencing, or secret readiness. Read-only automation may run `checkcfg` later, but blind auto-apply is out of scope.

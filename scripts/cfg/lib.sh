@@ -666,13 +666,13 @@ check_surface_backend() {
   fi
 
   add_check_detail "backend readiness: deploy script present and executable"
-  add_check_detail "backend readiness: updatecfg backend --mode push will run scripts/redeploy"
+  add_check_detail "backend readiness: updatecfg backend --push will run scripts/redeploy"
 }
 
 run_surface_check() {
   local surface="$1"
   CHECK_SURFACE="$surface"
-  CHECK_NEXT_COMMAND="updatecfg $surface --mode push"
+  CHECK_NEXT_COMMAND="updatecfg $surface --push"
 
   case "$surface" in
     n8n)
@@ -924,6 +924,10 @@ run_surface_update() {
   esac
 
   if [[ "$UPDATE_STATE" == "blocked" ]]; then
-    UPDATE_NEXT_COMMAND="resolve prerequisites, then rerun updatecfg $surface --mode $mode"
+    if [[ "$mode" == "pull" ]]; then
+      UPDATE_NEXT_COMMAND="resolve prerequisites, then rerun updatecfg $surface --pull"
+    else
+      UPDATE_NEXT_COMMAND="resolve prerequisites, then rerun updatecfg $surface --push"
+    fi
   fi
 }

@@ -154,7 +154,7 @@ Config surfaces changed:
 
 Run:
 - checkcfg <surface>
-- updatecfg <surface> --mode push
+- updatecfg <surface> --push
 ```
 
 If multiple surfaces changed, list all of them with matching commands.

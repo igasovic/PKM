@@ -35,8 +35,8 @@ Today config is spread across backend code, n8n, Docker Compose, LiteLLM, cloudf
 - **Repo authored source of truth:** versioned, non-secret config.
 - **Runtime mirrors:** `/home/igasovic/stack/*` and live n8n workflow state.
 - **Host-local only:** secrets, credentials, persistent state, and `pkm.runtime_config` runtime flags.
-- **Rule:** `updatecfg <surface> --mode push` applies repo-authored config to runtime for that surface only.
-- **Rule:** `updatecfg <surface> --mode pull` imports managed runtime config back into repo for that surface.
+- **Rule:** `updatecfg <surface> --push` applies repo-authored config to runtime for that surface only.
+- **Rule:** `updatecfg <surface> --pull` imports managed runtime config back into repo for that surface.
 - **Rule:** `checkcfg <surface>` compares repo-authored config with the current runtime state for that surface only.
 
 ## 7. Required operator workflow
@@ -56,9 +56,9 @@ Config surfaces changed:
 
 Run:
 - checkcfg n8n
-- updatecfg n8n --mode push
+- updatecfg n8n --push
 - checkcfg docker
-- updatecfg docker --mode push
+- updatecfg docker --push
 ```
 
 If no operator action is needed, the agent must say so explicitly.
@@ -67,7 +67,7 @@ If no operator action is needed, the agent must say so explicitly.
 1. pull latest repo changes
 2. run `checkcfg <surface>` for each reported surface
 3. review diff/result
-4. run `updatecfg <surface> --mode <push|pull>` for each approved surface/direction
+4. run `updatecfg <surface> --push|--pull` for each approved surface/direction
 5. rerun `checkcfg <surface>` if needed to confirm clean state
 
 ## 8. Command contract
@@ -86,7 +86,7 @@ checkcfg docker
 checkcfg litellm
 ```
 
-### 8.2 `updatecfg <surface> --mode <push|pull>`
+### 8.2 `updatecfg <surface> --push|--pull`
 Purpose: apply one-surface reconciliation in a chosen direction.  
 Mode semantics:
 - `push`: repo -> runtime
@@ -102,16 +102,16 @@ Behavior by surface:
 
 Example:
 ```bash
-updatecfg n8n --mode push
-updatecfg n8n --mode pull
-updatecfg docker --mode push
+updatecfg n8n --push
+updatecfg n8n --pull
+updatecfg docker --push
 ```
 
 ### 8.3 Optional later extensions
 Not required in this PRD:
 - `checkcfg all`
 - `updatecfg all`
-- `updatecfg <surface> --mode full`
+- `updatecfg --full`
 - `updatecfg <surface> --dry-run`
 - `importcfg <surface>` as a dedicated import command alias/wrapper
 
