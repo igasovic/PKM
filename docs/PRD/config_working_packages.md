@@ -1,5 +1,16 @@
 # Working Packages — Configuration Sync
 
+## Status (2026-03-11)
+- WP1 baseline implementation is in repo:
+  - `scripts/cfg/checkcfg`
+  - `scripts/cfg/updatecfg`
+  - `scripts/cfg/lib.sh`
+- `updatecfg` now supports direction modes: `--mode push|pull` (default `push`).
+- WP8 is partially implemented:
+  - `checkcfg backend` readiness checks deploy script prerequisites
+  - `updatecfg backend --mode push` runs `scripts/redeploy`
+  - `updatecfg backend --mode pull` remains intentionally blocked
+
 ## WP1 — Command interface
 **Goal:** implement one operator interface: `checkcfg <surface>` and `updatecfg <surface>`.  
 **Deliverables:**
@@ -10,7 +21,10 @@
 **Acceptance:**
 - unknown surfaces fail clearly
 - each command operates on one surface only
+- `updatecfg` supports explicit direction via `--mode push|pull`
 - output tells the operator what happened and what to do next
+
+**Implementation status:** baseline complete (single-surface enforcement, push/pull modes, clear output, exit codes, shared surface registry).
 
 ## WP2 — Agent handoff contract
 **Goal:** make config-related operator actions mandatory in agent output.  
@@ -62,6 +76,8 @@
 **Acceptance:**
 - behavior is documented and intentionally separate from Docker surface actions
 
+**Current state:** implemented with readiness-check + push deploy (`scripts/redeploy`); pull/import is intentionally blocked.
+
 ## WP9 — repo layout normalization
 **Goal:** normalize repo-owned config layout under `ops/stack/` and `src/libs/config/`.  
 **Acceptance:**
@@ -71,3 +87,10 @@
 **Goal:** document surface registry, compare/apply behavior, and operator commands in `config_operations.md`.  
 **Acceptance:**
 - operator can follow one short playbook without reading code
+
+## WP11 — importcfg command (planned, no implementation yet)
+**Goal:** define future runtime-to-repo import command separate from `updatecfg`.  
+**Scope:** document command contract and boundaries only; no script implementation in this package.  
+**Acceptance:**
+- work package exists and is tracked in PRD/docs
+- no production code changes for `importcfg` in this package

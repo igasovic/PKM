@@ -1,6 +1,6 @@
 # PRD — Repository-Managed Configuration Sync
 
-**Status:** Draft  
+**Status:** In progress (WP1 baseline implemented; updatecfg push/pull implemented; WP11 importcfg deferred)  
 **Owner:** TBD  
 **Baseline date:** 2026-03-10
 
@@ -35,7 +35,8 @@ Today config is spread across backend code, n8n, Docker Compose, LiteLLM, cloudf
 - **Repo authored source of truth:** versioned, non-secret config.
 - **Runtime mirrors:** `/home/igasovic/stack/*` and live n8n workflow state.
 - **Host-local only:** secrets, credentials, persistent state, and `pkm.runtime_config` runtime flags.
-- **Rule:** `updatecfg <surface>` always applies repo-authored config to runtime for that surface only.
+- **Rule:** `updatecfg <surface> --mode push` applies repo-authored config to runtime for that surface only.
+- **Rule:** `updatecfg <surface> --mode pull` imports managed runtime config back into repo for that surface.
 - **Rule:** `checkcfg <surface>` compares repo-authored config with the current runtime state for that surface only.
 
 ## 7. Required operator workflow
@@ -55,9 +56,9 @@ Config surfaces changed:
 
 Run:
 - checkcfg n8n
-- updatecfg n8n
+- updatecfg n8n --mode push
 - checkcfg docker
-- updatecfg docker
+- updatecfg docker --mode push
 ```
 
 If no operator action is needed, the agent must say so explicitly.
@@ -66,7 +67,7 @@ If no operator action is needed, the agent must say so explicitly.
 1. pull latest repo changes
 2. run `checkcfg <surface>` for each reported surface
 3. review diff/result
-4. run `updatecfg <surface>` for each approved surface
+4. run `updatecfg <surface> --mode <push|pull>` for each approved surface/direction
 5. rerun `checkcfg <surface>` if needed to confirm clean state
 
 ## 8. Command contract
@@ -85,29 +86,34 @@ checkcfg docker
 checkcfg litellm
 ```
 
-### 8.2 `updatecfg <surface>`
-Purpose: apply repo-authored config to runtime for exactly one surface.  
+### 8.2 `updatecfg <surface> --mode <push|pull>`
+Purpose: apply one-surface reconciliation in a chosen direction.  
+Mode semantics:
+- `push`: repo -> runtime
+- `pull`: runtime -> repo
+
 Behavior by surface:
-- `n8n`: push repo workflows/code-linked state through the documented n8n sync path
-- `docker`: project repo Compose/env to `/home/igasovic/stack` and restart affected services
-- `litellm`: project repo config to runtime path and restart `litellm`
-- `postgres`: project repo init/config files only; no live data sync
-- `cloudflared`: project repo config and restart `cloudflared`
-- `backend`: rebuild/restart backend as needed after repo config/code change
+- `n8n`: delegates to n8n sync script mode
+- `docker`: push applies managed Compose/env to stack runtime; pull imports managed runtime files to repo
+- `litellm`: push applies + restarts service; pull imports runtime config to repo
+- `postgres`: push/pull apply only init/config files; never live data
+- `cloudflared`: push applies + restarts service (credentials required); pull imports runtime config to repo
+- `backend`: push runs backend deploy script; pull is intentionally blocked
 
 Example:
 ```bash
-updatecfg n8n
-updatecfg docker
-updatecfg cloudflared
+updatecfg n8n --mode push
+updatecfg n8n --mode pull
+updatecfg docker --mode push
 ```
 
 ### 8.3 Optional later extensions
 Not required in this PRD:
 - `checkcfg all`
 - `updatecfg all`
+- `updatecfg <surface> --mode full`
 - `updatecfg <surface> --dry-run`
-- `importcfg <surface>` for runtime-to-repo import
+- `importcfg <surface>` as a dedicated import command alias/wrapper
 
 ## 9. Why auto-apply is out of scope
 There should not be a cron job that blindly applies repo changes to runtime. Config updates may require validation, restart ordering, human review, or secret readiness. A timer may run `checkcfg` or health checks later, but `updatecfg` remains an explicit operator action in this phase.

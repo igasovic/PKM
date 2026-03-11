@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib.sh
+source "$SCRIPT_DIR/lib.sh"
+
+if require_single_surface_arg "checkcfg" "$@"; then
+  :
+else
+  rc=$?
+  exit "$rc"
+fi
+
+surface="$1"
+
+reset_check_state
+run_surface_check "$surface"
+print_check_report
+
+check_exit_code
+rc=$?
+exit "$rc"

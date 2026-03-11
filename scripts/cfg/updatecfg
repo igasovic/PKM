@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib.sh
+source "$SCRIPT_DIR/lib.sh"
+
+usage() {
+  local exit_code="${1:-2}"
+  cat >&2 <<EOF
+Usage: updatecfg <surface> [--mode <push|pull>]
+
+Options:
+  --mode <push|pull>   Default: push
+EOF
+  echo "Supported surfaces:" >&2
+  print_supported_surfaces >&2
+  echo "Supported modes:" >&2
+  print_supported_update_modes >&2
+  exit "$exit_code"
+}
+
+mode="push"
+positionals=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --mode)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --mode" >&2
+        usage 2
+      fi
+      mode="${2:-}"
+      shift 2
+      ;;
+    -h|--help)
+      usage 0
+      ;;
+    *)
+      positionals+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if ! is_supported_update_mode "$mode"; then
+  echo "Unknown update mode: $mode" >&2
+  usage 2
+fi
+
+if require_single_surface_arg "updatecfg" "${positionals[@]}"; then
+  :
+else
+  rc=$?
+  exit "$rc"
+fi
+
+surface="${positionals[0]}"
+
+reset_update_state
+run_surface_update "$surface" "$mode"
+print_update_report
+
+update_exit_code
+rc=$?
+exit "$rc"

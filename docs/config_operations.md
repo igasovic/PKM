@@ -1,95 +1,126 @@
 # Configuration Operations
 
 ## 1. Operator workflow
-This is the intended flow:
-1. agent changes code and config in repo
-2. agent commits and pushes
-3. agent tells operator which config surfaces changed
-4. operator runs `checkcfg <surface>`
-5. operator runs `updatecfg <surface>` for approved surfaces only
+1. Agent changes repo-owned config and/or config-aware code.
+2. Agent commits and pushes.
+3. Agent reports changed surfaces explicitly.
+4. Operator runs `checkcfg <surface>` for each reported surface.
+5. Operator runs `updatecfg <surface> --mode <push|pull>` only for approved direction/surface pairs.
+6. Operator reruns `checkcfg <surface>` to confirm clean state.
 
-## 2. Command semantics
+## 2. Command interface (implemented)
+Commands live under `scripts/cfg/`:
+- `scripts/cfg/checkcfg`
+- `scripts/cfg/updatecfg`
+- shared registry/adapters: `scripts/cfg/lib.sh`
+
+Both commands accept exactly one surface and fail clearly for unknown/multi-surface input.
+
 ### `checkcfg <surface>`
-Compare repo and runtime for one surface only. Output must say:
-- clean or drifted
+Compares one repo-authored surface against one runtime/live target surface.
+
+Output always includes:
+- `Surface`
+- `Status` (`clean`, `drifted`, `blocked`)
 - repo source path(s)
-- runtime target path(s) or live object(s)
+- runtime target path(s)
+- details
 - exact next command
 
-### `updatecfg <surface>`
-Apply repo-authored config to runtime for one surface only. Output must say:
-- what changed
-- which services were restarted or synced
-- whether follow-up verification is recommended
+Exit codes:
+- `0` clean
+- `3` drifted
+- `4` blocked (missing prerequisites)
+- `2` usage/unknown surface
 
-## 3. Surface map
-| Surface | Repo source | Runtime target / live target | Update behavior |
-|---|---|---|---|
-| `n8n` | `src/n8n/workflows/`, `src/n8n/nodes/` | live n8n workflow state + repo mount at `/data` | use n8n sync tooling/API only |
-| `docker` | `ops/stack/docker-compose.yml`, `ops/stack/env/*.env` | `/home/igasovic/stack/docker-compose.yml` and stack env files | project files to stack root, then run targeted Docker update |
-| `litellm` | `ops/stack/litellm/config.yaml` | `/home/igasovic/stack/litellm/config.yaml` | copy config, restart `litellm` |
-| `postgres` | `ops/stack/postgres/init/*`, optional config files | `/home/igasovic/stack/postgres-init/*` and stack config targets | copy files only; never touch live data |
-| `cloudflared` | `ops/stack/cloudflared/config.yml` | stack runtime config path for cloudflared | copy config, verify credentials, restart `cloudflared` |
-| `backend` | `src/libs/config/`, related backend sources | backend deployment/runtime | backend-only rebuild/restart flow |
+### `updatecfg <surface> --mode <push|pull>`
+Applies one surface in one direction.
 
-## 4. Concrete examples
-### Example: n8n
-```bash
-checkcfg n8n
-updatecfg n8n
-```
-Expected behavior:
-- compare repo workflow JSON and externalized code references against live n8n state
-- push only n8n changes
+Modes (same nomenclature as n8n sync):
+- `push`: repo -> runtime (default)
+- `pull`: runtime -> repo
 
-### Example: docker
-```bash
-checkcfg docker
-updatecfg docker
-```
-Expected behavior:
-- compare repo Compose/env files with `/home/igasovic/stack`
-- project only Docker surface changes
-- restart only affected services
+Output always includes:
+- `Mode`
+- changed paths
+- restarted/synced services
+- details
+- exact next command
 
-### Example: cloudflared
-```bash
-checkcfg cloudflared
-updatecfg cloudflared
-```
-Expected behavior:
-- compare repo local-managed config to runtime file
-- verify host-local tunnel credentials exist
-- restart only `cloudflared`
+Exit codes:
+- `0` applied/ok
+- `4` blocked
+- `2` usage/unknown surface/mode
 
-## 5. Why there is no auto-apply cron
-`updatecfg` is intentionally manual in this phase because config changes may require validation, restart ordering, human review, or secret readiness. A read-only timer may run health checks or `checkcfg` later, but there must not be a blind job that auto-applies repo config to runtime.
+## 3. Surface registry (authoritative map)
 
-## 6. Minimum implementation notes
-### `checkcfg`
-- should exit non-zero on drift or validation failure only if that behavior is useful in automation
-- should support machine-readable output later, but human-readable output is enough for v1
+| Surface | Repo source | Runtime target / live target | Class | Attributes | Owner | `checkcfg` | `updatecfg --mode push` | `updatecfg --mode pull` |
+|---|---|---|---|---|---|---|---|---|
+| `n8n` | `src/n8n/workflows/`, `src/n8n/nodes/` | live n8n workflow state | authoritative | versioned, non-secret | n8n | live export+normalize+externalize snapshot compare | `scripts/n8n/sync_workflows.sh --mode push` | `scripts/n8n/sync_workflows.sh --mode pull` |
+| `docker` | `ops/stack/docker-compose.yml`, `ops/stack/env/*.env` | `/home/igasovic/stack/docker-compose.yml`, `/home/igasovic/stack/*.env` (managed non-secret env only) | authoritative | versioned, non-secret | infra | file drift compare | copy managed files + `docker compose up -d` | copy managed runtime files to repo |
+| `litellm` | `ops/stack/litellm/config.yaml` | `/home/igasovic/stack/litellm/config.yaml` | authoritative | versioned, non-secret | infra | file drift compare | copy config + restart `litellm` | copy runtime config to repo |
+| `postgres` | `ops/stack/postgres/init/*`, optional `ops/stack/postgres/postgresql.conf`, `ops/stack/postgres/pg_hba.conf` | `/home/igasovic/stack/postgres-init/*`, optional `/home/igasovic/stack/postgres/*.conf` | authoritative | versioned, non-secret, host-local runtime target | infra/db | dir+file drift compare (excludes live data dir) | copy init/config only; never touches live data | pull init/config only; never touches live data |
+| `cloudflared` | `ops/stack/cloudflared/config.yml` | runtime cloudflared config path + host-local credentials JSON | authoritative | versioned config + host-local credential dependency | infra | file drift compare + credentials presence check | copy config + restart `cloudflared` (credentials required) | copy runtime config to repo |
+| `backend` | `src/libs/config.js`, future `src/libs/config/`, related `src/server/**` config readers | backend deployment/runtime state | authoritative (partial) | versioned code/config | backend | readiness check (`scripts/redeploy` present + executable) | run `scripts/redeploy` | blocked (no runtime-to-repo import path) |
 
-### `updatecfg`
-- must fail fast if required runtime prerequisites are missing
-- must never copy secrets from repo
-- must never operate on more than one surface per invocation
+Notes:
+- Secrets and credentials are host-local and never copied from repo.
+- Runtime mutable state (`pkm.runtime_config`) is out of `updatecfg` scope.
+- Home Assistant/Matter remain out of this config program unless explicitly scoped in.
+
+## 4. Current adapter behavior details
+
+### n8n
+- `checkcfg n8n` compares repo workflows/nodes against a fresh live snapshot built with existing n8n sync tooling.
+- `updatecfg n8n --mode push|pull` delegates to the same mode in `scripts/n8n/sync_workflows.sh`.
+
+### docker
+- `checkcfg docker` compares managed repo Compose/env files to stack runtime files.
+- `updatecfg docker --mode push` applies runtime files and runs compose apply.
+- `updatecfg docker --mode pull` pulls managed runtime files into repo.
+
+### litellm
+- `checkcfg litellm` compares one config file.
+- `updatecfg litellm --mode push` restarts `litellm` after apply.
+- `updatecfg litellm --mode pull` does not restart services.
+
+### postgres
+- `checkcfg postgres` compares init/config files only.
+- push/pull operate on init/config files only and never DB data.
+
+### cloudflared
+- `checkcfg cloudflared` validates config drift and credential-file presence.
+- `updatecfg cloudflared --mode push` requires credentials and restarts `cloudflared`.
+- `updatecfg cloudflared --mode pull` does not restart services.
+
+### backend
+- `checkcfg backend` is readiness-only (deploy script check), not runtime parity.
+- `updatecfg backend --mode push` runs `scripts/redeploy`.
+- `updatecfg backend --mode pull` is intentionally blocked.
+
+## 5. Not implemented yet
+- `importcfg <surface>` is planned but not implemented.
+- `updatecfg --mode full` is not implemented.
+
+## 6. Why there is no auto-apply cron
+`updatecfg` remains explicit operator action in this phase. Config apply may require validation order, restart sequencing, or secret readiness. Read-only automation may run `checkcfg` later, but blind auto-apply is out of scope.
 
 ## 7. Living config inventory
-Keep this list updated when new surfaces are discovered:
+Keep this list updated whenever a new surface is discovered or ownership changes.
+
 - `/home/igasovic/stack/docker-compose.yml`
-- `/home/igasovic/stack/.env` or future secret-only replacement
+- `/home/igasovic/stack/.env` (secret, host-local)
 - `/home/igasovic/stack/postgres/`
 - `/home/igasovic/stack/postgres-init/`
 - `/home/igasovic/stack/n8n/`
 - `/home/igasovic/stack/litellm/config.yaml`
-- `src/libs/config.js` or future `src/libs/config/`
+- `src/libs/config.js` and future `src/libs/config/`
 - `src/server/**` direct env reads until removed
 - `src/n8n/workflows/`
 - `src/n8n/nodes/`
-- `js/workflows/`
+- `js/workflows/` (legacy)
 - `scripts/n8n/**`
 - `scripts/db/**`
-- `pkm.runtime_config`
+- `pkm.runtime_config` (runtime-mutable DB state)
 - shell exports for `N8N_API_*`
-- local-managed cloudflared config and host-local credentials JSON
+- cloudflared local-managed config + host-local credentials JSON

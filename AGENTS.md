@@ -145,6 +145,30 @@ Before coding non-trivial changes, provide a short plan covering:
 - Do not silently edit runtime stack files as the primary authored surface.
 - Keep apply logic explicit and reviewable.
 
+### Config-change handoff block (mandatory)
+When your change affects config, your final response must include:
+
+```text
+Config surfaces changed:
+- <surface>
+
+Run:
+- checkcfg <surface>
+- updatecfg <surface> --mode push
+```
+
+If multiple surfaces changed, list all of them with matching commands.
+
+If no operator apply step is required, explicitly say:
+
+```text
+Config surfaces changed:
+- none
+
+Run:
+- no operator config apply required
+```
+
 ---
 
 ## 4) Quality gates
