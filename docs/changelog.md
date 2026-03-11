@@ -1,4 +1,32 @@
 # changelog
+## 2026-03-09 — Tier-2 async provider-batch runtime and durable status tables
+
+### What changed
+- Added Tier‑2 async batch persistence migration:
+  - `scripts/db/migrations/2026-03-09_tier2_batch_tables.sql`
+  - creates mirrored tables in `pkm` and `pkm_test`:
+    - `t2_batches`
+    - `t2_batch_items`
+    - `t2_batch_item_results`
+- Added Tier‑2 batch storage and parsing modules:
+  - `src/server/tier2/store.js`
+  - `src/server/tier2/domain.js`
+- Refactored Tier‑2 orchestration in `src/server/tier2-enrichment.js`:
+  - default `execution_mode=batch` path now performs control-plane planning + provider batch enqueue (LiteLLM `/v1/files` + `/v1/batches`)
+  - async collect/reconcile now uses durable `t2_*` tables
+  - status surfaces now read Tier‑2 batch state from DB-backed tables (with in-memory fallback when tables are unavailable)
+  - explicit `execution_mode=sync` remains supported and uses prior single-entry sync loop behavior
+- Extended SQL builder for Tier‑2 batch runtime:
+  - new helpers for `t2_batch_items` / `t2_batch_item_results` insert/upsert/reconcile paths
+  - extended Tier‑2 item-status query fields (`entry_id`, `error_code`, `message`, `preserved_current_artifact`)
+  - extended Tier‑2 entry-state projection to include `clean_text` for reconciliation validation
+- Added minimal Tier‑2 model config surface for batch direct calls:
+  - `distill.models.batch_direct` in `src/libs/config.js`
+- Updated docs/contracts:
+  - `docs/api.md` (`/distill/run` enqueue semantics + durable Tier‑2 status behavior + `t2_*` tables)
+  - `docs/database_schema.md` (Tier‑2 batch tables + mirrored/grant inventory)
+  - `docs/requirements.md` (Tier‑2 async enqueue/collect and durable status requirements)
+
 ## 2026-03-09 — Distill run mode controls, failure surfacing, and command help updates
 
 ### What changed

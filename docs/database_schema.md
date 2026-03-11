@@ -63,6 +63,9 @@ Schema grants (current):
 - `t1_batches` (~16 kB)
 - `t1_batch_items` (~80 kB)
 - `t1_batch_item_results` (~8192 bytes)
+- `t2_batches` (size varies by run volume)
+- `t2_batch_items` (size varies by run volume)
+- `t2_batch_item_results` (size varies by run volume)
 
 **Test (`pkm_test`)**
 - `entries` (~488 kB)
@@ -70,6 +73,9 @@ Schema grants (current):
 - `t1_batches` (~8192 bytes)
 - `t1_batch_items` (~8192 bytes)
 - `t1_batch_item_results` (~8192 bytes)
+- `t2_batches` (size varies by run volume)
+- `t2_batch_items` (size varies by run volume)
+- `t2_batch_item_results` (size varies by run volume)
 
 ### User access per table (current grants)
 
@@ -86,6 +92,9 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 | `pkm.t1_batches` | full | RIUD | — | — |
 | `pkm.t1_batch_items` | full | RIUD | — | — |
 | `pkm.t1_batch_item_results` | full | RIUD | — | — |
+| `pkm.t2_batches` | full | RIUD | — | — |
+| `pkm.t2_batch_items` | full | RIUD | — | — |
+| `pkm.t2_batch_item_results` | full | RIUD | — | — |
 
 #### Test (`pkm_test.*`)
 
@@ -96,6 +105,9 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 | `pkm_test.t1_batches` | full | RIUD | — |
 | `pkm_test.t1_batch_items` | full | RIUD | — |
 | `pkm_test.t1_batch_item_results` | full | RIUD | — |
+| `pkm_test.t2_batches` | full | RIUD | — |
+| `pkm_test.t2_batch_items` | full | RIUD | — |
+| `pkm_test.t2_batch_item_results` | full | RIUD | — |
 
 ### Sequences and identity
 
@@ -146,6 +158,9 @@ Mirrored between `pkm` and `pkm_test`:
 - `t1_batches`
 - `t1_batch_items`
 - `t1_batch_item_results`
+- `t2_batches`
+- `t2_batch_items`
+- `t2_batch_item_results`
 
 ### What is NOT mirrored
 
@@ -399,6 +414,73 @@ Indexes:
 - PK `(batch_id, custom_id)`
 - `(batch_id, status)`
 - `(updated_at)`
+
+---
+
+### Tier-2 Batch Persistence
+
+These tables support restart-safe Tier‑2 async distillation enqueue/collect/reconciliation.
+
+#### `pkm.t2_batches` / `pkm_test.t2_batches`
+
+- `batch_id` text PK
+- `status` text
+- `model` text
+- `request_type` text
+- `input_file_id` text
+- `output_file_id` text
+- `error_file_id` text
+- `request_count` int
+- `metadata` jsonb
+- `created_at` timestamptz default now()
+- `updated_at` timestamptz default now()
+
+Indexes:
+- PK `(batch_id)`
+- `(status, created_at DESC)`
+- `(created_at DESC)`
+
+#### `pkm.t2_batch_items` / `pkm_test.t2_batch_items`
+
+- `batch_id` text
+- `custom_id` text
+- `entry_id` bigint
+- `content_hash` text
+- `route` text
+- `chunking_strategy` text
+- `request_type` text
+- `title` text
+- `author` text
+- `content_type` text
+- `prompt_mode` text
+- `prompt` text
+- `retry_count` int default 0
+- `created_at` timestamptz default now()
+- `updated_at` timestamptz default now()
+
+Indexes:
+- PK `(batch_id, custom_id)`
+- `(entry_id)`
+- `(created_at DESC)`
+
+#### `pkm.t2_batch_item_results` / `pkm_test.t2_batch_item_results`
+
+- `batch_id` text
+- `custom_id` text
+- `status` text NOT NULL
+- `response_text` text
+- `parsed` jsonb
+- `error` jsonb
+- `raw` jsonb
+- `applied` boolean default false
+- `applied_at` timestamptz
+- `updated_at` timestamptz default now()
+- `created_at` timestamptz default now()
+
+Indexes:
+- PK `(batch_id, custom_id)`
+- `(status)`
+- `(applied, updated_at DESC)`
 
 ---
 

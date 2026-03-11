@@ -268,6 +268,7 @@ Recommended wiring (so **pkm-server never calls OpenAI directly**):
   - `T2_MODEL_DIRECT=t2-direct`
   - `T2_MODEL_CHUNK_NOTE=t2-chunk-note`
   - `T2_MODEL_SYNTHESIS=t2-synthesis`
+  - `T2_MODEL_BATCH_DIRECT=t2-sync-direct` (batch direct alias)
   - `T2_MODEL_SYNC_DIRECT=t2-sync-direct`
 - Tier-2 retry controls:
   - `T2_RETRY_ENABLED=true`
@@ -279,6 +280,8 @@ Recommended wiring (so **pkm-server never calls OpenAI directly**):
   - `T2_BATCH_WORKER_ENABLED=false` (default)
   - `T2_BATCH_SYNC_INTERVAL_MS=600000` (default 10m)
   - `T2_BATCH_SYNC_LIMIT=25` (default from `distill.max_entries_per_run`)
+  - `T2_BATCH_COLLECT_LIMIT=20` (max pending batches reconciled per cycle)
+  - `T2_BATCH_REQUEST_MODEL=<provider model>` (optional override for JSONL request model; falls back to `T1_BATCH_REQUEST_MODEL`)
 
 **Notion ingest**
 - `NOTION_API_TOKEN=<notion integration token>` (required for server-side Notion block collection in `POST /normalize/notion` when only page id is provided)

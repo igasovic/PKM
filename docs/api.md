@@ -470,6 +470,7 @@ Response:
 ```
 
 Notes:
+- `stage=t2` status rows are sourced from durable Tier‑2 batch tables (`t2_batches`, `t2_batch_items`, `t2_batch_item_results`).
 - For `stage=t2`, failed runs may include `metadata.error` with a compact run-level failure summary.
 - For `stage=t2`, job metadata may include:
   - `execution_mode` (`batch` or `sync`)
@@ -527,6 +528,7 @@ Response:
 Notes:
 - For `stage=t2`, failed runs may include `metadata.error` with a compact run-level failure summary.
 - For `stage=t2` with `include_items=true`, item rows may include:
+  - `entry_id`
   - `error_code`
   - `message`
   - `preserved_current_artifact`
@@ -640,7 +642,7 @@ Response:
 ```
 
 ### `POST /distill/run`
-Runs one Tier‑2 batch cycle for production schema (`pkm`): control-plane planning followed by entry processing for selected rows (or planning-only in dry-run mode).
+Runs one Tier‑2 batch cycle for production schema (`pkm`): control-plane planning plus async provider-batch enqueue (or planning-only in dry-run mode).
 
 Headers:
 - `x-pkm-admin-secret: <secret>` (required)
@@ -663,7 +665,8 @@ Notes:
 - `candidate_limit` and `max_sync_items` must be positive integers when provided.
 - `dry_run=true` runs planning only and does not call Tier‑2 generation.
 - This endpoint always targets production schema for execution.
-- In non-dry-run mode, dispatched entries are marked `distill_status = queued` before sync attempts.
+- In non-dry-run mode, selected entries are enqueued into LiteLLM batch processing and marked `distill_status = queued` only after successful dispatch.
+- Per-entry generation/validation/persistence runs asynchronously during collect cycles; inspect outcomes via `GET /status/batch?stage=t2` and `GET /status/batch/:batch_id?stage=t2`.
 - Non-busy responses include `batch_id` for `/status/batch` lookup.
 - If a run is requested while the Tier‑2 batch worker loop is already active, the response is:
   - `mode = "skipped"`
@@ -677,6 +680,7 @@ Response:
   "execution_mode": "batch",
   "target_schema": "pkm",
   "batch_id": "t2_1739420000000_ab12cd",
+  "batch_status": "validating",
   "processing_limit": 25,
   "candidate_count": 120,
   "decision_counts": {
@@ -689,34 +693,18 @@ Response:
     "groups": []
   },
   "planned_selected_count": 25,
-  "processed_count": 25,
-  "completed_count": 21,
-  "failed_count": 4,
-  "preserved_current_count": 1,
-  "error_code_counts": {
-    "excerpt_not_grounded": 3,
-    "generation_error": 1
-  },
-  "results": [
-    { "entry_id": 12345, "status": "completed", "error_code": null },
-    {
-      "entry_id": 12346,
-      "status": "failed",
-      "error_code": "generation_error",
-      "message": "Optional failure message",
-      "preserved_current_artifact": true
-    }
-  ]
+  "processed_count": 0,
+  "completed_count": 0,
+  "failed_count": 0,
+  "preserved_current_count": 0,
+  "error_code_counts": {},
+  "results": []
 }
 ```
 
 Notes:
-- Failed result rows may include:
-  - `message` (when available)
-  - `preserved_current_artifact = true` (when failure preserved an existing current artifact)
-- `preserved_current_count` is the run-level count of failed rows with `preserved_current_artifact = true`.
-- For terminal `currentness_mismatch` failures in batch mode, backend clears `queued` by persisting `failed`
-  unless `preserved_current_artifact = true`.
+- Batch-mode `processed_count` / `completed_count` / `failed_count` in `/distill/run` are enqueue-cycle counters, not final per-item completion.
+- Final per-item outcomes are surfaced through status endpoints and include `error_code`, optional `message`, and `preserved_current_artifact` where applicable.
 
 Response (worker busy):
 ```json
@@ -846,7 +834,59 @@ CREATE TABLE IF NOT EXISTS pkm.t1_batch_item_results (
   created_at timestamptz DEFAULT now(),
   PRIMARY KEY (batch_id, custom_id)
 );
+
+CREATE TABLE IF NOT EXISTS pkm.t2_batches (
+  batch_id text PRIMARY KEY,
+  status text,
+  model text,
+  request_type text,
+  input_file_id text,
+  output_file_id text,
+  error_file_id text,
+  request_count int,
+  metadata jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS pkm.t2_batch_items (
+  batch_id text NOT NULL,
+  custom_id text NOT NULL,
+  entry_id bigint NOT NULL,
+  content_hash text,
+  route text,
+  chunking_strategy text,
+  request_type text,
+  title text,
+  author text,
+  content_type text,
+  prompt_mode text,
+  prompt text,
+  retry_count int DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  PRIMARY KEY (batch_id, custom_id)
+);
+
+CREATE TABLE IF NOT EXISTS pkm.t2_batch_item_results (
+  batch_id text NOT NULL,
+  custom_id text NOT NULL,
+  status text NOT NULL,
+  response_text text,
+  parsed jsonb,
+  error jsonb,
+  raw jsonb,
+  applied boolean DEFAULT false,
+  applied_at timestamptz,
+  updated_at timestamptz DEFAULT now(),
+  created_at timestamptz DEFAULT now(),
+  PRIMARY KEY (batch_id, custom_id)
+);
 ```
+
+Migration scripts:
+- `scripts/db/migrations/2026-03-08_tier2_distill_entries.sql`
+- `scripts/db/migrations/2026-03-09_tier2_batch_tables.sql`
 
 ## Insert / Update
 
@@ -1186,6 +1226,8 @@ Optional:
 - `T2_BATCH_WORKER_ENABLED` (`false` default)
 - `T2_BATCH_SYNC_INTERVAL_MS` (`600000` default)
 - `T2_BATCH_SYNC_LIMIT` (`distill.max_entries_per_run` default)
+- `T2_BATCH_COLLECT_LIMIT` (`20` default)
+- `T2_BATCH_REQUEST_MODEL` (optional provider model override for Tier‑2 batch request lines; falls back to `T1_BATCH_REQUEST_MODEL`)
 
 LLM auth:
 - `LITELLM_MASTER_KEY` (required; used as Bearer token for LiteLLM)

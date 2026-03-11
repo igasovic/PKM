@@ -47,6 +47,7 @@ const CONFIG_V1 = {
       direct: process.env.T2_MODEL_DIRECT || 't2-direct',
       chunk_note: process.env.T2_MODEL_CHUNK_NOTE || 't2-chunk-note',
       synthesis: process.env.T2_MODEL_SYNTHESIS || 't2-synthesis',
+      batch_direct: process.env.T2_MODEL_BATCH_DIRECT || process.env.T2_MODEL_SYNC_DIRECT || 't2-sync-direct',
       sync_direct: process.env.T2_MODEL_SYNC_DIRECT || 't2-sync-direct',
     },
     retry: {

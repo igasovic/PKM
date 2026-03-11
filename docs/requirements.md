@@ -280,7 +280,7 @@ Primary objective:
   - LiteLLM client must emit full call instrumentation for all LLM/proxy interactions.
   - Non-LLM graph nodes should emit logs only on errors.
 
-## Tier-2 distillation requirements (sync v1)
+## Tier-2 distillation requirements
 - Tier‑2 sync distillation must run through backend API only (`POST /distill/sync`).
 - Tier‑2 control-plane planning must run through backend API only (`POST /distill/plan`).
 - Tier‑2 manual batch execution must run through backend API only (`POST /distill/run`).
@@ -293,15 +293,16 @@ Primary objective:
   - run budget
   - route selection (`direct|chunked`)
 - Control-plane planning must persist eligibility outcomes (`skipped` / `not_eligible`) with compact reason metadata when persistence is enabled.
-- Tier‑2 batch execution must target prod schema and report per-entry outcomes (`completed` / `failed`) for processed selected entries.
-- Tier‑2 batch execution must mark dispatched selected entries as `queued` before sync attempts begin.
-- Tier‑2 batch execution (`POST /distill/run`) must apply config-driven retry decisions from `distill.retry.*` for failed per-entry attempts (sync endpoint remains single-attempt).
+- Tier‑2 batch execution must target prod schema and enqueue selected entries through LiteLLM/OpenAI-compatible batch APIs.
+- Tier‑2 batch execution must mark dispatched selected entries as `queued` only after successful provider dispatch.
+- Tier‑2 batch execution (`POST /distill/run`) must apply config-driven retry decisions from `distill.retry.*` during async collect/reconciliation (sync endpoint remains single-attempt).
 - Deterministic Tier‑2 failures must remain non-retryable even under permissive retry config:
   - validation contract errors (for example `excerpt_not_grounded`, `summary_empty`, similar `DISTILL_VALIDATION_ERROR_CODES`)
   - `currentness_mismatch`
 - For batch mode, terminal `currentness_mismatch` failures must not leave rows in `queued`:
-  - batch runner must persist terminal failure state (`failed`) unless `preserved_current_artifact = true`.
+  - batch collect/reconcile must persist terminal failure state (`failed`) unless `preserved_current_artifact = true`.
 - Tier‑2 batch execution runtime failures must return a normalized response payload (with `error`) and preserve status inspectability via `batch_id`.
+- Tier‑2 batch status visibility must be durable via DB-backed tables (`t2_batches`, `t2_batch_items`, `t2_batch_item_results`), not process-memory only.
 - Route selection must be deterministic from `clean_word_count` and `distill.direct_chunk_threshold_words`.
 - Tier‑2 output must validate deterministically before persistence:
   - required fields: `distill_summary`, `distill_why_it_matters`, `distill_stance`, `distill_version`, `distill_created_from_hash`, `distill_metadata`

@@ -226,6 +226,10 @@ module.exports = {
   buildT1BatchUpsert,
   buildT1BatchItemsInsert,
   buildT1BatchResultsUpsert,
+  buildT2BatchItemsInsert,
+  buildT2BatchResultsUpsert,
+  buildT2BatchReconcileRows,
+  buildT2BatchMarkResultsApplied,
   buildT1BatchSummary,
   buildT1BatchFind,
   buildT1BatchListPending,
@@ -233,6 +237,8 @@ module.exports = {
   buildT1BatchStatusById,
   buildT1BatchItemStatusList,
   buildT1BatchItemRequests,
+  buildT2BatchItemStatusList,
+  buildTier2EntryStatesByEntryIds,
   buildInsertPipelineEvent,
   buildGetPipelineEventsByRunId,
   buildGetRecentPipelineRuns,
@@ -318,6 +324,63 @@ ON CONFLICT (batch_id, custom_id) DO UPDATE SET
   parsed = EXCLUDED.parsed,
   error = EXCLUDED.error,
   raw = EXCLUDED.raw,
+  updated_at = now()`;
+}
+
+/**
+ * Build bulk insert SQL for Tier-2 batch request items.
+ * @param {{ itemsTable: string, rowCount: number }} opts
+ * @returns {string}
+ */
+function buildT2BatchItemsInsert(opts) {
+  const itemsTable = opts && opts.itemsTable;
+  const rowCount = Number(opts && opts.rowCount);
+  if (!itemsTable || typeof itemsTable !== 'string') {
+    throw new Error('buildT2BatchItemsInsert: itemsTable must be a non-empty string');
+  }
+  if (!Number.isInteger(rowCount) || rowCount <= 0) {
+    throw new Error('buildT2BatchItemsInsert: rowCount must be a positive integer');
+  }
+  const values = [];
+  let idx = 1;
+  for (let i = 0; i < rowCount; i++) {
+    values.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, now())`);
+  }
+  return `INSERT INTO ${itemsTable}
+  (batch_id, custom_id, entry_id, content_hash, route, chunking_strategy, request_type, title, author, content_type, prompt_mode, prompt, retry_count, created_at)
+VALUES ${values.join(', ')}
+ON CONFLICT (batch_id, custom_id) DO NOTHING`;
+}
+
+/**
+ * Build bulk upsert SQL for Tier-2 batch item results.
+ * @param {{ resultsTable: string, rowCount: number }} opts
+ * @returns {string}
+ */
+function buildT2BatchResultsUpsert(opts) {
+  const resultsTable = opts && opts.resultsTable;
+  const rowCount = Number(opts && opts.rowCount);
+  if (!resultsTable || typeof resultsTable !== 'string') {
+    throw new Error('buildT2BatchResultsUpsert: resultsTable must be a non-empty string');
+  }
+  if (!Number.isInteger(rowCount) || rowCount <= 0) {
+    throw new Error('buildT2BatchResultsUpsert: rowCount must be a positive integer');
+  }
+  const values = [];
+  let idx = 1;
+  for (let i = 0; i < rowCount; i++) {
+    values.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}::jsonb, $${idx++}::jsonb, $${idx++}::jsonb, $${idx++}::boolean, now(), now())`);
+  }
+  return `INSERT INTO ${resultsTable}
+  (batch_id, custom_id, status, response_text, parsed, error, raw, applied, updated_at, created_at)
+VALUES ${values.join(', ')}
+ON CONFLICT (batch_id, custom_id) DO UPDATE SET
+  status = EXCLUDED.status,
+  response_text = EXCLUDED.response_text,
+  parsed = EXCLUDED.parsed,
+  error = EXCLUDED.error,
+  raw = EXCLUDED.raw,
+  applied = COALESCE(EXCLUDED.applied, ${resultsTable}.applied),
   updated_at = now()`;
 }
 
@@ -535,6 +598,133 @@ LEFT JOIN ${resultsTable} r
 WHERE i.batch_id = $1
 ORDER BY i.created_at ASC
 LIMIT $2`;
+}
+
+/**
+ * Build SQL for Tier-2 item-level statuses within one batch.
+ * Includes error payload fields so API can expose failure details.
+ * @param {{ itemsTable: string, resultsTable: string }} opts
+ * @returns {string}
+ */
+function buildT2BatchItemStatusList(opts) {
+  const itemsTable = opts && opts.itemsTable;
+  const resultsTable = opts && opts.resultsTable;
+  if (!itemsTable || typeof itemsTable !== 'string') {
+    throw new Error('buildT2BatchItemStatusList: itemsTable must be a non-empty string');
+  }
+  if (!resultsTable || typeof resultsTable !== 'string') {
+    throw new Error('buildT2BatchItemStatusList: resultsTable must be a non-empty string');
+  }
+  return `SELECT
+  i.custom_id,
+  i.entry_id,
+  i.title,
+  i.author,
+  i.content_type,
+  i.prompt_mode,
+  i.created_at,
+  COALESCE(r.status, 'pending') AS status,
+  COALESCE(
+    NULLIF(r.error->>'code', ''),
+    CASE
+      WHEN r.status IN ('parse_error', 'error') THEN r.status
+      ELSE NULL
+    END
+  ) AS error_code,
+  NULLIF(r.error->>'message', '') AS message,
+  COALESCE((r.error->>'preserved_current_artifact')::boolean, false) AS preserved_current_artifact,
+  r.response_text,
+  r.error,
+  r.updated_at,
+  (
+    r.error IS NOT NULL OR
+    (
+      r.status IS NOT NULL AND
+      r.status <> 'ok' AND
+      r.status <> 'pending'
+    )
+  ) AS has_error
+FROM ${itemsTable} i
+LEFT JOIN ${resultsTable} r
+  ON r.batch_id = i.batch_id
+ AND r.custom_id = i.custom_id
+WHERE i.batch_id = $1
+ORDER BY i.created_at ASC
+LIMIT $2`;
+}
+
+/**
+ * Build SQL for loading unapplied Tier-2 batch results with request metadata.
+ * @param {{ batchesTable: string, itemsTable: string, resultsTable: string }} opts
+ * @returns {string}
+ */
+function buildT2BatchReconcileRows(opts) {
+  const batchesTable = opts && opts.batchesTable;
+  const itemsTable = opts && opts.itemsTable;
+  const resultsTable = opts && opts.resultsTable;
+  if (!batchesTable || typeof batchesTable !== 'string') {
+    throw new Error('buildT2BatchReconcileRows: batchesTable must be a non-empty string');
+  }
+  if (!itemsTable || typeof itemsTable !== 'string') {
+    throw new Error('buildT2BatchReconcileRows: itemsTable must be a non-empty string');
+  }
+  if (!resultsTable || typeof resultsTable !== 'string') {
+    throw new Error('buildT2BatchReconcileRows: resultsTable must be a non-empty string');
+  }
+  return `SELECT
+  i.batch_id,
+  i.custom_id,
+  i.entry_id,
+  i.content_hash AS expected_content_hash,
+  i.route,
+  i.chunking_strategy,
+  i.request_type,
+  i.retry_count,
+  i.prompt_mode,
+  i.title,
+  i.author,
+  i.content_type,
+  b.model,
+  b.metadata AS batch_metadata,
+  r.status AS result_status,
+  r.response_text,
+  r.parsed,
+  r.error,
+  r.raw,
+  r.updated_at
+FROM ${itemsTable} i
+JOIN ${resultsTable} r
+  ON r.batch_id = i.batch_id
+ AND r.custom_id = i.custom_id
+LEFT JOIN ${batchesTable} b
+  ON b.batch_id = i.batch_id
+WHERE
+  i.batch_id = $1
+  AND COALESCE(r.applied, false) = false
+ORDER BY i.created_at ASC
+LIMIT $2`;
+}
+
+/**
+ * Build SQL for marking Tier-2 result rows as applied.
+ * @param {{ resultsTable: string }} opts
+ * @returns {string}
+ */
+function buildT2BatchMarkResultsApplied(opts) {
+  const resultsTable = opts && opts.resultsTable;
+  if (!resultsTable || typeof resultsTable !== 'string') {
+    throw new Error('buildT2BatchMarkResultsApplied: resultsTable must be a non-empty string');
+  }
+  return `UPDATE ${resultsTable}
+SET
+  applied = true,
+  applied_at = now(),
+  updated_at = now()
+WHERE
+  batch_id = $1
+  AND custom_id = ANY($2::text[])
+  AND COALESCE(applied, false) = false
+RETURNING custom_id`;
 }
 
 /**
@@ -1488,6 +1678,36 @@ SELECT
 FROM ${entries_table} e
 WHERE e.entry_id = ${bigIntLit(entry_id)}::bigint
 LIMIT 1;
+`.trim();
+}
+
+function buildTier2EntryStatesByEntryIds(opts) {
+  const entries_table = opts && opts.entries_table;
+  if (!entries_table || typeof entries_table !== 'string') {
+    throw new Error('buildTier2EntryStatesByEntryIds: entries_table must be a non-empty string');
+  }
+  const entry_ids = Array.isArray(opts && opts.entry_ids) ? opts.entry_ids : [];
+  if (!entry_ids.length) {
+    throw new Error('buildTier2EntryStatesByEntryIds: entry_ids must be a non-empty array');
+  }
+  const valuesRows = entry_ids
+    .map((value) => `(${bigIntLit(value)}::bigint)`)
+    .join(',\n    ');
+  return `
+WITH ids(entry_id) AS (
+  VALUES
+    ${valuesRows}
+)
+SELECT
+  e.entry_id,
+  e.clean_text,
+  e.content_hash,
+  e.distill_status,
+  e.distill_created_from_hash
+FROM ids
+LEFT JOIN ${entries_table} e
+  ON e.entry_id = ids.entry_id
+ORDER BY ids.entry_id ASC;
 `.trim();
 }
 
