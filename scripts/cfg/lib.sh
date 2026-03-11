@@ -161,6 +161,16 @@ docker_collect_compose_services() {
   return 0
 }
 
+is_cloudflared_token_mode() {
+  if [[ ! -f "$CFG_COMPOSE_FILE" ]]; then
+    return 1
+  fi
+  if grep -Eq -- '--token|TUNNEL_TOKEN' "$CFG_COMPOSE_FILE"; then
+    return 0
+  fi
+  return 1
+}
+
 # -------------------------
 # Progress reporting
 # -------------------------
@@ -1255,7 +1265,14 @@ update_surface_cloudflared() {
     fi
     copy_file_if_changed "$CFG_REPO_CLOUDFLARED_FILE" "$CFG_RUNTIME_CLOUDFLARED_FILE" "cloudflared config"
   else
-    copy_file_runtime_to_repo_if_changed "$CFG_RUNTIME_CLOUDFLARED_FILE" "$CFG_REPO_CLOUDFLARED_FILE" "cloudflared config"
+    if [[ -f "$CFG_RUNTIME_CLOUDFLARED_FILE" ]]; then
+      copy_file_runtime_to_repo_if_changed "$CFG_RUNTIME_CLOUDFLARED_FILE" "$CFG_REPO_CLOUDFLARED_FILE" "cloudflared config"
+    elif is_cloudflared_token_mode; then
+      add_update_detail "cloudflared config: runtime source missing ($CFG_RUNTIME_CLOUDFLARED_FILE)"
+      add_update_detail "cloudflared config: detected token-based tunnel mode in compose; nothing to import"
+    else
+      copy_file_runtime_to_repo_if_changed "$CFG_RUNTIME_CLOUDFLARED_FILE" "$CFG_REPO_CLOUDFLARED_FILE" "cloudflared config"
+    fi
   fi
 
   if [[ "$UPDATE_STATE" == "blocked" ]]; then

@@ -41,6 +41,9 @@
   - `ops/stack/*` readmes now recommend `importcfg` as the runtime->repo import alias
 - Added bootstrapcfg coverage:
   - `test/server/config-ops-scripts.test.js` now covers backend rejection and multi-surface bootstrap import flow
+- Hardened cloudflared import behavior for token-mode deployments:
+  - `importcfg/updatecfg cloudflared --pull` is now non-blocking when runtime `config.yml` is absent but compose indicates token-based tunnel mode
+  - added regression coverage in `test/server/config-ops-scripts.test.js`
 
 ## 2026-03-09 — Tier-2 async provider-batch runtime and durable status tables
 

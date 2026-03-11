@@ -109,6 +109,7 @@ Notes:
 - `checkcfg cloudflared` validates config drift and credential-file presence.
 - `updatecfg cloudflared --push` requires credentials and restarts `cloudflared`.
 - `updatecfg cloudflared --pull` does not restart services.
+  - if runtime `config.yml` is missing and compose indicates token-based tunnel mode, pull is treated as no-op import (non-blocking).
 
 ### backend
 - `checkcfg backend` is readiness-only (deploy script check), not runtime parity.

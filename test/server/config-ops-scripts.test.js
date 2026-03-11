@@ -294,6 +294,41 @@ describe('config ops scripts', () => {
     expect(res.stdout).toContain('pull mode is not supported');
   });
 
+  test('importcfg cloudflared pull is non-blocking in token mode when runtime config is missing', () => {
+    const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
+    const repoCloudflared = path.join(tempRepoRoot, 'ops/stack/cloudflared/config.yml');
+    const composeFile = path.join(tempStackRoot, 'docker-compose.yml');
+
+    fs.mkdirSync(path.dirname(repoCloudflared), { recursive: true });
+    fs.mkdirSync(path.dirname(composeFile), { recursive: true });
+
+    fs.writeFileSync(repoCloudflared, 'ingress:\n  - service: existing\n', 'utf8');
+    fs.writeFileSync(
+      composeFile,
+      [
+        'services:',
+        '  cloudflared:',
+        '    image: cloudflare/cloudflared:latest',
+        '    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = runScript(importcfgPath, ['cloudflared'], {
+      CFG_REPO_ROOT: tempRepoRoot,
+      CFG_STACK_ROOT: tempStackRoot,
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('Surface: cloudflared');
+    expect(res.stdout).toContain('Mode: pull');
+    expect(res.stdout).toContain('Status: ok');
+    expect(res.stdout).toContain('detected token-based tunnel mode in compose; nothing to import');
+
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
   test('bootstrapcfg imports selected surfaces via importcfg', () => {
     const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
 
