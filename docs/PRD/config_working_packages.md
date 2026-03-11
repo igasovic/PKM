@@ -10,6 +10,9 @@
   - `checkcfg backend` readiness checks deploy script prerequisites
   - `updatecfg backend --mode push` runs `scripts/redeploy`
   - `updatecfg backend --mode pull` remains intentionally blocked
+- WP9 scaffolding is in repo:
+  - `ops/stack/` structure with per-surface documentation
+  - backend config module moved to `src/libs/config/` with compatibility entrypoint `src/libs/config.js`
 
 ## WP1 — Command interface
 **Goal:** implement one operator interface: `checkcfg <surface>` and `updatecfg <surface>`.  
@@ -82,6 +85,8 @@
 **Goal:** normalize repo-owned config layout under `ops/stack/` and `src/libs/config/`.  
 **Acceptance:**
 - every in-scope surface has a clear repo source path and runtime target path
+
+**Current state:** scaffolded and active; runtime content can be imported with `updatecfg <surface> --mode pull`.
 
 ## WP10 — operational docs
 **Goal:** document surface registry, compare/apply behavior, and operator commands in `config_operations.md`.  

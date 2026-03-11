@@ -61,7 +61,7 @@ Exit codes:
 | `litellm` | `ops/stack/litellm/config.yaml` | `/home/igasovic/stack/litellm/config.yaml` | authoritative | versioned, non-secret | infra | file drift compare | copy config + restart `litellm` | copy runtime config to repo |
 | `postgres` | `ops/stack/postgres/init/*`, optional `ops/stack/postgres/postgresql.conf`, `ops/stack/postgres/pg_hba.conf` | `/home/igasovic/stack/postgres-init/*`, optional `/home/igasovic/stack/postgres/*.conf` | authoritative | versioned, non-secret, host-local runtime target | infra/db | dir+file drift compare (excludes live data dir) | copy init/config only; never touches live data | pull init/config only; never touches live data |
 | `cloudflared` | `ops/stack/cloudflared/config.yml` | runtime cloudflared config path + host-local credentials JSON | authoritative | versioned config + host-local credential dependency | infra | file drift compare + credentials presence check | copy config + restart `cloudflared` (credentials required) | copy runtime config to repo |
-| `backend` | `src/libs/config.js`, future `src/libs/config/`, related `src/server/**` config readers | backend deployment/runtime state | authoritative (partial) | versioned code/config | backend | readiness check (`scripts/redeploy` present + executable) | run `scripts/redeploy` | blocked (no runtime-to-repo import path) |
+| `backend` | `src/libs/config/`, compatibility entrypoint `src/libs/config.js`, related `src/server/**` config readers | backend deployment/runtime state | authoritative (partial) | versioned code/config | backend | readiness check (`scripts/redeploy` present + executable) | run `scripts/redeploy` | blocked (no runtime-to-repo import path) |
 
 Notes:
 - Secrets and credentials are host-local and never copied from repo.
@@ -114,7 +114,7 @@ Keep this list updated whenever a new surface is discovered or ownership changes
 - `/home/igasovic/stack/postgres-init/`
 - `/home/igasovic/stack/n8n/`
 - `/home/igasovic/stack/litellm/config.yaml`
-- `src/libs/config.js` and future `src/libs/config/`
+- `src/libs/config/` and compatibility entrypoint `src/libs/config.js`
 - `src/server/**` direct env reads until removed
 - `src/n8n/workflows/`
 - `src/n8n/nodes/`

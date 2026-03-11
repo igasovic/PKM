@@ -135,7 +135,7 @@ Repo is authoritative for init and optional config files under `ops/stack/postgr
 Repo is authoritative for local-managed tunnel config under `ops/stack/cloudflared/config.yml`. Credentials JSON remains host-local and is never part of repo sync.
 
 ### 10.6 backend
-Repo is authoritative for backend config code under `src/libs/config/` and related backend sources. `updatecfg backend` applies code/config deployment steps for backend only.
+Repo is authoritative for backend config code under `src/libs/config/` (with compatibility entrypoint `src/libs/config.js`) and related backend sources. `updatecfg backend` applies code/config deployment steps for backend only.
 
 ## 11. Repository organization target
 ```text

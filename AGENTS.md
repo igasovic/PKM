@@ -106,7 +106,7 @@ At minimum, treat these as active config surfaces:
 - `/home/igasovic/stack/postgres-init/`
 - `/home/igasovic/stack/n8n/`
 - `/home/igasovic/stack/litellm/config.yaml`
-- `src/libs/config.js` and its future replacement under `src/libs/config/`
+- `src/libs/config.js` and `src/libs/config/`
 - `src/server/**` direct env reads
 - `src/n8n/workflows/`
 - `src/n8n/nodes/`
