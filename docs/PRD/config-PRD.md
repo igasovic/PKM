@@ -1,6 +1,6 @@
 # PRD — Repository-Managed Configuration Sync
 
-**Status:** In progress (WP1 baseline implemented; updatecfg push/pull implemented; n8n check-path export optimization implemented; WP11 importcfg deferred)  
+**Status:** In progress (WP1 baseline implemented; updatecfg push/pull implemented; n8n check-path export optimization implemented; WP11 importcfg wrapper implemented)  
 **Owner:** TBD  
 **Baseline date:** 2026-03-10
 
@@ -113,7 +113,8 @@ Not required in this PRD:
 - `updatecfg all`
 - `updatecfg --full`
 - `updatecfg <surface> --dry-run`
-- `importcfg <surface>` as a dedicated import command alias/wrapper
+
+`importcfg <surface>` is implemented as a convenience wrapper equivalent to `updatecfg <surface> --pull`.
 
 ## 9. Why auto-apply is out of scope
 There should not be a cron job that blindly applies repo changes to runtime. Config updates may require validation, restart ordering, human review, or secret readiness. A timer may run `checkcfg` or health checks later, but `updatecfg` remains an explicit operator action in this phase.

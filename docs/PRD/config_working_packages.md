@@ -15,6 +15,8 @@
   - `checkcfg backend` readiness checks deploy script prerequisites
   - `updatecfg backend --push` runs `scripts/cfg/backend_push.sh` (targeted backend deploy flow)
   - `updatecfg backend --pull` remains intentionally blocked
+- WP11 is implemented as a command wrapper:
+  - `scripts/cfg/importcfg` delegates runtime->repo imports through existing pull adapters (`updatecfg --pull` path)
 - WP9 scaffolding is in repo:
   - `ops/stack/` structure with per-surface documentation
   - backend config module moved to `src/libs/config/` with compatibility entrypoint `src/libs/config.js`
@@ -98,9 +100,12 @@
 **Acceptance:**
 - operator can follow one short playbook without reading code
 
-## WP11 — importcfg command (planned, no implementation yet)
-**Goal:** define future runtime-to-repo import command separate from `updatecfg`.  
-**Scope:** document command contract and boundaries only; no script implementation in this package.  
+## WP11 — importcfg command
+**Goal:** provide a dedicated runtime-to-repo import command without duplicating adapter logic.  
+**Scope:** implement a thin command wrapper that maps to existing pull semantics.  
 **Acceptance:**
-- work package exists and is tracked in PRD/docs
-- no production code changes for `importcfg` in this package
+- `importcfg <surface>` is available under `scripts/cfg/`
+- behavior is equivalent to `updatecfg <surface> --pull`
+- output and exit semantics match pull mode
+
+**Current state:** implemented (`scripts/cfg/importcfg`) as a thin wrapper over existing pull adapters.

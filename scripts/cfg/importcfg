@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib.sh
+source "$SCRIPT_DIR/lib.sh"
+
+usage() {
+  local exit_code="${1:-2}"
+  cat >&2 <<USAGE
+Usage: importcfg <surface>
+
+Description:
+  runtime -> repo import for one surface (equivalent to updatecfg <surface> --pull)
+USAGE
+  echo "Supported surfaces:" >&2
+  print_supported_surfaces >&2
+  exit "$exit_code"
+}
+
+if [[ $# -eq 1 && ("$1" == "-h" || "$1" == "--help") ]]; then
+  usage 0
+fi
+
+if [[ $# -ne 1 ]]; then
+  usage 2
+fi
+
+if [[ "$1" == --* ]]; then
+  echo "Unknown option: $1" >&2
+  usage 2
+fi
+
+if require_single_surface_arg "importcfg" "$1"; then
+  :
+else
+  rc=$?
+  exit "$rc"
+fi
+
+surface="$1"
+
+reset_update_state
+run_surface_update "$surface" "pull"
+print_update_report
+
+update_exit_code
+rc=$?
+exit "$rc"

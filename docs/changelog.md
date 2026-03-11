@@ -2,6 +2,10 @@
 ## 2026-03-11 — Config ops performance + targeted backend deploy path
 
 ### What changed
+- Added `scripts/cfg/importcfg`:
+  - dedicated runtime->repo import command for one surface
+  - implemented as a thin wrapper over existing `updatecfg <surface> --pull` adapter path
+  - reuses the same report and exit semantics as pull mode
 - Added `scripts/n8n/export_workflows_snapshot.sh`:
   - performs one n8n workflow export and fans out to normalized + raw trees
   - reuses existing rename/normalize scripts to avoid duplicate export passes
@@ -27,7 +31,7 @@
   - `docs/config_operations.md`
   - `docs/PRD/config-PRD.md`
   - `docs/PRD/config_working_packages.md`
-  - `test/server/config-ops-scripts.test.js` backend deploy-script expectation path + docker apply-scope coverage
+  - `test/server/config-ops-scripts.test.js` backend deploy-script expectation path + docker apply-scope coverage + importcfg coverage
 
 ## 2026-03-09 — Tier-2 async provider-batch runtime and durable status tables
 

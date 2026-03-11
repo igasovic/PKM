@@ -8,6 +8,7 @@ const { execFileSync } = require('child_process');
 const repoRoot = path.resolve(__dirname, '../..');
 const checkcfgPath = path.join(repoRoot, 'scripts/cfg/checkcfg');
 const updatecfgPath = path.join(repoRoot, 'scripts/cfg/updatecfg');
+const importcfgPath = path.join(repoRoot, 'scripts/cfg/importcfg');
 
 function runScript(scriptPath, args = [], env = {}) {
   try {
@@ -109,6 +110,20 @@ describe('config ops scripts', () => {
     const res = runScript(updatecfgPath, ['litellm', '--push', '--pull']);
     expect(res.code).toBe(2);
     expect(res.stderr).toContain('mutually exclusive');
+  });
+
+  test('importcfg requires exactly one surface argument', () => {
+    const res = runScript(importcfgPath, []);
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('Usage: importcfg <surface>');
+    expect(res.stderr).toContain('Supported surfaces:');
+  });
+
+  test('importcfg rejects unknown options', () => {
+    const res = runScript(importcfgPath, ['--pull']);
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('Unknown option: --pull');
+    expect(res.stderr).toContain('Usage: importcfg <surface>');
   });
 
   test('checkcfg litellm returns clean when repo and runtime match', () => {
@@ -225,6 +240,33 @@ describe('config ops scripts', () => {
 
     const updatedRepo = fs.readFileSync(repoFile, 'utf8');
     expect(updatedRepo).toContain('from_runtime');
+
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
+  test('importcfg litellm pulls runtime config into repo', () => {
+    const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
+    const repoFile = path.join(tempRepoRoot, 'ops/stack/litellm/config.yaml');
+    const runtimeFile = path.join(tempStackRoot, 'litellm/config.yaml');
+
+    fs.mkdirSync(path.dirname(repoFile), { recursive: true });
+    fs.mkdirSync(path.dirname(runtimeFile), { recursive: true });
+
+    fs.writeFileSync(repoFile, 'model_list:\n  - model_name: old\n', 'utf8');
+    fs.writeFileSync(runtimeFile, 'model_list:\n  - model_name: imported\n', 'utf8');
+
+    const res = runScript(importcfgPath, ['litellm'], {
+      CFG_REPO_ROOT: tempRepoRoot,
+      CFG_STACK_ROOT: tempStackRoot,
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('Surface: litellm');
+    expect(res.stdout).toContain('Mode: pull');
+    expect(res.stdout).toContain('Status: ok');
+
+    const updatedRepo = fs.readFileSync(repoFile, 'utf8');
+    expect(updatedRepo).toContain('imported');
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });

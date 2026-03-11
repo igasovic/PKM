@@ -12,6 +12,7 @@
 Commands live under `scripts/cfg/`:
 - `scripts/cfg/checkcfg`
 - `scripts/cfg/updatecfg`
+- `scripts/cfg/importcfg` (runtime->repo alias wrapper)
 - shared registry/adapters: `scripts/cfg/lib.sh`
 
 Both commands accept exactly one surface and fail clearly for unknown/multi-surface input.
@@ -51,6 +52,11 @@ Exit codes:
 - `0` applied/ok
 - `4` blocked
 - `2` usage/unknown surface/mode
+
+### `importcfg <surface>`
+Convenience wrapper for runtime-to-repo import:
+- equivalent to `updatecfg <surface> --pull`
+- same surface adapters, report format, and exit codes as pull mode
 
 ## 3. Surface registry (authoritative map)
 
@@ -102,7 +108,6 @@ Notes:
 - `updatecfg backend --pull` is intentionally blocked.
 
 ## 5. Not implemented yet
-- `importcfg <surface>` is planned but not implemented.
 - `updatecfg --full` is not implemented.
 
 ## 6. Why there is no auto-apply cron
