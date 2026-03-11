@@ -153,7 +153,7 @@ describe('config ops scripts', () => {
   test('checkcfg backend reports readiness when deploy script exists', () => {
     const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
 
-    const deployScript = path.join(tempRepoRoot, 'scripts/redeploy');
+    const deployScript = path.join(tempRepoRoot, 'scripts/cfg/backend_push.sh');
     const configJs = path.join(tempRepoRoot, 'src/libs/config.js');
     const serverDir = path.join(tempRepoRoot, 'src/server');
     const configDir = path.join(tempRepoRoot, 'src/libs/config');

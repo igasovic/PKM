@@ -6,9 +6,11 @@
   - `scripts/cfg/updatecfg`
   - `scripts/cfg/lib.sh`
 - `updatecfg` now supports direction flags: `--push|--pull` (default `--push`).
+- WP3 check-path optimization is implemented:
+  - `checkcfg n8n` now uses one n8n export snapshot and reuses it for normalized/raw comparisons.
 - WP8 is partially implemented:
   - `checkcfg backend` readiness checks deploy script prerequisites
-  - `updatecfg backend --push` runs `scripts/redeploy`
+  - `updatecfg backend --push` runs `scripts/cfg/backend_push.sh` (targeted backend deploy flow)
   - `updatecfg backend --pull` remains intentionally blocked
 - WP9 scaffolding is in repo:
   - `ops/stack/` structure with per-surface documentation
@@ -79,7 +81,7 @@
 **Acceptance:**
 - behavior is documented and intentionally separate from Docker surface actions
 
-**Current state:** implemented with readiness-check + push deploy (`scripts/redeploy`); pull/import is intentionally blocked.
+**Current state:** implemented with readiness-check + push deploy (`scripts/cfg/backend_push.sh`); pull/import is intentionally blocked.
 
 ## WP9 — repo layout normalization
 **Goal:** normalize repo-owned config layout under `ops/stack/` and `src/libs/config/`.  

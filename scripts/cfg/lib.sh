@@ -22,12 +22,13 @@ CFG_RUNTIME_CLOUDFLARED_FILE="${CFG_RUNTIME_CLOUDFLARED_FILE:-$CFG_STACK_ROOT/cl
 CFG_CLOUDFLARED_CREDENTIALS_FILE="${CFG_CLOUDFLARED_CREDENTIALS_FILE:-$CFG_STACK_ROOT/cloudflared/credentials.json}"
 
 CFG_N8N_SYNC_SCRIPT="${CFG_N8N_SYNC_SCRIPT:-$CFG_REPO_ROOT/scripts/n8n/sync_workflows.sh}"
+CFG_N8N_SNAPSHOT_SCRIPT="${CFG_N8N_SNAPSHOT_SCRIPT:-$CFG_REPO_ROOT/scripts/n8n/export_workflows_snapshot.sh}"
 CFG_N8N_MIN_JS_LINES="${CFG_N8N_MIN_JS_LINES:-50}"
 
 CFG_REPO_N8N_WORKFLOWS_DIR="${CFG_REPO_N8N_WORKFLOWS_DIR:-$CFG_REPO_ROOT/src/n8n/workflows}"
 CFG_REPO_N8N_NODES_DIR="${CFG_REPO_N8N_NODES_DIR:-$CFG_REPO_ROOT/src/n8n/nodes}"
 
-CFG_BACKEND_DEPLOY_SCRIPT="${CFG_BACKEND_DEPLOY_SCRIPT:-$CFG_REPO_ROOT/scripts/redeploy}"
+CFG_BACKEND_DEPLOY_SCRIPT="${CFG_BACKEND_DEPLOY_SCRIPT:-$CFG_REPO_ROOT/scripts/cfg/backend_push.sh}"
 
 SUPPORTED_SURFACES=(
   n8n
@@ -594,12 +595,11 @@ check_surface_n8n() {
   add_check_repo_source "$CFG_REPO_N8N_WORKFLOWS_DIR"
   add_check_repo_source "$CFG_REPO_N8N_NODES_DIR"
   add_check_runtime_target "live n8n workflow state"
-  progress_start "checkcfg:n8n" 9
+  progress_start "checkcfg:n8n" 5
   progress_step "validate prerequisites"
 
   local required=(
-    "$CFG_REPO_ROOT/scripts/n8n/export_workflows.sh"
-    "$CFG_REPO_ROOT/scripts/n8n/rename_workflows_by_name.sh"
+    "$CFG_N8N_SNAPSHOT_SCRIPT"
     "$CFG_REPO_ROOT/scripts/n8n/normalize_workflows.sh"
     "$CFG_REPO_ROOT/scripts/n8n/sync_code_nodes.py"
   )
@@ -634,48 +634,12 @@ check_surface_n8n() {
   mkdir -p "$tmp_workflows" "$tmp_raw" "$tmp_patched" "$tmp_nodes"
 
   local out
-  progress_step "export normalized workflows from n8n"
-  if ! run_capture out "$CFG_REPO_ROOT/scripts/n8n/export_workflows.sh" "$tmp_workflows"; then
-    mark_check_blocked "n8n export failed."
+  progress_step "export one-shot n8n snapshot (normalized + raw)"
+  if ! run_capture out "$CFG_N8N_SNAPSHOT_SCRIPT" "$tmp_workflows" "$tmp_raw"; then
+    mark_check_blocked "n8n snapshot export failed."
     add_check_detail "  $(preview_lines "$out" 20)"
     rm -rf "$tmp_root"
-    progress_fail "export failed"
-    return 0
-  fi
-
-  progress_step "prepare raw workflow export in container"
-  if ! run_capture out docker exec -u node n8n sh -lc 'rm -rf /tmp/workflows_raw_cfg && mkdir -p /tmp/workflows_raw_cfg'; then
-    mark_check_blocked "n8n raw export prep failed."
-    add_check_detail "  $(preview_lines "$out" 20)"
-    rm -rf "$tmp_root"
-    progress_fail "raw prep failed"
-    return 0
-  fi
-
-  progress_step "export raw workflows from n8n"
-  if ! run_capture out docker exec -u node n8n n8n export:workflow --backup --output=/tmp/workflows_raw_cfg; then
-    mark_check_blocked "n8n raw export failed."
-    add_check_detail "  $(preview_lines "$out" 20)"
-    rm -rf "$tmp_root"
-    progress_fail "raw export failed"
-    return 0
-  fi
-
-  progress_step "copy raw workflows into temp workspace"
-  if ! run_capture out docker cp n8n:/tmp/workflows_raw_cfg/. "$tmp_raw/"; then
-    mark_check_blocked "n8n raw export copy failed."
-    add_check_detail "  $(preview_lines "$out" 20)"
-    rm -rf "$tmp_root"
-    progress_fail "raw copy failed"
-    return 0
-  fi
-
-  progress_step "rename exported workflow files"
-  if ! run_capture out "$CFG_REPO_ROOT/scripts/n8n/rename_workflows_by_name.sh" "$tmp_raw"; then
-    mark_check_blocked "n8n raw rename failed."
-    add_check_detail "  $(preview_lines "$out" 20)"
-    rm -rf "$tmp_root"
-    progress_fail "rename failed"
+    progress_fail "snapshot export failed"
     return 0
   fi
 
@@ -820,7 +784,7 @@ check_surface_backend() {
 
   progress_step "finalize readiness check"
   add_check_detail "backend readiness: deploy script present and executable"
-  add_check_detail "backend readiness: updatecfg backend --push will run scripts/redeploy"
+  add_check_detail "backend readiness: updatecfg backend --push will run scripts/cfg/backend_push.sh"
   progress_done "readiness complete"
 }
 
@@ -1108,8 +1072,8 @@ update_surface_backend() {
   local out
   progress_step "run backend deploy script"
   if run_capture out "$CFG_BACKEND_DEPLOY_SCRIPT"; then
-    record_restarted_service "pkm-server (scripts/redeploy)"
-    add_update_detail "backend push deploy completed via scripts/redeploy"
+    record_restarted_service "pkm-server (scripts/cfg/backend_push.sh)"
+    add_update_detail "backend push deploy completed via scripts/cfg/backend_push.sh"
     add_update_detail "  $(preview_lines "$out" 20)"
     progress_done "push complete"
     return 0

@@ -1,4 +1,27 @@
 # changelog
+## 2026-03-11 — Config ops performance + targeted backend deploy path
+
+### What changed
+- Added `scripts/n8n/export_workflows_snapshot.sh`:
+  - performs one n8n workflow export and fans out to normalized + raw trees
+  - reuses existing rename/normalize scripts to avoid duplicate export passes
+- Updated `scripts/cfg/lib.sh` n8n check adapter:
+  - `checkcfg n8n` now uses one-shot snapshot export instead of running separate normalized/raw exports
+  - keeps existing code-node sync + workflow normalization compare flow
+- Added `scripts/cfg/backend_push.sh`:
+  - custom backend deploy flow for `updatecfg backend --push`
+  - optional repo update (`git pull --ff-only` by default, configurable)
+  - targeted compose apply for `pkm-server` only (`docker compose up -d --build pkm-server`)
+  - backend readiness check (`/ready`) with bounded retries
+- Updated backend adapter wiring:
+  - `checkcfg backend` readiness now validates `scripts/cfg/backend_push.sh`
+  - `updatecfg backend --push` now runs `scripts/cfg/backend_push.sh`
+- Updated docs/tests:
+  - `docs/config_operations.md`
+  - `docs/PRD/config-PRD.md`
+  - `docs/PRD/config_working_packages.md`
+  - `test/server/config-ops-scripts.test.js` backend deploy-script expectation path
+
 ## 2026-03-09 — Tier-2 async provider-batch runtime and durable status tables
 
 ### What changed

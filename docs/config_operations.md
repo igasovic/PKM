@@ -61,7 +61,7 @@ Exit codes:
 | `litellm` | `ops/stack/litellm/config.yaml` | `/home/igasovic/stack/litellm/config.yaml` | authoritative | versioned, non-secret | infra | file drift compare | copy config + restart `litellm` | copy runtime config to repo |
 | `postgres` | `ops/stack/postgres/init/*`, optional `ops/stack/postgres/postgresql.conf`, `ops/stack/postgres/pg_hba.conf` | `/home/igasovic/stack/postgres-init/*`, optional `/home/igasovic/stack/postgres/*.conf` | authoritative | versioned, non-secret, host-local runtime target | infra/db | dir+file drift compare (excludes live data dir) | copy init/config only; never touches live data | pull init/config only; never touches live data |
 | `cloudflared` | `ops/stack/cloudflared/config.yml` | runtime cloudflared config path + host-local credentials JSON | authoritative | versioned config + host-local credential dependency | infra | file drift compare + credentials presence check | copy config + restart `cloudflared` (credentials required) | copy runtime config to repo |
-| `backend` | `src/libs/config/`, compatibility entrypoint `src/libs/config.js`, related `src/server/**` config readers | backend deployment/runtime state | authoritative (partial) | versioned code/config | backend | readiness check (`scripts/redeploy` present + executable) | run `scripts/redeploy` | blocked (no runtime-to-repo import path) |
+| `backend` | `src/libs/config/`, compatibility entrypoint `src/libs/config.js`, related `src/server/**` config readers | backend deployment/runtime state | authoritative (partial) | versioned code/config | backend | readiness check (`scripts/cfg/backend_push.sh` present + executable) | run `scripts/cfg/backend_push.sh` (targeted `pkm-server` deploy) | blocked (no runtime-to-repo import path) |
 
 Notes:
 - Secrets and credentials are host-local and never copied from repo.
@@ -71,7 +71,7 @@ Notes:
 ## 4. Current adapter behavior details
 
 ### n8n
-- `checkcfg n8n` compares repo workflows/nodes against a fresh live snapshot built with existing n8n sync tooling.
+- `checkcfg n8n` compares repo workflows/nodes against a fresh live snapshot built with a one-shot export fan-out (single n8n export reused for normalized + raw views).
 - `updatecfg n8n --push|--pull` delegates to the same mode in `scripts/n8n/sync_workflows.sh`.
 
 ### docker
@@ -95,7 +95,7 @@ Notes:
 
 ### backend
 - `checkcfg backend` is readiness-only (deploy script check), not runtime parity.
-- `updatecfg backend --push` runs `scripts/redeploy`.
+- `updatecfg backend --push` runs `scripts/cfg/backend_push.sh` (optional git pull + targeted compose build/up for `pkm-server` + readiness check).
 - `updatecfg backend --pull` is intentionally blocked.
 
 ## 5. Not implemented yet

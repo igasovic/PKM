@@ -1,6 +1,6 @@
 # PRD — Repository-Managed Configuration Sync
 
-**Status:** In progress (WP1 baseline implemented; updatecfg push/pull implemented; WP11 importcfg deferred)  
+**Status:** In progress (WP1 baseline implemented; updatecfg push/pull implemented; n8n check-path export optimization implemented; WP11 importcfg deferred)  
 **Owner:** TBD  
 **Baseline date:** 2026-03-10
 
@@ -98,7 +98,7 @@ Behavior by surface:
 - `litellm`: push applies + restarts service; pull imports runtime config to repo
 - `postgres`: push/pull apply only init/config files; never live data
 - `cloudflared`: push applies + restarts service (credentials required); pull imports runtime config to repo
-- `backend`: push runs backend deploy script; pull is intentionally blocked
+- `backend`: push runs `scripts/cfg/backend_push.sh` (optional git pull + targeted `pkm-server` compose deploy + readiness check); pull is intentionally blocked
 
 Example:
 ```bash
@@ -120,7 +120,7 @@ There should not be a cron job that blindly applies repo changes to runtime. Con
 
 ## 10. Surface-specific sync rules
 ### 10.1 n8n
-Repo is authoritative for `src/n8n/workflows/` and `src/n8n/nodes/`. Runtime reconciliation uses the n8n API sync path, not direct DB edits.
+Repo is authoritative for `src/n8n/workflows/` and `src/n8n/nodes/`. Runtime reconciliation uses the n8n API sync path, not direct DB edits. `checkcfg n8n` should minimize runtime cost by exporting live workflows once and reusing that snapshot for both normalized and raw comparison paths.
 
 ### 10.2 docker
 Repo is authoritative for `ops/stack/docker-compose.yml` and committed non-secret stack env files. Runtime target is `/home/igasovic/stack`.
@@ -135,7 +135,7 @@ Repo is authoritative for init and optional config files under `ops/stack/postgr
 Repo is authoritative for local-managed tunnel config under `ops/stack/cloudflared/config.yml`. Credentials JSON remains host-local and is never part of repo sync.
 
 ### 10.6 backend
-Repo is authoritative for backend config code under `src/libs/config/` (with compatibility entrypoint `src/libs/config.js`) and related backend sources. `updatecfg backend` applies code/config deployment steps for backend only.
+Repo is authoritative for backend config code under `src/libs/config/` (with compatibility entrypoint `src/libs/config.js`) and related backend sources. `updatecfg backend` applies backend-only deployment via `scripts/cfg/backend_push.sh` and must avoid full-stack restarts when backend-only changes are applied.
 
 ## 11. Repository organization target
 ```text
