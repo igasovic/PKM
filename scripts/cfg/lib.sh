@@ -105,14 +105,14 @@ is_supported_update_mode() {
 run_capture() {
   local __out_var="$1"
   shift
-  local out
+  local _captured
 
-  if out="$("$@" 2>&1)"; then
-    printf -v "$__out_var" '%s' "$out"
+  if _captured="$("$@" 2>&1)"; then
+    printf -v "$__out_var" '%s' "$_captured"
     return 0
   fi
 
-  printf -v "$__out_var" '%s' "$out"
+  printf -v "$__out_var" '%s' "$_captured"
   return 1
 }
 
@@ -125,6 +125,18 @@ preview_lines() {
   printf '%s\n' "$text" | sed -n "1,${max_lines}p"
 }
 
+array_contains() {
+  local needle="$1"
+  shift
+  local item
+  for item in "$@"; do
+    if [[ "$item" == "$needle" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 resolve_python_bin() {
   if command -v python3 >/dev/null 2>&1; then
     echo "python3"
@@ -135,6 +147,18 @@ resolve_python_bin() {
     return 0
   fi
   return 1
+}
+
+docker_collect_compose_services() {
+  local __out_var="$1"
+  local out
+  if ! run_capture out docker compose -f "$CFG_COMPOSE_FILE" --project-directory "$CFG_STACK_ROOT" config --services; then
+    printf -v "$__out_var" '%s' "$out"
+    return 1
+  fi
+  out="$(printf '%s\n' "$out" | sed '/^[[:space:]]*$/d')"
+  printf -v "$__out_var" '%s' "$out"
+  return 0
 }
 
 # -------------------------
@@ -883,7 +907,7 @@ update_surface_docker() {
   fi
   local total=$(( 1 + env_count ))
   if [[ "$mode" == "push" ]]; then
-    total=$(( total + 1 ))
+    total=$(( total + 2 ))
   fi
   progress_start "updatecfg:docker:$mode" "$total"
   progress_step "sync docker compose file ($mode)"
@@ -923,11 +947,113 @@ update_surface_docker() {
     return 0
   fi
 
+  progress_step "resolve compose apply scope"
+  if [[ ${#UPDATE_CHANGED[@]} -eq 0 ]]; then
+    progress_step "skip compose apply (no managed changes)"
+    add_update_detail "no managed docker file changes detected; skipped compose apply"
+    progress_done "push complete"
+    return 0
+  fi
+
+  local compose_changed=0
+  local changed
+  for changed in "${UPDATE_CHANGED[@]}"; do
+    if [[ "$changed" == "$CFG_COMPOSE_FILE" ]]; then
+      compose_changed=1
+      break
+    fi
+  done
+
+  local apply_scope="full"
+  local scope_reason=""
+  local -a target_services=()
+
+  if [[ "$compose_changed" -eq 1 ]]; then
+    scope_reason="docker compose file changed"
+  else
+    local compose_services_out
+    if ! docker_collect_compose_services compose_services_out; then
+      mark_update_blocked "failed to resolve compose services for targeted docker apply"
+      add_update_detail "  $(preview_lines "$compose_services_out" 20)"
+      progress_fail "compose service resolution failed"
+      return 0
+    fi
+
+    local -a compose_services=()
+    local service
+    while IFS= read -r service; do
+      if [[ -n "$service" ]]; then
+        compose_services+=("$service")
+      fi
+    done <<<"$compose_services_out"
+
+    local needs_full_apply=0
+    for changed in "${UPDATE_CHANGED[@]}"; do
+      local changed_file
+      changed_file="$(basename "$changed")"
+      if [[ "$changed_file" == "docker-compose.yml" ]]; then
+        needs_full_apply=1
+        scope_reason="docker compose file changed"
+        break
+      fi
+      if [[ "$changed_file" != *.env ]]; then
+        needs_full_apply=1
+        scope_reason="non-env docker-managed file changed ($changed_file)"
+        break
+      fi
+      if [[ "$changed_file" == ".env" ]]; then
+        needs_full_apply=1
+        scope_reason="global .env changed"
+        break
+      fi
+
+      local candidate_service="${changed_file%.env}"
+      if array_contains "$candidate_service" "${compose_services[@]-}"; then
+        if ! array_contains "$candidate_service" "${target_services[@]-}"; then
+          target_services+=("$candidate_service")
+        fi
+      else
+        needs_full_apply=1
+        scope_reason="env file does not map to a compose service ($changed_file)"
+        break
+      fi
+    done
+
+    if [[ "$needs_full_apply" -eq 0 && ${#target_services[@]} -gt 0 ]]; then
+      apply_scope="targeted"
+      scope_reason="service env files changed: ${target_services[*]}"
+    else
+      apply_scope="full"
+      if [[ -z "$scope_reason" ]]; then
+        scope_reason="unable to determine targeted service scope"
+      fi
+    fi
+  fi
+
   local out
-  progress_step "apply docker changes with compose up -d"
+  if [[ "$apply_scope" == "targeted" ]]; then
+    progress_step "apply docker changes with compose up -d (targeted)"
+    if run_capture out docker compose -f "$CFG_COMPOSE_FILE" --project-directory "$CFG_STACK_ROOT" up -d "${target_services[@]}"; then
+      local joined_services="${target_services[*]}"
+      record_restarted_service "docker surface (compose up -d $joined_services)"
+      add_update_detail "docker compose targeted apply: $joined_services"
+      add_update_detail "scope reason: $scope_reason"
+      add_update_detail "  $(preview_lines "$out" 20)"
+      progress_done "push complete"
+      return 0
+    fi
+
+    mark_update_blocked "docker compose targeted apply failed"
+    add_update_detail "  $(preview_lines "$out" 20)"
+    progress_fail "compose apply failed"
+    return 0
+  fi
+
+  progress_step "apply docker changes with compose up -d (full)"
   if run_capture out docker compose -f "$CFG_COMPOSE_FILE" --project-directory "$CFG_STACK_ROOT" up -d; then
     record_restarted_service "docker surface (compose up -d)"
-    add_update_detail "docker compose up -d completed"
+    add_update_detail "docker compose full apply completed"
+    add_update_detail "scope reason: $scope_reason"
     add_update_detail "  $(preview_lines "$out" 20)"
     progress_done "push complete"
     return 0

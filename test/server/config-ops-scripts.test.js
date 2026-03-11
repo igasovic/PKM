@@ -39,6 +39,43 @@ function makeTempRoots() {
   return { tempRoot, tempRepoRoot, tempStackRoot };
 }
 
+function setupFakeDocker(tempRoot, servicesOutput = 'pkm-server\nn8n\n') {
+  const fakeBinDir = path.join(tempRoot, 'bin');
+  const fakeDockerPath = path.join(fakeBinDir, 'docker');
+  const dockerLogPath = path.join(tempRoot, 'docker.log');
+  fs.mkdirSync(fakeBinDir, { recursive: true });
+  fs.writeFileSync(
+    fakeDockerPath,
+    [
+      '#!/usr/bin/env bash',
+      'set -euo pipefail',
+      'echo "$*" >> "$FAKE_DOCKER_LOG"',
+      'if [[ "$*" == *" config --services"* ]]; then',
+      '  printf "%s" "$FAKE_DOCKER_SERVICES"',
+      '  exit 0',
+      'fi',
+      'if [[ "$*" == *" up -d"* ]]; then',
+      '  echo "compose apply ok"',
+      '  exit 0',
+      'fi',
+      'exit 0',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  fs.chmodSync(fakeDockerPath, 0o755);
+
+  return {
+    fakeBinDir,
+    dockerLogPath,
+    dockerEnv: {
+      PATH: `${fakeBinDir}:${process.env.PATH}`,
+      FAKE_DOCKER_LOG: dockerLogPath,
+      FAKE_DOCKER_SERVICES: servicesOutput,
+    },
+  };
+}
+
 describe('config ops scripts', () => {
   test('checkcfg requires exactly one surface argument', () => {
     const res = runScript(checkcfgPath, []);
@@ -176,6 +213,100 @@ describe('config ops scripts', () => {
     expect(res.stdout).toContain('Surface: backend');
     expect(res.stdout).toContain('Status: clean');
     expect(res.stdout).toContain('deploy script present and executable');
+
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
+  test('updatecfg docker push skips compose apply when nothing changed', () => {
+    const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
+
+    const repoCompose = path.join(tempRepoRoot, 'ops/stack/docker-compose.yml');
+    const runtimeCompose = path.join(tempStackRoot, 'docker-compose.yml');
+    const repoEnvDir = path.join(tempRepoRoot, 'ops/stack/env');
+    const repoEnv = path.join(repoEnvDir, 'pkm-server.env');
+    const runtimeEnv = path.join(tempStackRoot, 'pkm-server.env');
+
+    fs.mkdirSync(path.dirname(repoCompose), { recursive: true });
+    fs.mkdirSync(path.dirname(runtimeCompose), { recursive: true });
+    fs.mkdirSync(repoEnvDir, { recursive: true });
+
+    const composePayload = [
+      'services:',
+      '  pkm-server:',
+      '    image: example/pkm-server',
+      '',
+    ].join('\n');
+    const envPayload = 'PKM_FEATURE_X=false\n';
+
+    fs.writeFileSync(repoCompose, composePayload, 'utf8');
+    fs.writeFileSync(runtimeCompose, composePayload, 'utf8');
+    fs.writeFileSync(repoEnv, envPayload, 'utf8');
+    fs.writeFileSync(runtimeEnv, envPayload, 'utf8');
+
+    const fakeDocker = setupFakeDocker(tempRoot);
+    const res = runScript(updatecfgPath, ['docker', '--push'], {
+      CFG_REPO_ROOT: tempRepoRoot,
+      CFG_STACK_ROOT: tempStackRoot,
+      ...fakeDocker.dockerEnv,
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('Surface: docker');
+    expect(res.stdout).toContain('Mode: push');
+    expect(res.stdout).toContain('no managed docker file changes detected; skipped compose apply');
+
+    const dockerLog = fs.existsSync(fakeDocker.dockerLogPath)
+      ? fs.readFileSync(fakeDocker.dockerLogPath, 'utf8')
+      : '';
+    expect(dockerLog.trim()).toBe('');
+
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
+  test('updatecfg docker push targets service when only service env changed', () => {
+    const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
+
+    const repoCompose = path.join(tempRepoRoot, 'ops/stack/docker-compose.yml');
+    const runtimeCompose = path.join(tempStackRoot, 'docker-compose.yml');
+    const repoEnvDir = path.join(tempRepoRoot, 'ops/stack/env');
+    const repoEnv = path.join(repoEnvDir, 'pkm-server.env');
+    const runtimeEnv = path.join(tempStackRoot, 'pkm-server.env');
+
+    fs.mkdirSync(path.dirname(repoCompose), { recursive: true });
+    fs.mkdirSync(path.dirname(runtimeCompose), { recursive: true });
+    fs.mkdirSync(repoEnvDir, { recursive: true });
+
+    const composePayload = [
+      'services:',
+      '  pkm-server:',
+      '    image: example/pkm-server',
+      '  n8n:',
+      '    image: example/n8n',
+      '',
+    ].join('\n');
+
+    fs.writeFileSync(repoCompose, composePayload, 'utf8');
+    fs.writeFileSync(runtimeCompose, composePayload, 'utf8');
+    fs.writeFileSync(repoEnv, 'PKM_FEATURE_X=true\n', 'utf8');
+    fs.writeFileSync(runtimeEnv, 'PKM_FEATURE_X=false\n', 'utf8');
+
+    const fakeDocker = setupFakeDocker(tempRoot, 'pkm-server\nn8n\n');
+    const res = runScript(updatecfgPath, ['docker', '--push'], {
+      CFG_REPO_ROOT: tempRepoRoot,
+      CFG_STACK_ROOT: tempStackRoot,
+      ...fakeDocker.dockerEnv,
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('Surface: docker');
+    expect(res.stdout).toContain('Mode: push');
+    expect(res.stdout).toContain('docker compose targeted apply: pkm-server');
+    expect(res.stdout).toContain('scope reason: service env files changed: pkm-server');
+
+    const dockerLog = fs.readFileSync(fakeDocker.dockerLogPath, 'utf8');
+    expect(dockerLog).toContain('config --services');
+    expect(dockerLog).toContain('up -d pkm-server');
+    expect(dockerLog).not.toContain(' up -d\n');
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });

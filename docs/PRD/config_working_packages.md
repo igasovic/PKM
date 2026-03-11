@@ -8,6 +8,8 @@
 - `updatecfg` now supports direction flags: `--push|--pull` (default `--push`).
 - WP3 check-path optimization is implemented:
   - `checkcfg n8n` now uses one n8n export snapshot and reuses it for normalized/raw comparisons.
+- WP4 docker apply-scope optimization is implemented:
+  - `updatecfg docker --push` now applies only affected services when changed env files map to compose services, with full-apply fallback for ambiguous changes.
 - WP8 is partially implemented:
   - `checkcfg backend` readiness checks deploy script prerequisites
   - `updatecfg backend --push` runs `scripts/cfg/backend_push.sh` (targeted backend deploy flow)

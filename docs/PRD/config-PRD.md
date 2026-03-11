@@ -124,6 +124,7 @@ Repo is authoritative for `src/n8n/workflows/` and `src/n8n/nodes/`. Runtime rec
 
 ### 10.2 docker
 Repo is authoritative for `ops/stack/docker-compose.yml` and committed non-secret stack env files. Runtime target is `/home/igasovic/stack`.
+`updatecfg docker --push` should restart only affected services when changed env files map clearly to compose services, and fall back to full compose apply when scope is ambiguous or compose-level changes are present.
 
 ### 10.3 litellm
 Repo is authoritative for `ops/stack/litellm/config.yaml`. Runtime target is `/home/igasovic/stack/litellm/config.yaml`.

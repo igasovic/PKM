@@ -8,6 +8,11 @@
 - Updated `scripts/cfg/lib.sh` n8n check adapter:
   - `checkcfg n8n` now uses one-shot snapshot export instead of running separate normalized/raw exports
   - keeps existing code-node sync + workflow normalization compare flow
+- Updated `scripts/cfg/lib.sh` docker update adapter:
+  - `updatecfg docker --push` now resolves apply scope and avoids broad restarts when possible
+  - if only service-mapped env files changed, runs targeted compose apply for those services
+  - if compose/global/ambiguous changes are detected, falls back to full `docker compose up -d`
+  - if no managed docker files changed, skips compose apply
 - Added `scripts/cfg/backend_push.sh`:
   - custom backend deploy flow for `updatecfg backend --push`
   - optional repo update (`git pull --ff-only` by default, configurable)
@@ -20,7 +25,7 @@
   - `docs/config_operations.md`
   - `docs/PRD/config-PRD.md`
   - `docs/PRD/config_working_packages.md`
-  - `test/server/config-ops-scripts.test.js` backend deploy-script expectation path
+  - `test/server/config-ops-scripts.test.js` backend deploy-script expectation path + docker apply-scope coverage
 
 ## 2026-03-09 — Tier-2 async provider-batch runtime and durable status tables
 
