@@ -57,7 +57,7 @@ Exit codes:
 | Surface | Repo source | Runtime target / live target | Class | Attributes | Owner | `checkcfg` | `updatecfg --push` | `updatecfg --pull` |
 |---|---|---|---|---|---|---|---|---|
 | `n8n` | `src/n8n/workflows/`, `src/n8n/nodes/` | live n8n workflow state | authoritative | versioned, non-secret | n8n | live export+normalize+externalize snapshot compare | `scripts/n8n/sync_workflows.sh --mode push` | `scripts/n8n/sync_workflows.sh --mode pull` |
-| `docker` | `ops/stack/docker-compose.yml`, `ops/stack/env/*.env` | `/home/igasovic/stack/docker-compose.yml`, `/home/igasovic/stack/*.env` (managed non-secret env only) | authoritative | versioned, non-secret | infra | file drift compare | copy managed files + targeted compose apply when scope is known (fallback full apply) | copy managed runtime files to repo |
+| `docker` | `ops/stack/docker-compose.yml`, `ops/stack/env/*.env` | `/home/igasovic/stack/docker-compose.yml`, `/home/igasovic/stack/*.env` (managed non-secret env only) | authoritative | versioned, non-secret | infra | file drift compare + affected-service summary | copy managed files + targeted compose apply when scope is known (fallback full apply) | copy managed runtime files to repo |
 | `litellm` | `ops/stack/litellm/config.yaml` | `/home/igasovic/stack/litellm/config.yaml` | authoritative | versioned, non-secret | infra | file drift compare | copy config + restart `litellm` | copy runtime config to repo |
 | `postgres` | `ops/stack/postgres/init/*`, optional `ops/stack/postgres/postgresql.conf`, `ops/stack/postgres/pg_hba.conf` | `/home/igasovic/stack/postgres-init/*`, optional `/home/igasovic/stack/postgres/*.conf` | authoritative | versioned, non-secret, host-local runtime target | infra/db | dir+file drift compare (excludes live data dir) | copy init/config only; never touches live data | pull init/config only; never touches live data |
 | `cloudflared` | `ops/stack/cloudflared/config.yml` | runtime cloudflared config path + host-local credentials JSON | authoritative | versioned config + host-local credential dependency | infra | file drift compare + credentials presence check | copy config + restart `cloudflared` (credentials required) | copy runtime config to repo |
@@ -75,7 +75,7 @@ Notes:
 - `updatecfg n8n --push|--pull` delegates to the same mode in `scripts/n8n/sync_workflows.sh`.
 
 ### docker
-- `checkcfg docker` compares managed repo Compose/env files to stack runtime files.
+- `checkcfg docker` compares managed repo Compose/env files to stack runtime files and reports affected services when scope can be resolved.
 - `updatecfg docker --push` applies managed files and resolves compose apply scope:
   - if only service-mapped env files changed (for example `pkm-server.env`), applies only those services
   - if compose/global/ambiguous changes are detected, falls back to full `docker compose up -d`

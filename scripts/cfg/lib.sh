@@ -707,11 +707,36 @@ check_surface_n8n() {
 }
 
 check_surface_docker() {
+  local compose_drift=0
+  local -a drifted_env_files=()
+
+  if [[ ! -f "$CFG_REPO_DOCKER_COMPOSE" || ! -f "$CFG_COMPOSE_FILE" ]] || \
+    ! cmp -s "$CFG_REPO_DOCKER_COMPOSE" "$CFG_COMPOSE_FILE"; then
+    compose_drift=1
+  fi
+
   if [[ ! -d "$CFG_REPO_DOCKER_ENV_DIR" ]]; then
     progress_start "checkcfg:docker" 1
     progress_step "compare docker compose file"
     compare_file_for_check "$CFG_REPO_DOCKER_COMPOSE" "$CFG_COMPOSE_FILE" "docker compose"
     mark_check_drift "docker env source dir missing ($CFG_REPO_DOCKER_ENV_DIR)."
+
+    local compose_services_out
+    local -a affected_services=()
+    if docker_collect_compose_services compose_services_out; then
+      local service
+      while IFS= read -r service; do
+        if [[ -n "$service" ]]; then
+          affected_services+=("$service")
+        fi
+      done <<<"$compose_services_out"
+    fi
+    if [[ ${#affected_services[@]} -gt 0 ]]; then
+      add_check_detail "docker affected services: ${affected_services[*]} (all services; env source missing)"
+    else
+      add_check_detail "docker affected services: all (env source missing; unable to resolve compose services)"
+    fi
+
     progress_done "comparison complete"
     return 0
   fi
@@ -735,9 +760,84 @@ check_surface_docker() {
 
   local f
   for f in "${env_files[@]}"; do
+    local runtime_env="$CFG_STACK_ROOT/$(basename "$f")"
+    if [[ ! -f "$f" || ! -f "$runtime_env" ]] || ! cmp -s "$f" "$runtime_env"; then
+      drifted_env_files+=("$(basename "$f")")
+    fi
     progress_step "compare $(basename "$f")"
-    compare_file_for_check "$f" "$CFG_STACK_ROOT/$(basename "$f")" "docker env $(basename "$f")"
+    compare_file_for_check "$f" "$runtime_env" "docker env $(basename "$f")"
   done
+
+  if [[ "$CHECK_STATE" == "clean" ]]; then
+    add_check_detail "docker affected services: none (surface clean)"
+    progress_done "comparison complete"
+    return 0
+  fi
+
+  local compose_services_out
+  local -a compose_services=()
+  if docker_collect_compose_services compose_services_out; then
+    local service
+    while IFS= read -r service; do
+      if [[ -n "$service" ]]; then
+        compose_services+=("$service")
+      fi
+    done <<<"$compose_services_out"
+  fi
+
+  if [[ "$compose_drift" -eq 1 ]]; then
+    if [[ ${#compose_services[@]} -gt 0 ]]; then
+      add_check_detail "docker affected services: ${compose_services[*]} (all services; compose file drift)"
+    else
+      add_check_detail "docker affected services: all (compose file drift; unable to resolve compose services)"
+    fi
+    progress_done "comparison complete"
+    return 0
+  fi
+
+  local needs_all=0
+  local all_reason=""
+  local -a affected_services=()
+  local env_file
+  for env_file in "${drifted_env_files[@]}"; do
+    if [[ "$env_file" == ".env" ]]; then
+      needs_all=1
+      all_reason="global .env drift"
+      break
+    fi
+    if [[ "$env_file" != *.env ]]; then
+      needs_all=1
+      all_reason="non-env drift ($env_file)"
+      break
+    fi
+
+    local candidate_service="${env_file%.env}"
+    if array_contains "$candidate_service" "${compose_services[@]-}"; then
+      if ! array_contains "$candidate_service" "${affected_services[@]-}"; then
+        affected_services+=("$candidate_service")
+      fi
+    else
+      needs_all=1
+      all_reason="env file does not map to a compose service ($env_file)"
+      break
+    fi
+  done
+
+  if [[ "$needs_all" -eq 1 ]]; then
+    if [[ ${#compose_services[@]} -gt 0 ]]; then
+      add_check_detail "docker affected services: ${compose_services[*]} (all services; $all_reason)"
+    else
+      add_check_detail "docker affected services: all ($all_reason; unable to resolve compose services)"
+    fi
+  elif [[ ${#affected_services[@]} -gt 0 ]]; then
+    add_check_detail "docker affected services: ${affected_services[*]}"
+  else
+    if [[ ${#compose_services[@]} -gt 0 ]]; then
+      add_check_detail "docker affected services: ${compose_services[*]} (drifted; no service-mapped env files)"
+    else
+      add_check_detail "docker affected services: all (drifted; unable to resolve compose services)"
+    fi
+  fi
   progress_done "comparison complete"
 }
 

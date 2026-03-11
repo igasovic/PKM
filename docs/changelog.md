@@ -13,6 +13,8 @@
   - if only service-mapped env files changed, runs targeted compose apply for those services
   - if compose/global/ambiguous changes are detected, falls back to full `docker compose up -d`
   - if no managed docker files changed, skips compose apply
+- Updated `scripts/cfg/lib.sh` docker check adapter:
+  - `checkcfg docker` now reports affected services for detected docker-surface drift when scope can be resolved
 - Added `scripts/cfg/backend_push.sh`:
   - custom backend deploy flow for `updatecfg backend --push`
   - optional repo update (`git pull --ff-only` by default, configurable)

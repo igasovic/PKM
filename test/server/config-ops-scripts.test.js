@@ -160,6 +160,48 @@ describe('config ops scripts', () => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });
 
+  test('checkcfg docker reports affected service for drifted service env file', () => {
+    const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
+
+    const repoCompose = path.join(tempRepoRoot, 'ops/stack/docker-compose.yml');
+    const runtimeCompose = path.join(tempStackRoot, 'docker-compose.yml');
+    const repoEnvDir = path.join(tempRepoRoot, 'ops/stack/env');
+    const repoEnv = path.join(repoEnvDir, 'pkm-server.env');
+    const runtimeEnv = path.join(tempStackRoot, 'pkm-server.env');
+
+    fs.mkdirSync(path.dirname(repoCompose), { recursive: true });
+    fs.mkdirSync(path.dirname(runtimeCompose), { recursive: true });
+    fs.mkdirSync(repoEnvDir, { recursive: true });
+
+    const composePayload = [
+      'services:',
+      '  pkm-server:',
+      '    image: example/pkm-server',
+      '  n8n:',
+      '    image: example/n8n',
+      '',
+    ].join('\n');
+
+    fs.writeFileSync(repoCompose, composePayload, 'utf8');
+    fs.writeFileSync(runtimeCompose, composePayload, 'utf8');
+    fs.writeFileSync(repoEnv, 'PKM_FEATURE_X=true\n', 'utf8');
+    fs.writeFileSync(runtimeEnv, 'PKM_FEATURE_X=false\n', 'utf8');
+
+    const fakeDocker = setupFakeDocker(tempRoot, 'pkm-server\nn8n\n');
+    const res = runScript(checkcfgPath, ['docker'], {
+      CFG_REPO_ROOT: tempRepoRoot,
+      CFG_STACK_ROOT: tempStackRoot,
+      ...fakeDocker.dockerEnv,
+    });
+
+    expect(res.code).toBe(3);
+    expect(res.stdout).toContain('Surface: docker');
+    expect(res.stdout).toContain('Status: drifted');
+    expect(res.stdout).toContain('docker affected services: pkm-server');
+
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
   test('updatecfg litellm pull mode copies runtime config into repo', () => {
     const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
     const repoFile = path.join(tempRepoRoot, 'ops/stack/litellm/config.yaml');
