@@ -3,7 +3,7 @@
 const sb = require('../../libs/sql-builder.js');
 const { getConfig } = require('../../libs/config.js');
 const { getPool } = require('../db-pool.js');
-const { getBraintrustLogger } = require('../observability.js');
+const { braintrustSink } = require('../logger/braintrust.js');
 const { getTestModeStateFromDb } = require('../db.js');
 const { TERMINAL_BATCH_STATUSES } = require('./constants.js');
 
@@ -45,16 +45,11 @@ async function getActiveSchema() {
 
 function logStoreError(op, meta, err, duration_ms) {
   try {
-    getBraintrustLogger().log({
+    braintrustSink.logError(op, {
       input: {
-        op,
         ...(meta || {}),
       },
-      error: {
-        name: err && err.name,
-        message: err && err.message,
-        stack: err && err.stack,
-      },
+      error: err,
       metadata: {
         source: 't1_store',
       },

@@ -1,7 +1,6 @@
 'use strict';
 
-const { getBraintrustLogger } = require('./observability.js');
-const { getRunContext } = require('./logger/context.js');
+const { createBraintrustSink } = require('./logger/sinks/braintrust.js');
 
 const DEFAULT_SYSTEM_PROMPT =
   '\
@@ -262,38 +261,32 @@ class LiteLLMClient {
     this.baseUrl = options.baseUrl || process.env.OPENAI_BASE_URL || 'http://litellm:4000/v1';
     this.model = options.model || process.env.T1_DEFAULT_MODEL || 't1-default';
     this.systemPrompt = options.systemPrompt || DEFAULT_SYSTEM_PROMPT;
-    this.logger = getBraintrustLogger();
+    this.braintrustSink = createBraintrustSink();
   }
 
-  logSuccess(op, input, output, metadata, metrics) {
-    const ctx = getRunContext();
-    this.logger.log({
+  logSuccess(op, input, output, metadata, metrics, usage) {
+    this.braintrustSink.logSuccess(op, {
       input,
       output,
       metadata: {
         source: 'litellm',
-        op,
-        run_id: ctx && ctx.run_id ? ctx.run_id : null,
-        request_id: ctx && ctx.request_id ? ctx.request_id : null,
         ...(metadata || {}),
       },
       metrics: metrics || undefined,
+      usage: usage || null,
     });
   }
 
-  logError(op, input, err, metadata, metrics) {
-    const ctx = getRunContext();
-    this.logger.log({
+  logError(op, input, err, metadata, metrics, usage) {
+    this.braintrustSink.logError(op, {
       input,
       error: errorDetails(err),
       metadata: {
         source: 'litellm',
-        op,
-        run_id: ctx && ctx.run_id ? ctx.run_id : null,
-        request_id: ctx && ctx.request_id ? ctx.request_id : null,
         ...(metadata || {}),
       },
       metrics: metrics || undefined,
+      usage: usage || null,
     });
   }
 
@@ -449,7 +442,8 @@ class LiteLLMClient {
         {
           ...buildLlmMetrics(json, duration_ms, usage),
           ...usage,
-        }
+        },
+        usage
       );
 
       return {
@@ -489,7 +483,8 @@ class LiteLLMClient {
         {
           ...buildLlmMetrics(result.json, Date.now() - methodStart, result.usage),
           ...result.usage,
-        }
+        },
+        result.usage
       );
 
       return { response: result.json, text: result.text };

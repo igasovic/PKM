@@ -2,10 +2,9 @@
 const { getConfig } = require('../../libs/config.js');
 const { LiteLLMClient, extractResponseText } = require('../litellm-client.js');
 const { buildRetrievalForDb } = require('../quality.js');
-const { getBraintrustLogger } = require('../observability.js');
+const { braintrustSink } = require('../logger/braintrust.js');
 const { getLogger } = require('../logger/index.js');
 const { getRunContext } = require('../logger/context.js');
-const { getVerbossLogger } = require('./verboss-logger.js');
 const {
   parseTier1Json,
   buildTier1Prompt,
@@ -50,24 +49,16 @@ function createDefaultChannels() {
   };
 }
 
-function nodeErrorInfo(err) {
-  return {
-    name: err && err.name,
-    message: err && err.message,
-    stack: err && err.stack,
-  };
-}
-
 function logNodeError(graph, node, state, err) {
   try {
-    getBraintrustLogger().log({
+    braintrustSink.logError(`t1_graph.${graph}.${node}`, {
       input: {
         graph,
         node,
         flow: state && state.flow,
         batch_id: state && (state.batch_id || (state.loaded && state.loaded.batch_id) || null),
       },
-      error: nodeErrorInfo(err),
+      error: err,
       metadata: {
         source: 't1_graph',
       },
@@ -401,12 +392,12 @@ async function batchCollectWriteNode(state) {
           };
         }
       } catch (retryErr) {
-        getBraintrustLogger().log({
+        braintrustSink.logError('t1_batch_collect.auto_retry', {
           input: {
             batch_id: batchId,
             schema,
           },
-          error: nodeErrorInfo(retryErr),
+          error: retryErr,
           metadata: {
             source: 't1_batch_collect',
             event: 'auto_retry_failed',
@@ -418,7 +409,7 @@ async function batchCollectWriteNode(state) {
 
   const updated_items = await upsertBatchResults(schema, batchId, state.parsed.rows || []);
   const summary = await readBatchSummary(schema, batchId);
-  getBraintrustLogger().log({
+  braintrustSink.logSuccess('t1_batch_collect.consume', {
     input: {
       batch_id: batchId,
       schema,
@@ -436,26 +427,6 @@ async function batchCollectWriteNode(state) {
       event: isFailed ? 'consume_failed' : 'consume',
     },
   });
-  try {
-    await getVerbossLogger().logConsumeEntry({
-      batch_id: batchId,
-      timestamp: new Date().toISOString(),
-      result: remoteBatch.status || null,
-      entries: toEntitySecondaryTopicPairs(state.parsed.rows || []),
-    });
-  } catch (err) {
-    getBraintrustLogger().log({
-      input: {
-        batch_id: batchId,
-        schema,
-      },
-      error: nodeErrorInfo(err),
-      metadata: {
-        source: 'verboss_logger',
-        event: 'consume_entry_log_failed',
-      },
-    });
-  }
 
   return {
     output: {

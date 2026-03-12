@@ -3,7 +3,7 @@
 const db = require('./db.js');
 const { getConfig } = require('../libs/config.js');
 const { LiteLLMClient } = require('./litellm-client.js');
-const { getBraintrustLogger } = require('./observability.js');
+const { braintrustSink } = require('./logger/braintrust.js');
 const { getLogger } = require('./logger/index.js');
 const { createBatchWorkerRuntime } = require('./batch-worker-runtime.js');
 const { runTier2ControlPlanePlan } = require('./tier2/planner.js');
@@ -1457,12 +1457,8 @@ const runner = createTier2BatchRunner({
 
 function logTier2WorkerError(err) {
   try {
-    getBraintrustLogger().log({
-      error: {
-        name: err && err.name,
-        message: err && err.message,
-        stack: err && err.stack,
-      },
+    braintrustSink.logError('t2_batch_worker.cycle', {
+      error: err,
       metadata: {
         source: 't2_batch_worker',
         event: 'cycle_error',

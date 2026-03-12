@@ -1,4 +1,23 @@
 # changelog
+## 2026-03-12 — Logger Braintrust sink consolidation + verboss removal
+
+### What changed
+- Removed obsolete Tier-1 file logger:
+  - deleted `src/server/tier1/verboss-logger.js`
+  - removed all `verboss` writes from Tier-1 graph and email importer flows
+- Sunset `src/server/observability.js`:
+  - Braintrust initialization moved to `src/server/logger/braintrust-client.js`
+  - shared Braintrust helper wrappers moved to `src/server/logger/braintrust.js`
+  - all server callsites now import logger-owned Braintrust helpers/sink
+- Upgraded Braintrust sink in `src/server/logger/sinks/braintrust.js`:
+  - explicit success/error helpers with `metadata.outcome = success|error`
+  - LLM usage normalization (`prompt_tokens`, `completion_tokens`, `reasoning_tokens`, `total_tokens`)
+  - automatic `estimated_cost_usd` derivation when usage tokens and per-1M env rates are present
+- Refactored LiteLLM client telemetry:
+  - `src/server/litellm-client.js` now logs via logger Braintrust sink instead of direct Braintrust client calls
+- Added coverage:
+  - `test/server/braintrust-sink.test.js`
+
 ## 2026-03-12 — Content hash derivation from clean_text + backfill script
 
 ### What changed

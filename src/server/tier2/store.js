@@ -3,7 +3,7 @@
 const sb = require('../../libs/sql-builder.js');
 const { getConfig } = require('../../libs/config.js');
 const { getPool } = require('../db-pool.js');
-const { getBraintrustLogger } = require('../observability.js');
+const { braintrustSink } = require('../logger/braintrust.js');
 
 const TERMINAL_BATCH_STATUSES = new Set(['completed', 'failed', 'expired', 'cancelled']);
 
@@ -44,16 +44,11 @@ function getProdSchema() {
 
 function logStoreError(op, meta, err, durationMs) {
   try {
-    getBraintrustLogger().log({
+    braintrustSink.logError(op, {
       input: {
-        op,
         ...(meta || {}),
       },
-      error: {
-        name: err && err.name,
-        message: err && err.message,
-        stack: err && err.stack,
-      },
+      error: err,
       metadata: {
         source: 't2_store',
       },

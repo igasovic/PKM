@@ -39,7 +39,7 @@ const {
   logError,
   logApiSuccess,
   logApiError,
-} = require('./observability.js');
+} = require('./logger/braintrust.js');
 const { getLogger } = require('./logger/index.js');
 const {
   withRequestContext,

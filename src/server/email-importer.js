@@ -5,9 +5,8 @@ const path = require('path');
 const db = require('./db.js');
 const { runEmailIngestionPipeline } = require('./ingestion-pipeline.js');
 const { enqueueTier1Batch } = require('./tier1-enrichment.js');
-const { getBraintrustLogger } = require('./observability.js');
+const { braintrustSink } = require('./logger/braintrust.js');
 const { getLogger } = require('./logger/index.js');
-const { getVerbossLogger } = require('./tier1/verboss-logger.js');
 
 const IMPORT_ROOT = '/data';
 const DEFAULT_T1_BATCH_SIZE = 500;
@@ -232,29 +231,7 @@ function resolveMboxPath(inputPath) {
 
 async function importEmailMbox(opts) {
   const options = opts || {};
-  const logger = getBraintrustLogger();
   const pipelineLogger = getLogger().child({ pipeline: 'email_ingest_v1' });
-  const verbossLogger = getVerbossLogger();
-  const safeVerbossLog = async (op, fn) => {
-    try {
-      await fn();
-    } catch (err) {
-      logger.log({
-        input: {
-          op,
-        },
-        error: {
-          name: err && err.name,
-          message: err && err.message,
-          stack: err && err.stack,
-        },
-        metadata: {
-          source: 'verboss_logger',
-          event: 'write_failed',
-        },
-      });
-    }
-  };
 
   const batch_size = parseBatchSize(options.batch_size);
   const insert_chunk_size = parseInsertChunkSize(options.insert_chunk_size);
@@ -314,7 +291,6 @@ async function importEmailMbox(opts) {
   };
 
   const insertBuffer = [];
-  const insertAuditBuffer = [];
   const tierBuffer = [];
   const insertReturning = [
     'id',
@@ -362,13 +338,6 @@ async function importEmailMbox(opts) {
         request_count: result.request_count,
       });
       summary.tier1_enqueued_items += chunk.length;
-      await safeVerbossLog('email_batch.t1_enqueue', async () => {
-        await verbossLogger.logEnqueue({
-          batch_id: result.batch_id,
-          timestamp: new Date().toISOString(),
-          entities: chunk.map((item) => String(item.custom_id || '').trim()).filter(Boolean),
-        });
-      });
     }
   };
 
@@ -376,7 +345,6 @@ async function importEmailMbox(opts) {
     if (!insertBuffer.length) return;
 
     const pendingRows = insertBuffer.splice(0, insertBuffer.length);
-    const pendingAuditRows = insertAuditBuffer.splice(0, insertAuditBuffer.length);
     const result = await pipelineLogger.step(
       'email_import.db_insert_batch',
       async () => db.insert({
@@ -411,7 +379,6 @@ async function importEmailMbox(opts) {
     );
 
     const rows = Array.isArray(result && result.rows) ? result.rows : [];
-    const dbInsertLogs = [];
     for (const row of rows) {
       if (row && row._batch_ok === false) {
         summary.insert_errors += 1;
@@ -423,17 +390,6 @@ async function importEmailMbox(opts) {
       if (action === 'skipped') summary.skipped += 1;
       else if (action === 'updated') summary.updated += 1;
       else summary.inserted += 1;
-      const rowIdx = Number.isInteger(row && row._batch_index) ? row._batch_index : null;
-      const audit = rowIdx !== null ? pendingAuditRows[rowIdx] : null;
-      const normalizedAction = action === 'skipped'
-        ? 'skip'
-        : (action === 'updated' ? 'update' : 'insert');
-      dbInsertLogs.push([
-        audit ? audit.subject : null,
-        audit ? audit.date : null,
-        row && (row.entry_id || row.id || null),
-        normalizedAction,
-      ]);
 
       if (action === 'skipped') continue;
       const clean_text = row && row.clean_text ? String(row.clean_text) : '';
@@ -451,11 +407,6 @@ async function importEmailMbox(opts) {
       });
       summary.tier1_candidates += 1;
     }
-    if (dbInsertLogs.length > 0) {
-      await safeVerbossLog('email_batch.db_insert.exit', async () => {
-        await verbossLogger.logDbInsertExit(dbInsertLogs);
-      });
-    }
 
     await flushTierBatches(false);
   };
@@ -464,11 +415,6 @@ async function importEmailMbox(opts) {
     const rawMessage = messages[i];
     try {
       const env = parseEnvelope(rawMessage);
-      await safeVerbossLog('email_batch.normalization.entry', async () => {
-        await verbossLogger.logNormalizationEntry([
-          [env.from || null, env.subject || null, env.date || null],
-        ]);
-      });
       const normalized = await pipelineLogger.step(
         'email_import.normalize_email',
         async () => runEmailIngestionPipeline({
@@ -495,20 +441,11 @@ async function importEmailMbox(opts) {
           meta: { index: i },
         }
       );
-      await safeVerbossLog('email_batch.normalization.exit', async () => {
-        await verbossLogger.logNormalizationExit([
-          [env.subject || null, env.date || null, normalized && normalized.content_type ? normalized.content_type : null],
-        ]);
-      });
 
       // Backlog imports are tracked as a dedicated source while preserving email idempotency semantics.
       normalized.source = 'email-batch';
 
       insertBuffer.push(normalized);
-      insertAuditBuffer.push({
-        subject: env.subject || null,
-        date: env.date || null,
-      });
       summary.normalized_ok += 1;
       if (insertBuffer.length >= insert_chunk_size) {
         await flushInsertBuffer();
@@ -522,7 +459,7 @@ async function importEmailMbox(opts) {
   await flushInsertBuffer();
   await flushTierBatches(true);
 
-  logger.log({
+  braintrustSink.logSuccess('email_importer.mbox_import_complete', {
     input: {
       import_id,
       mbox_path: relativePath,

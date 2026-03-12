@@ -1,6 +1,6 @@
 'use strict';
 
-const { getBraintrustLogger } = require('./observability.js');
+const { braintrustSink } = require('./logger/braintrust.js');
 const { getLogger } = require('./logger/index.js');
 const { createBatchWorkerRuntime } = require('./batch-worker-runtime.js');
 const {
@@ -133,12 +133,8 @@ function resolveTier1WorkerIntervalMs() {
 
 function logTier1WorkerError(err) {
   try {
-    getBraintrustLogger().log({
-      error: {
-        name: err && err.name,
-        message: err && err.message,
-        stack: err && err.stack,
-      },
+    braintrustSink.logError('t1_batch_worker.cycle', {
+      error: err,
       metadata: {
         source: 't1_batch_worker',
         event: 'cycle_error',

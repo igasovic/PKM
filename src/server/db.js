@@ -3,7 +3,7 @@
 const sb = require('../../src/libs/sql-builder.js');
 const { getPool } = require('./db-pool.js');
 const { getConfig } = require('../libs/config.js');
-const { traceDb, getBraintrustLogger } = require('./observability.js');
+const { traceDb, braintrustSink } = require('./logger/braintrust.js');
 
 const CONFIG_TABLE = sb.qualifiedTable(process.env.PKM_DB_SCHEMA || 'pkm', 'runtime_config');
 const IMMUTABLE_UPDATE_COLUMNS = new Set(['id', 'entry_id', 'created_at', 'tsv']);
@@ -583,9 +583,8 @@ function logInsertBatchSuccess(rows, totalInput) {
     const insertedEntryIds = insertedRows
       .map((row) => row.entry_id)
       .filter((v) => v !== null && v !== undefined);
-    getBraintrustLogger().log({
+    braintrustSink.logSuccess('insert_batch_bulk', {
       input: {
-        op: 'insert_batch_bulk',
         total_input: Number(totalInput || 0),
       },
       output: {
