@@ -1008,12 +1008,13 @@ update_surface_n8n() {
 
 update_surface_docker() {
   local mode="$1"
+  local -a env_files=()
   local env_count=0
   if [[ -d "$CFG_REPO_DOCKER_ENV_DIR" ]]; then
     shopt -s nullglob
-    local _env_preview=("$CFG_REPO_DOCKER_ENV_DIR"/*.env)
+    env_files=("$CFG_REPO_DOCKER_ENV_DIR"/*.env)
     shopt -u nullglob
-    env_count="${#_env_preview[@]}"
+    env_count="${#env_files[@]}"
   fi
   local total=$(( 1 + env_count ))
   if [[ "$mode" == "push" ]]; then
@@ -1029,18 +1030,19 @@ update_surface_docker() {
   fi
 
   if [[ -d "$CFG_REPO_DOCKER_ENV_DIR" ]]; then
-    shopt -s nullglob
-    local env_files=("$CFG_REPO_DOCKER_ENV_DIR"/*.env)
-    shopt -u nullglob
     local f
-    for f in "${env_files[@]}"; do
-      progress_step "sync $(basename "$f") ($mode)"
-      if [[ "$mode" == "push" ]]; then
-        copy_file_if_changed "$f" "$CFG_STACK_ROOT/$(basename "$f")" "docker env $(basename "$f")"
-      else
-        copy_file_runtime_to_repo_if_changed "$CFG_STACK_ROOT/$(basename "$f")" "$f" "docker env $(basename "$f")"
-      fi
-    done
+    if [[ "$env_count" -eq 0 ]]; then
+      add_update_detail "docker env: no managed *.env files found in repo source dir"
+    else
+      for f in "${env_files[@]}"; do
+        progress_step "sync $(basename "$f") ($mode)"
+        if [[ "$mode" == "push" ]]; then
+          copy_file_if_changed "$f" "$CFG_STACK_ROOT/$(basename "$f")" "docker env $(basename "$f")"
+        else
+          copy_file_runtime_to_repo_if_changed "$CFG_STACK_ROOT/$(basename "$f")" "$f" "docker env $(basename "$f")"
+        fi
+      done
+    fi
   else
     mark_update_blocked "docker env source dir missing ($CFG_REPO_DOCKER_ENV_DIR)."
     progress_fail "env source missing"

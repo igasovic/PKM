@@ -19,6 +19,7 @@
   - `scripts/cfg/importcfg` delegates runtime->repo imports through existing pull adapters (`updatecfg --pull` path)
 - Bootstrap helper is implemented:
   - `scripts/cfg/bootstrapcfg` runs first-time multi-surface runtime->repo imports via `importcfg`
+  - default bootstrap surface set includes `n8n` (use `--skip-n8n` to opt out)
 - WP9 scaffolding is in repo:
   - `ops/stack/` structure with per-surface documentation
   - backend config module moved to `src/libs/config/` with compatibility entrypoint `src/libs/config.js`

@@ -1,4 +1,30 @@
 # changelog
+## 2026-03-12 — Content hash derivation from clean_text + backfill script
+
+### What changed
+- Added shared content hash utility:
+  - `src/libs/content-hash.js`
+  - derives `content_hash` as SHA-256 hex from `clean_text` (UTF-8), returns `null` for blank/missing text.
+- Updated backend normalization outputs in `src/server/normalization.js`:
+  - normalized payloads now include `content_hash` wherever `clean_text` is produced.
+  - empty-clean webpage path now explicitly returns `content_hash: null`.
+- Updated web extraction write path to persist recalculated hash with recalculated clean text:
+  - `src/n8n/nodes/22-web-extraction/text-clean__9ceb22a3-83dc-4b29-844e-6a769101b0d2.js`
+  - `src/n8n/workflows/22-web-extraction__eYF7ivDiFwDYgi-pFRbpg.json`
+- Updated legacy Telegram SQL update module to keep `content_hash` aligned with clean-text updates:
+  - `js/workflows/telegram-capture/02_build-sql-update__1c1e479b-b8f6-4d85-9c69-8c0f9943982f.js`
+- Added temporary one-off backfill script:
+  - `scripts/db/backfill_content_hash.sh`
+  - supports `--dry-run` and `--apply` across both `pkm.entries` and `pkm_test.entries`.
+- Updated docs:
+  - `docs/requirements.md` (hash algorithm + recalc requirements)
+  - `docs/api.md` (normalize responses now document `content_hash`)
+- Added/updated tests:
+  - `test/server/content-hash.test.js`
+  - `test/server/normalization.test.js`
+  - `test/server/ingestion-pipeline.notion.test.js`
+  - `test/sql-builder-update.test.js`
+
 ## 2026-03-11 — Config ops performance + targeted backend deploy path
 
 ### What changed
@@ -8,7 +34,7 @@
   - reuses the same report and exit semantics as pull mode
 - Added `scripts/cfg/bootstrapcfg`:
   - first-time multi-surface runtime->repo bootstrap import helper
-  - defaults to `docker litellm postgres cloudflared` and supports `--include-n8n`
+  - defaults to `docker litellm postgres cloudflared n8n` and supports `--skip-n8n`
   - reuses existing `importcfg` adapter path for each surface
 - Added `scripts/n8n/export_workflows_snapshot.sh`:
   - performs one n8n workflow export and fans out to normalized + raw trees

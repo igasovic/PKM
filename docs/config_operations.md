@@ -61,8 +61,8 @@ Convenience wrapper for runtime-to-repo import:
 
 ### `bootstrapcfg`
 Bootstrap helper for first-time runtime->repo import:
-- default surfaces: `docker litellm postgres cloudflared`
-- optional `--include-n8n` to include n8n import in the same run
+- default surfaces: `docker litellm postgres cloudflared n8n`
+- optional `--skip-n8n` to skip n8n import in the same run
 - calls `importcfg <surface>` for each selected surface in sequence
 - does not support `backend` (no runtime->repo import path)
 
@@ -126,10 +126,18 @@ Run this on the Pi host after pulling latest repo changes:
 ./scripts/cfg/bootstrapcfg
 ```
 
-If you also want n8n imported into repo in the same run:
+This default run already includes n8n.
+
+If you want to run only n8n import:
 
 ```bash
-./scripts/cfg/bootstrapcfg --include-n8n
+./scripts/cfg/bootstrapcfg --surface n8n
+```
+
+If you want to skip n8n in the bootstrap run:
+
+```bash
+./scripts/cfg/bootstrapcfg --skip-n8n
 ```
 
 ## 7. Why there is no auto-apply cron

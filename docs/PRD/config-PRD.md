@@ -116,6 +116,7 @@ Not required in this PRD:
 
 `importcfg <surface>` is implemented as a convenience wrapper equivalent to `updatecfg <surface> --pull`.
 `bootstrapcfg` is implemented as a first-time multi-surface import helper (sequential `importcfg` wrapper).
+Current default bootstrap surface set is `docker litellm postgres cloudflared n8n`; `--skip-n8n` opts out.
 
 ## 9. Why auto-apply is out of scope
 There should not be a cron job that blindly applies repo changes to runtime. Config updates may require validation, restart ordering, human review, or secret readiness. A timer may run `checkcfg` or health checks later, but `updatecfg` remains an explicit operator action in this phase.

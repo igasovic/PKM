@@ -369,6 +369,123 @@ describe('config ops scripts', () => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });
 
+  test('bootstrapcfg default run includes n8n import', () => {
+    const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
+
+    const repoEnvDir = path.join(tempRepoRoot, 'ops/stack/env');
+    const repoCompose = path.join(tempRepoRoot, 'ops/stack/docker-compose.yml');
+    const repoLitellm = path.join(tempRepoRoot, 'ops/stack/litellm/config.yaml');
+    const repoPostgresInit = path.join(tempRepoRoot, 'ops/stack/postgres/init');
+
+    const runtimeCompose = path.join(tempStackRoot, 'docker-compose.yml');
+    const runtimeLitellm = path.join(tempStackRoot, 'litellm/config.yaml');
+    const runtimePostgresInit = path.join(tempStackRoot, 'postgres-init');
+    const fakeN8nSyncPath = path.join(tempRoot, 'sync_workflows.sh');
+    const fakeN8nSyncLog = path.join(tempRoot, 'n8n-sync.log');
+
+    fs.mkdirSync(repoEnvDir, { recursive: true });
+    fs.mkdirSync(path.dirname(runtimeCompose), { recursive: true });
+    fs.mkdirSync(path.dirname(runtimeLitellm), { recursive: true });
+    fs.mkdirSync(runtimePostgresInit, { recursive: true });
+
+    fs.writeFileSync(
+      runtimeCompose,
+      [
+        'services:',
+        '  cloudflared:',
+        '    image: cloudflare/cloudflared:latest',
+        '    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+    fs.writeFileSync(runtimeLitellm, 'model_list:\n  - model_name: imported_default\n', 'utf8');
+    fs.writeFileSync(path.join(runtimePostgresInit, '01-create-databases.sql'), '-- imported\n', 'utf8');
+    fs.writeFileSync(
+      fakeN8nSyncPath,
+      [
+        '#!/usr/bin/env bash',
+        'set -euo pipefail',
+        'echo "$*" >> "$FAKE_N8N_SYNC_LOG"',
+      ].join('\n'),
+      'utf8',
+    );
+    fs.chmodSync(fakeN8nSyncPath, 0o755);
+
+    const res = runScript(bootstrapcfgPath, [], {
+      CFG_REPO_ROOT: tempRepoRoot,
+      CFG_STACK_ROOT: tempStackRoot,
+      CFG_N8N_SYNC_SCRIPT: fakeN8nSyncPath,
+      FAKE_N8N_SYNC_LOG: fakeN8nSyncLog,
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('[1/5] importcfg docker');
+    expect(res.stdout).toContain('[2/5] importcfg litellm');
+    expect(res.stdout).toContain('[3/5] importcfg postgres');
+    expect(res.stdout).toContain('[4/5] importcfg cloudflared');
+    expect(res.stdout).toContain('[5/5] importcfg n8n');
+    expect(res.stdout).toContain('Bootstrap import complete.');
+
+    expect(fs.readFileSync(repoCompose, 'utf8')).toContain('cloudflared');
+    expect(fs.readFileSync(repoLitellm, 'utf8')).toContain('imported_default');
+    expect(fs.readFileSync(path.join(repoPostgresInit, '01-create-databases.sql'), 'utf8')).toContain('-- imported');
+    expect(fs.readFileSync(fakeN8nSyncLog, 'utf8')).toContain('--mode pull');
+
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
+  test('bootstrapcfg --skip-n8n runs default non-n8n bootstrap set', () => {
+    const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
+
+    const repoEnvDir = path.join(tempRepoRoot, 'ops/stack/env');
+    const repoCompose = path.join(tempRepoRoot, 'ops/stack/docker-compose.yml');
+    const repoLitellm = path.join(tempRepoRoot, 'ops/stack/litellm/config.yaml');
+    const repoPostgresInit = path.join(tempRepoRoot, 'ops/stack/postgres/init');
+
+    const runtimeCompose = path.join(tempStackRoot, 'docker-compose.yml');
+    const runtimeLitellm = path.join(tempStackRoot, 'litellm/config.yaml');
+    const runtimePostgresInit = path.join(tempStackRoot, 'postgres-init');
+
+    fs.mkdirSync(repoEnvDir, { recursive: true });
+    fs.mkdirSync(path.dirname(runtimeCompose), { recursive: true });
+    fs.mkdirSync(path.dirname(runtimeLitellm), { recursive: true });
+    fs.mkdirSync(runtimePostgresInit, { recursive: true });
+
+    fs.writeFileSync(
+      runtimeCompose,
+      [
+        'services:',
+        '  cloudflared:',
+        '    image: cloudflare/cloudflared:latest',
+        '    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+    fs.writeFileSync(runtimeLitellm, 'model_list:\n  - model_name: imported_default\n', 'utf8');
+    fs.writeFileSync(path.join(runtimePostgresInit, '01-create-databases.sql'), '-- imported\n', 'utf8');
+
+    const res = runScript(bootstrapcfgPath, ['--skip-n8n'], {
+      CFG_REPO_ROOT: tempRepoRoot,
+      CFG_STACK_ROOT: tempStackRoot,
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('[1/4] importcfg docker');
+    expect(res.stdout).toContain('[2/4] importcfg litellm');
+    expect(res.stdout).toContain('[3/4] importcfg postgres');
+    expect(res.stdout).toContain('[4/4] importcfg cloudflared');
+    expect(res.stdout).not.toContain('importcfg n8n');
+    expect(res.stdout).toContain('Bootstrap import complete.');
+
+    expect(fs.readFileSync(repoCompose, 'utf8')).toContain('cloudflared');
+    expect(fs.readFileSync(repoLitellm, 'utf8')).toContain('imported_default');
+    expect(fs.readFileSync(path.join(repoPostgresInit, '01-create-databases.sql'), 'utf8')).toContain('-- imported');
+
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
   test('checkcfg backend reports readiness when deploy script exists', () => {
     const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
 

@@ -8,21 +8,22 @@ source "$SCRIPT_DIR/lib.sh"
 usage() {
   local exit_code="${1:-2}"
   cat >&2 <<'EOF'
-Usage: bootstrapcfg [--include-n8n] [--surface <surface> ...]
+Usage: bootstrapcfg [--skip-n8n] [--surface <surface> ...]
 
 Description:
   Import runtime config into repo for multiple surfaces by calling importcfg.
 
 Options:
   --surface <surface>    surface to import (repeatable)
-  --include-n8n          include n8n in default surface set
+  --skip-n8n             skip n8n from default surface set
+  --include-n8n          compatibility alias (n8n is included by default)
 EOF
   echo "Supported surfaces:" >&2
   print_supported_surfaces >&2
   exit "$exit_code"
 }
 
-include_n8n=0
+include_n8n=1
 declare -a requested_surfaces=()
 
 while [[ $# -gt 0 ]]; do
@@ -37,6 +38,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --include-n8n)
       include_n8n=1
+      shift
+      ;;
+    --skip-n8n)
+      include_n8n=0
       shift
       ;;
     -h|--help)
