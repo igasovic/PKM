@@ -354,6 +354,7 @@ class LiteLLMClient {
       ...(metadata || {}),
     });
     const methodStart = Date.now();
+    const attemptDetails = [];
 
     const makeBody = (reasoningEffort) => ({
       model,
@@ -366,105 +367,82 @@ class LiteLLMClient {
 
     const attempt = async (reasoningEffort, attemptIndex) => {
       const body = makeBody(reasoningEffort);
-      let fetchResult;
+      const attemptStart = Date.now();
       try {
-        fetchResult = await this.fetchJson(endpoint, {
+        const fetchResult = await this.fetchJson(endpoint, {
           method: 'POST',
           headers,
           body: JSON.stringify(body),
         });
-      } catch (err) {
-        this.logError(
-          'chat.completions.attempt',
-          {
-            model,
-            attempt: attemptIndex,
-            reasoning_effort: reasoningEffort,
-            prompt_chars: prompt.length,
-          },
-          err,
-          withCallMetadata({
-            endpoint: 'chat.completions',
-          })
-        );
-        throw err;
-      }
+        const { res, json, text, duration_ms } = fetchResult;
+        const usage = readUsage(json);
+        const msg = extractErrorMessage(json, text);
 
-      const { res, json, text, duration_ms } = fetchResult;
-      const usage = readUsage(json);
-      const msg = extractErrorMessage(json, text);
-
-      if (!res.ok) {
-        const err = new Error(`LiteLLM chat completion error: ${msg}`);
-        this.logError(
-          'chat.completions.attempt',
-          {
-            model,
-            attempt: attemptIndex,
-            reasoning_effort: reasoningEffort,
-            prompt_chars: prompt.length,
-          },
-          err,
-          withCallMetadata({
-            endpoint: 'chat.completions',
+        if (!res.ok) {
+          const err = new Error(`LiteLLM chat completion error: ${msg}`);
+          return {
+            ok: false,
+            error: err,
+            message: msg,
             status_code: res.status,
-            response_preview: truncate(msg, 350),
-          }),
-          {
+            json,
+            usage,
             duration_ms,
-          }
-        );
+            attempt: attemptIndex,
+            reasoning_effort: reasoningEffort,
+          };
+        }
+
+        const responseText = extractResponseText(json);
+        return {
+          ok: true,
+          json,
+          text: responseText,
+          reasoning_effort: reasoningEffort,
+          usage,
+          status_code: res.status,
+          duration_ms,
+          attempt: attemptIndex,
+        };
+      } catch (err) {
         return {
           ok: false,
           error: err,
-          message: msg,
-          status_code: res.status,
-          json,
-        };
-      }
-
-      const responseText = extractResponseText(json);
-      this.logSuccess(
-        'chat.completions.attempt',
-        {
-          model,
+          message: err && err.message ? err.message : String(err || 'unknown error'),
+          status_code: null,
+          json: null,
+          usage: null,
+          duration_ms: Date.now() - attemptStart,
           attempt: attemptIndex,
           reasoning_effort: reasoningEffort,
-          prompt_chars: prompt.length,
-        },
-        {
-          response_chars: String(responseText || '').length,
-        },
-        withCallMetadata({
-          endpoint: 'chat.completions',
-          status_code: res.status,
-        }),
-        {
-          ...buildLlmMetrics(json, duration_ms, usage),
-          ...usage,
-        },
-        usage
-      );
-
-      return {
-        ok: true,
-        json,
-        text: responseText,
-        reasoning_effort: reasoningEffort,
-        usage,
-      };
+        };
+      }
     };
 
     try {
       let result = await attempt(defaultReasoningEffort, 1);
+      attemptDetails.push({
+        attempt: result.attempt,
+        reasoning_effort: result.reasoning_effort,
+        status_code: result.status_code,
+        ok: result.ok,
+        duration_ms: result.duration_ms,
+      });
       if (!result.ok) {
         if (defaultReasoningEffort === 'minimal' && isReasoningEffortValidationError(result.message)) {
           result = await attempt('low', 2);
+          attemptDetails.push({
+            attempt: result.attempt,
+            reasoning_effort: result.reasoning_effort,
+            status_code: result.status_code,
+            ok: result.ok,
+            duration_ms: result.duration_ms,
+          });
         }
       }
 
       if (!result.ok) {
-        throw result.error;
+        throw result.error || new Error(result.message || 'LiteLLM chat completion failed');
       }
 
       this.logSuccess(
@@ -479,6 +457,8 @@ class LiteLLMClient {
         withCallMetadata({
           endpoint: 'chat.completions',
           reasoning_effort: result.reasoning_effort,
+          attempt_count: attemptDetails.length,
+          attempts: attemptDetails,
         }),
         {
           ...buildLlmMetrics(result.json, Date.now() - methodStart, result.usage),
@@ -498,6 +478,8 @@ class LiteLLMClient {
         err,
         withCallMetadata({
           endpoint: 'chat.completions',
+          attempt_count: attemptDetails.length,
+          attempts: attemptDetails,
         }),
         {
           llm_duration_ms: Date.now() - methodStart,

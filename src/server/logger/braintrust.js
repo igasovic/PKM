@@ -52,7 +52,9 @@ function logApiSuccess(meta, output, metrics) {
 
 function logApiError(meta, err, metrics) {
   braintrustSink.logError('api.request', {
-    input: { ...(meta || {}) },
+    input: scrubCaptureText({
+      ...(meta || {}),
+    }),
     error: err,
     metadata: {
       source: 'api',

@@ -587,7 +587,6 @@ async function handleRequest(req, res) {
       return json(res, 200, payload);
     } catch (err) {
       logApiError(meta, err, { duration_ms: Date.now() - start });
-      logError(err, req);
       const statusCode = Number(err && err.statusCode);
       const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
       const errorCode = status === 403

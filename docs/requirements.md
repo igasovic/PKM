@@ -357,6 +357,14 @@ Primary objective:
   - `extracted_text`
   - `clean_text`
 - Braintrust logging remains focused on LLM spans and should include `run_id` metadata.
+- API-level Braintrust telemetry must redact `capture_text` on both success and error paths.
+- Handled API request failures should emit one canonical `api.request` error event (avoid duplicate request-level error events for the same failure).
+- LLM call telemetry should emit one canonical event per call (`chat.completions`) with retry-attempt details summarized in metadata.
+- Braintrust sink write failures must be surfaced via sampled stderr warnings that include cumulative and consecutive failure counters.
+- LLM cost derivation precedence must be:
+  - model map from `LLM_MODEL_COSTS_PER_1M_USD_JSON` (if provided)
+  - model-specific env pair `LLM_MODEL_<MODEL_KEY>_INPUT_COST_PER_1M_USD` and `LLM_MODEL_<MODEL_KEY>_OUTPUT_COST_PER_1M_USD`
+  - global fallback `LLM_INPUT_COST_PER_1M_USD` and `LLM_OUTPUT_COST_PER_1M_USD`
 - Backend must expose run inspection API:
   - `GET /debug/run/:run_id` (admin-protected)
   - `GET /debug/run/last` (admin-protected)

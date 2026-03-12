@@ -12,11 +12,20 @@
 - Upgraded Braintrust sink in `src/server/logger/sinks/braintrust.js`:
   - explicit success/error helpers with `metadata.outcome = success|error`
   - LLM usage normalization (`prompt_tokens`, `completion_tokens`, `reasoning_tokens`, `total_tokens`)
-  - automatic `estimated_cost_usd` derivation when usage tokens and per-1M env rates are present
+  - automatic `estimated_cost_usd` derivation with precedence:
+    - `LLM_MODEL_COSTS_PER_1M_USD_JSON`
+    - `LLM_MODEL_<MODEL_KEY>_INPUT/OUTPUT_COST_PER_1M_USD`
+    - global `LLM_INPUT/OUTPUT_COST_PER_1M_USD`
+  - sink write failures now surface sampled stderr warnings with cumulative/consecutive failure counters
 - Refactored LiteLLM client telemetry:
   - `src/server/litellm-client.js` now logs via logger Braintrust sink instead of direct Braintrust client calls
+  - `chat.completions` now emits one canonical event per call (retry attempts captured as metadata instead of separate per-attempt events)
+- API request telemetry hardening:
+  - `capture_text` is redacted on `api.request` error logs as well as success logs
+  - `/db/*` handled errors now avoid duplicate request-level Braintrust events (`api.request` + `server.request_error`)
 - Added coverage:
   - `test/server/braintrust-sink.test.js`
+  - `test/server/braintrust-wrapper.test.js`
 
 ## 2026-03-12 — Content hash derivation from clean_text + backfill script
 
