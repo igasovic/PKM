@@ -456,8 +456,7 @@ This file breaks the Tier 2 distillation implementation into ordered, testable w
 - Maintain the backend-only boundary for all data access.
 
 **Implementation notes for the code-access agent**
-- No new files under legacy `js/`.
-- New workflow logic should live under `src/n8n/`.
+- Workflow logic should live under `src/n8n/` only.
 
 **Tests / verification**
 - Workflow smoke runs.

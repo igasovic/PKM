@@ -7,9 +7,9 @@
  */
 'use strict';
 
-const { getConfig } = require('../../../src/libs/config.js');
+const { getConfig } = require('../../../../src/libs/config.js');
 
-const sb = require('../../../src/libs/sql-builder.js');
+const sb = require('../../../../src/libs/sql-builder.js');
 
 module.exports = async function run(ctx) {
   const { $json, $items } = ctx;

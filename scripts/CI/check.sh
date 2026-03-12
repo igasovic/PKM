@@ -16,21 +16,13 @@ search_text() {
 }
 
 # --------
-# 1) Hybrid migration rule: no *new* files under legacy js/
-#    (edits to existing files are allowed)
+# 1) n8n path rule: legacy js/ tree is sunset and must not exist
 # --------
-echo "==> Checking legacy js/ policy (no new files under js/)..."
-if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
-  # List newly added files (A) compared to HEAD
-  NEW_FILES="$(git -C "$ROOT" diff --name-status --diff-filter=A HEAD | awk '{print $2}' || true)"
-  if echo "$NEW_FILES" | grep -qE '^js/'; then
-    echo "ERROR: New files were added under legacy js/. Add new n8n code under src/n8n/ instead."
-    echo "New files:"
-    echo "$NEW_FILES" | grep -E '^js/' || true
-    exit 1
-  fi
-else
-  echo "WARN: Not a git repo; skipping new-file checks."
+echo "==> Checking legacy js/ sunset (js/ must be absent)..."
+if [[ -d "$ROOT/js" ]]; then
+  echo "ERROR: Legacy js/ directory still exists. Use src/n8n/workflows and src/n8n/nodes only."
+  find "$ROOT/js" -maxdepth 2 -type f | sed "s#^$ROOT/##" | head -n 20
+  exit 1
 fi
 
 # --------
@@ -76,10 +68,14 @@ N8N_WF_DIR="$ROOT/src/n8n/workflows"
 N8N_NODES_DIR="$ROOT/src/n8n/nodes"
 
 if [[ -d "$N8N_WF_DIR" ]]; then
-  LEGACY_REFS="$(search_text '/data/js/workflows/' "$N8N_WF_DIR")"
-  if [[ -n "$LEGACY_REFS" ]]; then
-    echo "ERROR: Legacy wrapper paths found in canonical workflows:"
-    echo "$LEGACY_REFS"
+  NON_CANONICAL_WRAPPERS="$(
+    (rg -n -o -S "/data/[^\"'[:space:]]+\\.js" "$N8N_WF_DIR" 2>/dev/null || true) \
+      | grep -v "/data/src/n8n/nodes/" \
+      | grep -v "/data/src/libs/" || true
+  )"
+  if [[ -n "$NON_CANONICAL_WRAPPERS" ]]; then
+    echo "ERROR: Non-canonical wrapper paths found in workflows:"
+    echo "$NON_CANONICAL_WRAPPERS"
     exit 1
   fi
 

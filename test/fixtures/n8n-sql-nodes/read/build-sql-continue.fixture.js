@@ -2,8 +2,8 @@
  * PKM / n8n Externalized Code Node
  *
  * Workflow: Read (read)
- * Node: Build SQL - /PULL
- * Node ID: 55ed7dbe-1cc2-46de-98b5-0fa4d916c84c
+ * Node: Build SQL - /CONTINUE
+ * Node ID: 138ce96f-f56c-4bea-9443-67686bd6066b
  *
  * Notes:
  * - Generated from workflow export for clean Git diffs.
@@ -12,9 +12,9 @@
  */
 'use strict';
 
-const { getConfig } = require('../../../src/libs/config.js');
+const { getConfig } = require('../../../../src/libs/config.js');
 
-const sb = require('../../../src/libs/sql-builder.js');
+const sb = require('../../../../src/libs/sql-builder.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
@@ -27,18 +27,17 @@ module.exports = async function run(ctx) {
   const db = config.db;
   const entries_table = sb.resolveEntriesTable(db);
 
-  const entry_id = $json.entry_id;
-if (!entry_id || !String(entry_id).trim()) throw new Error('pull: missing entry_id');
+  const q = String($json.q || '').trim();
+  const days = Number($json.days || 0);
+  const limit = Number($json.limit || 0);
 
-const shortN = Number(config.scoring.maxItems.pull_short_chars);
-const longN = Number(config.scoring.maxItems.pull_excerpt_chars);
+  const sql = sb.buildReadContinue({
+    config,
+    entries_table,
+    q,
+    days,
+    limit,
+  });
 
-const sql = sb.buildReadPull({
-  entries_table,
-  entry_id,
-  shortN,
-  longN,
-});
-
-return [{ json: { ...$json, sql } }];
+  return [{ json: { ...$json, sql } }];
 };

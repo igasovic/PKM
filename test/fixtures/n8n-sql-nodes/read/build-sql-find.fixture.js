@@ -2,8 +2,8 @@
  * PKM / n8n Externalized Code Node
  *
  * Workflow: Read (read)
- * Node: Build SQL - /CONTINUE
- * Node ID: 138ce96f-f56c-4bea-9443-67686bd6066b
+ * Node: Build SQL - /FIND
+ * Node ID: d0724507-154e-485c-8b0d-3523be365f6c
  *
  * Notes:
  * - Generated from workflow export for clean Git diffs.
@@ -12,9 +12,9 @@
  */
 'use strict';
 
-const { getConfig } = require('../../../src/libs/config.js');
+const { getConfig } = require('../../../../src/libs/config.js');
 
-const sb = require('../../../src/libs/sql-builder.js');
+const sb = require('../../../../src/libs/sql-builder.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
@@ -31,7 +31,7 @@ module.exports = async function run(ctx) {
   const days = Number($json.days || 0);
   const limit = Number($json.limit || 0);
 
-  const sql = sb.buildReadContinue({
+  const sql = sb.buildReadFind({
     config,
     entries_table,
     q,

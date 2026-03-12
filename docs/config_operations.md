@@ -156,7 +156,6 @@ Keep this list updated whenever a new surface is discovered or ownership changes
 - `src/server/**` direct env reads until removed
 - `src/n8n/workflows/`
 - `src/n8n/nodes/`
-- `js/workflows/` (legacy)
 - `scripts/n8n/**`
 - `scripts/db/**`
 - `pkm.runtime_config` (runtime-mutable DB state)

@@ -3,10 +3,10 @@
 const assert = require('assert');
 const path = require('path');
 
-const buildContinue = require(path.resolve(__dirname, '../js/workflows/read/02_build-sql-continue__138ce96f-f56c-4bea-9443-67686bd6066b.js'));
-const buildFind = require(path.resolve(__dirname, '../js/workflows/read/03_build-sql-find__d0724507-154e-485c-8b0d-3523be365f6c.js'));
-const buildLast = require(path.resolve(__dirname, '../js/workflows/read/04_build-sql-last__97543204-559a-4946-8621-4faacda4643f.js'));
-const buildPull = require(path.resolve(__dirname, '../js/workflows/read/05_build-sql-pull__55ed7dbe-1cc2-46de-98b5-0fa4d916c84c.js'));
+const buildContinue = require(path.resolve(__dirname, './fixtures/n8n-sql-nodes/read/build-sql-continue.fixture.js'));
+const buildFind = require(path.resolve(__dirname, './fixtures/n8n-sql-nodes/read/build-sql-find.fixture.js'));
+const buildLast = require(path.resolve(__dirname, './fixtures/n8n-sql-nodes/read/build-sql-last.fixture.js'));
+const buildPull = require(path.resolve(__dirname, './fixtures/n8n-sql-nodes/read/build-sql-pull.fixture.js'));
 
 function makeCtx(json) {
   return {

@@ -81,7 +81,6 @@ Expected: `HTTP 200`.
 
 Avoid:
 - direct DB edits for workflow state
-- reintroducing `/data/js/workflows/...` wrappers
 - relative externalized imports like `../../../src/...`
 
 ## Flow (orchestrated)
@@ -103,30 +102,9 @@ Avoid:
   - `/home/igasovic/repos/n8n-workflows:/data:ro`
 - No automatic workflow deletion in n8n.
 - Node relocation is move/copy-first to avoid losing existing code.
-- Legacy wrapper paths `/data/js/workflows/...` are forbidden in canonical repo workflows.
+- Non-canonical wrapper paths are forbidden in canonical repo workflows.
 - Externalized code-node imports must not use relative repo paths like `../../../src/...`.
   Use absolute mount paths (for example `require('/data/src/libs/config.js')`) so runtime resolution is stable inside the n8n container.
-
-## Bridge Cutover (safe)
-
-Use one command to remove legacy bridge dependency safely:
-
-```bash
-./scripts/n8n/cutover_remove_bridges.sh
-```
-
-What it does:
-1. Runs existing DB backup script (`scripts/db/backup.sh daily` by default).
-2. Snapshots live n8n workflows before cutover.
-3. Runs full sync (`pull + push + recreate`) with live no-legacy validation.
-4. Removes local legacy bridge files under `js/workflows`.
-5. Verifies no `/data/js/workflows/...` references remain in repo workflows.
-
-Optional commit:
-
-```bash
-./scripts/n8n/cutover_remove_bridges.sh --commit
-```
 
 ## Change logs emitted by sync
 
@@ -149,10 +127,7 @@ All workflow-management scripts live under `scripts/n8n/`:
 - `scripts/n8n/normalize_workflows.sh`
 - `scripts/n8n/rename_workflows_by_name.sh`
 - `scripts/n8n/sync_code_nodes.py`
-- `scripts/n8n/cutover_remove_bridges.sh`
-- `scripts/n8n/remove_legacy_bridges.py`
 
 Archived (do not use for normal operations):
 - `scripts/archive/n8n/import_workflows.sh`
 - `scripts/archive/n8n/activate_workflows.sh`
-- `scripts/archive/n8n/repair_legacy_bridges.py`

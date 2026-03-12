@@ -4,7 +4,7 @@
  *
  * USER GUIDE (for agents)
  * ----------------------
- * Use this library in js/workflows when building SQL for Postgres (INSERT/UPDATE/SELECT).
+ * Use this library in src/n8n/nodes when building SQL for Postgres (INSERT/UPDATE/SELECT).
  * All functions are pure and stateless: same inputs always produce the same output.
  *
  * Literals (use in VALUES, SET, WHERE, params):

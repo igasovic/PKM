@@ -686,9 +686,6 @@ check_surface_n8n() {
     "$tmp_nodes"
     "$CFG_N8N_MIN_JS_LINES"
   )
-  if [[ -d "$CFG_REPO_ROOT/js/workflows" ]]; then
-    sync_args+=("$CFG_REPO_ROOT/js/workflows")
-  fi
 
   progress_step "externalize and sync code-node sources"
   if ! run_capture out "${sync_args[@]}"; then

@@ -12,8 +12,8 @@ This repository contains the **PKM DEV** n8n + Postgres workflow system: exporte
 - `docs/`  
   Operational docs and “source of truth” notes for running the stack.
 
-- `js/`  
-  Externalized JavaScript modules used by n8n Code nodes (mounted into the n8n container at `/data/js`).
+- `src/n8n/`  
+  Externalized JavaScript modules and workflow JSON used by n8n.
 
 - `scripts/`  
   Helper scripts for exporting/normalizing workflows and keeping Git diffs clean.
@@ -46,51 +46,26 @@ Files:
 
 ---
 
-## js/
+## src/n8n/
 
 ### Purpose
 
-`js/` holds the JavaScript modules that n8n Code nodes `require()` at runtime.
+`src/n8n/` holds externalized JavaScript modules and workflow JSON for n8n.
 
 **Mount expectation (per `docs/env.md`):**
-- Host repo path: `/home/igasovic/repos/n8n-workflows/js`
-- n8n container mount: `/data/js`
-- Code nodes load modules like: `/data/js/workflows/<workflow-slug>/<file>.js`
+- Host repo path: `/home/igasovic/repos/n8n-workflows/src/n8n`
+- n8n container mount: `/data`
+- Code nodes load modules like: `/data/src/n8n/nodes/<workflow-slug>/<file>.js`
 
 ### Structure
 
-- `js/workflows/<workflow-slug>/...`
+- `src/n8n/nodes/<workflow-slug>/...`
 
-Workflow slugs currently present:
-
-- `js/workflows/pkm-retrieval-config/`
-  - `return_scoring_config_v1.js` — central config provider for retrieval and routing.
-  - `99_force-test-mode__*.js` — toggle helper (force test mode on a per-run basis).
-
-- `js/workflows/tier-1-enhancement/`
-  Shared Tier‑1 enrichment modules (prompt construction, response parsing, and DB update) used by the Tier‑1 subworkflow.
-
-- `js/workflows/telegram-capture/`
-  Externalized nodes for Telegram ingestion (normalize, build SQL insert/update, compute quality signals, create message/response).
-
-- `js/workflows/e-mail-capture/`
-  Externalized nodes for newsletter/email ingestion and reply composition.
-  (Some Tier‑1 helper modules may also exist here for backwards compatibility.)
-
-- `js/workflows/read/`
-  Externalized nodes for the Telegram “read” commands (`/last`, `/find`, `/continue`, `/pull`, `/help`) including SQL builders and message formatting.
-
-  - `return_scoring_config_v1.js` — central config provider for retrieval and routing.
-  - `99_force-test-mode__*.js` — toggle helper (force test mode on a per-run basis).
-
-- `js/workflows/telegram-capture/`
-  Externalized nodes for Telegram ingestion (normalize, build SQL insert/update, compute quality signals, compose response).
-
-- `js/workflows/e-mail-capture/`
-  Externalized nodes for newsletter/email ingestion and reply composition.
-
-- `js/workflows/read/`
-  Externalized nodes for the Telegram “read” commands (`/last`, `/find`, `/continue`, `/pull`, `/help`) including SQL builders and message formatting.
+Current node folders include:
+- `src/n8n/nodes/10-read/` and `src/n8n/nodes/read/` for read-command formatting and SQL builder fixtures.
+- `src/n8n/nodes/03-e-mail-capture/` and `src/n8n/nodes/e-mail-capture/` for email capture/reply and SQL builder fixtures.
+- `src/n8n/nodes/02-telegram-capture/` and `src/n8n/nodes/telegram-capture/` for telegram capture/response and SQL builder fixtures.
+- `src/n8n/nodes/22-web-extraction/` for extraction cleanup and retrieval-quality recompute logic.
 
 ### Critical convention: Config source
 
@@ -158,8 +133,8 @@ Current workflows (examples in this snapshot):
 - **After changing workflow structure in n8n UI:**  
   Run `./scripts/n8n/sync_workflows.sh` (or `--commit`) to sync workflows and code nodes.
 
-- **After updating external JS modules:**  
-  Commit `js/` changes and restart the n8n container to avoid module cache issues.
+- **After updating externalized Code-node modules:**  
+  Commit `src/n8n/nodes/` changes and restart the n8n container to avoid module cache issues.
 
 - **Test mode cleanup (Postgres):**  
   `TRUNCATE TABLE pkm_test.entries RESTART IDENTITY;`

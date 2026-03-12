@@ -68,7 +68,7 @@ For any config, infra, Docker, cloudflared, LiteLLM, Postgres init or backend-lo
 ### Repository ownership and placement
 - Follow `docs/repo-map.md`.
 - New n8n logic belongs under `src/n8n/`.
-- Existing `js/` modules may be edited when needed, but do not add new files under `js/` unless explicitly requested.
+- Legacy `js/` workflow tree is sunset. Use only `src/n8n/workflows/` and `src/n8n/nodes/`.
 
 ### Runtime and environment boundary
 - `docs/env.md` is authoritative for service topology, ports, mounts, container names, and runtime stack root.
@@ -110,7 +110,6 @@ At minimum, treat these as active config surfaces:
 - `src/server/**` direct env reads
 - `src/n8n/workflows/`
 - `src/n8n/nodes/`
-- `js/workflows/`
 - `scripts/n8n/**`
 - `scripts/db/**`
 - `pkm.runtime_config`
@@ -191,4 +190,4 @@ Run:
 - Do not bypass DB module methods from business logic.
 - Do not commit secrets.
 - Do not reintroduce hidden config through `docker-compose.yml`, ad hoc `.env` growth, or duplicated defaults in code.
-- Do not add new files under legacy `js/` unless explicitly requested.
+- Do not reintroduce a `js/` workflow tree.

@@ -4,7 +4,6 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORKFLOWS_DIR="$REPO_DIR/src/n8n/workflows"
 NODES_ROOT_DIR="$REPO_DIR/src/n8n/nodes"
-LEGACY_NODES_ROOT_DIR="$REPO_DIR/js/workflows"
 RAW_DIR="$REPO_DIR/tmp/n8n-sync/raw"
 PATCHED_RAW_DIR="$REPO_DIR/tmp/n8n-sync/patched"
 MIN_JS_LINES="${MIN_JS_LINES:-50}"
@@ -76,16 +75,6 @@ require_file() {
   fi
 }
 
-search_text() {
-  local pattern="$1"
-  local path="$2"
-  if command -v rg >/dev/null 2>&1; then
-    rg -n -S "$pattern" "$path" 2>/dev/null || true
-  else
-    grep -R -n -E "$pattern" "$path" 2>/dev/null || true
-  fi
-}
-
 if [[ "$MODE" != "pull" && "$MODE" != "push" && "$MODE" != "full" ]]; then
   echo "Invalid mode: $MODE" >&2
   usage
@@ -148,14 +137,44 @@ fi
 
 mkdir -p "$RAW_DIR" "$PATCHED_RAW_DIR" "$WORKFLOWS_DIR" "$NODES_ROOT_DIR"
 
+validate_no_noncanonical_wrappers() {
+  local workflows_dir="$1"
+  local label="$2"
+  "$PYTHON_BIN" - "$workflows_dir" "$label" <<'PY'
+import json
+import pathlib
+import re
+import sys
+
+workflows_dir = pathlib.Path(sys.argv[1])
+label = sys.argv[2]
+canonical_prefix = "/data/src/n8n/nodes/"
+forbidden = []
+
+for wf in sorted(workflows_dir.glob("*.json")):
+    try:
+        data = json.loads(wf.read_text(encoding="utf-8"))
+    except Exception:
+        continue
+    for node in data.get("nodes", []):
+        js = (node.get("parameters") or {}).get("jsCode", "")
+        if not isinstance(js, str):
+            continue
+        for match in re.finditer(r"""require\(\s*['"](/data/[^'\"`]+\.js)['"]\s*\)""", js):
+            wrapper_path = match.group(1)
+            if not wrapper_path.startswith(canonical_prefix):
+                forbidden.append((wf.name, node.get("name"), wrapper_path))
+
+if forbidden:
+    print(f"Non-canonical wrapper paths found in {label} workflows:", file=sys.stderr)
+    for wf_name, node_name, wrapper_path in forbidden:
+        print(f"- {wf_name} :: {node_name} -> {wrapper_path}", file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
 validate_repo_workflows() {
-  local legacy_refs
-  legacy_refs="$(search_text "/data/js/workflows/" "$WORKFLOWS_DIR")"
-  if [[ -n "$legacy_refs" ]]; then
-    echo "Legacy wrapper paths found in repo workflows ($WORKFLOWS_DIR):" >&2
-    echo "$legacy_refs" >&2
-    exit 1
-  fi
+  validate_no_noncanonical_wrappers "$WORKFLOWS_DIR" "repo"
 
   "$PYTHON_BIN" - "$WORKFLOWS_DIR" "$NODES_ROOT_DIR" <<'PY'
 import json
@@ -191,14 +210,7 @@ validate_live_workflows() {
   docker exec -u node n8n sh -lc 'rm -rf /tmp/workflows_live_validate && mkdir -p /tmp/workflows_live_validate'
   docker exec -u node n8n n8n export:workflow --backup --output=/tmp/workflows_live_validate
   docker cp n8n:/tmp/workflows_live_validate/. "$live_validate_dir/"
-
-  local legacy_refs
-  legacy_refs="$(search_text "/data/js/workflows/" "$live_validate_dir")"
-  if [[ -n "$legacy_refs" ]]; then
-    echo "Legacy wrapper paths still present in live n8n workflows after push:" >&2
-    echo "$legacy_refs" >&2
-    exit 1
-  fi
+  validate_no_noncanonical_wrappers "$live_validate_dir" "live"
 }
 
 run_pull() {
@@ -221,9 +233,6 @@ run_pull() {
     "$NODES_ROOT_DIR"
     "$MIN_JS_LINES"
   )
-  if [[ -d "$LEGACY_NODES_ROOT_DIR" ]]; then
-    args+=("$LEGACY_NODES_ROOT_DIR")
-  fi
   "${args[@]}"
   "$REPO_DIR/scripts/n8n/normalize_workflows.sh" "$WORKFLOWS_DIR"
   validate_repo_workflows
@@ -237,9 +246,6 @@ run_push() {
     "--workflows-dir" "$WORKFLOWS_DIR"
     "--nodes-root-dir" "$NODES_ROOT_DIR"
   )
-  if [[ -d "$LEGACY_NODES_ROOT_DIR" ]]; then
-    args+=("--legacy-nodes-root-dir" "$LEGACY_NODES_ROOT_DIR")
-  fi
   if [[ "$DRY_RUN" -eq 1 ]]; then
     args+=("--dry-run")
   fi
@@ -292,13 +298,13 @@ esac
 
 if [[ "$DO_COMMIT" -eq 1 ]]; then
   echo "[commit] Commit canonical n8n repo changes"
-  local_paths=(src/n8n/workflows src/n8n/nodes js/workflows)
+  local_paths=(src/n8n/workflows src/n8n/nodes)
   if [[ -d "$REPO_DIR/workflows" ]] || git -C "$REPO_DIR" ls-files --error-unmatch workflows >/dev/null 2>&1; then
     local_paths+=(workflows)
   fi
 
   if git -C "$REPO_DIR" diff --quiet -- "${local_paths[@]}"; then
-    echo "No changes detected in src/n8n/workflows, src/n8n/nodes, js/workflows, or legacy workflows/; skipping commit."
+    echo "No changes detected in src/n8n/workflows, src/n8n/nodes, or legacy workflows/; skipping commit."
   else
     git -C "$REPO_DIR" add -A "${local_paths[@]}"
     git -C "$REPO_DIR" commit -m "chore(n8n): sync workflows and code nodes"

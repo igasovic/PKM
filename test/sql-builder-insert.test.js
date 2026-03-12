@@ -3,8 +3,8 @@
 const assert = require('assert');
 const path = require('path');
 
-const emailInsert = require(path.resolve(__dirname, '../js/workflows/e-mail-capture/01_build-sql-insert__c4848348-bcd7-42b5-80d4-5b59e0152a45.js'));
-const telegramInsert = require(path.resolve(__dirname, '../js/workflows/telegram-capture/01_build-sql-insert__5ea800e9-24b0-4674-8ec9-e0a92e5c574b.js'));
+const emailInsert = require(path.resolve(__dirname, './fixtures/n8n-sql-nodes/e-mail-capture/build-sql-insert.fixture.js'));
+const telegramInsert = require(path.resolve(__dirname, './fixtures/n8n-sql-nodes/telegram-capture/build-sql-insert.fixture.js'));
 
 function makeCtx(json) {
   return {

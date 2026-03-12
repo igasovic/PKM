@@ -6,18 +6,18 @@ def die(msg):
     sys.exit(1)
 
 if len(sys.argv) != 4:
-    die("Usage: patch_workflow_use_external_js.py <workflow_json> <js_dir> <workflow_slug>")
+    die("Usage: patch_workflow_use_external_js.py <workflow_json> <nodes_dir> <workflow_slug>")
 
-wf_path, js_dir, workflow_slug = sys.argv[1], sys.argv[2], sys.argv[3]
+wf_path, nodes_dir, workflow_slug = sys.argv[1], sys.argv[2], sys.argv[3]
 
 if not os.path.exists(wf_path):
     die(f"Missing workflow json: {wf_path}")
-if not os.path.isdir(js_dir):
-    die(f"Missing js dir: {js_dir}")
+if not os.path.isdir(nodes_dir):
+    die(f"Missing nodes dir: {nodes_dir}")
 
 # Map node_id -> js filename from files like: 02_build-sql-last__<node-id>.js
 mapping = {}
-for p in glob.glob(os.path.join(js_dir, "*.js")):
+for p in glob.glob(os.path.join(nodes_dir, "*.js")):
     base = os.path.basename(p)
     m = re.search(r"__([0-9a-fA-F-]{36})\.js$", base)
     if not m:
@@ -26,7 +26,7 @@ for p in glob.glob(os.path.join(js_dir, "*.js")):
     mapping[node_id] = base
 
 if not mapping:
-    die(f"No node-id mapped js files found in {js_dir}")
+    die(f"No node-id mapped files found in {nodes_dir}")
 
 with open(wf_path, "r", encoding="utf-8") as f:
     data = json.load(f)
@@ -52,7 +52,7 @@ for wf in workflows:
             continue
 
         wrapper = (
-            f"try{{const fn=require('/data/js/workflows/{workflow_slug}/{fn}');"
+            f"try{{const fn=require('/data/src/n8n/nodes/{workflow_slug}/{fn}');"
             f"return await fn({{$input,$json,$items,$node,$env,helpers}});}}"
             f"catch(e){{e.message=`[extjs:{workflow_slug}/{fn}] ${{e.message}}`;throw e;}}"
         )

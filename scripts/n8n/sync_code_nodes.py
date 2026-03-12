@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 CANONICAL_WRAPPER_PREFIX = "/data/src/n8n/nodes/"
-LEGACY_WRAPPER_PREFIX = "/data/js/workflows/"
 
 
 def die(message: str) -> None:
@@ -100,7 +99,7 @@ def module_to_inline_code(text: str):
 
 def rewrite_repo_imports(text: str) -> str:
     normalized = normalize_newlines(text)
-    # Normalize legacy relative requires used before path migration.
+    # Normalize older relative requires used before path migration.
     # Code-node files run from /data/src/n8n/nodes/<workflow>/..., so using absolute
     # /data/src/libs/... avoids fragile relative traversal.
     normalized = re.sub(
@@ -125,13 +124,12 @@ def path_is_under(path_obj: Path, root: Path) -> bool:
 
 def extract_wrapper_relative_path(js_code: str):
     normalized = normalize_newlines(js_code)
-    for prefix in (CANONICAL_WRAPPER_PREFIX, LEGACY_WRAPPER_PREFIX):
-        match = re.search(
-            rf"""require\(\s*['"]{re.escape(prefix)}([^'"]+?\.js)['"]\s*\)""",
-            normalized,
-        )
-        if match:
-            return prefix, match.group(1)
+    match = re.search(
+        rf"""require\(\s*['"]{re.escape(CANONICAL_WRAPPER_PREFIX)}([^'"]+?\.js)['"]\s*\)""",
+        normalized,
+    )
+    if match:
+        return CANONICAL_WRAPPER_PREFIX, match.group(1)
     return None, None
 
 
@@ -248,7 +246,6 @@ def resolve_source_for_wrapper(
     js_code: str,
     node_id: str,
     nodes_root_dir: Path,
-    legacy_nodes_root_dir: Path | None,
     node_file_index,
 ):
     wrapper_prefix, wrapper_rel = extract_wrapper_relative_path(js_code)
@@ -258,12 +255,8 @@ def resolve_source_for_wrapper(
     candidates = []
     if wrapper_prefix == CANONICAL_WRAPPER_PREFIX:
         candidates.append(nodes_root_dir / Path(wrapper_rel))
-    elif wrapper_prefix == LEGACY_WRAPPER_PREFIX and legacy_nodes_root_dir is not None:
-        candidates.append(legacy_nodes_root_dir / Path(wrapper_rel))
 
     candidates.append(nodes_root_dir / Path(wrapper_rel))
-    if legacy_nodes_root_dir is not None:
-        candidates.append(legacy_nodes_root_dir / Path(wrapper_rel))
 
     by_id_candidates = node_file_index.get(str(node_id or ""), [])
     source_path = first_existing([*candidates, *by_id_candidates])
@@ -271,11 +264,10 @@ def resolve_source_for_wrapper(
 
 
 def parse_args(argv):
-    if len(argv) not in (5, 6):
+    if len(argv) != 5:
         die(
             "Usage: sync_code_nodes.py "
-            "<raw_dir> <patched_raw_dir> <repo_workflows_dir> <nodes_root_dir> <min_lines> "
-            "[legacy_nodes_root_dir]"
+            "<raw_dir> <patched_raw_dir> <repo_workflows_dir> <nodes_root_dir> <min_lines>"
         )
 
     raw_dir = Path(argv[0]).resolve()
@@ -289,10 +281,6 @@ def parse_args(argv):
     if min_lines < 1:
         die(f"Invalid min_lines: {argv[4]}")
 
-    legacy_nodes_root_dir = None
-    if len(argv) == 6 and argv[5]:
-        legacy_nodes_root_dir = Path(argv[5]).resolve()
-
     if not raw_dir.exists() or not raw_dir.is_dir():
         die(f"Missing raw workflows dir: {raw_dir}")
     if not repo_workflows_dir.exists() or not repo_workflows_dir.is_dir():
@@ -300,15 +288,12 @@ def parse_args(argv):
 
     ensure_dir(nodes_root_dir)
     ensure_dir(patched_raw_dir)
-    if legacy_nodes_root_dir is not None:
-        ensure_dir(legacy_nodes_root_dir)
 
     return (
         raw_dir,
         patched_raw_dir,
         repo_workflows_dir,
         nodes_root_dir,
-        legacy_nodes_root_dir,
         min_lines,
     )
 
@@ -319,16 +304,12 @@ def main():
         patched_raw_dir,
         repo_workflows_dir,
         nodes_root_dir,
-        legacy_nodes_root_dir,
         min_lines,
     ) = parse_args(sys.argv[1:])
 
     empty_dir(patched_raw_dir)
     raw_files = list_json_files(raw_dir)
-    node_index_roots = [nodes_root_dir]
-    if legacy_nodes_root_dir is not None:
-        node_index_roots.append(legacy_nodes_root_dir)
-    node_file_index = build_node_file_index(node_index_roots)
+    node_file_index = build_node_file_index([nodes_root_dir])
     expected_node_files = set()
 
     patched_nodes = 0
@@ -365,7 +346,6 @@ def main():
                 js_code,
                 node_id,
                 nodes_root_dir,
-                legacy_nodes_root_dir,
                 node_file_index,
             )
 

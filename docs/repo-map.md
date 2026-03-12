@@ -63,20 +63,7 @@ Hard rules:
 
 Migration policy:
 - New features: put new n8n logic under src/n8n/
-- Existing modules may be edited in js/ when needed, but prefer opportunistic migration
-- Do not add new files under js/ (unless explicitly requested)
-
----
-
-## Legacy modules
-
-### js/ (Legacy n8n code)  [To be migrated]
-Status:
-- Legacy location to be migrated to src/n8n/
-
-Rules:
-- Do not add new modules here unless explicitly requested
-- Prefer migrating touched files to src/n8n/ opportunistically
+- `js/` workflow tree is sunset and must not be used
 
 ---
 

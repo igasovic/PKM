@@ -2,7 +2,7 @@
  * Prompt Builder — Stateless helpers for OpenAI prompt construction
  * ================================================================
  *
- * Use this library in js/workflows for Tier-1 enrichment prompts.
+ * Use this library in src/n8n/nodes for Tier-1 enrichment prompts.
  * All functions are pure and stateless.
  */
 'use strict';

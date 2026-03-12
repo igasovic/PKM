@@ -112,51 +112,39 @@ def build_live_workflow_map():
 
 
 def extract_wrapper_targets(workflow_payload):
-    targets = []
+    canonical = []
+    forbidden = []
     nodes = workflow_payload.get("nodes", [])
     for node in nodes:
         params = node.get("parameters") or {}
         js_code = params.get("jsCode")
         if not isinstance(js_code, str):
             continue
-        match = re.search(r"/data/src/n8n/nodes/([^'\"`]+\.js)", js_code)
-        if match:
-            targets.append(("canonical", match.group(1)))
-            continue
-        match = re.search(r"/data/js/workflows/([^'\"`]+\.js)", js_code)
-        if match:
-            targets.append(("legacy", match.group(1)))
-    return targets
+        for match in re.finditer(r"""require\(\s*['"](/data/[^'\"`]+\.js)['"]\s*\)""", js_code):
+            wrapper_path = match.group(1)
+            prefix = "/data/src/n8n/nodes/"
+            if wrapper_path.startswith(prefix):
+                canonical.append(wrapper_path[len(prefix):])
+            else:
+                forbidden.append(wrapper_path)
+    return canonical, forbidden
 
 
 def validate_wrapper_targets(
     workflow_files,
     nodes_root_dir: Path,
-    legacy_nodes_root_dir: Path | None,
-    allow_legacy_wrappers: bool,
 ):
     missing = []
     for workflow_path in workflow_files:
         data = load_json(workflow_path)
         wf_name = data.get("name", workflow_path.name)
-        for target_type, rel_path in extract_wrapper_targets(data):
-            if target_type == "canonical":
-                target = nodes_root_dir / rel_path
-                exists = target.exists()
-                reason = "missing canonical target"
-            else:
-                if not allow_legacy_wrappers:
-                    missing.append((wf_name, rel_path, "legacy wrapper path is forbidden"))
-                    continue
-                if legacy_nodes_root_dir is None:
-                    target = nodes_root_dir / rel_path
-                    exists = target.exists()
-                else:
-                    target = legacy_nodes_root_dir / rel_path
-                    exists = target.exists() or (nodes_root_dir / rel_path).exists()
-                reason = "missing legacy target"
-            if not exists:
-                missing.append((wf_name, rel_path, reason))
+        canonical_targets, forbidden_targets = extract_wrapper_targets(data)
+        for wrapper_path in forbidden_targets:
+            missing.append((wf_name, wrapper_path, "non-canonical wrapper path"))
+        for rel_path in canonical_targets:
+            target = nodes_root_dir / rel_path
+            if not target.exists():
+                missing.append((wf_name, rel_path, "missing canonical target"))
     if missing:
         print("Wrapper validation failed:", file=sys.stderr)
         for wf_name, rel_path, reason in missing:
@@ -266,11 +254,6 @@ def parse_args(argv):
         help="Directory containing canonical externalized JS node files.",
     )
     parser.add_argument(
-        "--legacy-nodes-root-dir",
-        default=str(repo_root / "js" / "workflows"),
-        help="Optional legacy JS node directory for wrapper compatibility validation.",
-    )
-    parser.add_argument(
         "--workflow-name",
         action="append",
         default=[],
@@ -280,11 +263,6 @@ def parse_args(argv):
         "--dry-run",
         action="store_true",
         help="Validate and print actions without PATCH/activate calls.",
-    )
-    parser.add_argument(
-        "--allow-legacy-wrappers",
-        action="store_true",
-        help="Allow /data/js/workflows/... wrapper paths in local workflow JSON (default: false).",
     )
     return parser.parse_args(argv)
 
@@ -298,13 +276,10 @@ def main(argv):
 
     workflows_dir = Path(args.workflows_dir).resolve()
     nodes_root_dir = Path(args.nodes_root_dir).resolve()
-    legacy_nodes_root_dir = Path(args.legacy_nodes_root_dir).resolve()
     if not workflows_dir.exists():
         die(f"Missing workflows dir: {workflows_dir}")
     if not nodes_root_dir.exists():
         die(f"Missing nodes root dir: {nodes_root_dir}")
-    if not legacy_nodes_root_dir.exists():
-        legacy_nodes_root_dir = None
 
     workflow_files = sorted(workflows_dir.glob("*.json"))
     if not workflow_files:
@@ -328,8 +303,6 @@ def main(argv):
     validate_wrapper_targets(
         workflow_files,
         nodes_root_dir,
-        legacy_nodes_root_dir,
-        args.allow_legacy_wrappers,
     )
 
     live_map, slug_map = build_live_workflow_map()
