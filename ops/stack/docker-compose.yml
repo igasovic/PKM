@@ -1,0 +1,123 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    network_mode: host
+    privileged: true
+    restart: unless-stopped
+    volumes:
+      - ./homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+
+  matter-server:
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    container_name: matter-server
+    restart: unless-stopped
+    network_mode: host
+
+  pkm-server:
+    build:
+      context: /home/igasovic/repos/n8n-workflows
+      dockerfile: src/server/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: "8080"
+      NODE_ENV: "production"
+      PKM_DB_HOST: "postgres"
+      PKM_DB_PORT: "5432"
+      PKM_DB_NAME: "pkm"
+      PKM_DB_SCHEMA: "pkm"
+      PKM_DB_SSL: "false"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      BRAINTRUST_PROJECT: "PKM"
+      BRAINTRUST_API_KEY: "${BRAINTRUST_API_KEY}"
+      PKM_ADMIN_SECRET: "${PKM_ADMIN_SECRET}"
+      T1_BATCH_MODEL: "t1-batch"
+      T1_BATCH_REQUEST_MODEL: "gpt-5-nano"
+      T1_DEFAULT_MODEL: "t1-default"
+    volumes:
+      - /home/igasovic/pkm-import:/data:rw
+    ports:
+      - "3010:8080"
+    networks:
+      - internal
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    network_mode: host
+    command: tunnel --no-autoupdate run --token eyJhIjoiOWI2NzEzZTgyMWU5M2NiNDFhMGJlYjY3MjMyMzcwNmEiLCJ0IjoiYTVlNjQzZmYtYTE4Yi00YjUxLWE2NTMtMTQ1ZThiY2EyNjY2IiwicyI6IlpHRTFNems0WlRrdFlUZGhNaTAwTlRGaUxUaGhaV010TW1FeU1tRTFOMlJoWlRsbCJ9
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_ADMIN_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_ADMIN_PASSWORD}
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    networks:
+      - internal
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${N8N_DB_NAME}
+      - DB_POSTGRESDB_USER=${N8N_DB_USER}
+      - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD}
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - TZ=${TZ}
+      - N8N_RUNNERS_DISABLE_PYTHON=true
+      - NODE_FUNCTION_ALLOW_EXTERNAL=*
+      - NODE_FUNCTION_ALLOW_BUILTIN=node:process,node:path
+      - N8N_EDITOR_BASE_URL=http://127.0.0.1:5680
+
+    ports:
+      - "127.0.0.1:5678:5678"
+    volumes:
+      - ./n8n:/home/node/.n8n
+      - /home/igasovic/repos/n8n-workflows:/data:ro
+      - /home/igasovic/backup/postgres:/home/node/.n8n-files/backup-postgres:ro
+
+    networks:
+      - internal
+
+  litellm:
+    image: docker.litellm.ai/berriai/litellm:main-stable
+    container_name: litellm
+    command: ["--port", "4000", "--config", "/app/config.yaml", "--detailed_debug"]
+    ports:
+      - "4000:4000"   # optional; remove if you only want internal access
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml:ro
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+    restart: unless-stopped
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
