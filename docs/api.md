@@ -147,6 +147,10 @@ Response:
 
 ## Normalization
 
+All normalization endpoints derive `content_hash` from the returned `clean_text`:
+- algorithm: SHA-256 over UTF-8 bytes of `clean_text`
+- `content_hash = null` when `clean_text` is missing/blank
+
 ### `POST /normalize/telegram`
 Normalizes a Telegram capture into a `pkm.entries`-compatible payload.
 `source.system` is inferred by backend as `"telegram"` from this endpoint.
@@ -172,6 +176,7 @@ Response:
   "content_type": "note",
   "capture_text": "...",
   "clean_text": "...",
+  "content_hash": "3b066804f6d1d077173cfe4d06002e6a61e6f21c2b2e648417962115f1afcd8e",
   "retrieval_excerpt": "...",
   "clean_word_count": 10,
   "clean_char_count": 200,
@@ -217,6 +222,7 @@ Response:
   "content_type": "newsletter",
   "capture_text": "...",
   "clean_text": "...",
+  "content_hash": "3b066804f6d1d077173cfe4d06002e6a61e6f21c2b2e648417962115f1afcd8e",
   "retrieval_excerpt": "...",
   "clean_word_count": 10,
   "clean_char_count": 200,
@@ -274,6 +280,7 @@ Response:
   "extracted_text": "...",
   "extracted_len": 12000,
   "clean_text": "...",
+  "content_hash": "3b066804f6d1d077173cfe4d06002e6a61e6f21c2b2e648417962115f1afcd8e",
   "clean_len": 9800,
   "retrieval_excerpt": "...",
   "clean_word_count": 1400,
@@ -324,6 +331,7 @@ Response (normal case):
   "title": "Idea title",
   "capture_text": "...",
   "clean_text": "...",
+  "content_hash": "3b066804f6d1d077173cfe4d06002e6a61e6f21c2b2e648417962115f1afcd8e",
   "external_ref": {
     "notion": {
       "page_id": "abc123",

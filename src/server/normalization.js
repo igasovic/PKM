@@ -1,5 +1,7 @@
 'use strict';
 
+const { deriveContentHashFromCleanText } = require('../libs/content-hash.js');
+
 function maybeUnescapeTelegramText(s) {
   const t = String(s ?? '');
 
@@ -160,6 +162,7 @@ function formatForInsert({
     author,
     capture_text,
     clean_text,
+    content_hash: deriveContentHashFromCleanText(clean_text),
     url: resolved_url,
     url_canonical: resolved_url_canonical,
     ...retrieval_fields,
@@ -1476,6 +1479,7 @@ async function normalizeWebpage({
       extracted_text: extracted,
       extracted_len: extracted.length,
       clean_text: '',
+      content_hash: null,
       clean_len: 0,
       retrieval_update_skipped: true,
     };
@@ -1492,6 +1496,7 @@ async function normalizeWebpage({
     extracted_text: extracted,
     extracted_len: extracted.length,
     clean_text: cleaned,
+    content_hash: deriveContentHashFromCleanText(cleaned),
     clean_len: cleaned.length,
     capture_text: effectiveCaptureText,
     content_type: String(content_type || '').trim() || 'newsletter',

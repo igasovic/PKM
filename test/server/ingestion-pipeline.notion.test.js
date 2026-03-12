@@ -33,6 +33,7 @@ jest.mock('../../src/server/notion-client.js', () => ({
 }));
 
 const { runNotionIngestionPipeline } = require('../../src/server/ingestion-pipeline.js');
+const { deriveContentHashFromCleanText } = require('../../src/libs/content-hash.js');
 
 describe('ingestion-pipeline notion', () => {
   test('orchestrates notion collect -> normalize -> idempotency -> quality', async () => {
@@ -46,9 +47,9 @@ describe('ingestion-pipeline notion', () => {
     expect(out.source).toBe('notion');
     expect(out.title).toBe('Mock Notion Title');
     expect(out.capture_text).toContain('Mock capture text');
+    expect(out.content_hash).toBe(deriveContentHashFromCleanText(out.clean_text));
     expect(out.idempotency_policy_key).toBe('notion_note_v1');
     expect(out.idempotency_key_primary).toBe('notion:3114c61a-2844-805c-9597-cb2b8534eb3d');
     expect(out.retrieval_excerpt).toBeTruthy();
   });
 });
-

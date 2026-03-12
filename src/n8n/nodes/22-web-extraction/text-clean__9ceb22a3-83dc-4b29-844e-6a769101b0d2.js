@@ -7,6 +7,8 @@
  */
 'use strict';
 
+const { deriveContentHashFromCleanText } = require('/data/src/libs/content-hash.js');
+
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
@@ -51,6 +53,7 @@ const cleanText = (s) => {
 // Trafilatura output
 const extracted = $json.text || '';
 const clean_text = cleanText(extracted);
+const content_hash = deriveContentHashFromCleanText(clean_text);
 
 return [
   {
@@ -58,6 +61,7 @@ return [
     extracted_text: extracted,              // <-- NEW alias for downstream
     extracted_len: String(extracted).length, // <-- optional debug
     clean_text,
+    content_hash,
     clean_len: clean_text.length,
   }
 ];

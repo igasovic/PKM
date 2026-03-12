@@ -8,6 +8,7 @@
 'use strict';
 
 const { getConfig } = require('../../../src/libs/config.js');
+const { deriveContentHashFromCleanText } = require('../../../src/libs/content-hash.js');
 
 const sb = require('../../../src/libs/sql-builder.js');
 
@@ -37,6 +38,8 @@ const author = $json.author ?? null;
 const clean_text = String($json.clean_text ?? '');
 const clean_trim = clean_text.trim();
 const cleanLit = clean_trim ? `${sb.lit(clean_text)}::text` : 'NULL';
+const content_hash = deriveContentHashFromCleanText(clean_text);
+const contentHashLit = content_hash ? `${sb.lit(content_hash)}::text` : 'NULL';
 
 // ---- extracted_text ----
 const extracted_raw = $json.extracted_text ?? $json.text ?? null;
@@ -96,7 +99,7 @@ const sql = sb.buildUpdate({
     `boilerplate_heavy = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.boolLit(boilerplate_heavy)}::boolean ELSE boilerplate_heavy END`,
     `low_signal = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.boolLit(low_signal)}::boolean ELSE low_signal END`,
     `quality_score = CASE WHEN ${doMeta ? 'true' : 'false'} THEN ${sb.numLit(quality_score)}::real ELSE quality_score END`,
-    'content_hash = NULL',
+    `content_hash = CASE WHEN ${cleanLit} IS NOT NULL THEN ${contentHashLit} ELSE content_hash END`,
   ],
   where: `id = ${sb.lit(id)}::uuid`,
   returning: [

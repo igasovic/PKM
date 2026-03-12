@@ -6,6 +6,7 @@ const {
   normalizeWebpage,
   normalizeNotion,
 } = require('../../src/server/normalization.js');
+const { deriveContentHashFromCleanText } = require('../../src/libs/content-hash.js');
 
 describe('normalization', () => {
   test('telegram normalizes link payload without quality/idempotency fields', async () => {
@@ -18,9 +19,21 @@ describe('normalization', () => {
     expect(out.content_type).toBe('newsletter');
     expect(out.url).toBe('https://example.com/path?utm_source=x#frag');
     expect(out.url_canonical).toBe('https://example.com/path');
+    expect(out.content_hash).toBeNull();
     expect(out.__idempotency_source.system).toBe('telegram');
     expect(out.idempotency_policy_key).toBeUndefined();
     expect(out.retrieval_excerpt).toBeUndefined();
+  });
+
+  test('telegram think payload emits hash from parsed clean text', async () => {
+    const out = await normalizeTelegram({
+      text: '{"title":"T","topic":"X"}\nhello world',
+      source: { chat_id: '1', message_id: '2' },
+    });
+
+    expect(out.content_type).toBe('note');
+    expect(out.clean_text).toBe('hello world');
+    expect(out.content_hash).toBe(deriveContentHashFromCleanText('hello world'));
   });
 
   test('email returns normalized payload and internal idempotency source', async () => {
@@ -39,6 +52,7 @@ describe('normalization', () => {
     expect(out.__idempotency_source.from_addr).toBe('Sender <sender@example.com>');
     expect(out.__idempotency_source.subject).toBe('Weekly Update');
     expect(out.__idempotency_source.date).toBe('Tue, 17 Feb 2026 14:00:43 +0000');
+    expect(out.content_hash).toBe(deriveContentHashFromCleanText(out.clean_text));
     expect(out.idempotency_policy_key).toBeUndefined();
     expect(out.retrieval_excerpt).toBeUndefined();
   });
@@ -51,6 +65,7 @@ describe('normalization', () => {
     });
 
     expect(out.clean_text).toBe('Line 1\n\nLine 2');
+    expect(out.content_hash).toBe(deriveContentHashFromCleanText(out.clean_text));
     expect(out.url_canonical).toBe('https://example.com/post');
     expect(out.retrieval_excerpt).toBeUndefined();
     expect(out.idempotency_policy_key).toBeUndefined();
@@ -153,8 +168,21 @@ describe('normalization', () => {
     expect(out.clean_text).toContain('## Section');
     expect(out.clean_text).toContain('Paragraph body');
     expect(out.clean_text).toContain('> 💡 Callout line');
+    expect(out.content_hash).toBe(deriveContentHashFromCleanText(out.clean_text));
     expect(out.external_ref.notion.page_id).toBe('pg_123');
     expect(out.__idempotency_source.system).toBe('notion');
+  });
+
+  test('webpage normalization sets null hash when cleaned text is empty', async () => {
+    const out = await normalizeWebpage({
+      text: '   \n\t',
+      url: 'https://example.com/post',
+      content_type: 'newsletter',
+    });
+
+    expect(out.clean_text).toBe('');
+    expect(out.content_hash).toBeNull();
+    expect(out.retrieval_update_skipped).toBe(true);
   });
 
   test('notion normalization requires capture_text (parsing is handled upstream)', async () => {

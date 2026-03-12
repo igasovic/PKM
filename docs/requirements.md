@@ -15,12 +15,23 @@ Primary objective:
 - Behavior must be schema-consistent between `pkm` and `pkm_test`.
 - Email, email-batch, Telegram, and Notion inserts are fail-closed: if idempotency fields are missing, insert is rejected.
 
+## Content hash requirements
+- `content_hash` must be derived only from `clean_text`.
+- Hash algorithm is fixed:
+  - input: `clean_text` exactly as persisted (UTF-8 bytes, no extra normalization in hash function)
+  - function: `SHA-256`
+  - output: lowercase hex digest
+- `content_hash` must be `null` when `clean_text` is missing or blank after trim.
+- Any flow that recalculates `clean_text` must recalculate `content_hash` in the same step before persistence.
+- One-off historical backfill is performed with `scripts/db/backfill_content_hash.sh` and is intended to be removable after rollout.
+
 ## Data flow
 1. Ingest sends structured input to normalization.
 2. Normalization returns canonical entry fields plus idempotency fields:
 - `idempotency_policy_key`
 - `idempotency_key_primary`
 - `idempotency_key_secondary` (nullable)
+- `content_hash`
 3. Backend `/db/insert` resolves policy from `idempotency_policies` and applies conflict action.
 
 ## API requirements
@@ -69,7 +80,7 @@ Primary objective:
   - optional `capture_text`, `content_type`, `url`, `url_canonical`
   - optional `excerpt` override
 - Output:
-  - `extracted_text`, `clean_text`
+  - `extracted_text`, `clean_text`, `content_hash`
   - promoted retrieval/quality fields (`retrieval_excerpt`, counts, ratios, quality flags/scores)
   - `metadata.retrieval`
 - Empty-clean guard:
@@ -236,6 +247,7 @@ Primary objective:
 ## Integration expectations (n8n and other clients)
 - Call normalization first; do not hand-craft idempotency keys downstream.
 - Insert normalized payload directly to `/db/insert`.
+- If a client-side step recalculates `clean_text` (for example in n8n web extraction), it must also send the recalculated `content_hash` in the same `/db/update` request.
 - Branch by `action`:
   - `skipped`: stop enrichment/update pipeline
   - `inserted` / `updated`: continue downstream processing
