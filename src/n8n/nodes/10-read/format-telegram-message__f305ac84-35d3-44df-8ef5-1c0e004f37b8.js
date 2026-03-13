@@ -18,6 +18,9 @@ module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
 function s(v){ return (v ?? '').toString().trim(); }
+function mdv2(v) {
+  return String(v ?? '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
+}
 
 const entryId = s($json.entry_id);
 const title = s($json.title);
@@ -41,24 +44,23 @@ let body = '';
 if (wantExcerpt) body = excerptLong || clean || excerptShort || '(no text)';
 else body = clean || excerptShort || '(no text)';
 
-// Build message
+// Build MarkdownV2-safe message
 const lines = [];
-lines.push(`🧾 #${entryId || '?'}`);
-if (title) lines.push(`📰 ${title}`);
-if (author) lines.push(`🗣️ ${author}`);
-if (tp && ts) lines.push(`🏷️ ${tp} → ${ts}`);
-else if (tp) lines.push(`🏷️ ${tp}`);
-if (url) lines.push(`🔗 ${url}`);
-if (gist) lines.push(`\n_${gist}_`);
+lines.push(`*Entry* \\#${mdv2(entryId || '?')}`);
+if (title) lines.push(`*Title* ${mdv2(title)}`);
+if (author) lines.push(`*Author* ${mdv2(author)}`);
+if (tp && ts) lines.push(`*Topic* ${mdv2(tp)} \\-> ${mdv2(ts)}`);
+else if (tp) lines.push(`*Topic* ${mdv2(tp)}`);
+if (url) lines.push(`*URL* ${mdv2(url)}`);
+if (gist) lines.push(`\\n*Gist* ${mdv2(gist)}`);
 
-lines.push(`\n${body}`);
+lines.push(`\\n*Text*\\n${mdv2(body)}`);
 
 let msg = lines.join('\n');
 
 const config = getConfig();
 if (config.db.is_test_mode === true) {
-  msg = `⚗️🧪 TEST MODE
-${msg}`;
+  msg = `*TEST MODE*\\n${msg}`;
 }
 
 // Telegram cap

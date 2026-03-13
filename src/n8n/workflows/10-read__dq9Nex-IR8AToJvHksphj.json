@@ -29,7 +29,7 @@
         [
           {
             "index": 0,
-            "node": "Send a text message4",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -73,7 +73,7 @@
         [
           {
             "index": 0,
-            "node": "Send a text message4",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -118,7 +118,7 @@
         [
           {
             "index": 0,
-            "node": "Send a text message",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ],
@@ -351,30 +351,6 @@
   "isArchived": false,
   "name": "10 Read",
   "nodes": [
-    {
-      "credentials": {
-        "telegramApi": {
-          "id": "4svco1wrzYsvoLNB",
-          "name": "Telegram account"
-        }
-      },
-      "id": "210ee0fc-439f-4e4a-9c1e-59ebdf97d21f",
-      "name": "Send a text message",
-      "parameters": {
-        "additionalFields": {
-          "appendAttribution": false
-        },
-        "chatId": "={{ $json.telegram_chat_id || $json.chat_id || (($json.message && $json.message.chat && $json.message.chat.id) || 1509032341) }}",
-        "text": "={{$json.telegram_message}}"
-      },
-      "position": [
-        1344,
-        48
-      ],
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
-    },
     {
       "id": "964a4450-21a5-4ea8-a743-61a1fcf00405",
       "name": "IF: Ignore?",
@@ -786,30 +762,6 @@
       "typeVersion": 2
     },
     {
-      "credentials": {
-        "telegramApi": {
-          "id": "4svco1wrzYsvoLNB",
-          "name": "Telegram account"
-        }
-      },
-      "id": "54ab1327-9b6a-4263-b901-2a70893d5ee6",
-      "name": "Send a text message4",
-      "parameters": {
-        "additionalFields": {
-          "appendAttribution": false
-        },
-        "chatId": "={{ $json.telegram_chat_id || $json.chat_id || (($json.message && $json.message.chat && $json.message.chat.id) || 1509032341) }}",
-        "text": "={{$json.telegram_message}}"
-      },
-      "position": [
-        2016,
-        480
-      ],
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
-    },
-    {
       "id": "f305ac84-35d3-44df-8ef5-1c0e004f37b8",
       "name": "Format Telegram Message",
       "parameters": {
@@ -826,7 +778,7 @@
       "id": "83d12448-5f97-48f1-9ece-de61a9756db3",
       "name": "Format /help Message",
       "parameters": {
-        "jsCode": "const msg =\n`/last \"query\" [--days N] [--limit M]\nBest when you vaguely remember something. Ranks using your Tier-1 metadata + full-text + quality + recency.\n\n /find \"needle\" [--days N] [--limit M]\nBest for exact-ish strings (names, errors, phrases). Prefers literal matches + full-text; returns evidence snippets.\n\n /continue topic [--days N] [--limit M]\nBest to resume a topic. Uses Tier-1-first scoring and tries to return your notes first (if available).\n\n /pull <id> [--excerpt]\nFetch one entry by its numeric id (#12345). Default shows a short excerpt; --excerpt returns a longer excerpt.\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\n\nconst config = getConfig();\nconst isTestMode = config.db.is_test_mode === true;\nconst banner = isTestMode ? '⚗️🧪 TEST MODE\n' : '';\nconst telegram_message = msg.split('\\n').map(l => l.trimEnd()).join('\\n').trim();\nreturn [{ json: { ...$json, telegram_message } }];\n"
+        "jsCode": "'use strict';\n\nconst mdv2 = (v) => String(v ?? '').replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, '\\\\$1');\n\nconst msg =\n`Commands:\n/help\n/pull <id> [--excerpt]\n/last \"query\" [--days N] [--limit M]\n/find \"needle\" [--days N] [--limit M]\n/continue topic [--days N] [--limit M]\n/with person topic [--days N] [--limit M]\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/debug <run_id|last>\n/distill <entry_id>\n/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n/status [t1|t2] [--limit M] [--active-only]\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\n\nreturn [{ json: { ...$json, telegram_message: mdv2(msg) } }];\n"
       },
       "position": [
         1792,
@@ -1062,7 +1014,7 @@
           "appendAttribution": false,
           "parse_mode": "MarkdownV2"
         },
-        "chatId": "={{ $json.telegram_chat_id || $json.chat_id || (($json.message && $json.message.chat && $json.message.chat.id) || 1509032341) }}",
+        "chatId": "={{ $json.reply_chat_id || $json.telegram_chat_id || $json.chat_id || (($json.message && $json.message.chat && $json.message.chat.id) || (($node[\"Command Parser\"] && $node[\"Command Parser\"].json && $node[\"Command Parser\"].json.chat_id) || 1509032341)) }}",
         "text": "={{$json.telegram_message}}"
       },
       "position": [

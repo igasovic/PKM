@@ -2,6 +2,10 @@
 
 const parseCommand = require('../../src/n8n/nodes/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');
 
+function unescapeMdv2(value) {
+  return String(value || '').replace(/\\([_*[\]()~`>#+\-=|{}.!\\])/g, '$1');
+}
+
 async function runParser(text, extra = {}) {
   const out = await parseCommand({
     $json: {
@@ -21,9 +25,10 @@ async function runParser(text, extra = {}) {
 describe('n8n command parser', () => {
   test('/help returns immediate command overview', async () => {
     const out = await runParser('/help');
+    const text = unescapeMdv2(out.telegram_message);
     expect(out._reply_now).toBe(true);
-    expect(out.telegram_message).toContain('/distill-run [--batch|--sync]');
-    expect(out.telegram_message).toContain('append --help');
+    expect(text).toContain('/distill-run [--batch|--sync]');
+    expect(text).toContain('append --help');
   });
 
   test('/distill-run defaults to execution_mode=batch', async () => {
@@ -44,22 +49,25 @@ describe('n8n command parser', () => {
 
   test('/distill-run --help returns command usage', async () => {
     const out = await runParser('/distill-run --help');
+    const text = unescapeMdv2(out.telegram_message);
     expect(out._reply_now).toBe(true);
-    expect(out.telegram_message).toContain('/distill-run [--batch|--sync]');
-    expect(out.telegram_message).toContain('/distill-run --help');
+    expect(text).toContain('/distill-run [--batch|--sync]');
+    expect(text).toContain('/distill-run --help');
   });
 
   test('/find --help returns find usage without query requirement', async () => {
     const out = await runParser('/find --help');
+    const text = unescapeMdv2(out.telegram_message);
     expect(out._reply_now).toBe(true);
-    expect(out.telegram_message).toContain('/find <query>');
-    expect(out.telegram_message).toContain('currentness_mismatch');
+    expect(text).toContain('/find <query>');
+    expect(text).toContain('currentness_mismatch');
   });
 
   test('/distill-run rejects conflicting --batch and --sync', async () => {
     const out = await runParser('/distill-run --batch --sync');
+    const text = unescapeMdv2(out.telegram_message);
     expect(out._reply_now).toBe(true);
-    expect(out.telegram_message).toContain('/distill-run [--batch|--sync]');
+    expect(text).toContain('/distill-run [--batch|--sync]');
   });
 
   test('enforced allowlist blocks PKM commands for non-pkm user id', async () => {
@@ -79,6 +87,6 @@ describe('n8n command parser', () => {
       },
     });
     expect(out._reply_now).toBe(true);
-    expect(out.telegram_message).toContain('calendar-only access');
+    expect(unescapeMdv2(out.telegram_message)).toContain('calendar-only access');
   });
 });

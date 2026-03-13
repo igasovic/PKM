@@ -33,13 +33,7 @@ if (!text.startsWith('/')) {
 }
 
 if (enforceAllowlist && (!sender_user_id || !pkmAllowedIds.has(sender_user_id))) {
-  return [{
-    json: {
-      _reply_now: true,
-      chat_id,
-      telegram_message: 'This Telegram user has calendar-only access. PKM commands are disabled.',
-    },
-  }];
+  return replyNow(chat_id, 'This Telegram user has calendar-only access. PKM commands are disabled.');
 }
 
 // Supported commands + defaults
@@ -103,35 +97,31 @@ function usageFor(commandName) {
   return COMMAND_HELP[key] || HELP_OVERVIEW;
 }
 
-if (!defaults[cmd]) {
+function mdv2(v) {
+  return String(v ?? '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
+}
+
+function replyNow(chat_id, message) {
   return [{
     json: {
       _reply_now: true,
       chat_id,
-      telegram_message: `Unknown command.\n\n${HELP_OVERVIEW}`
-    }
+      telegram_message: mdv2(message),
+    },
   }];
 }
 
+if (!defaults[cmd]) {
+  return replyNow(chat_id, `Unknown command.\n\n${HELP_OVERVIEW}`);
+}
+
 if (hasHelpFlag) {
-  return [{
-    json: {
-      _reply_now: true,
-      chat_id,
-      telegram_message: usageFor(cmd),
-    },
-  }];
+  return replyNow(chat_id, usageFor(cmd));
 }
 
 // Special case: /help returns immediate usage block.
 if (cmd === 'help') {
-  return [{
-    json: {
-      _reply_now: true,
-      chat_id,
-      telegram_message: usageFor('help'),
-    },
-  }];
+  return replyNow(chat_id, usageFor('help'));
 }
 
 // Special case: /pull <entry_id> [--excerpt]
@@ -141,13 +131,7 @@ if (cmd === 'pull') {
   // allow: /pull 123, /pull 123 --excerpt
   const mId = text.match(/^\/pull\s+(\d+)\b/i);
   if (!mId?.[1]) {
-    return [{
-      json: {
-        _reply_now: true,
-        chat_id,
-        telegram_message: usageFor('pull'),
-      }
-    }];
+    return replyNow(chat_id, usageFor('pull'));
   }
 
   const entry_id = mId[1]; // keep as string to avoid JS precision issues
@@ -166,24 +150,12 @@ if (cmd === 'pull') {
 if (cmd === 'debug') {
   const rest = text.replace(/^\/\w+/i, '').trim();
   if (!rest) {
-    return [{
-      json: {
-        _reply_now: true,
-        chat_id,
-        telegram_message: usageFor('debug'),
-      }
-    }];
+    return replyNow(chat_id, usageFor('debug'));
   }
 
   const token = String(rest).split(/\s+/)[0].trim();
   if (!token) {
-    return [{
-      json: {
-        _reply_now: true,
-        chat_id,
-        telegram_message: usageFor('debug'),
-      }
-    }];
+    return replyNow(chat_id, usageFor('debug'));
   }
 
   const isLast = token.toLowerCase() === 'last';
@@ -206,13 +178,7 @@ if (cmd === 'debug') {
 if (cmd === 'distill') {
   const mId = text.match(/^\/distill\s+(\d+)\b/i);
   if (!mId?.[1]) {
-    return [{
-      json: {
-        _reply_now: true,
-        chat_id,
-        telegram_message: usageFor('distill'),
-      }
-    }];
+    return replyNow(chat_id, usageFor('distill'));
   }
 
   return [{
@@ -246,26 +212,14 @@ if (cmd === 'distillrun') {
   let execution_mode = 'batch';
 
   if (forceSync && forceBatch) {
-    return [{
-      json: {
-        _reply_now: true,
-        chat_id,
-        telegram_message: usageFor('distillrun'),
-      },
-    }];
+    return replyNow(chat_id, usageFor('distillrun'));
   }
   if (forceSync) execution_mode = 'sync';
   if (forceBatch) execution_mode = 'batch';
 
   if (modeFromFlag) {
     if ((forceSync && modeFromFlag !== 'sync') || (forceBatch && modeFromFlag !== 'batch')) {
-      return [{
-        json: {
-          _reply_now: true,
-          chat_id,
-          telegram_message: usageFor('distillrun'),
-        },
-      }];
+      return replyNow(chat_id, usageFor('distillrun'));
     }
     execution_mode = modeFromFlag;
   }
@@ -297,13 +251,7 @@ if (cmd === 'status') {
   if (tokens.length > 0) {
     const stage = String(tokens[0]).toLowerCase();
     if (stage !== 't1' && stage !== 't2') {
-      return [{
-        json: {
-          _reply_now: true,
-          chat_id,
-          telegram_message: usageFor('status'),
-        }
-      }];
+      return replyNow(chat_id, usageFor('status'));
     }
     status_stage = stage;
   }
@@ -385,13 +333,7 @@ if (cmd === 'delete' || cmd === 'move') {
     const m = rest0.match(/^(\S+)\s+([\s\S]+)$/);
     const schema = parseSchemaValue(m && m[1]);
     if (!schema) {
-      return [{
-        json: {
-          _reply_now: true,
-          chat_id,
-          telegram_message: `Usage:\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]`
-        }
-      }];
+      return replyNow(chat_id, 'Usage:\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]');
     }
 
     const rest = String((m && m[2]) || '')
@@ -400,13 +342,7 @@ if (cmd === 'delete' || cmd === 'move') {
       .trim();
     const parsed = parseSelectorSpec(rest);
     if (parsed.error) {
-      return [{
-        json: {
-          _reply_now: true,
-          chat_id,
-          telegram_message: parsed.error
-        }
-      }];
+      return replyNow(chat_id, parsed.error);
     }
 
     return [{
@@ -427,13 +363,7 @@ if (cmd === 'delete' || cmd === 'move') {
   const from_schema = parseSchemaValue(m && m[1]);
   const to_schema = parseSchemaValue(m && m[2]);
   if (!from_schema || !to_schema || from_schema === to_schema) {
-    return [{
-      json: {
-        _reply_now: true,
-        chat_id,
-        telegram_message: `Usage:\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]`
-      }
-    }];
+    return replyNow(chat_id, 'Usage:\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]');
   }
 
   const rest = String((m && m[3]) || '')
@@ -442,13 +372,7 @@ if (cmd === 'delete' || cmd === 'move') {
     .trim();
   const parsed = parseSelectorSpec(rest);
   if (parsed.error) {
-    return [{
-      json: {
-        _reply_now: true,
-        chat_id,
-        telegram_message: parsed.error
-      }
-    }];
+    return replyNow(chat_id, parsed.error);
   }
 
   return [{
@@ -495,13 +419,7 @@ if (!q) {
 }
 
 if (!q) {
-  return [{
-    json: {
-      _reply_now: true,
-      chat_id,
-      telegram_message: usageFor(cmd),
-    }
-  }];
+  return replyNow(chat_id, usageFor(cmd));
 }
 
 return [{
