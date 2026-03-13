@@ -92,6 +92,7 @@ services:
       - N8N_RUNNERS_DISABLE_PYTHON=true
       - NODE_FUNCTION_ALLOW_EXTERNAL=*
       - NODE_FUNCTION_ALLOW_BUILTIN=node:process,node:path
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       - N8N_EDITOR_BASE_URL=http://127.0.0.1:5680
 
     ports:
