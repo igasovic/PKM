@@ -347,7 +347,7 @@ Send concise proactive family reports from Google Calendar state.
 ### Likely files
 
 - `src/n8n/workflows/32-calendar-daily-report*.json`
-- `src/n8n/workflows/32-calendar-weekly-report*.json`
+- `src/n8n/workflows/33-calendar-weekly-report*.json`
 - `src/n8n/nodes/32-calendar-report/**`
 
 ---

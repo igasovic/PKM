@@ -12,7 +12,7 @@
   - create confirmation now includes conflict warning summary when overlap exists
 - Implemented WP7 report workflows:
   - added `src/n8n/workflows/32-calendar-daily-report__hK7B2Y4uWn3Rm9QpLd0Sa.json`
-  - added `src/n8n/workflows/32-calendar-weekly-report__tV8mQ2nL6xP4cR1jHf7Ds.json`
+  - added `src/n8n/workflows/33-calendar-weekly-report__tV8mQ2nL6xP4cR1jHf7Ds.json`
   - both use scheduled triggers, Google calendar read, Telegram MarkdownV2 send, and backend `POST /calendar/observe` logging
   - added shared report helpers:
     - `src/n8n/nodes/32-calendar-report/build-report-window__1d7fa7c9-3ac6-4b7e-bf0a-6e2e7789f31a.js`
