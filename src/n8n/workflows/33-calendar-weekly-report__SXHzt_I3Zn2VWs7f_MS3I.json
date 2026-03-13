@@ -1,65 +1,107 @@
 {
-  "active": false,
-  "activeVersionId": "2befd7bf-cbf3-49fd-9216-7f941cfb1b10",
-  "createdAt": "2026-03-13T17:23:48.992Z",
-  "updatedAt": "2026-03-13T17:23:48.992Z",
-  "isArchived": false,
-  "description": null,
-  "name": "32 Calendar Daily Report",
-  "settings": {
-    "availableInMCP": false,
-    "callerPolicy": "workflowsFromSameOwner",
-    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
-    "executionOrder": "v1",
-    "timezone": "America/Chicago"
-  },
-  "triggerCount": 0,
-  "versionCounter": 1,
-  "tags": [],
-  "shared": [
-    {
-      "createdAt": "2026-03-13T17:23:48.992Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-03-13T17:23:48.992Z",
-      "workflowId": "hK7B2Y4uWn3Rm9QpLd0Sa"
+  "active": true,
+  "activeVersionId": "48e5b4fd-fad2-46ee-b39d-ac47b4c46641",
+  "connections": {
+    "Build Report Window": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Google Calendar Get Events",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Calendar Report Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Calendar Report Message",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "IF Has Observe Items",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Google Calendar Get Events": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Calendar Report Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF Has Observe Items": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Calendar Observe",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Report Window",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Schedule Weekly Report": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Config",
+            "type": "main"
+          }
+        ]
+      ]
     }
-  ],
-  "staticData": null,
+  },
+  "createdAt": "2026-03-13T18:50:38.666Z",
+  "description": null,
+  "isArchived": false,
+  "name": "33 Calendar Weekly Report",
   "nodes": [
     {
-      "id": "92ae3675-4dcf-4527-8751-1a2e570cf3ef",
-      "name": "Schedule Daily Report",
+      "id": "bd2cdc07-82d9-4633-9de3-0d9a15230023",
+      "name": "Schedule Weekly Report",
       "parameters": {
         "rule": {
           "interval": [
             {
-              "field": "days",
-              "triggerAtHour": 5,
+              "field": "weeks",
+              "triggerAtHour": 18,
               "triggerAtMinute": 30
             }
           ]
         }
       },
       "position": [
-        -256,
-        -96
+        -1152,
+        144
       ],
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3
     },
     {
-      "id": "2ce0eb27-ffce-4756-9ba0-a29b0068bf3d",
+      "id": "5880a1eb-7049-48dd-90ec-c357b1885a3b",
       "name": "PKM Config",
       "parameters": {
         "options": {
@@ -82,21 +124,21 @@
         }
       },
       "position": [
-        0,
-        -96
+        -896,
+        144
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
     },
     {
-      "id": "1eea6279-50fa-492e-807c-bea870e74495",
+      "id": "995314b7-3d8b-4f6d-9c9f-c59153259abc",
       "name": "Build Report Window",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/32-calendar-report/build-report-window__1d7fa7c9-3ac6-4b7e-bf0a-6e2e7789f31a.js');return await fn({$json:{...$json,report_kind:'daily'},$input,$items,$node,$env,helpers});}catch(e){e.message='[extjs:32-calendar-report/build-report-window__1d7fa7c9-3ac6-4b7e-bf0a-6e2e7789f31a.js] '+e.message;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/32-calendar-report/build-report-window__1d7fa7c9-3ac6-4b7e-bf0a-6e2e7789f31a.js');return await fn({$json:{...$json,report_kind:'weekly'},$input,$items,$node,$env,helpers});}catch(e){e.message='[extjs:32-calendar-report/build-report-window__1d7fa7c9-3ac6-4b7e-bf0a-6e2e7789f31a.js] '+e.message;throw e;}"
       },
       "position": [
-        224,
-        -96
+        -672,
+        144
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -109,7 +151,7 @@
           "name": "GCal"
         }
       },
-      "id": "cdea79f3-8d8d-4e47-92b6-64c2094aa820",
+      "id": "5df0fc21-169e-4789-bb54-cec03853f527",
       "name": "Google Calendar Get Events",
       "onError": "continueRegularOutput",
       "parameters": {
@@ -127,21 +169,21 @@
         "timeMin": "={{ $json.window_start_local }}"
       },
       "position": [
-        448,
-        -96
+        -448,
+        144
       ],
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3
     },
     {
-      "id": "a794754a-4f4c-48ae-b751-2b35176756b0",
+      "id": "17d546c7-033a-4190-951a-da2918721239",
       "name": "Format Calendar Report Message",
       "parameters": {
         "jsCode": "try{const fn=require('/data/src/n8n/nodes/32-calendar-report/format-calendar-report-message__58f6c53c-5dad-4d29-93d0-00dc8f7d5683.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message='[extjs:32-calendar-report/format-calendar-report-message__58f6c53c-5dad-4d29-93d0-00dc8f7d5683.js] '+e.message;throw e;}"
       },
       "position": [
-        672,
-        -96
+        -224,
+        144
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -153,7 +195,7 @@
           "name": "Telegram account"
         }
       },
-      "id": "21a23211-8748-4d96-afd6-ddc3048c8fbe",
+      "id": "d9a6949f-0dbc-48b2-b970-4823f503ec10",
       "name": "Send Calendar Report Message",
       "parameters": {
         "additionalFields": {
@@ -164,21 +206,22 @@
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        896,
-        -240
+        0,
+        0
       ],
       "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2
+      "typeVersion": 1.2,
+      "webhookId": "3b714867-c8bd-4c5d-8c79-009ce75b750f"
     },
     {
-      "id": "67cc890e-08e7-4069-accd-c069dac1673c",
+      "id": "314a7552-2dda-4979-bb7c-a1a2ae85bd63",
       "name": "IF Has Observe Items",
       "parameters": {
         "conditions": {
           "combinator": "and",
           "conditions": [
             {
-              "id": "5ce58d56-7367-4b14-a8fb-182f18c99572",
+              "id": "a20611a7-97ef-4a64-bb5d-f1a29d46dceb",
               "leftValue": "={{ Array.isArray($json.observe_items) && $json.observe_items.length > 0 }}",
               "operator": {
                 "operation": "true",
@@ -198,14 +241,14 @@
         "options": {}
       },
       "position": [
-        896,
-        -48
+        0,
+        192
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
     },
     {
-      "id": "c7e46a14-20b7-49d0-b644-57fba307f0df",
+      "id": "2c8ffdb7-a743-4a13-b84e-ecd2eb763516",
       "name": "PKM Calendar Observe",
       "parameters": {
         "headerParameters": {
@@ -229,85 +272,39 @@
         "url": "http://pkm-server:8080/calendar/observe"
       },
       "position": [
-        1120,
-        -48
+        224,
+        192
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
     }
   ],
-  "connections": {
-    "Schedule Daily Report": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "PKM Config",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Config": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Report Window",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Build Report Window": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Google Calendar Get Events",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Google Calendar Get Events": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Format Calendar Report Message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Format Calendar Report Message": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Send Calendar Report Message",
-            "type": "main"
-          },
-          {
-            "index": 0,
-            "node": "IF Has Observe Items",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "IF Has Observe Items": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "PKM Calendar Observe",
-            "type": "main"
-          }
-        ],
-        []
-      ]
+  "settings": {
+    "availableInMCP": false,
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-03-13T18:50:38.666Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-03-13T18:50:38.666Z",
+      "workflowId": "SXHzt_I3Zn2VWs7f_MS3I"
     }
-  }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-03-13T18:50:38.666Z",
+  "versionCounter": 3
 }
