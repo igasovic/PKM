@@ -1,5 +1,7 @@
 'use strict';
 
+const { mdv2Message } = require('./telegram-markdown.js');
+
 function normWS(s) {
   return String(s || '').replace(/\s+/g, ' ').trim();
 }
@@ -25,10 +27,6 @@ function pickAny(obj, keys) {
     if (obj && Object.prototype.hasOwnProperty.call(obj, key)) return obj[key];
   }
   return null;
-}
-
-function escapeMarkdownV2(value) {
-  return String(value || '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
 function shortDate(value) {
@@ -195,13 +193,12 @@ function buildContextPackMarkdown(items, meta, opts) {
   }
 
   const out = lines.join('\n').trim();
-  return markdownV2 ? escapeMarkdownV2(out) : out;
+  return markdownV2 ? mdv2Message(out) : out;
 }
 
 const api = {
   buildContextPackMarkdown,
   deriveExcerptFromRecord,
-  escapeMarkdownV2,
   normWS,
   snip,
   toContextPackItem,

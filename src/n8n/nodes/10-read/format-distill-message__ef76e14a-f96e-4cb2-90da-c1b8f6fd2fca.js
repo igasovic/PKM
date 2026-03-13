@@ -1,6 +1,6 @@
 'use strict';
 
-const { mdv2 } = (() => {
+const { mdv2, mdv2Render } = (() => {
   try {
     return require('/data/src/libs/telegram-markdown.js');
   } catch (err) {
@@ -34,7 +34,7 @@ module.exports = async function run(ctx) {
     if (excerpt) {
       lines.push('', '*Excerpt*', excerpt);
     }
-    telegramMessage = lines.join('\n').trim();
+    telegramMessage = mdv2Render(lines.join('\n').trim());
   } else {
     const errorCode = mdv2($json.error_code || 'unknown_error');
     const message = mdv2($json.message || 'distill failed');
@@ -46,6 +46,7 @@ module.exports = async function run(ctx) {
       `• Message: ${message}`,
       `• Current artifact preserved: ${mdv2(preserved)}`,
     ].join('\n').trim();
+    telegramMessage = mdv2Render(telegramMessage);
   }
 
   return [{

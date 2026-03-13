@@ -12,7 +12,7 @@
  */
 'use strict';
 
-const { mdv2 } = (() => {
+const { mdv2Message } = (() => {
   try {
     return require('/data/src/libs/telegram-markdown.js');
   } catch (err) {
@@ -110,7 +110,7 @@ function replyNow(telegram_chat_id, message) {
     json: {
       _reply_now: true,
       telegram_chat_id,
-      telegram_message: mdv2(message),
+      telegram_message: mdv2Message(message, { maxLen: 4000 }),
     },
   }];
 }

@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { mdv2 } = (() => {
+const { mdv2, mdv2Render } = (() => {
   try {
     return require('/data/src/libs/telegram-markdown.js');
   } catch (err) {
@@ -62,7 +62,7 @@ module.exports = async function run(ctx) {
 
   return [{
     json: {
-      telegram_message:
+      telegram_message: mdv2Render(
 `*Batch summary*
 
 *Jobs:* ${summary.jobs}
@@ -78,6 +78,7 @@ module.exports = async function run(ctx) {
 ✅ OK: ${summary.ok}
 ⚠️ Parse\\_error: ${summary.parse_error}
 ❌ Error: ${summary.error}${preservedLine}${failureBreakdownLine}`,
+      ),
     },
   }];
 };

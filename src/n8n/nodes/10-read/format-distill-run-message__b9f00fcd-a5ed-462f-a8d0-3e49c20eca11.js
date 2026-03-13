@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { mdv2 } = (() => {
+const { mdv2, mdv2Render } = (() => {
   try {
     return require('/data/src/libs/telegram-markdown.js');
   } catch (err) {
@@ -52,7 +52,7 @@ module.exports = async function run(ctx) {
     return [{
       json: {
         ...r,
-        telegram_message: lines.join('\n'),
+        telegram_message: mdv2Render(lines.join('\n')),
       },
     }];
   }
@@ -67,7 +67,7 @@ module.exports = async function run(ctx) {
     return [{
       json: {
         ...r,
-        telegram_message: lines.join('\n'),
+        telegram_message: mdv2Render(lines.join('\n')),
       },
     }];
   }
@@ -102,7 +102,7 @@ module.exports = async function run(ctx) {
   return [{
     json: {
       ...r,
-      telegram_message: lines.join('\n'),
+      telegram_message: mdv2Render(lines.join('\n')),
     },
   }];
 };

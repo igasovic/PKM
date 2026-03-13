@@ -1,6 +1,6 @@
 'use strict';
 
-const { mdv2 } = (() => {
+const { mdv2Message } = (() => {
   try {
     return require('/data/src/libs/telegram-markdown.js');
   } catch (err) {
@@ -239,7 +239,7 @@ module.exports = async function run(ctx) {
     json: {
       ...base,
       telegram_chat_id: chatId,
-      telegram_message: mdv2(cleanLines.join('\n')),
+      telegram_message: mdv2Message(cleanLines.join('\n'), { maxLen: 4000 }),
       observe_items: observeItems,
       events_count: events.length,
       report_kind: reportKind,

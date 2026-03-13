@@ -8,7 +8,7 @@
 'use strict';
 
 const { getConfig } = require('/data/src/libs/config.js');
-const { mdv2 } = require('/data/src/libs/telegram-markdown.js');
+const { mdv2Message } = require('/data/src/libs/telegram-markdown.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
@@ -70,11 +70,7 @@ if (config?.db?.is_test_mode === true) {
 ${telegram_message}`;
 }
 
-telegram_message = mdv2(telegram_message);
-
-// hard cap for Telegram
-const MAX = 4000;
-if (telegram_message.length > MAX) telegram_message = telegram_message.slice(0, MAX - 1) + '…';
+telegram_message = mdv2Message(telegram_message, { maxLen: 4000 });
 
 return [{ json: { ...$json, telegram_message } }];
 };

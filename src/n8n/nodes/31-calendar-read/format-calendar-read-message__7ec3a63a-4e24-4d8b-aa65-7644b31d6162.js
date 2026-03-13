@@ -1,6 +1,6 @@
 'use strict';
 
-const { mdv2 } = (() => {
+const { mdv2Message } = (() => {
   try {
     return require('/data/src/libs/telegram-markdown.js');
   } catch (err) {
@@ -96,11 +96,11 @@ module.exports = async function run(ctx) {
 
   const lines = [];
   if (!events.length) {
-    lines.push(mdv2(`No events for ${queryLabel}.`));
+    lines.push(`No events for ${queryLabel}.`);
   } else {
-    lines.push(mdv2(`Events for ${queryLabel}:`));
+    lines.push(`Events for ${queryLabel}:`);
     events.forEach((e) => {
-      lines.push(mdv2(`${e.marker} ${e.start.label} ${e.summary}`));
+      lines.push(`${e.marker} ${e.start.label} ${e.summary}`);
     });
   }
 
@@ -126,7 +126,7 @@ module.exports = async function run(ctx) {
       ...base,
       telegram_chat_id: chatId,
       request_id: requestId,
-      telegram_message: lines.join('\n'),
+      telegram_message: mdv2Message(lines.join('\n'), { maxLen: 4000 }),
       observe_items: observeItems,
       events_count: events.length,
     },

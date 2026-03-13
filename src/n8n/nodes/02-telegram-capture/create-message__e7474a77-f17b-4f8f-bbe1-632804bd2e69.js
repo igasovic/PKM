@@ -8,7 +8,7 @@
 'use strict';
 
 const { getConfig } = require('/data/src/libs/config.js');
-const { mdv2 } = require('/data/src/libs/telegram-markdown.js');
+const { mdv2Message } = require('/data/src/libs/telegram-markdown.js');
 
 module.exports = async function run(ctx) {
   const { $json, $items } = ctx;
@@ -65,12 +65,8 @@ module.exports = async function run(ctx) {
 
   if (isTestMode) msg = `⚗️🧪 TEST MODE\n` + msg;
 
-  // Escape the full payload to keep Telegram MarkdownV2 parsing stable.
-  msg = mdv2(msg);
-
-  // hard cap for Telegram
-  const MAX = 4000;
-  if (msg.length > MAX) msg = msg.slice(0, MAX - 1) + '…';
+  // Escape + truncate through shared MarkdownV2 helper.
+  msg = mdv2Message(msg, { maxLen: 4000 });
 
   const topic_path =
     topicPrimary && topicSecondary ? `${topicPrimary} → ${topicSecondary}`

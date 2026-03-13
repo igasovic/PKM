@@ -772,7 +772,7 @@
       "id": "83d12448-5f97-48f1-9ece-de61a9756db3",
       "name": "Format /help Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst msg =\n`Commands:\n/help\n/pull <id> [--excerpt]\n/last \"query\" [--days N] [--limit M]\n/find \"needle\" [--days N] [--limit M]\n/continue topic [--days N] [--limit M]\n/with person topic [--days N] [--limit M]\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/debug <run_id|last>\n/distill <entry_id>\n/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n/status [t1|t2] [--limit M] [--active-only]\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\nreturn [{ json: { ...$json, telegram_message: mdv2(msg) } }];\n"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst msg =\n`Commands:\n/help\n/pull <id> [--excerpt]\n/last \"query\" [--days N] [--limit M]\n/find \"needle\" [--days N] [--limit M]\n/continue topic [--days N] [--limit M]\n/with person topic [--days N] [--limit M]\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/debug <run_id|last>\n/distill <entry_id>\n/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n/status [t1|t2] [--limit M] [--active-only]\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\nreturn [{ json: { ...$json, telegram_message: mdv2Message(msg) } }];\n"
       },
       "position": [
         1792,
@@ -785,7 +785,7 @@
       "id": "3580c243-cd64-4bc2-8b4f-ab5215ff71a1",
       "name": "Build Context Pack",
       "parameters": {
-        "jsCode": "const { buildContextPackMarkdown } = require('/data/src/libs/context-pack-builder.js');\n\nconst rows = $input.all().map(i => i.json);\nconst meta = rows.find((r) => r.is_meta === true) || {};\nconst hitsRows = rows.filter((r) => r.is_meta === false && r.id);\nconst method = String(meta.cmd || 'last').toLowerCase();\nconst query = String(meta.query_text || '').trim();\n\nlet msg = buildContextPackMarkdown(\n  hitsRows,\n  {\n    method,\n    query,\n    days: meta.days,\n    limit: meta.limit,\n  },\n  {\n    markdownV2: true,\n    layout: 'ui',\n    maxContentLen: 300,\n  },\n);\n\n// safety cap (Telegram hard limit is 4096; keep margin for safety)\nconst MAX_TELEGRAM = 3500;\nif (msg.length > MAX_TELEGRAM) {\n  msg = msg.slice(0, MAX_TELEGRAM - 1) + '…';\n}\n\nreturn [{ json: { telegram_message: msg } }];\n"
+        "jsCode": "const { buildContextPackMarkdown } = require('/data/src/libs/context-pack-builder.js');\nconst { mdv2Render } = require('/data/src/libs/telegram-markdown.js');\n\nconst rows = $input.all().map(i => i.json);\nconst meta = rows.find((r) => r.is_meta === true) || {};\nconst hitsRows = rows.filter((r) => r.is_meta === false && r.id);\nconst method = String(meta.cmd || 'last').toLowerCase();\nconst query = String(meta.query_text || '').trim();\n\nconst msg = buildContextPackMarkdown(\n  hitsRows,\n  {\n    method,\n    query,\n    days: meta.days,\n    limit: meta.limit,\n  },\n  {\n    markdownV2: true,\n    layout: 'ui',\n    maxContentLen: 300,\n  },\n);\n\nreturn [{ json: { telegram_message: mdv2Render(msg, { maxLen: 3500 }) } }];\n"
       },
       "position": [
         1792,
@@ -1054,7 +1054,7 @@
       "id": "3feac23b-f095-4af9-9179-3b0a1a4279a2",
       "name": "Format delete message",
       "parameters": {
-        "jsCode": "const { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst s = $json || {};\nconst lines = [\n  'Delete successful',\n  'Dry run: ' + String(s.dry_run),\n  'Schema: ' + String(s.schema ?? ''),\n  'Deleted: ' + String(s.deleted_count ?? 0),\n];\nreturn [{ json: { ...$json, telegram_message: mdv2(lines.join('\\n')) } }];"
+        "jsCode": "const { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst s = $json || {};\nconst lines = [\n  'Delete successful',\n  'Dry run: ' + String(s.dry_run),\n  'Schema: ' + String(s.schema ?? ''),\n  'Deleted: ' + String(s.deleted_count ?? 0),\n];\nreturn [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];"
       },
       "position": [
         1792,
@@ -1098,7 +1098,7 @@
       "id": "344aac95-db6e-4262-9441-1072918d9d48",
       "name": "Format move message",
       "parameters": {
-        "jsCode": "const { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst s = $json || {};\nconst lines = [\n  'Move successful',\n  'Dry run: ' + String(s.dry_run),\n  'Schema: ' + String(s.from_schema ?? '') + ' -> ' + String(s.to_schema ?? ''),\n  'Moved: ' + String(s.moved_count ?? 0),\n];\nreturn [{ json: { ...$json, telegram_message: mdv2(lines.join('\\n')) } }];"
+        "jsCode": "const { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst s = $json || {};\nconst lines = [\n  'Move successful',\n  'Dry run: ' + String(s.dry_run),\n  'Schema: ' + String(s.from_schema ?? '') + ' -> ' + String(s.to_schema ?? ''),\n  'Moved: ' + String(s.moved_count ?? 0),\n];\nreturn [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];"
       },
       "position": [
         1792,

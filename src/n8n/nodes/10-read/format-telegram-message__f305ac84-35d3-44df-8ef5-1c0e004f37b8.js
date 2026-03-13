@@ -13,7 +13,7 @@
 'use strict';
 
 const { getConfig } = require('/data/src/libs/config.js');
-const { mdv2 } = (() => {
+const { mdv2, mdv2Render } = (() => {
   try {
     return require('/data/src/libs/telegram-markdown.js');
   } catch (err) {
@@ -67,11 +67,7 @@ if (config.db.is_test_mode === true) {
   msg = `*TEST MODE*\\n${msg}`;
 }
 
-// Telegram cap
-const MAX = 4000;
-if (msg.length > MAX) msg = msg.slice(0, MAX - 1) + '…';
-// Avoid invalid MarkdownV2 payload when truncation ends on an escape backslash.
-while (msg.endsWith('\\')) msg = msg.slice(0, -1);
+msg = mdv2Render(msg, { maxLen: 4000 });
 
 return [{ json: { ...$json, telegram_message: msg } }];
 };

@@ -499,7 +499,7 @@
         -608
       ],
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nreturn [{ json: { ...$json, telegram_message: mdv2('Duplicate entry ' + entryId + ' processing stopped') } }];\n"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nreturn [{ json: { ...$json, telegram_message: mdv2Message('Duplicate entry ' + entryId + ' processing stopped') } }];\n"
       }
     },
     {
@@ -512,7 +512,7 @@
         -320
       ],
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nconst action = String($json.action ?? 'inserted').trim() || 'inserted';\nconst text = 'Thought saved as entry ' + entryId + ' operation ' + action;\nreturn [{ json: { ...$json, telegram_message: mdv2(text) } }];\n"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nconst action = String($json.action ?? 'inserted').trim() || 'inserted';\nconst text = 'Thought saved as entry ' + entryId + ' operation ' + action;\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\n"
       }
     }
   ],
