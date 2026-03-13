@@ -1,6 +1,6 @@
 {
-  "active": false,
-  "activeVersionId": "9e7e6f7a-1f0f-49a8-98c6-1f8f8847e3fd",
+  "active": true,
+  "activeVersionId": "cd515d08-1841-4ab7-9f62-4da8ba466774",
   "connections": {
     "Build Google Event Payload": {
       "main": [
@@ -186,8 +186,8 @@
       ]
     }
   },
-  "createdAt": "2026-03-12T18:30:00.000Z",
-  "description": "Calendar create workflow (normalize -> create -> finalize)",
+  "createdAt": "2026-03-13T04:53:08.825Z",
+  "description": null,
   "isArchived": false,
   "name": "30 Calendar Create",
   "nodes": [
@@ -238,7 +238,7 @@
       "id": "f4f4204e-e5ec-4df7-9739-3f9734f9db8f",
       "name": "Build Normalize Request",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/build-normalize-request__bff8ba8c-b146-4316-a6d4-a7c757a4679b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/build-normalize-request__bff8ba8c-b146-4316-a6d4-a7c757a4679b.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n\n  const message = ($json && $json.message) || {};\n  const rawTextInput = asText($json.raw_text || message.text || message.caption || '');\n  const rawText = rawTextInput.replace(/^cal:\\s*/i, '').trim();\n  const chatId = asText($json.telegram_chat_id || (message.chat && message.chat.id));\n  const messageId = asText($json.telegram_message_id || message.message_id);\n  const actorCode = asText($json.actor_code).toLowerCase() || 'unknown';\n\n  if (!rawText) throw new Error('calendar create requires raw_text');\n  if (!chatId) throw new Error('calendar create requires telegram_chat_id');\n  if (!messageId) throw new Error('calendar create requires telegram_message_id');\n\n  return [{\n    json: {\n      ...$json,\n      raw_text: rawText,\n      actor_code: actorCode,\n      source: {\n        chat_id: chatId,\n        message_id: messageId,\n      },\n      request_id: asText($json.request_id) || null,\n      route_confidence: Number.isFinite(Number($json.confidence)) ? Number($json.confidence) : null,\n      family_calendar_id: asText($json.family_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id)) || null,\n    },\n  }];\n"
       },
       "position": [
         224,
@@ -386,7 +386,7 @@
       "id": "0af1807e-cdf2-4012-a671-ee3f205ff9e4",
       "name": "Format Normalize Status Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/format-normalize-status-message__38d61b5d-c5bb-4d31-9119-85344fa59ac3.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/format-normalize-status-message__38d61b5d-c5bb-4d31-9119-85344fa59ac3.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n\n  const status = asText($json.status);\n  const chatId = asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id));\n\n  let text = '';\n  if (status === 'needs_clarification') {\n    text = asText($json.clarification_question) || 'I need a bit more detail before creating this event.';\n  } else if (status === 'rejected') {\n    text = asText($json.message) || 'This request is not supported in the current calendar flow.';\n  } else {\n    text = 'Calendar request status updated.';\n  }\n\n  return [{\n    json: {\n      ...$json,\n      telegram_chat_id: chatId,\n      telegram_message: text,\n    },\n  }];\n"
       },
       "position": [
         1120,
@@ -416,13 +416,14 @@
         128
       ],
       "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2
+      "typeVersion": 1.2,
+      "webhookId": "52a26fb9-71fe-407b-b4c1-0f4073cbf07b"
     },
     {
       "id": "bb6d3e8a-4461-4ea5-8d5d-0fa8d4f5e479",
       "name": "Build Google Event Payload",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/build-google-event-payload__2f4ea2fd-0178-4f8c-88f4-2fdf86889d89.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/build-google-event-payload__2f4ea2fd-0178-4f8c-88f4-2fdf86889d89.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n  const event = ($json && $json.normalized_event) || null;\n  if (!event || $json.status !== 'ready_to_create') {\n    throw new Error('expected status=ready_to_create with normalized_event');\n  }\n\n  const block = event.block_window || {};\n  const startDate = asText(block.start_date_local || event.date_local);\n  const startTime = asText(block.start_time_local || event.start_time_local);\n  const endDate = asText(block.end_date_local || event.end_date_local);\n  const endTime = asText(block.end_time_local || event.end_time_local);\n\n  if (!startDate || !startTime || !endDate || !endTime) {\n    throw new Error('normalized event block window is incomplete');\n  }\n\n  const calendarId = asText($json.family_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id)) || 'primary';\n  const requestId = asText($json.request_id);\n  const chatId = asText($json.telegram_chat_id);\n  const messageId = asText($json.telegram_message_id);\n  const subjectCode = asText(event.subject_code || event.title);\n\n  const startLocal = `${startDate}T${startTime}:00`;\n  const endLocal = `${endDate}T${endTime}:00`;\n  const location = asText(event.location) || null;\n\n  const descriptionParts = [\n    `PKM request id: ${requestId || '-'}`,\n    `PKM source key: tgcal:${chatId || '-'}:${messageId || '-'}`,\n    `Original start: ${event.original_start && event.original_start.date_local ? `${event.original_start.date_local} ${event.original_start.time_local || ''}`.trim() : '-'}`,\n  ];\n\n  return [{\n    json: {\n      ...$json,\n      request_id: requestId,\n      google_calendar_id: calendarId,\n      google_start: startLocal,\n      google_end: endLocal,\n      google_summary: subjectCode,\n      google_description: descriptionParts.join('\\n'),\n      google_location: location,\n      google_color_id: asText(event.color_choice && event.color_choice.google_color_id) || null,\n      confirmation_subject: subjectCode,\n      confirmation_block_start: `${startDate} ${startTime}`,\n      confirmation_block_end: `${endDate} ${endTime}`,\n    },\n  }];\n"
       },
       "position": [
         1120,
@@ -432,24 +433,29 @@
       "typeVersion": 2
     },
     {
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "qQOl2xfICHsxoZU2",
+          "name": "GCal"
+        }
+      },
       "id": "d5f2cb9c-d4bf-4c84-bf9c-d6352c6b8cf4",
       "name": "Google Calendar Create Event",
       "onError": "continueRegularOutput",
       "parameters": {
-        "operation": "create",
+        "additionalFields": {
+          "color": "={{ $json.google_color_id }}",
+          "description": "={{ $json.google_description }}",
+          "location": "={{ $json.google_location }}",
+          "summary": "={{ $json.google_summary }}"
+        },
         "calendar": {
           "__rl": true,
           "mode": "id",
           "value": "={{ $json.google_calendar_id }}"
         },
-        "start": "={{ $json.google_start }}",
         "end": "={{ $json.google_end }}",
-        "additionalFields": {
-          "summary": "={{ $json.google_summary }}",
-          "description": "={{ $json.google_description }}",
-          "location": "={{ $json.google_location }}",
-          "color": "={{ $json.google_color_id }}"
-        }
+        "start": "={{ $json.google_start }}"
       },
       "position": [
         1344,
@@ -477,7 +483,7 @@
       "id": "e114ec84-f1a4-4796-84a0-d4ec1229b304",
       "name": "Prepare Finalize Request",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/prepare-finalize-request__4c9a5cd8-7c13-4ad8-8d1c-a10f2f23520b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/prepare-finalize-request__4c9a5cd8-7c13-4ad8-8d1c-a10f2f23520b.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n\n  const requestId = asText($json.request_id);\n  if (!requestId) throw new Error('request_id is required to finalize calendar create');\n\n  const eventId = asText($json.id || $json.eventId || $json.event_id || $json.google_event_id);\n  const nodeError = ($json && $json.error) ? $json.error : null;\n  const explicitFailure = $json.create_success === false;\n  const success = !explicitFailure && !!eventId && !nodeError;\n\n  const errorPayload = success\n    ? null\n    : {\n        code: nodeError ? 'google_create_failed' : 'google_event_id_missing',\n        message: nodeError && nodeError.message ? String(nodeError.message) : 'Google Calendar create did not return an event id',\n      };\n\n  return [{\n    json: {\n      ...$json,\n      success,\n      final_status: success ? 'calendar_created' : 'calendar_failed',\n      google_event_id: eventId || null,\n      error: errorPayload,\n    },\n  }];\n"
       },
       "position": [
         1792,
@@ -536,7 +542,7 @@
       "id": "e8f7ecd4-c0fe-45e9-8d4a-a31e9c7877f4",
       "name": "Format Create Result Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/format-create-result-message__dca21952-7c6f-4587-8f86-5df9b4f7f70f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/format-create-result-message__dca21952-7c6f-4587-8f86-5df9b4f7f70f.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n\n  const status = asText($json.status || $json.final_status || $json.request_status);\n  const success = status === 'calendar_created' || $json.success === true;\n  const chatId = asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id));\n\n  let telegramMessage = '';\n  if (success) {\n    const subject = asText($json.confirmation_subject || ($json.normalized_event && $json.normalized_event.subject_code) || 'Event');\n    const start = asText($json.confirmation_block_start || (($json.normalized_event && $json.normalized_event.block_window)\n      ? `${$json.normalized_event.block_window.start_date_local} ${$json.normalized_event.block_window.start_time_local}`\n      : ''));\n    const end = asText($json.confirmation_block_end || (($json.normalized_event && $json.normalized_event.block_window)\n      ? `${$json.normalized_event.block_window.end_date_local} ${$json.normalized_event.block_window.end_time_local}`\n      : ''));\n\n    telegramMessage = `Calendar event created.\\n${subject}\\n${start} -> ${end}`.trim();\n  } else {\n    const errorMessage = asText($json.error && $json.error.message)\n      || asText($json.message)\n      || 'Calendar event could not be created. Please retry.';\n    telegramMessage = `Calendar event failed.\\n${errorMessage}`;\n  }\n\n  return [{\n    json: {\n      ...$json,\n      telegram_chat_id: chatId,\n      telegram_message: telegramMessage,\n    },\n  }];\n"
       },
       "position": [
         2464,
@@ -566,19 +572,19 @@
         -48
       ],
       "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2
+      "typeVersion": 1.2,
+      "webhookId": "bec5afba-46d4-449e-8cea-3c8f4f1ee309"
     }
   ],
   "settings": {
     "availableInMCP": false,
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
-    "executionOrder": "v1",
-    "timeSavedMode": "fixed"
+    "executionOrder": "v1"
   },
   "shared": [
     {
-      "createdAt": "2026-03-12T18:30:00.000Z",
+      "createdAt": "2026-03-13T04:53:08.825Z",
       "project": {
         "createdAt": "2026-01-12T01:58:24.486Z",
         "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
@@ -591,13 +597,13 @@
       },
       "projectId": "m23P41JejIbnV7Xa",
       "role": "workflow:owner",
-      "updatedAt": "2026-03-12T18:30:00.000Z",
-      "workflowId": "c3lNDV3YhV8m4N7Q2pRk"
+      "updatedAt": "2026-03-13T04:53:08.825Z",
+      "workflowId": "valOh9zMfqOZOvmHyOQfa"
     }
   ],
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-12T18:30:00.000Z",
-  "versionCounter": 1
+  "updatedAt": "2026-03-13T11:53:34.484Z",
+  "versionCounter": 14
 }

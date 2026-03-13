@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "4eaded25-6dcb-451c-85f1-0939942b5e4c",
+  "activeVersionId": "a2d2a42f-a2b7-4ad2-93a9-df8de82b22a4",
   "connections": {
     "Build Context Pack": {
       "main": [
@@ -30,6 +30,28 @@
           {
             "index": 0,
             "node": "Send a text message4",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Distill Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send MarkdownV2 Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Distill Run Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -137,6 +159,28 @@
           {
             "index": 0,
             "node": "Format delete message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Distill Run": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Distill Run Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Distill Sync": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Distill Message",
             "type": "main"
           }
         ]
@@ -296,50 +340,6 @@
           {
             "index": 0,
             "node": "PKM Config",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Distill Sync": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Format Distill Message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Format Distill Message": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Send MarkdownV2 Message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Distill Run": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Format Distill Run Message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Format Distill Run Message": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -1039,7 +1039,7 @@
       "id": "075f1d02-d3af-43dc-a694-f387f757ba3d",
       "name": "Format Status Message",
       "parameters": {
-        "jsCode": "try{const fn=require(\"/data/src/n8n/nodes/10-read/format-status-message__075f1d02-d3af-43dc-a694-f387f757ba3d.js\");return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=\"[extjs:10-read/format-status-message__075f1d02-d3af-43dc-a694-f387f757ba3d.js] \"+e.message;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/10-read/format-status-message__075f1d02-d3af-43dc-a694-f387f757ba3d.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-status-message__075f1d02-d3af-43dc-a694-f387f757ba3d.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -1223,7 +1223,7 @@
       "id": "ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca",
       "name": "Format Distill Message",
       "parameters": {
-        "jsCode": "try{const fn=require(\"/data/src/n8n/nodes/10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js\");return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=\"[extjs:10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js] \"+e.message;throw e;}"
+        "jsCode": "/**\n * PKM / n8n Externalized Code Node\n *\n * Workflow: Read (read)\n * Node: Format Distill Message\n * Node ID: ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca\n */\n'use strict';\n\nconst r = $json || {};\n  const mdv2 = (v) =>\n    String(v ?? '')\n      .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, '\\\\$1');\n\n  const status = String(r.status || '').toLowerCase();\n  if (status === 'completed') {\n    const whyBlock = `\\n\\n*Why it matters*\\n${mdv2(r.why_it_matters || '-')}`;\n    const excerptText = String(r.excerpt || '').trim();\n    const excerptBlock = excerptText ? `\\n\\n*Excerpt*\\n${mdv2(excerptText)}` : '';\n    return [{\n      json: {\n        ...r,\n        telegram_message:\n`*Tier\\\\_2 distill completed*\n• Entry\\\\_id: ${r.entry_id ?? '-'}\n• Stance: ${mdv2(r.stance || '-')}\n\n*Summary*\n${mdv2(r.summary || '-')}${whyBlock}${excerptBlock}`,\n      },\n    }];\n  }\n\n  const errMsg = r.message ? `\\n• Message: ${mdv2(r.message)}` : '';\n  const preserved = r.preserved_current_artifact === true\n    ? '\\n• Current artifact preserved: true'\n    : '';\n  return [{\n    json: {\n      ...r,\n      telegram_message:\n`*Tier\\\\_2 distill failed*\n• Entry\\\\_id: ${r.entry_id ?? '-'}\n• Error: ${mdv2(r.error_code || 'unknown_error')}${errMsg}${preserved}`,\n    },\n  }];\n"
       },
       "position": [
         1792,
@@ -1267,7 +1267,7 @@
       "id": "b9f00fcd-a5ed-462f-a8d0-3e49c20eca11",
       "name": "Format Distill Run Message",
       "parameters": {
-        "jsCode": "try{const fn=require(\"/data/src/n8n/nodes/10-read/format-distill-run-message__b9f00fcd-a5ed-462f-a8d0-3e49c20eca11.js\");return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=\"[extjs:10-read/format-distill-run-message__b9f00fcd-a5ed-462f-a8d0-3e49c20eca11.js] \"+e.message;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/10-read/format-distill-run-message__b9f00fcd-a5ed-462f-a8d0-3e49c20eca11.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-distill-run-message__b9f00fcd-a5ed-462f-a8d0-3e49c20eca11.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -1306,6 +1306,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-06T20:13:34.627Z",
-  "versionCounter": 271
+  "updatedAt": "2026-03-13T11:51:10.824Z",
+  "versionCounter": 332
 }

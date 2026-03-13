@@ -1,6 +1,6 @@
 {
-  "active": false,
-  "activeVersionId": "33f7208a-08d3-4c7c-b928-4fcaa275777c",
+  "active": true,
+  "activeVersionId": "f3c68aaa-fa68-4ab4-acd9-9282bfeb699c",
   "connections": {
     "Format Calendar Read Message": {
       "main": [
@@ -92,8 +92,8 @@
       ]
     }
   },
-  "createdAt": "2026-03-12T18:45:00.000Z",
-  "description": "Calendar read workflow for today/tomorrow/weekday queries",
+  "createdAt": "2026-03-13T11:09:09.135Z",
+  "description": null,
   "isArchived": false,
   "name": "31 Calendar Read",
   "nodes": [
@@ -144,7 +144,7 @@
       "id": "4e50a2c6-39cc-4f56-bb9f-a5cc0f6ff6f8",
       "name": "Parse Calendar Query",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/31-calendar-read/parse-calendar-query__2eaf2dbf-a4ee-4e95-a691-dd14b4f89f4f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:31-calendar-read/parse-calendar-query__2eaf2dbf-a4ee-4e95-a691-dd14b4f89f4f.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/31-calendar-read/parse-calendar-query__4e50a2c6-39cc-4f56-bb9f-a5cc0f6ff6f8.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:31-calendar-read/parse-calendar-query__4e50a2c6-39cc-4f56-bb9f-a5cc0f6ff6f8.js] ${e.message}`;throw e;}"
       },
       "position": [
         224,
@@ -155,23 +155,28 @@
     },
     {
       "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "qQOl2xfICHsxoZU2",
+          "name": "GCal"
+        }
+      },
       "id": "f2552cd9-2749-45ac-a191-4ce9f2b49106",
       "name": "Google Calendar Get Events",
       "onError": "continueRegularOutput",
       "parameters": {
-        "operation": "getAll",
         "calendar": {
           "__rl": true,
           "mode": "id",
           "value": "={{ $json.google_calendar_id }}"
         },
-        "returnAll": true,
-        "timeMin": "={{ $json.window_start_local }}",
-        "timeMax": "={{ $json.window_end_local }}",
+        "operation": "getAll",
         "options": {
-          "singleEvents": true,
           "orderBy": "startTime"
-        }
+        },
+        "returnAll": true,
+        "timeMax": "={{ $json.window_end_local }}",
+        "timeMin": "={{ $json.window_start_local }}"
       },
       "position": [
         448,
@@ -184,7 +189,7 @@
       "id": "7ec3a63a-4e24-4d8b-aa65-7644b31d6162",
       "name": "Format Calendar Read Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/31-calendar-read/format-calendar-read-message__0f4f9202-36bf-4337-8f15-2f6fb1122e68.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:31-calendar-read/format-calendar-read-message__0f4f9202-36bf-4337-8f15-2f6fb1122e68.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js] ${e.message}`;throw e;}"
       },
       "position": [
         672,
@@ -214,7 +219,8 @@
         -240
       ],
       "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2
+      "typeVersion": 1.2,
+      "webhookId": "c7f12af1-257a-4396-84e5-59dfccab35d6"
     },
     {
       "id": "547fb26f-d0dd-4ff8-97e6-0acb565e0964",
@@ -351,12 +357,11 @@
     "availableInMCP": false,
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
-    "executionOrder": "v1",
-    "timeSavedMode": "fixed"
+    "executionOrder": "v1"
   },
   "shared": [
     {
-      "createdAt": "2026-03-12T18:45:00.000Z",
+      "createdAt": "2026-03-13T11:09:09.135Z",
       "project": {
         "createdAt": "2026-01-12T01:58:24.486Z",
         "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
@@ -369,13 +374,13 @@
       },
       "projectId": "m23P41JejIbnV7Xa",
       "role": "workflow:owner",
-      "updatedAt": "2026-03-12T18:45:00.000Z",
-      "workflowId": "wQ9kL2mN5pR7tV3xY8Za"
+      "updatedAt": "2026-03-13T11:09:09.135Z",
+      "workflowId": "DwtBNN8QIebQC3G-IsuCU"
     }
   ],
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-12T18:45:00.000Z",
-  "versionCounter": 1
+  "updatedAt": "2026-03-13T11:54:02.245Z",
+  "versionCounter": 13
 }

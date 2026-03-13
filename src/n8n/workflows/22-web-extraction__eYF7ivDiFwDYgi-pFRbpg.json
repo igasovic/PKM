@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "8a23c2ea-e48b-4876-8e56-47c9a2e42597",
+  "activeVersionId": "6df0dfac-828d-4e07-bd49-e4437c06ad96",
   "connections": {
     "Extract Title & Author": {
       "main": [
@@ -365,6 +365,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-06T20:13:35.511Z",
-  "versionCounter": 82
+  "updatedAt": "2026-03-13T11:51:11.728Z",
+  "versionCounter": 108
 }

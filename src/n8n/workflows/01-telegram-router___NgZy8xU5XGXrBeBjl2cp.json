@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "e73c5e9d-0c51-40cb-8130-fc4636f64cf4",
+  "activeVersionId": "0033d130-e8c6-4e5a-95bc-7a2353261a2d",
   "connections": {
     "Format Ambiguous Message": {
       "main": [
@@ -76,7 +76,7 @@
         [
           {
             "index": 0,
-            "node": "Call 'Calendar Create'",
+            "node": "Call '30 Calendar Create'",
             "type": "main"
           }
         ],
@@ -106,14 +106,14 @@
         [
           {
             "index": 0,
-            "node": "Call 'Calendar Create'",
+            "node": "Call '30 Calendar Create'",
             "type": "main"
           }
         ],
         [
           {
             "index": 0,
-            "node": "Call 'Calendar Read'",
+            "node": "Call '31 Calendar Read'",
             "type": "main"
           }
         ],
@@ -163,7 +163,7 @@
       },
       "position": [
         -224,
-        -96
+        -160
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -173,11 +173,11 @@
       "id": "9fdd2089-7796-4e95-932a-78b6827cf4b3",
       "name": "Prepare Route Input",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/01-telegram-router/prepare-route-input__2fc8f31e-0d24-4d3f-88f3-33dc31652d8b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:01-telegram-router/prepare-route-input__2fc8f31e-0d24-4d3f-88f3-33dc31652d8b.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n  const message = ($json && $json.message) || ($json && $json.edited_message) || {};\n  const rawText = asText($json.raw_text || message.text || message.caption || '');\n  const lower = rawText.toLowerCase();\n\n  const telegramChatId = asText($json.telegram_chat_id || (message.chat && message.chat.id));\n  const telegramMessageId = asText($json.telegram_message_id || message.message_id);\n  const telegramUserId = asText($json.telegram_user_id || (message.from && message.from.id));\n  const username = asText($json.telegram_username || (message.from && message.from.username));\n  const firstName = asText($json.telegram_first_name || (message.from && message.from.first_name));\n\n  let actorCode = asText($json.actor_code).toLowerCase();\n  if (!actorCode) {\n    const hint = `${username} ${firstName}`.toLowerCase();\n    if (hint.includes('igor')) actorCode = 'igor';\n    else if (hint.includes('danij')) actorCode = 'danijela';\n    else actorCode = 'unknown';\n  }\n\n  let routeHint = 'backend_route';\n  if (/^pkm:\\s*/i.test(rawText)) routeHint = 'pkm_capture';\n  if (/^cal:\\s*/i.test(rawText)) routeHint = 'calendar_create';\n\n  return [{\n    json: {\n      ...$json,\n      message,\n      raw_text: rawText,\n      telegram_chat_id: telegramChatId,\n      telegram_message_id: telegramMessageId,\n      telegram_user_id: telegramUserId,\n      telegram_username: username || null,\n      actor_code: actorCode,\n      is_command: rawText.startsWith('/'),\n      route_hint: routeHint,\n    },\n  }];\n"
       },
       "position": [
         0,
-        -96
+        -160
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -211,7 +211,7 @@
       },
       "position": [
         224,
-        -96
+        -160
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -328,7 +328,7 @@
       },
       "position": [
         448,
-        0
+        -64
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -357,38 +357,8 @@
         }
       },
       "position": [
-        704,
-        -112
-      ],
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
-    },
-    {
-      "id": "5d532180-2285-45e5-a83a-60b3e4937441",
-      "name": "Call 'Calendar Create'",
-      "parameters": {
-        "options": {
-          "waitForSubWorkflow": true
-        },
-        "workflowId": {
-          "__rl": true,
-          "cachedResultName": "30 Calendar Create",
-          "cachedResultUrl": "/workflow/c3lNDV3YhV8m4N7Q2pRk",
-          "mode": "list",
-          "value": "c3lNDV3YhV8m4N7Q2pRk"
-        },
-        "workflowInputs": {
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true,
-          "mappingMode": "defineBelow",
-          "matchingColumns": [],
-          "schema": [],
-          "value": {}
-        }
-      },
-      "position": [
-        704,
-        16
+        1344,
+        -208
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -418,8 +388,8 @@
         "url": "http://pkm-server:8080/telegram/route"
       },
       "position": [
-        704,
-        176
+        672,
+        288
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -433,8 +403,8 @@
         "options": {}
       },
       "position": [
-        960,
-        176
+        896,
+        208
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -546,51 +516,21 @@
         }
       },
       "position": [
-        1200,
+        1120,
         176
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
     },
     {
-      "id": "1344db8c-df4d-4633-85af-793d5e474ce8",
-      "name": "Call 'Calendar Read'",
-      "parameters": {
-        "options": {
-          "waitForSubWorkflow": true
-        },
-        "workflowId": {
-          "__rl": true,
-          "cachedResultName": "31 Calendar Read",
-          "cachedResultUrl": "/workflow/wQ9kL2mN5pR7tV3xY8Za",
-          "mode": "list",
-          "value": "wQ9kL2mN5pR7tV3xY8Za"
-        },
-        "workflowInputs": {
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true,
-          "mappingMode": "defineBelow",
-          "matchingColumns": [],
-          "schema": [],
-          "value": {}
-        }
-      },
-      "position": [
-        1456,
-        208
-      ],
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
-    },
-    {
       "id": "f6e29fae-95f8-4b12-8404-5dcfcf3db7a4",
       "name": "Format Ambiguous Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/01-telegram-router/format-ambiguous-message__60efdb4f-8b7d-4729-bc13-5675ec56f4d4.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:01-telegram-router/format-ambiguous-message__60efdb4f-8b7d-4729-bc13-5675ec56f4d4.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n\n  const question = asText($json.clarification_question)\n    || 'Do you want this saved as a calendar event or as a PKM note?';\n\n  return [{\n    json: {\n      ...$json,\n      telegram_chat_id: asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id)),\n      telegram_message: question,\n    },\n  }];\n"
       },
       "position": [
-        1456,
-        352
+        1344,
+        368
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -612,11 +552,72 @@
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        1696,
-        352
+        1568,
+        368
       ],
       "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2
+      "typeVersion": 1.2,
+      "webhookId": "6f8c8fbe-4233-44c6-84b1-99d43e0db6b4"
+    },
+    {
+      "id": "5d532180-2285-45e5-a83a-60b3e4937441",
+      "name": "Call '30 Calendar Create'",
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "30 Calendar Create",
+          "cachedResultUrl": "/workflow/valOh9zMfqOZOvmHyOQfa",
+          "mode": "list",
+          "value": "valOh9zMfqOZOvmHyOQfa"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        1344,
+        -32
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "1344db8c-df4d-4633-85af-793d5e474ce8",
+      "name": "Call '31 Calendar Read'",
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "31 Calendar Read",
+          "cachedResultUrl": "/workflow/DwtBNN8QIebQC3G-IsuCU",
+          "mode": "list",
+          "value": "DwtBNN8QIebQC3G-IsuCU"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        1344,
+        176
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
     }
   ],
   "settings": {
@@ -648,6 +649,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2026-03-12T18:00:00.000Z",
-  "versionCounter": 131
+  "updatedAt": "2026-03-13T11:54:57.062Z",
+  "versionCounter": 157
 }
