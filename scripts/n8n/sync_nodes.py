@@ -113,6 +113,7 @@ def build_live_workflow_map():
 
 def extract_wrapper_targets(workflow_payload):
     canonical = []
+    shared = []
     forbidden = []
     nodes = workflow_payload.get("nodes", [])
     for node in nodes:
@@ -122,12 +123,15 @@ def extract_wrapper_targets(workflow_payload):
             continue
         for match in re.finditer(r"""require\(\s*['"](/data/[^'\"`]+\.js)['"]\s*\)""", js_code):
             wrapper_path = match.group(1)
-            prefix = "/data/src/n8n/nodes/"
-            if wrapper_path.startswith(prefix):
-                canonical.append(wrapper_path[len(prefix):])
+            canonical_prefix = "/data/src/n8n/nodes/"
+            shared_prefix = "/data/src/libs/"
+            if wrapper_path.startswith(canonical_prefix):
+                canonical.append(wrapper_path[len(canonical_prefix):])
+            elif wrapper_path.startswith(shared_prefix):
+                shared.append(wrapper_path[len(shared_prefix):])
             else:
                 forbidden.append(wrapper_path)
-    return canonical, forbidden
+    return canonical, shared, forbidden
 
 
 def validate_wrapper_targets(
@@ -138,7 +142,7 @@ def validate_wrapper_targets(
     for workflow_path in workflow_files:
         data = load_json(workflow_path)
         wf_name = data.get("name", workflow_path.name)
-        canonical_targets, forbidden_targets = extract_wrapper_targets(data)
+        canonical_targets, _shared_targets, forbidden_targets = extract_wrapper_targets(data)
         for wrapper_path in forbidden_targets:
             missing.append((wf_name, wrapper_path, "non-canonical wrapper path"))
         for rel_path in canonical_targets:

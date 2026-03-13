@@ -149,6 +149,7 @@ import sys
 workflows_dir = pathlib.Path(sys.argv[1])
 label = sys.argv[2]
 canonical_prefix = "/data/src/n8n/nodes/"
+allowed_shared_prefix = "/data/src/libs/"
 forbidden = []
 
 for wf in sorted(workflows_dir.glob("*.json")):
@@ -162,7 +163,10 @@ for wf in sorted(workflows_dir.glob("*.json")):
             continue
         for match in re.finditer(r"""require\(\s*['"](/data/[^'\"`]+\.js)['"]\s*\)""", js):
             wrapper_path = match.group(1)
-            if not wrapper_path.startswith(canonical_prefix):
+            if not (
+                wrapper_path.startswith(canonical_prefix)
+                or wrapper_path.startswith(allowed_shared_prefix)
+            ):
                 forbidden.append((wf.name, node.get("name"), wrapper_path))
 
 if forbidden:
