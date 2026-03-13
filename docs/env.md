@@ -2,7 +2,7 @@
 
 **Purpose:** quick human review + enough context for agents to safely operate / extend the stack (what runs where, how to connect, what can break, and what not to touch).
 
-**Last verified:** 2026-02-17  
+**Last verified:** 2026-03-13  
 **Host:** `pi` (LAN: `192.168.5.4`)  
 **OS:** Debian GNU/Linux 13 (trixie) aarch64 • kernel `6.12.62+rpt-rpi-v8`  
 **Docker:** 29.1.4 • **Docker Compose:** v5.0.1
@@ -12,8 +12,11 @@
 ## 0) Quick start (most common ops)
 
 ```bash
-# SSH in
+# SSH in (LAN)
 ssh pi
+
+# SSH in (remote)
+ssh pi-remote
 
 # stack status
 cd /home/igasovic/stack
@@ -40,10 +43,42 @@ docker logs -n 200 n8n
 | Matter Server UI | http://192.168.5.4:5580 | Host networking |
 | n8n (local-only) | http://127.0.0.1:5678 | Bound to loopback on the Pi host |
 
-### Mac → Pi SSH shortcuts (current ~/.ssh/config)
-- `ssh pi` connects directly to `igasovic@192.168.5.4`
-- `ssh n8n` sets up a port forward:
-  - `localhost:5680` (Mac) → `127.0.0.1:5678` (Pi)
+### SSH access
+SSH access is available in three modes:
+
+| Mode | Command | Description |
+|---|---|---|
+| LAN direct | `ssh pi` | Direct SSH to the Pi over the home network |
+| LAN port-forward | `ssh n8n` | SSH plus local port forward for the n8n UI |
+| Remote tunnel | `ssh pi-remote` | Remote SSH through Cloudflare Tunnel + Access |
+
+### Mac → Pi SSH configuration (`~/.ssh/config`)
+Current config:
+
+```ssh
+Host pi
+  HostName 192.168.5.4
+  User igasovic
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+
+Host n8n
+  HostName 192.168.5.4
+  User igasovic
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  LocalForward 5680 127.0.0.1:5678
+
+Host pi-remote
+  HostName ssh.gasovic.com
+  User igasovic
+  ProxyCommand cloudflared access ssh --hostname %h
+```
+
+Usage:
+- `ssh pi` → direct LAN SSH
+- `ssh n8n` → forwards `localhost:5680` (Mac) to `127.0.0.1:5678` (Pi)
+- `ssh pi-remote` → remote SSH through Cloudflare
 
 Example:
 ```bash
@@ -59,6 +94,46 @@ Published application routes (Cloudflare Zero Trust → Tunnels → Public Hostn
 | `ha.gasovic.com` | `http://localhost:8123` | Home Assistant |
 | `n8n-hook.gasovic.com` | `http://localhost:5678` | n8n webhooks (base URL) |
 | `n8n.gasovic.com` | `http://localhost:5678` | n8n editor/UI |
+| `ssh.gasovic.com` | `ssh://localhost:22` | Remote SSH access |
+
+### Remote SSH notes
+Remote SSH uses **Cloudflare Tunnel + Cloudflare Access**. The client machine runs a normal `ssh` command and uses `cloudflared access ssh --hostname %h` as the transport layer.
+
+Connection flow:
+```
+Mac → Cloudflare Access → Cloudflare Tunnel → Pi SSH
+```
+
+Properties:
+- no router port forwarding
+- port 22 is not publicly exposed
+- authentication is enforced by Cloudflare Access before the SSH session starts
+- this only works from client machines that have `cloudflared` installed and have authenticated to the Access app
+
+### Replicating SSH access on another Mac
+To set up another Mac for remote access:
+
+1. Install `cloudflared`:
+```bash
+brew install cloudflared
+```
+
+2. Copy the SSH key used for Pi access, or generate a new key and add it to the Pi:
+```bash
+ssh-copy-id igasovic@192.168.5.4
+```
+
+3. Add the same `~/.ssh/config` entries shown above.
+
+4. Authenticate once with Cloudflare Access:
+```bash
+cloudflared access login https://ssh.gasovic.com
+```
+
+5. Connect remotely:
+```bash
+ssh pi-remote
+```
 
 
 ### Service dependency graph (overview)
@@ -351,6 +426,12 @@ Important:
 
 Observed version:
 - `cloudflared version 2025.11.1` (logs recommend upgrading)
+
+
+### Remote SSH operational notes
+- The SSH origin route is managed in the Cloudflare UI as `ssh.gasovic.com` → `ssh://localhost:22`.
+- Access from a client machine is expected to work via `ssh pi-remote`, not by running `cloudflared access ssh --hostname ssh.gasovic.com` interactively by itself.
+- On a new Mac, install `cloudflared`, add the `pi-remote` SSH config entry, then run `cloudflared access login https://ssh.gasovic.com` once before the first connection.
 
 ---
 
