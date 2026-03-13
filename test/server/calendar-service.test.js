@@ -40,6 +40,23 @@ describe('calendar-service', () => {
     expect(out.normalized_event.color_choice.logical_color).toBe('purple');
   });
 
+  test('normalizeCalendarRequest maps "appt" to MED category', () => {
+    const out = normalizeCalendarRequest({
+      raw_text: 'Mila appt tomorrow at 3:00p',
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.category_code).toBe('MED');
+  });
+
+  test('normalizeCalendarRequest title excludes connector before time', () => {
+    const out = normalizeCalendarRequest({
+      raw_text: 'Mila dentist tomorrow at 3:00p for 60 min',
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.title).toBe('Mila dentist');
+    expect(out.normalized_event.subject_code).toContain('Mila dentist');
+  });
+
   test('normalizeCalendarRequest collapses to FAM when all canonical people are present', () => {
     const out = normalizeCalendarRequest({
       raw_text: 'Mila Iva Louie Igor Danijela birthday party tomorrow at 1:00p',

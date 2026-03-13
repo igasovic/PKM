@@ -209,7 +209,7 @@ function detectPeople(rawText, config) {
 function detectCategory(rawText, config) {
   const s = lower(rawText);
   const keywords = [
-    { k: 'MED', words: ['doctor', 'dentist', 'medical', 'clinic', 'checkup', 'appointment'] },
+    { k: 'MED', words: ['doctor', 'dentist', 'medical', 'clinic', 'checkup', 'appointment', 'appt'] },
     { k: 'KID', words: ['kid', 'kids', 'school', 'swim', 'soccer', 'practice'] },
     { k: 'DOG', words: ['dog', 'louie', 'vet', 'walk'] },
     { k: 'TRV', words: ['trip', 'flight', 'travel', 'airport'] },
@@ -236,10 +236,13 @@ function deriveTitle(rawText) {
   let s = text(rawText);
   s = s.replace(/^cal:\s*/i, '');
   s = s.replace(/\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/ig, ' ');
+  s = s.replace(/\b(at|on)\s+(?=(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)\b)/ig, ' ');
+  s = s.replace(/\b(at|on)\s+\d{1,2}:\d{2}\b/ig, ' ');
   s = s.replace(/\bfor\s+\d{1,3}\s*(m|min|mins|minute|minutes)\b/ig, ' ');
   s = s.replace(/\bfor\s+\d{1,2}\s*(h|hr|hrs|hour|hours)\b/ig, ' ');
   s = s.replace(/\b(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)\b/ig, ' ');
   s = s.replace(/\b([01]?\d|2[0-3]):([0-5]\d)\b/g, ' ');
+  s = s.replace(/\b(at|on|for|with|to)\b$/i, ' ');
   s = s.replace(/\s+/g, ' ').trim();
   if (!s) return null;
   if (s.length > 80) return s.slice(0, 80).trim();
