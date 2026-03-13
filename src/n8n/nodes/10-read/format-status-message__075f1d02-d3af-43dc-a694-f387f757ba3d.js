@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { mdv2, mdv2Render } = (() => {
+const { mdv2, bold, bullet, parens, joinLines, finalizeMarkdownV2 } = (() => {
   try {
     return require('/data/src/libs/telegram-markdown.js');
   } catch (err) {
@@ -51,34 +51,39 @@ module.exports = async function run(ctx) {
     .slice(0, 3);
 
   const dryRunLine = dryRunWouldProcess > 0
-    ? `\n• Would process \\(dry\\_run\\): ${dryRunWouldProcess}`
-    : '';
+    ? bullet(`Would process ${parens('dry_run')}: ${dryRunWouldProcess}`, { rawValue: true })
+    : null;
   const preservedLine = preservedCurrentCount > 0
-    ? `\n• Preserved current: ${preservedCurrentCount}`
-    : '';
+    ? bullet(`Preserved current: ${preservedCurrentCount}`)
+    : null;
   const failureBreakdownLine = topFailures.length > 0
-    ? `\n• Top failures: ${topFailures.map(([code, count]) => `${mdv2(code)} \\(${count}\\)`).join(', ')}`
-    : '';
+    ? bullet(`Top failures: ${topFailures.map(([code, count]) => `${mdv2(code)} ${parens(count)}`).join(', ')}`, { rawValue: true })
+    : null;
+
+  const lines = [
+    bold('Batch summary'),
+    '',
+    `${bold('Jobs:')} ${summary.jobs}`,
+    `${bold('In_progress:')} ${summary.in_progress}`,
+    `${bold('Terminal:')} ${summary.terminal}`,
+    '',
+    bold('Items'),
+    bullet(`Total: ${summary.total_items}`),
+    bullet(`Processed: ${summary.processed}`),
+    bullet(`Pending: ${summary.pending}`),
+    dryRunLine,
+    '',
+    bold('Results'),
+    `✅ ${mdv2('OK')}: ${summary.ok}`,
+    `⚠️ ${mdv2('Parse_error')}: ${summary.parse_error}`,
+    `❌ ${mdv2('Error')}: ${summary.error}`,
+    preservedLine,
+    failureBreakdownLine,
+  ];
 
   return [{
     json: {
-      telegram_message: mdv2Render(
-`*Batch summary*
-
-*Jobs:* ${summary.jobs}
-*In\\_progress:* ${summary.in_progress}
-*Terminal:* ${summary.terminal}
-
-*Items*
-• Total: ${summary.total_items}
-• Processed: ${summary.processed}
-• Pending: ${summary.pending}${dryRunLine}
-
-*Results*
-✅ OK: ${summary.ok}
-⚠️ Parse\\_error: ${summary.parse_error}
-❌ Error: ${summary.error}${preservedLine}${failureBreakdownLine}`,
-      ),
+      telegram_message: finalizeMarkdownV2(joinLines(lines, { trimTrailing: true })),
     },
   }];
 };

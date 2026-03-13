@@ -1,6 +1,6 @@
 'use strict';
 
-const { mdv2, mdv2Render } = (() => {
+const { mdv2, bold, bullet, joinLines, finalizeMarkdownV2 } = (() => {
   try {
     return require('/data/src/libs/telegram-markdown.js');
   } catch (err) {
@@ -21,32 +21,32 @@ module.exports = async function run(ctx) {
     const excerpt = mdv2($json.excerpt || '');
     const stance = mdv2($json.stance || 'n/a');
     const lines = [
-      '*Tier\\_2 distill completed*',
-      `• Entry: ${mdv2(entryId)}`,
-      `• Stance: ${stance}`,
+      bold('Tier_2 distill completed'),
+      bullet(`Entry: ${entryId}`, { rawValue: true }),
+      bullet(`Stance: ${stance}`, { rawValue: true }),
       '',
-      '*Summary*',
+      bold('Summary'),
       summary,
       '',
-      '*Why it matters*',
+      bold('Why it matters'),
       why,
     ];
     if (excerpt) {
-      lines.push('', '*Excerpt*', excerpt);
+      lines.push('', bold('Excerpt'), excerpt);
     }
-    telegramMessage = mdv2Render(lines.join('\n').trim());
+    telegramMessage = finalizeMarkdownV2(joinLines(lines, { trimTrailing: true }));
   } else {
     const errorCode = mdv2($json.error_code || 'unknown_error');
     const message = mdv2($json.message || 'distill failed');
     const preserved = String($json.preserved_current_artifact === true);
-    telegramMessage = [
-      '*Tier\\_2 distill failed*',
-      `• Entry: ${mdv2(entryId)}`,
-      `• Error: ${errorCode}`,
-      `• Message: ${message}`,
-      `• Current artifact preserved: ${mdv2(preserved)}`,
-    ].join('\n').trim();
-    telegramMessage = mdv2Render(telegramMessage);
+    telegramMessage = joinLines([
+      bold('Tier_2 distill failed'),
+      bullet(`Entry: ${mdv2(entryId)}`, { rawValue: true }),
+      bullet(`Error: ${errorCode}`, { rawValue: true }),
+      bullet(`Message: ${message}`, { rawValue: true }),
+      bullet(`Current artifact preserved: ${mdv2(preserved)}`, { rawValue: true }),
+    ], { trimTrailing: true });
+    telegramMessage = finalizeMarkdownV2(telegramMessage);
   }
 
   return [{

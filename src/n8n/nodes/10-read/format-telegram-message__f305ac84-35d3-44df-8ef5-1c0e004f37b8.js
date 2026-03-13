@@ -13,7 +13,7 @@
 'use strict';
 
 const { getConfig } = require('/data/src/libs/config.js');
-const { mdv2, mdv2Render } = (() => {
+const { mdv2, bold, kv, arrow, joinLines, finalizeMarkdownV2 } = (() => {
   try {
     return require('/data/src/libs/telegram-markdown.js');
   } catch (err) {
@@ -48,26 +48,24 @@ let body = '';
 if (wantExcerpt) body = excerptLong || clean || excerptShort || '(no text)';
 else body = clean || excerptShort || '(no text)';
 
-// Build MarkdownV2-safe message
 const lines = [];
-lines.push(`*Entry* \\#${mdv2(entryId || '?')}`);
-if (title) lines.push(`*Title* ${mdv2(title)}`);
-if (author) lines.push(`*Author* ${mdv2(author)}`);
-if (tp && ts) lines.push(`*Topic* ${mdv2(tp)} \\-> ${mdv2(ts)}`);
-else if (tp) lines.push(`*Topic* ${mdv2(tp)}`);
-if (url) lines.push(`*URL* ${mdv2(url)}`);
-if (gist) lines.push(`\\n*Gist* ${mdv2(gist)}`);
+lines.push(kv('Entry', `#${entryId || '?'}`));
+if (title) lines.push(kv('Title', title));
+if (author) lines.push(kv('Author', author));
+if (tp && ts) lines.push(`${bold('Topic')} ${arrow(tp, ts)}`);
+else if (tp) lines.push(kv('Topic', tp));
+if (url) lines.push(kv('URL', url));
+if (gist) lines.push('', bold('Gist'), mdv2(gist));
+lines.push('', bold('Text'), mdv2(body));
 
-lines.push(`\\n*Text*\\n${mdv2(body)}`);
-
-let msg = lines.join('\n');
+let msg = joinLines(lines, { trimTrailing: true });
 
 const config = getConfig();
 if (config.db.is_test_mode === true) {
-  msg = `*TEST MODE*\\n${msg}`;
+  msg = joinLines([bold('TEST MODE'), msg], { trimTrailing: true });
 }
 
-msg = mdv2Render(msg, { maxLen: 4000 });
+msg = finalizeMarkdownV2(msg, { maxLen: 4000 });
 
 return [{ json: { ...$json, telegram_message: msg } }];
 };

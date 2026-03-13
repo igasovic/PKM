@@ -85,7 +85,13 @@ Template:
 ### 4.4 Parsing and escaping
 - Telegram sends must use `parse_mode=MarkdownV2`.
 - Any dynamic value in `telegram_message` must be escaped for MarkdownV2 before send.
-- Keep escaping in one helper (`mdv2`) and reuse it in message-builder nodes.
+- Use shared formatter primitives from `src/libs/telegram-markdown.js` in message-builder nodes:
+  - `mdv2` for plain-value escaping
+  - `bold`, `kv`, `bullet`, `arrow` for structured line composition
+  - `parens`, `brackets` for escaped wrapper tokens
+  - `nl`, `joinLines` for newline control
+  - `finalizeMarkdownV2` (or `mdv2Message` / `mdv2Render`) for safe truncation
+- Do not hand-write escape tokens like `\\(`, `\\)`, `\\[`, `\\]`, `\\-\\>` in node templates. Build them via helper primitives.
 
 ### 4.5 Data-shape stability across HTTP/code nodes
 - Some nodes replace `$json`; preserve `telegram_chat_id` explicitly when reshaping payloads.
@@ -163,12 +169,13 @@ return [{ json: { ...$json, isCommand } }];
 
 ### 6.3 MarkdownV2 Telegram message builder
 ```js
-const mdv2 = (v) =>
-  String(v ?? '').replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, '\\\\$1');
+const { bold, kv, joinLines, finalizeMarkdownV2 } = require('/data/src/libs/telegram-markdown.js');
 
-const title = mdv2($json.title || 'Untitled');
-const score = mdv2($json.score ?? 'n/a');
-const telegram_message = `*Title:* ${title}\\n*Score:* ${score}`;
+const telegram_message = finalizeMarkdownV2(joinLines([
+  bold('Entry summary'),
+  kv('Title', $json.title || 'Untitled'),
+  kv('Score', $json.score ?? 'n/a'),
+]), { maxLen: 4000 });
 
 return [{ json: { ...$json, telegram_message } }];
 ```

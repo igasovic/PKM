@@ -51,7 +51,7 @@ describe('n8n format-distill-run-message', () => {
     });
 
     expect(out).toHaveLength(1);
-    expect(out[0].json.telegram_message).toContain('*Tier\\_2 run *');
+    expect(out[0].json.telegram_message).toContain('*Tier\\_2 run*');
     expect(out[0].json.telegram_message).toContain('*Batch\\_id:* t2\\_1700000000\\_ab12cd');
     expect(out[0].json.telegram_message).toContain('*Execution:* batch');
     expect(out[0].json.telegram_message).toContain('*Processed:* 10');
@@ -124,6 +124,6 @@ describe('n8n format-distill-run-message', () => {
 
     expect(out).toHaveLength(1);
     expect(out[0].json.telegram_message).toContain('*Execution:* sync');
-    expect(out[0].json.telegram_message).toContain('Top failures: excerpt\\_not\\_grounded (2), generation\\_error (1)');
+    expect(out[0].json.telegram_message).toContain('Top failures: excerpt\\_not\\_grounded \\(2\\), generation\\_error \\(1\\)');
   });
 });

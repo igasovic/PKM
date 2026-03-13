@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { mdv2, mdv2Render } = (() => {
+const { mdv2, bold, bullet, parens, joinLines, finalizeMarkdownV2 } = (() => {
   try {
     return require('/data/src/libs/telegram-markdown.js');
   } catch (err) {
@@ -45,64 +45,66 @@ module.exports = async function run(ctx) {
     .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
     .slice(0, 3);
   if (r.skipped === true && String(r.reason || '').toLowerCase() === 'worker_busy') {
-    lines.push('*Tier\\_2 run skipped*');
+    lines.push(bold('Tier_2 run skipped'));
     lines.push('');
-    lines.push('• Reason: worker\\_busy');
-    lines.push(`• Message: ${mdv2(r.message || 'Tier-2 batch worker is busy. Try again shortly.')}`);
+    lines.push(bullet(`Reason: ${mdv2('worker_busy')}`, { rawValue: true }));
+    lines.push(bullet(`Message: ${mdv2(r.message || 'Tier-2 batch worker is busy. Try again shortly.')}`, { rawValue: true }));
     return [{
       json: {
         ...r,
-        telegram_message: mdv2Render(lines.join('\n')),
+        telegram_message: finalizeMarkdownV2(joinLines(lines, { trimTrailing: true })),
       },
     }];
   }
 
   if (r.error) {
-    lines.push('*Tier\\_2 run failed*');
+    lines.push(bold('Tier_2 run failed'));
     lines.push('');
     if (r.batch_id) {
-      lines.push(`• Batch\\_id: ${mdv2(r.batch_id)}`);
+      lines.push(bullet(`${mdv2('Batch_id')}: ${mdv2(r.batch_id)}`, { rawValue: true }));
     }
-    lines.push(`• Error: ${mdv2(r.error)}`);
+    lines.push(bullet(`Error: ${mdv2(r.error)}`, { rawValue: true }));
     return [{
       json: {
         ...r,
-        telegram_message: mdv2Render(lines.join('\n')),
+        telegram_message: finalizeMarkdownV2(joinLines(lines, { trimTrailing: true })),
       },
     }];
   }
 
-  lines.push(`*Tier\\_2 run ${mode === 'dry_run' ? '\\(dry\\ run\\)' : ''}*`);
+  lines.push(mode === 'dry_run'
+    ? `${bold('Tier_2 run')} ${parens('dry run')}`
+    : `${bold('Tier_2 run')} `);
   if (r.batch_id) {
-    lines.push(`*Batch\\_id:* ${mdv2(r.batch_id)}`);
+    lines.push(`${bold('Batch_id:')} ${mdv2(r.batch_id)}`);
   }
-  lines.push(`*Execution:* ${mdv2(executionMode)}`);
+  lines.push(`${bold('Execution:')} ${mdv2(executionMode)}`);
   lines.push('');
-  lines.push(`*Candidates:* ${r.candidate_count ?? 0}`);
-  lines.push(`*Planned:* ${r.planned_selected_count ?? 0}`);
+  lines.push(`${bold('Candidates:')} ${r.candidate_count ?? 0}`);
+  lines.push(`${bold('Planned:')} ${r.planned_selected_count ?? 0}`);
   if (mode === 'dry_run') {
-    lines.push(`*Would process:* ${r.will_process_count ?? 0}`);
+    lines.push(`${bold('Would process:')} ${r.will_process_count ?? 0}`);
   } else {
-    lines.push(`*Processed:* ${r.processed_count ?? 0}`);
+    lines.push(`${bold('Processed:')} ${r.processed_count ?? 0}`);
     lines.push(`Completed: ${r.completed_count ?? 0}`);
     lines.push(`Failed: ${r.failed_count ?? 0}`);
     if (preservedCurrentCount > 0) {
       lines.push(`Preserved current: ${preservedCurrentCount}`);
     }
     if (topFailureCodes.length > 0) {
-      lines.push(`Top failures: ${topFailureCodes.map(([code, count]) => `${mdv2(code)} (${Number(count || 0)})`).join(', ')}`);
+      lines.push(`Top failures: ${topFailureCodes.map(([code, count]) => `${mdv2(code)} ${parens(Number(count || 0))}`).join(', ')}`);
     }
   }
   lines.push('');
-  lines.push('*Decisions*');
-  lines.push(`• Proceed: ${d.proceed ?? 0}`);
-  lines.push(`• Skipped: ${d.skipped ?? 0}`);
-  lines.push(`• Not\\_eligible: ${d.not_eligible ?? 0}`);
+  lines.push(bold('Decisions'));
+  lines.push(bullet(`Proceed: ${d.proceed ?? 0}`));
+  lines.push(bullet(`Skipped: ${d.skipped ?? 0}`));
+  lines.push(bullet(`Not_eligible: ${d.not_eligible ?? 0}`));
 
   return [{
     json: {
       ...r,
-      telegram_message: mdv2Render(lines.join('\n')),
+      telegram_message: finalizeMarkdownV2(joinLines(lines, { trimTrailing: true })),
     },
   }];
 };

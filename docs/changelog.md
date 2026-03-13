@@ -1,4 +1,20 @@
 # changelog
+## 2026-03-13 — Telegram MarkdownV2 formatter primitives + 10 Read refactor
+
+### What changed
+- Expanded shared Telegram MarkdownV2 helper in `src/libs/telegram-markdown.js`:
+  - added formatter primitives: `bold`, `italic`, `code`, `kv`, `bullet`, `arrow`, `parens`, `brackets`, `nl`, `joinLines`
+  - added `finalizeMarkdownV2` and kept backward-compatible `mdv2`, `mdv2Message`, `mdv2Render`
+- Refactored 10 Read Markdown message builders to use shared primitives (removed manual escape token assembly):
+  - `src/n8n/nodes/10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js`
+  - `src/n8n/nodes/10-read/format-status-message__075f1d02-d3af-43dc-a694-f387f757ba3d.js`
+  - `src/n8n/nodes/10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js`
+  - `src/n8n/nodes/10-read/format-distill-run-message__b9f00fcd-a5ed-462f-a8d0-3e49c20eca11.js`
+- Added regression coverage:
+  - `test/server/telegram-markdown.test.js`
+  - `test/server/n8n.format-telegram-message.test.js`
+  - updated `test/server/n8n.format-distill-run-message.test.js` for escaped parenthesized counts
+
 ## 2026-03-13 — Calendar create hardening + scheduled report workflows + Telegram MarkdownV2 helper
 
 ### What changed
