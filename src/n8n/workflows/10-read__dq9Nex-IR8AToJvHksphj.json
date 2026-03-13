@@ -1014,7 +1014,7 @@
           "appendAttribution": false,
           "parse_mode": "MarkdownV2"
         },
-        "chatId": "={{ $json.reply_chat_id || $json.telegram_chat_id || $json.chat_id || (($json.message && $json.message.chat && $json.message.chat.id) || (($node[\"Command Parser\"] && $node[\"Command Parser\"].json && $node[\"Command Parser\"].json.chat_id) || 1509032341)) }}",
+        "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || (($node[\"Command Parser\"] && $node[\"Command Parser\"].json && $node[\"Command Parser\"].json.telegram_chat_id) || $env.TELEGRAM_ADMIN_CHAT_ID)) }}",
         "text": "={{$json.telegram_message}}"
       },
       "position": [

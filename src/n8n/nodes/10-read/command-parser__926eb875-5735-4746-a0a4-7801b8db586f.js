@@ -17,7 +17,7 @@ module.exports = async function run(ctx) {
 
 const msg = $json.message || {};
 const text = String(msg.text || '').trim();
-const chat_id = msg.chat?.id ?? null;
+const telegram_chat_id = $json.telegram_chat_id ?? msg.chat?.id ?? null;
 const sender_user_id = String(msg.from?.id ?? '').trim();
 const accessCfg = ($json.config && $json.config.calendar && $json.config.calendar.telegram_access) || {};
 const enforceAllowlist = accessCfg.enforce_allowlist === true;
@@ -33,7 +33,7 @@ if (!text.startsWith('/')) {
 }
 
 if (enforceAllowlist && (!sender_user_id || !pkmAllowedIds.has(sender_user_id))) {
-  return replyNow(chat_id, 'This Telegram user has calendar-only access. PKM commands are disabled.');
+  return replyNow(telegram_chat_id, 'This Telegram user has calendar-only access. PKM commands are disabled.');
 }
 
 // Supported commands + defaults
@@ -101,27 +101,27 @@ function mdv2(v) {
   return String(v ?? '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
-function replyNow(chat_id, message) {
+function replyNow(telegram_chat_id, message) {
   return [{
     json: {
       _reply_now: true,
-      chat_id,
+      telegram_chat_id,
       telegram_message: mdv2(message),
     },
   }];
 }
 
 if (!defaults[cmd]) {
-  return replyNow(chat_id, `Unknown command.\n\n${HELP_OVERVIEW}`);
+  return replyNow(telegram_chat_id, `Unknown command.\n\n${HELP_OVERVIEW}`);
 }
 
 if (hasHelpFlag) {
-  return replyNow(chat_id, usageFor(cmd));
+  return replyNow(telegram_chat_id, usageFor(cmd));
 }
 
 // Special case: /help returns immediate usage block.
 if (cmd === 'help') {
-  return replyNow(chat_id, usageFor('help'));
+  return replyNow(telegram_chat_id, usageFor('help'));
 }
 
 // Special case: /pull <entry_id> [--excerpt]
@@ -131,7 +131,7 @@ if (cmd === 'pull') {
   // allow: /pull 123, /pull 123 --excerpt
   const mId = text.match(/^\/pull\s+(\d+)\b/i);
   if (!mId?.[1]) {
-    return replyNow(chat_id, usageFor('pull'));
+    return replyNow(telegram_chat_id, usageFor('pull'));
   }
 
   const entry_id = mId[1]; // keep as string to avoid JS precision issues
@@ -141,7 +141,7 @@ if (cmd === 'pull') {
       cmd,
       entry_id,
       want_excerpt,
-      chat_id
+      telegram_chat_id
     }
   }];
 }
@@ -150,12 +150,12 @@ if (cmd === 'pull') {
 if (cmd === 'debug') {
   const rest = text.replace(/^\/\w+/i, '').trim();
   if (!rest) {
-    return replyNow(chat_id, usageFor('debug'));
+    return replyNow(telegram_chat_id, usageFor('debug'));
   }
 
   const token = String(rest).split(/\s+/)[0].trim();
   if (!token) {
-    return replyNow(chat_id, usageFor('debug'));
+    return replyNow(telegram_chat_id, usageFor('debug'));
   }
 
   const isLast = token.toLowerCase() === 'last';
@@ -169,7 +169,7 @@ if (cmd === 'debug') {
         ? '/debug/run/last'
         : `/debug/run/${encodeURIComponent(token)}`,
       debug_method: 'GET',
-      chat_id
+      telegram_chat_id
     }
   }];
 }
@@ -178,14 +178,14 @@ if (cmd === 'debug') {
 if (cmd === 'distill') {
   const mId = text.match(/^\/distill\s+(\d+)\b/i);
   if (!mId?.[1]) {
-    return replyNow(chat_id, usageFor('distill'));
+    return replyNow(telegram_chat_id, usageFor('distill'));
   }
 
   return [{
     json: {
       cmd,
       entry_id: mId[1],
-      chat_id
+      telegram_chat_id
     }
   }];
 }
@@ -212,14 +212,14 @@ if (cmd === 'distillrun') {
   let execution_mode = 'batch';
 
   if (forceSync && forceBatch) {
-    return replyNow(chat_id, usageFor('distillrun'));
+    return replyNow(telegram_chat_id, usageFor('distillrun'));
   }
   if (forceSync) execution_mode = 'sync';
   if (forceBatch) execution_mode = 'batch';
 
   if (modeFromFlag) {
     if ((forceSync && modeFromFlag !== 'sync') || (forceBatch && modeFromFlag !== 'batch')) {
-      return replyNow(chat_id, usageFor('distillrun'));
+      return replyNow(telegram_chat_id, usageFor('distillrun'));
     }
     execution_mode = modeFromFlag;
   }
@@ -232,7 +232,7 @@ if (cmd === 'distillrun') {
       max_sync_items,
       persist_eligibility,
       execution_mode,
-      chat_id
+      telegram_chat_id
     }
   }];
 }
@@ -251,7 +251,7 @@ if (cmd === 'status') {
   if (tokens.length > 0) {
     const stage = String(tokens[0]).toLowerCase();
     if (stage !== 't1' && stage !== 't2') {
-      return replyNow(chat_id, usageFor('status'));
+      return replyNow(telegram_chat_id, usageFor('status'));
     }
     status_stage = stage;
   }
@@ -268,7 +268,7 @@ if (cmd === 'status') {
       status_stage,
       status_limit,
       status_include_terminal,
-      chat_id
+      telegram_chat_id
     }
   }];
 }
@@ -333,7 +333,7 @@ if (cmd === 'delete' || cmd === 'move') {
     const m = rest0.match(/^(\S+)\s+([\s\S]+)$/);
     const schema = parseSchemaValue(m && m[1]);
     if (!schema) {
-      return replyNow(chat_id, 'Usage:\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]');
+      return replyNow(telegram_chat_id, 'Usage:\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]');
     }
 
     const rest = String((m && m[2]) || '')
@@ -342,7 +342,7 @@ if (cmd === 'delete' || cmd === 'move') {
       .trim();
     const parsed = parseSelectorSpec(rest);
     if (parsed.error) {
-      return replyNow(chat_id, parsed.error);
+      return replyNow(telegram_chat_id, parsed.error);
     }
 
     return [{
@@ -353,7 +353,7 @@ if (cmd === 'delete' || cmd === 'move') {
         range: parsed.range || null,
         dry_run,
         force,
-        chat_id
+        telegram_chat_id
       }
     }];
   }
@@ -363,7 +363,7 @@ if (cmd === 'delete' || cmd === 'move') {
   const from_schema = parseSchemaValue(m && m[1]);
   const to_schema = parseSchemaValue(m && m[2]);
   if (!from_schema || !to_schema || from_schema === to_schema) {
-    return replyNow(chat_id, 'Usage:\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]');
+    return replyNow(telegram_chat_id, 'Usage:\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]');
   }
 
   const rest = String((m && m[3]) || '')
@@ -372,7 +372,7 @@ if (cmd === 'delete' || cmd === 'move') {
     .trim();
   const parsed = parseSelectorSpec(rest);
   if (parsed.error) {
-    return replyNow(chat_id, parsed.error);
+    return replyNow(telegram_chat_id, parsed.error);
   }
 
   return [{
@@ -384,7 +384,7 @@ if (cmd === 'delete' || cmd === 'move') {
       range: parsed.range || null,
       dry_run,
       force,
-      chat_id
+      telegram_chat_id
     }
   }];
 }
@@ -419,7 +419,7 @@ if (!q) {
 }
 
 if (!q) {
-  return replyNow(chat_id, usageFor(cmd));
+  return replyNow(telegram_chat_id, usageFor(cmd));
 }
 
 return [{
@@ -428,7 +428,7 @@ return [{
     q,
     days,
     limit,
-    chat_id
+    telegram_chat_id
   }
 }];
 };

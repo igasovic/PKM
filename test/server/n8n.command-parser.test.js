@@ -27,6 +27,7 @@ describe('n8n command parser', () => {
     const out = await runParser('/help');
     const text = unescapeMdv2(out.telegram_message);
     expect(out._reply_now).toBe(true);
+    expect(out.telegram_chat_id).toBe(1509032341);
     expect(text).toContain('/distill-run [--batch|--sync]');
     expect(text).toContain('append --help');
   });

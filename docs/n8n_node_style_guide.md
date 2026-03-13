@@ -55,7 +55,43 @@ return rows.map(r => ({ json: r }));
 const { getConfig } = require('/data/src/libs/config.js');
 ```
 
-## 4) HTTP Request Node Rules (PKM Backend)
+## 4) Telegram Node Rules
+
+### 4.1 Trigger and entry-point policy
+- Entry workflows must use Telegram sender user-id validation at the entry point only.
+- Do not re-validate or fan out `telegram_user_id` into subworkflows.
+- Trigger filters should be user-based (`userIds`) for access control, not chat-based (`chatIds`), unless a workflow is intentionally admin-chat-only.
+
+### 4.2 Chat-id contract
+- Canonical payload field is `telegram_chat_id`.
+- Do not use `$json.chat_id` in n8n workflow expressions or Code-node outputs.
+- When calling subworkflows, always pass `telegram_chat_id` in payload (`{ json: { ...$json, telegram_chat_id } }`).
+
+### 4.3 Sender-node chat-id resolution order
+Use this fallback order in Telegram sender nodes:
+1. direct source-trigger node chat id (when trigger exists in same workflow)
+2. current item message chat id (`$json.message.chat.id`)
+3. propagated field (`$json.telegram_chat_id`)
+4. admin fallback (`$env.TELEGRAM_ADMIN_CHAT_ID`)
+
+Template:
+```js
+={{ (($node["Telegram Trigger"] && $node["Telegram Trigger"].json && $node["Telegram Trigger"].json.message && $node["Telegram Trigger"].json.message.chat && $node["Telegram Trigger"].json.message.chat.id)
+  || ($json.message && $json.message.chat && $json.message.chat.id)
+  || $json.telegram_chat_id
+  || $env.TELEGRAM_ADMIN_CHAT_ID) }}
+```
+
+### 4.4 Parsing and escaping
+- Telegram sends must use `parse_mode=MarkdownV2`.
+- Any dynamic value in `telegram_message` must be escaped for MarkdownV2 before send.
+- Keep escaping in one helper (`mdv2`) and reuse it in message-builder nodes.
+
+### 4.5 Data-shape stability across HTTP/code nodes
+- Some nodes replace `$json`; preserve `telegram_chat_id` explicitly when reshaping payloads.
+- If a node rebuilds `json`, copy routing fields (`telegram_chat_id`, `telegram_message_id`) forward intentionally.
+
+## 5) HTTP Request Node Rules (PKM Backend)
 
 When sending JSON payloads (especially nested objects like `metadata`):
 
@@ -91,9 +127,9 @@ Template:
 })()) }}
 ```
 
-## 5) Canonical Examples
+## 6) Canonical Examples
 
-### 5.1 Externalized code with thin wrapper
+### 6.1 Externalized code with thin wrapper
 Workflow wrapper:
 ```js
 try {
@@ -118,14 +154,14 @@ module.exports = async function run(ctx) {
 };
 ```
 
-### 5.2 Small inline parse node
+### 6.2 Small inline parse node
 ```js
 const text = String($json.text || '').trim();
 const isCommand = text.startsWith('/');
 return [{ json: { ...$json, isCommand } }];
 ```
 
-### 5.3 MarkdownV2 Telegram message builder
+### 6.3 MarkdownV2 Telegram message builder
 ```js
 const mdv2 = (v) =>
   String(v ?? '').replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, '\\\\$1');
@@ -137,7 +173,7 @@ const telegram_message = `*Title:* ${title}\\n*Score:* ${score}`;
 return [{ json: { ...$json, telegram_message } }];
 ```
 
-## 6) Failure Modes and Fast Fixes
+## 7) Failure Modes and Fast Fixes
 
 - `ctx is not defined`
   - Cause: inline code copied from module/externalized wrapper style.
@@ -162,9 +198,10 @@ This guide is intentionally organized by execution flow, not by node type:
 1. **Scope and references**: where this guide fits in the repo contract system.  
 2. **Runtime model**: what n8n executes and expects.  
 3. **Authoring rules**: enforceable standards for code shape and file placement.  
-4. **HTTP rules**: transport contract for backend calls from n8n.  
-5. **Examples**: minimal patterns to copy safely.  
-6. **Failure modes**: operational debugging shortcuts tied to real errors.
+4. **Telegram rules**: trigger/auth/routing behavior and sender extraction order.  
+5. **HTTP rules**: transport contract for backend calls from n8n.  
+6. **Examples**: minimal patterns to copy safely.  
+7. **Failure modes**: operational debugging shortcuts tied to real errors.
 
 This structure is meant to avoid "template dumping" and keep one linear path:
 what environment you are in -> what rules apply -> how to write nodes -> how to send API payloads -> how to debug.

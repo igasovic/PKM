@@ -211,7 +211,7 @@
         "additionalFields": {
           "appendAttribution": false
         },
-        "chatId": "={{ $json.telegram_chat_id }}",
+        "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
       },
       "position": [

@@ -1,4 +1,26 @@
 # changelog
+## 2026-03-13 — Telegram chat-id key standardization and admin fallback config
+
+### What changed
+- Standardized n8n Telegram reply routing key usage:
+  - removed `$json.chat_id` expression usage from workflow sender nodes
+  - standardized on `$json.telegram_chat_id` with message-derived fallback
+- Updated Telegram sender-node fallback expressions in:
+  - `src/n8n/workflows/01-telegram-router___NgZy8xU5XGXrBeBjl2cp.json`
+  - `src/n8n/workflows/02-telegram-capture__EWyb1cTmqDlKY2pIyqULN.json`
+  - `src/n8n/workflows/10-read__dq9Nex-IR8AToJvHksphj.json`
+  - `src/n8n/workflows/30-calendar-create__valOh9zMfqOZOvmHyOQfa.json`
+  - `src/n8n/workflows/31-calendar-read__DwtBNN8QIebQC3G-IsuCU.json`
+- Updated command parser output shape:
+  - `src/n8n/nodes/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js`
+  - command outputs now emit `telegram_chat_id` (not `chat_id`)
+- Added repo-owned n8n non-secret config:
+  - `ops/stack/env/n8n.env` with `TELEGRAM_ADMIN_CHAT_ID=1509032341`
+  - wired into `ops/stack/docker-compose.yml` (`n8n` service `env_file`)
+- Updated docs:
+  - `docs/n8n_node_style_guide.md` (new Telegram node guidance section)
+  - `docs/config_operations.md` (registry example for `TELEGRAM_ADMIN_CHAT_ID`)
+
 ## 2026-03-13 — Telegram ingress/reply chat handling improvements
 
 ### What changed

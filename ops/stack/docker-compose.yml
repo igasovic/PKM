@@ -78,6 +78,7 @@ services:
       - postgres
     env_file:
       - .env
+      - n8n.env
     environment:
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=postgres
