@@ -70,6 +70,8 @@ if (config.db.is_test_mode === true) {
 // Telegram cap
 const MAX = 4000;
 if (msg.length > MAX) msg = msg.slice(0, MAX - 1) + '…';
+// Avoid invalid MarkdownV2 payload when truncation ends on an escape backslash.
+while (msg.endsWith('\\')) msg = msg.slice(0, -1);
 
 return [{ json: { ...$json, telegram_message: msg } }];
 };
