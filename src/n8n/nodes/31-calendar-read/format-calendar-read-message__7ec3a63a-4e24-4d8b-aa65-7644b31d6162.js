@@ -1,5 +1,13 @@
 'use strict';
 
+const { mdv2 } = (() => {
+  try {
+    return require('/data/src/libs/telegram-markdown.js');
+  } catch (err) {
+    return require('../../../libs/telegram-markdown.js');
+  }
+})();
+
 function asText(value) {
   return String(value === undefined || value === null ? '' : value).trim();
 }
@@ -88,11 +96,11 @@ module.exports = async function run(ctx) {
 
   const lines = [];
   if (!events.length) {
-    lines.push(`No events for ${queryLabel}.`);
+    lines.push(mdv2(`No events for ${queryLabel}.`));
   } else {
-    lines.push(`Events for ${queryLabel}:`);
+    lines.push(mdv2(`Events for ${queryLabel}:`));
     events.forEach((e) => {
-      lines.push(`${e.marker} ${e.start.label} ${e.summary}`);
+      lines.push(mdv2(`${e.marker} ${e.start.label} ${e.summary}`));
     });
   }
 

@@ -7,15 +7,20 @@
  */
 'use strict';
 
+const { mdv2 } = (() => {
+  try {
+    return require('/data/src/libs/telegram-markdown.js');
+  } catch (err) {
+    return require('../../../libs/telegram-markdown.js');
+  }
+})();
+
 module.exports = async function run(ctx) {
   const { $json } = ctx;
 
   const payload = $json || {};
   const summary = payload.summary || {};
   const jobs = Array.isArray(payload.jobs) ? payload.jobs : [];
-  const mdv2 = (v) =>
-    String(v ?? '')
-      .replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
   const dryRunWouldProcess = jobs.reduce((total, job) => {
     if (String(job && job.status || '').toLowerCase() !== 'dry_run') {
       return total;

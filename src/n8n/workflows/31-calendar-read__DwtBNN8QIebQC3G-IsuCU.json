@@ -189,7 +189,7 @@
       "id": "7ec3a63a-4e24-4d8b-aa65-7644b31d6162",
       "name": "Format Calendar Read Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message='[extjs:31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js] '+e.message;throw e;}"
       },
       "position": [
         672,
@@ -209,7 +209,8 @@
       "name": "Send Calendar Read Message",
       "parameters": {
         "additionalFields": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"

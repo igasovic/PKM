@@ -7,7 +7,7 @@
         [
           {
             "index": 0,
-            "node": "Send a text message",
+            "node": "Format Start Telegram Message",
             "type": "main"
           },
           {
@@ -23,7 +23,7 @@
         [
           {
             "index": 0,
-            "node": "Send a text message1",
+            "node": "Format Import Summary Telegram Message",
             "type": "main"
           }
         ]
@@ -41,6 +41,28 @@
             "index": 0,
             "node": "Get files",
             "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Start Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Import Summary Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -92,10 +114,11 @@
       "name": "Send a text message",
       "parameters": {
         "additionalFields": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "1509032341",
-        "text": "=⬇ Importing mailbox: {{ $json?.stdout ?? \"empty\" }}"
+        "text": "={{ $json.telegram_message }}"
       },
       "position": [
         -16,
@@ -143,10 +166,11 @@
       "name": "Send a text message1",
       "parameters": {
         "additionalFields": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "1509032341",
-        "text": "=📬 Email backlog import update\n\n🆔 Import: {{ $json.import_id }}\n📦 MBOX: {{ $json.mbox_path }}\n\n📨 Messages: {{ $json.total_messages }}\n✅ Normalized: {{ $json.normalized_ok }} (errors: {{ $json.normalize_errors }})\n\n🗄️ DB (schema: {{ $json.tier1_batches[0].schema }})\n➕ Inserted: {{ $json.inserted }} (errors: {{ $json.insert_errors }})\n🔁 Updated: {{ $json.updated }}\n⏭️ Skipped: {{ $json.skipped }}\n\n🧠 Tier-1\n🎯 Candidates: {{ $json.tier1_candidates }}\n📤 Enqueued: {{ $json.tier1_enqueued_items }}\n🔢 Requests: {{ $json.tier1_batches[0].request_count }}\n\n📌 Status: {{ $json.tier1_batches[0].status }}"
+        "text": "={{ $json.telegram_message }}"
       },
       "position": [
         208,
@@ -155,6 +179,32 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    },
+    {
+      "id": "3c25a3f6-0b0a-4a11-9fb7-c18c5f2d1b44",
+      "name": "Format Start Telegram Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -240
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst mailbox = String($json?.stdout ?? 'empty');\nreturn [{ json: { ...$json, telegram_message: mdv2('Importing mailbox ' + mailbox) } }];\n"
+      }
+    },
+    {
+      "id": "9d54b88b-0f8c-4e5f-8bf1-d6de76ec1f8f",
+      "name": "Format Import Summary Telegram Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        -48
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst b = $json || {};\nconst batch = Array.isArray(b.tier1_batches) && b.tier1_batches[0] ? b.tier1_batches[0] : {};\nconst lines = [\n  'Email backlog import update',\n  '',\n  'Import: ' + String(b.import_id ?? ''),\n  'MBOX: ' + String(b.mbox_path ?? ''),\n  '',\n  'Messages: ' + String(b.total_messages ?? 0),\n  'Normalized: ' + String(b.normalized_ok ?? 0) + ' errors ' + String(b.normalize_errors ?? 0),\n  '',\n  'Schema: ' + String(batch.schema ?? ''),\n  'Inserted: ' + String(b.inserted ?? 0) + ' errors ' + String(b.insert_errors ?? 0),\n  'Updated: ' + String(b.updated ?? 0),\n  'Skipped: ' + String(b.skipped ?? 0),\n  '',\n  'Tier-1 candidates: ' + String(b.tier1_candidates ?? 0),\n  'Tier-1 enqueued: ' + String(b.tier1_enqueued_items ?? 0),\n  'Tier-1 requests: ' + String(batch.request_count ?? 0),\n  'Status: ' + String(batch.status ?? ''),\n];\nreturn [{ json: { ...$json, telegram_message: mdv2(lines.join('\\n')) } }];\n"
+      }
     }
   ],
   "settings": {

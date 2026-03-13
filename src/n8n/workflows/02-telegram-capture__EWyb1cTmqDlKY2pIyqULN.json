@@ -47,7 +47,7 @@
         [
           {
             "index": 0,
-            "node": "Send 'thought saved' message",
+            "node": "Format Thought Saved Message",
             "type": "main"
           }
         ]
@@ -58,7 +58,7 @@
         [
           {
             "index": 0,
-            "node": "Send 'duplicate' message",
+            "node": "Format Duplicate Message",
             "type": "main"
           }
         ],
@@ -122,6 +122,28 @@
             "index": 0,
             "node": "PKM Config",
             "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Duplicate Message": {
+      "main": [
+        [
+          {
+            "node": "Send 'duplicate' message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Thought Saved Message": {
+      "main": [
+        [
+          {
+            "node": "Send 'thought saved' message",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -341,7 +363,8 @@
       "name": "Send a text message1",
       "parameters": {
         "additionalFields": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
@@ -427,10 +450,11 @@
       "name": "Send 'duplicate' message",
       "parameters": {
         "additionalFields": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
-        "text": "=Message duplicate of entry #{{$json.entry_id}}. Processing stopped."
+        "text": "={{ $json.telegram_message }}"
       },
       "position": [
         16,
@@ -451,10 +475,11 @@
       "name": "Send 'thought saved' message",
       "parameters": {
         "additionalFields": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
-        "text": "=🧠 Thought saved as entry #{{ $json.entry_id }}. Operation: {{ $json.action }}"
+        "text": "={{ $json.telegram_message }}"
       },
       "position": [
         240,
@@ -463,6 +488,32 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    },
+    {
+      "id": "c3f2f6d4-4e0a-4d9d-9d3d-51d0e9c77a21",
+      "name": "Format Duplicate Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        -608
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nreturn [{ json: { ...$json, telegram_message: mdv2('Duplicate entry ' + entryId + ' processing stopped') } }];\n"
+      }
+    },
+    {
+      "id": "42a2c7f4-b0fb-4b18-8f1e-8b9f1d3bcb6a",
+      "name": "Format Thought Saved Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -320
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nconst action = String($json.action ?? 'inserted').trim() || 'inserted';\nconst text = 'Thought saved as entry ' + entryId + ' operation ' + action;\nreturn [{ json: { ...$json, telegram_message: mdv2(text) } }];\n"
+      }
     }
   ],
   "settings": {

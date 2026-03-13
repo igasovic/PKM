@@ -1,0 +1,32 @@
+[
+  {
+    "name": "clarification answer completes request",
+    "input": {
+      "raw_text": "birthday party Saturday",
+      "clarification_turns": [
+        {
+          "answer_text": "for Mila at 3:00p for 2 hours"
+        }
+      ]
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "subject_people_tag": "M"
+    }
+  },
+  {
+    "name": "clarification still missing people",
+    "input": {
+      "raw_text": "birthday party Saturday",
+      "clarification_turns": [
+        {
+          "answer_text": "at 9:00a"
+        }
+      ]
+    },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": ["people"]
+    }
+  }
+]

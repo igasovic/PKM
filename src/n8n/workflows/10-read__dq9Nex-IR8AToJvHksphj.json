@@ -772,7 +772,7 @@
       "id": "83d12448-5f97-48f1-9ece-de61a9756db3",
       "name": "Format /help Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst mdv2 = (v) => String(v ?? '').replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, '\\\\$1');\n\nconst msg =\n`Commands:\n/help\n/pull <id> [--excerpt]\n/last \"query\" [--days N] [--limit M]\n/find \"needle\" [--days N] [--limit M]\n/continue topic [--days N] [--limit M]\n/with person topic [--days N] [--limit M]\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/debug <run_id|last>\n/distill <entry_id>\n/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n/status [t1|t2] [--limit M] [--active-only]\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\n\nreturn [{ json: { ...$json, telegram_message: mdv2(msg) } }];\n"
+        "jsCode": "'use strict';\n\nconst { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst msg =\n`Commands:\n/help\n/pull <id> [--excerpt]\n/last \"query\" [--days N] [--limit M]\n/find \"needle\" [--days N] [--limit M]\n/continue topic [--days N] [--limit M]\n/with person topic [--days N] [--limit M]\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/debug <run_id|last>\n/distill <entry_id>\n/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n/status [t1|t2] [--limit M] [--active-only]\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\nreturn [{ json: { ...$json, telegram_message: mdv2(msg) } }];\n"
       },
       "position": [
         1792,
@@ -1054,7 +1054,7 @@
       "id": "3feac23b-f095-4af9-9179-3b0a1a4279a2",
       "name": "Format delete message",
       "parameters": {
-        "jsCode": "const s = $json || {};\n\nconst mdv2 = (v) =>\n  String(v ?? \"\")\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, \"\\\\$1\"); // MarkdownV2 escape\n\nreturn {\n  telegram_message:\n`*✅ Delete successful:*\n• Dry run: ${s.dry_run}\n• Schema: ${mdv2(s.schema)}\n• Deleted: ${s.deleted_count}`\n};\n"
+        "jsCode": "const { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst s = $json || {};\nconst lines = [\n  'Delete successful',\n  'Dry run: ' + String(s.dry_run),\n  'Schema: ' + String(s.schema ?? ''),\n  'Deleted: ' + String(s.deleted_count ?? 0),\n];\nreturn [{ json: { ...$json, telegram_message: mdv2(lines.join('\\n')) } }];"
       },
       "position": [
         1792,
@@ -1098,7 +1098,7 @@
       "id": "344aac95-db6e-4262-9441-1072918d9d48",
       "name": "Format move message",
       "parameters": {
-        "jsCode": "const s = $json || {};\n\nconst mdv2 = (v) =>\n  String(v ?? \"\")\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, \"\\\\$1\"); // MarkdownV2 escape\n\nreturn {\n  telegram_message:\n`*✅ Move successful:*\n• Dry run: ${s.dry_run}\n• Schema: ${mdv2(s.from_schema)} \\\\-\\\\> *${mdv2(s.to_schema)}*\n• Moved: ${s.moved_count}`\n};\n"
+        "jsCode": "const { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst s = $json || {};\nconst lines = [\n  'Move successful',\n  'Dry run: ' + String(s.dry_run),\n  'Schema: ' + String(s.from_schema ?? '') + ' -> ' + String(s.to_schema ?? ''),\n  'Moved: ' + String(s.moved_count ?? 0),\n];\nreturn [{ json: { ...$json, telegram_message: mdv2(lines.join('\\n')) } }];"
       },
       "position": [
         1792,
@@ -1142,7 +1142,7 @@
       "id": "ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca",
       "name": "Format Distill Message",
       "parameters": {
-        "jsCode": "/**\n * PKM / n8n Externalized Code Node\n *\n * Workflow: Read (read)\n * Node: Format Distill Message\n * Node ID: ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca\n */\n'use strict';\n\nconst r = $json || {};\n  const mdv2 = (v) =>\n    String(v ?? '')\n      .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, '\\\\$1');\n\n  const status = String(r.status || '').toLowerCase();\n  if (status === 'completed') {\n    const whyBlock = `\\n\\n*Why it matters*\\n${mdv2(r.why_it_matters || '-')}`;\n    const excerptText = String(r.excerpt || '').trim();\n    const excerptBlock = excerptText ? `\\n\\n*Excerpt*\\n${mdv2(excerptText)}` : '';\n    return [{\n      json: {\n        ...r,\n        telegram_message:\n`*Tier\\\\_2 distill completed*\n• Entry\\\\_id: ${r.entry_id ?? '-'}\n• Stance: ${mdv2(r.stance || '-')}\n\n*Summary*\n${mdv2(r.summary || '-')}${whyBlock}${excerptBlock}`,\n      },\n    }];\n  }\n\n  const errMsg = r.message ? `\\n• Message: ${mdv2(r.message)}` : '';\n  const preserved = r.preserved_current_artifact === true\n    ? '\\n• Current artifact preserved: true'\n    : '';\n  return [{\n    json: {\n      ...r,\n      telegram_message:\n`*Tier\\\\_2 distill failed*\n• Entry\\\\_id: ${r.entry_id ?? '-'}\n• Error: ${mdv2(r.error_code || 'unknown_error')}${errMsg}${preserved}`,\n    },\n  }];\n"
+        "jsCode": "try {\n  const fn = require('/data/src/n8n/nodes/10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js');\n  return await fn({ $input, $json, $items, $node, $env, helpers });\n} catch (e) {\n  e.message = '[extjs:10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js] ' + e.message;\n  throw e;\n}"
       },
       "position": [
         1792,

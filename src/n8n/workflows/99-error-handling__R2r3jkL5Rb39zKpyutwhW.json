@@ -52,7 +52,8 @@
       "name": "Send a text message",
       "parameters": {
         "additionalFields": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "1509032341",
         "text": "={{ $json.telegram_message }}"
@@ -69,7 +70,7 @@
       "id": "566912ab-5d96-4405-8443-6a296ef03366",
       "name": "Compose Message",
       "parameters": {
-        "jsCode": "const e = $json;\n\n// Best-effort extraction across n8n versions\nconst workflowName =\n  e.workflow?.name ||\n  e.workflowName ||\n  e.workflow?.id ||\n  'unknown-workflow';\n\nconst nodeName =\n  e.lastNodeExecuted ||\n  e.node?.name ||\n  e.error?.node?.name ||\n  e.execution?.error?.node?.name ||\n  e.trigger?.mode ||\n  'unknown-node';\n\nconst message =\n  e.error?.message ||\n  e.errorMessage ||\n  e.execution?.error?.message ||\n  e.trigger?.error?.message  ||\n  'unknown error';\n\nconst time =\n  e.execution?.startedAt ||\n  e.execution?.startTime ||\n  e.trigger?.error?.timestamp ||\n  e.timestamp ||\n  new Date().toISOString();\n\nconst execId =\n  e.execution?.id ||\n  e.executionId ||\n  null;\n\nconst execUrl =\n  e.execution?.url ||\n  (execId ? `/execution/${execId}` : null);\n\n// keep it short (telegram-friendly)\nconst shortMsg = String(message).slice(0, 500);\n\nconst telegram_message =\n  `🚨 n8n error - run ${execId}\\n` +\n  `WF: ${workflowName}\\n` +\n  `Node: ${nodeName}\\n` +\n  `When: ${time}\\n` +\n  `Msg: ${shortMsg}` +\n  (execUrl ? `\\nExec: ${execUrl}` : '');\n\nreturn [{ json: { telegram_message } }];\n"
+        "jsCode": "const { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst e = $json || {};\n\nconst workflowName = e.workflow?.name || e.workflowName || e.workflow?.id || 'unknown-workflow';\nconst nodeName = e.lastNodeExecuted || e.node?.name || e.error?.node?.name || e.execution?.error?.node?.name || e.trigger?.mode || 'unknown-node';\nconst message = e.error?.message || e.errorMessage || e.execution?.error?.message || e.trigger?.error?.message || 'unknown error';\nconst time = e.execution?.startedAt || e.execution?.startTime || e.trigger?.error?.timestamp || e.timestamp || new Date().toISOString();\nconst execId = e.execution?.id || e.executionId || 'unknown';\nconst execUrl = e.execution?.url || (execId ? '/execution/' + execId : '');\n\nconst lines = [\n  'n8n error run ' + execId,\n  'WF: ' + workflowName,\n  'Node: ' + nodeName,\n  'When: ' + time,\n  'Msg: ' + String(message).slice(0, 500),\n];\nif (execUrl) lines.push('Exec: ' + execUrl);\n\nreturn [{ json: { telegram_message: mdv2(lines.join('\\n')) } }];"
       },
       "position": [
         -64,

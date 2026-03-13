@@ -1,0 +1,316 @@
+{
+  "active": false,
+  "activeVersionId": "e90ce5e6-e82d-4666-ba17-62b0df7d0bb2",
+  "createdAt": "2026-03-13T17:23:48.992Z",
+  "updatedAt": "2026-03-13T17:23:48.992Z",
+  "isArchived": false,
+  "description": null,
+  "name": "32 Calendar Weekly Report",
+  "settings": {
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
+    "executionOrder": "v1",
+    "timezone": "America/Chicago"
+  },
+  "triggerCount": 0,
+  "versionCounter": 1,
+  "tags": [],
+  "shared": [
+    {
+      "createdAt": "2026-03-13T17:23:48.992Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-03-13T17:23:48.992Z",
+      "workflowId": "tV8mQ2nL6xP4cR1jHf7Ds"
+    }
+  ],
+  "staticData": null,
+  "nodes": [
+    {
+      "id": "0bd1def6-f82a-4032-91e9-dbdada2ed51b",
+      "name": "Schedule Weekly Report",
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                0
+              ],
+              "triggerAtHour": 18,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "position": [
+        -256,
+        -96
+      ],
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "4ccfa981-181c-48be-aed3-e3b9c9204ed9",
+      "name": "PKM Config",
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "98 Config",
+          "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
+          "mode": "list",
+          "value": "Ue-cGR6_WP4Fe5C19tA28"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        0,
+        -96
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "106babdc-959b-4b50-b979-2b862e60c950",
+      "name": "Build Report Window",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/32-calendar-report/build-report-window__1d7fa7c9-3ac6-4b7e-bf0a-6e2e7789f31a.js');return await fn({$json:{...$json,report_kind:'weekly'},$input,$items,$node,$env,helpers});}catch(e){e.message='[extjs:32-calendar-report/build-report-window__1d7fa7c9-3ac6-4b7e-bf0a-6e2e7789f31a.js] '+e.message;throw e;}"
+      },
+      "position": [
+        224,
+        -96
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "qQOl2xfICHsxoZU2",
+          "name": "GCal"
+        }
+      },
+      "id": "f55e1df1-88eb-4f69-8cfb-d237c26a1a4e",
+      "name": "Google Calendar Get Events",
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.google_calendar_id }}"
+        },
+        "operation": "getAll",
+        "options": {
+          "orderBy": "startTime"
+        },
+        "returnAll": true,
+        "timeMax": "={{ $json.window_end_local }}",
+        "timeMin": "={{ $json.window_start_local }}"
+      },
+      "position": [
+        448,
+        -96
+      ],
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "95b0ebd9-38b6-47f6-ba3a-88c3fff5d56a",
+      "name": "Format Calendar Report Message",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/32-calendar-report/format-calendar-report-message__58f6c53c-5dad-4d29-93d0-00dc8f7d5683.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message='[extjs:32-calendar-report/format-calendar-report-message__58f6c53c-5dad-4d29-93d0-00dc8f7d5683.js] '+e.message;throw e;}"
+      },
+      "position": [
+        672,
+        -96
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "0fb31edb-bc4b-451b-9907-afc5539ccf09",
+      "name": "Send Calendar Report Message",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
+        },
+        "chatId": "={{ $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID }}",
+        "text": "={{ $json.telegram_message }}"
+      },
+      "position": [
+        896,
+        -240
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2
+    },
+    {
+      "id": "cb81544d-4ba5-4c8c-8e66-dc866723035f",
+      "name": "IF Has Observe Items",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "a20611a7-97ef-4a64-bb5d-f1a29d46dceb",
+              "leftValue": "={{ Array.isArray($json.observe_items) && $json.observe_items.length > 0 }}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": true
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        896,
+        -48
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "id": "5061197a-8a16-4e0a-ab1a-dd1827089665",
+      "name": "PKM Calendar Observe",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => ({ run_id: $execution.id, items: $json.observe_items || [] }))()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/calendar/observe"
+      },
+      "position": [
+        1120,
+        -48
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    }
+  ],
+  "connections": {
+    "Schedule Weekly Report": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Config",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Report Window",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build Report Window": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Google Calendar Get Events",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Google Calendar Get Events": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Calendar Report Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Calendar Report Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Calendar Report Message",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "IF Has Observe Items",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF Has Observe Items": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Calendar Observe",
+            "type": "main"
+          }
+        ],
+        []
+      ]
+    }
+  }
+}

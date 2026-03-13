@@ -1,0 +1,60 @@
+[
+  {
+    "name": "missing time and people needs clarification",
+    "input": { "raw_text": "birthday party Saturday" },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": ["start_time", "people"]
+    }
+  },
+  {
+    "name": "map link location preserved",
+    "input": { "raw_text": "Mila appointment tomorrow at 3:00p for 60 min https://maps.apple.com/?q=clinic" },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "MED",
+      "location_prefix": "https://maps.apple.com"
+    }
+  },
+  {
+    "name": "home location removes padding",
+    "input": { "raw_text": "Mila dentist tomorrow at 3:00p for 60 min at home" },
+    "expect": {
+      "status": "ready_to_create",
+      "padded": false
+    }
+  },
+  {
+    "name": "birthday duration override",
+    "input": { "raw_text": "Mila birthday tomorrow at 1:00p" },
+    "expect": {
+      "status": "ready_to_create",
+      "duration_minutes": 180
+    }
+  },
+  {
+    "name": "multi-person ordering",
+    "input": { "raw_text": "Igor Louie Mila meeting tomorrow at 9:00a" },
+    "expect": {
+      "status": "ready_to_create",
+      "subject_people_tag": "M,L,Ig"
+    }
+  },
+  {
+    "name": "family collapse",
+    "input": { "raw_text": "Mila Iva Louie Igor Danijela birthday tomorrow at 1:00p" },
+    "expect": {
+      "status": "ready_to_create",
+      "subject_people_tag": "FAM",
+      "logical_color": "green"
+    }
+  },
+  {
+    "name": "all-day rejected",
+    "input": { "raw_text": "all-day Mila doctor appointment tomorrow" },
+    "expect": {
+      "status": "rejected",
+      "reason_code": "all_day_not_supported"
+    }
+  }
+]

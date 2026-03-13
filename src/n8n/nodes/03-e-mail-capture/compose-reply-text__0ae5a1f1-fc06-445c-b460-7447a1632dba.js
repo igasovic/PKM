@@ -8,6 +8,7 @@
 'use strict';
 
 const { getConfig } = require('/data/src/libs/config.js');
+const { mdv2 } = require('/data/src/libs/telegram-markdown.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
@@ -53,7 +54,7 @@ if (topicPrimary && topicSecondary) lines.push(`🏷️ ${topicPrimary} → ${to
 else if (topicPrimary) lines.push(`🏷️ ${topicPrimary}`);
 
 // Gist
-if (gist) lines.push(`\n_${gist}_`);
+if (gist) lines.push(`\n${gist}`);
 
 // Flags
 const flagBits = [];
@@ -68,6 +69,8 @@ if (config?.db?.is_test_mode === true) {
   telegram_message = `⚗️🧪 TEST MODE
 ${telegram_message}`;
 }
+
+telegram_message = mdv2(telegram_message);
 
 // hard cap for Telegram
 const MAX = 4000;

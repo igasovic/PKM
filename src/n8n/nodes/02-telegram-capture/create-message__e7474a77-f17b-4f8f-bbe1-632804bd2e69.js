@@ -8,31 +8,29 @@
 'use strict';
 
 const { getConfig } = require('/data/src/libs/config.js');
+const { mdv2 } = require('/data/src/libs/telegram-markdown.js');
 
 module.exports = async function run(ctx) {
   const { $json, $items } = ctx;
 
   const s = (v) => (v ?? '').toString().trim();
-  // Escape markdown-sensitive chars to avoid Telegram parse errors
-  // when parse_mode is Markdown/MarkdownV2.
-  const escTelegram = (v) => s(v).replace(/\\/g, '\\\\').replace(/([_*[\]()`])/g, '\\$1');
 
   const config = getConfig();
   const isTestMode = !!(config && config.db && config.db.is_test_mode);
 
   const entryId = s($json.entry_id);
 
-  const url = escTelegram($json.url_canonical || $json.url);
-  const title = escTelegram($json.title);
-  const author = escTelegram($json.author);
+  const url = s($json.url_canonical || $json.url);
+  const title = s($json.title);
+  const author = s($json.author);
 
   // IMPORTANT: length should be based on clean_text (fallback to capture_text)
   const cleanText = s($json.clean_text || $json.clear_text || $json.capture_text);
   const cleanLen = cleanText.length;
 
-  const topicPrimary = escTelegram($json.topic_primary);
-  const topicSecondary = escTelegram($json.topic_secondary);
-  const gist = escTelegram($json.gist);
+  const topicPrimary = s($json.topic_primary);
+  const topicSecondary = s($json.topic_secondary);
+  const gist = s($json.gist);
 
   const labelBase = title || 'link';
   const label = author ? `${labelBase} — ${author}` : labelBase;
@@ -66,6 +64,9 @@ module.exports = async function run(ctx) {
   let msg = lines.join('\n');
 
   if (isTestMode) msg = `⚗️🧪 TEST MODE\n` + msg;
+
+  // Escape the full payload to keep Telegram MarkdownV2 parsing stable.
+  msg = mdv2(msg);
 
   // hard cap for Telegram
   const MAX = 4000;

@@ -12,6 +12,14 @@
  */
 'use strict';
 
+const { mdv2 } = (() => {
+  try {
+    return require('/data/src/libs/telegram-markdown.js');
+  } catch (err) {
+    return require('../../../libs/telegram-markdown.js');
+  }
+})();
+
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
@@ -95,10 +103,6 @@ const COMMAND_HELP = {
 function usageFor(commandName) {
   const key = String(commandName || '').trim().toLowerCase();
   return COMMAND_HELP[key] || HELP_OVERVIEW;
-}
-
-function mdv2(v) {
-  return String(v ?? '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
 function replyNow(telegram_chat_id, message) {

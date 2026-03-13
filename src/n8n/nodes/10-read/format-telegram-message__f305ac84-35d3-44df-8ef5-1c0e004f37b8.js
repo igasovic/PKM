@@ -13,14 +13,18 @@
 'use strict';
 
 const { getConfig } = require('/data/src/libs/config.js');
+const { mdv2 } = (() => {
+  try {
+    return require('/data/src/libs/telegram-markdown.js');
+  } catch (err) {
+    return require('../../../libs/telegram-markdown.js');
+  }
+})();
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
 function s(v){ return (v ?? '').toString().trim(); }
-function mdv2(v) {
-  return String(v ?? '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
-}
 
 const entryId = s($json.entry_id);
 const title = s($json.title);

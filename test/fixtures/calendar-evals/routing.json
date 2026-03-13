@@ -1,0 +1,27 @@
+[
+  {
+    "name": "prefix override pkm",
+    "input": { "text": "pkm: capture this thought" },
+    "expect": { "route": "pkm_capture" }
+  },
+  {
+    "name": "prefix override calendar",
+    "input": { "text": "cal: Mila dentist tomorrow at 3:00p" },
+    "expect": { "route": "calendar_create" }
+  },
+  {
+    "name": "obvious calendar query",
+    "input": { "text": "what do we have tomorrow on calendar?" },
+    "expect": { "route": "calendar_query" }
+  },
+  {
+    "name": "obvious calendar create",
+    "input": { "text": "Mila dentist tomorrow at 3:00p" },
+    "expect": { "route": "calendar_create" }
+  },
+  {
+    "name": "ambiguous mixed query and create signals",
+    "input": { "text": "calendar tomorrow 3pm" },
+    "expect": { "route": "ambiguous" }
+  }
+]

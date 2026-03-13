@@ -370,7 +370,7 @@
       "id": "53a14857-b8db-4271-b9c8-1898e6d5745a",
       "name": "Compose Reply Text",
       "parameters": {
-        "jsCode": "const s = ($json?.[0]) || {};\n\nconst mdv2 = (v) =>\n  String(v ?? \"\")\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, \"\\\\$1\"); // MarkdownV2 escape\n\nconst badge = (() => {\n  const a = String(s.action || \"\").toLowerCase();\n  if (a === \"inserted\") return \"🆕\";\n  if (a === \"updated\") return \"♻️\";\n  if (a === \"skipped\") return \"⏭️\";\n  return \"✅\";\n})();\n\nreturn {\n  telegram_message:\n`*${badge} Notion captured*\n*${mdv2(s.title)}*\n\n• *Entry:* ${mdv2(s.entry_id)}  _(${mdv2(s.content_type)})_\n• *Result:* *${mdv2(s.action)}*  ·  *Clean:* ${mdv2(s.clean_len)}\n• *Topic:* ${mdv2(s.topic_primary)} \\\\> ${mdv2(s.topic_secondary)}\n\n_${mdv2(s.gist)}_\n\n${mdv2(s.url_canonical)}`\n};"
+        "jsCode": "const { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst s = ($json?.[0]) || {};\n\nconst badge = (() => {\n  const a = String(s.action || '').toLowerCase();\n  if (a === 'inserted') return '🆕';\n  if (a === 'updated') return '♻️';\n  if (a === 'skipped') return '⏭️';\n  return '✅';\n})();\n\nconst lines = [\n  badge + ' Notion captured',\n  String(s.title ?? ''),\n  '',\n  'Entry: ' + String(s.entry_id ?? ''),\n  'Type: ' + String(s.content_type ?? ''),\n  'Result: ' + String(s.action ?? ''),\n  'Clean: ' + String(s.clean_len ?? ''),\n  'Topic: ' + String(s.topic_primary ?? '') + ' -> ' + String(s.topic_secondary ?? ''),\n  '',\n  String(s.gist ?? ''),\n  '',\n  String(s.url_canonical ?? ''),\n];\n\nreturn [{ json: { ...$json, telegram_message: mdv2(lines.join('\\n').trim()) } }];"
       },
       "position": [
         1760,
@@ -390,7 +390,8 @@
       "name": "Send a text message",
       "parameters": {
         "additionalFields": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "1509032341",
         "text": "={{ $json.telegram_message }}"
@@ -508,7 +509,7 @@
       "id": "c6565f06-eb5b-401b-8829-42cabd6fd91d",
       "name": "Build Error Message",
       "parameters": {
-        "jsCode": "// n8n Code node -> output { telegram_message: \"...\" } for Telegram node (MarkdownV2)\n\nconst s = $json || {};\n\nconst mdv2 = (v) =>\n  String(v ?? \"\")\n    .replace(/([_*\\[\\]()~`>#+\\-=|{}.!\\\\])/g, \"\\\\$1\"); // MarkdownV2 escape\n\nconst errors = Array.isArray(s.skip_errors) ? s.skip_errors : [];\nconst blockTypes = errors.map(e => e?.block_type).filter(Boolean);\nconst blockTypesUnique = [...new Set(blockTypes)];\nconst blockTypesJoined = blockTypesUnique.join(\", \");\n\nreturn {\n  telegram_message:\n`*⚠️ Notion capture skipped*\n• Title: ${mdv2(s.title)}\n• Skip reason: *${mdv2(s.skip_reason)}*\n• Block types: *${mdv2(blockTypesJoined || \"none\")}*\n\n• Notion: ${mdv2(s?.notion?.page_url || s?.notion?.page_id || \"unknown\")}`\n};"
+        "jsCode": "const { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst s = $json || {};\nconst errors = Array.isArray(s.skip_errors) ? s.skip_errors : [];\nconst blockTypes = [...new Set(errors.map((e) => e?.block_type).filter(Boolean))].join(', ');\n\nconst lines = [\n  'Notion capture skipped',\n  'Title: ' + String(s.title ?? ''),\n  'Skip reason: ' + String(s.skip_reason ?? ''),\n  'Block types: ' + String(blockTypes || 'none'),\n  '',\n  'Notion: ' + String(s?.notion?.page_url || s?.notion?.page_id || 'unknown'),\n];\n\nreturn [{ json: { ...$json, telegram_message: mdv2(lines.join('\\n')) } }];"
       },
       "position": [
         1088,

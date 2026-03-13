@@ -40,7 +40,7 @@
         [
           {
             "index": 0,
-            "node": "Send 'duplicate' message",
+            "node": "Format Duplicate Message",
             "type": "main"
           }
         ],
@@ -82,6 +82,17 @@
             "index": 0,
             "node": "PKM Insert",
             "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Duplicate Message": {
+      "main": [
+        [
+          {
+            "node": "Send 'duplicate' message",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -138,7 +149,8 @@
       "name": "Send a text message",
       "parameters": {
         "additionalFields": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "1509032341",
         "text": "={{ $json.telegram_message }}"
@@ -308,10 +320,11 @@
       "name": "Send 'duplicate' message",
       "parameters": {
         "additionalFields": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "1509032341",
-        "text": "=Message duplicate of entry #{{$json.entry_id}}. Processing stopped."
+        "text": "={{ $json.telegram_message }}"
       },
       "position": [
         816,
@@ -320,6 +333,19 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
+    },
+    {
+      "id": "7ab7a2b4-4a8e-4ad8-9c58-b2c63c0a3d26",
+      "name": "Format Duplicate Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        -576
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2 } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nreturn [{ json: { ...$json, telegram_message: mdv2('Duplicate entry ' + entryId + ' processing stopped') } }];\n"
+      }
     }
   ],
   "settings": {

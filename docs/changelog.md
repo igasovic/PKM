@@ -1,4 +1,33 @@
 # changelog
+## 2026-03-13 — Calendar create hardening + scheduled report workflows + Telegram MarkdownV2 helper
+
+### What changed
+- Standardized Telegram Markdown escaping for workflow-generated messages:
+  - added shared helper `src/libs/telegram-markdown.js` (`mdv2`)
+  - updated Telegram message builder nodes/workflows to use shared escaping and `parse_mode=MarkdownV2`
+- Hardened `30 Calendar Create` workflow (`src/n8n/workflows/30-calendar-create__valOh9zMfqOZOvmHyOQfa.json`):
+  - added pre-create overlap check (`Google Calendar Check Conflicts`)
+  - added conflict context helper (`src/n8n/nodes/30-calendar-create/prepare-conflict-context__ec57f2a4-7b67-4485-b6d3-3bf7a6b3b0d1.js`)
+  - added one silent retry for Google create (`retryOnFail=true`, `maxTries=2`)
+  - create confirmation now includes conflict warning summary when overlap exists
+- Implemented WP7 report workflows:
+  - added `src/n8n/workflows/32-calendar-daily-report__hK7B2Y4uWn3Rm9QpLd0Sa.json`
+  - added `src/n8n/workflows/32-calendar-weekly-report__tV8mQ2nL6xP4cR1jHf7Ds.json`
+  - both use scheduled triggers, Google calendar read, Telegram MarkdownV2 send, and backend `POST /calendar/observe` logging
+  - added shared report helpers:
+    - `src/n8n/nodes/32-calendar-report/build-report-window__1d7fa7c9-3ac6-4b7e-bf0a-6e2e7789f31a.js`
+    - `src/n8n/nodes/32-calendar-report/format-calendar-report-message__58f6c53c-5dad-4d29-93d0-00dc8f7d5683.js`
+- Added WP8-oriented eval/snapshot coverage:
+  - new fixture-based eval dataset:
+    - `test/fixtures/calendar-evals/routing.json`
+    - `test/fixtures/calendar-evals/normalization.json`
+    - `test/fixtures/calendar-evals/clarification.json`
+  - new tests:
+    - `test/server/calendar-evals.test.js`
+    - `test/server/n8n.calendar-report.test.js`
+  - extended create helper tests:
+    - `test/server/n8n.calendar-router-create.test.js` (conflict context assertions)
+
 ## 2026-03-13 — Telegram chat-id key standardization and admin fallback config
 
 ### What changed
