@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "f3c68aaa-fa68-4ab4-acd9-9282bfeb699c",
+  "activeVersionId": "43d6b4c4-2e7c-4ac8-8aa4-a6835f70c215",
   "connections": {
     "Format Calendar Read Message": {
       "main": [
@@ -381,6 +381,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-13T11:54:02.245Z",
-  "versionCounter": 13
+  "updatedAt": "2026-03-13T16:43:10.345Z",
+  "versionCounter": 23
 }
