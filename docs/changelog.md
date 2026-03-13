@@ -1,4 +1,12 @@
 # changelog
+## 2026-03-13 — Error handling noise filter for IMAP trigger auto-deactivation
+
+### What changed
+- Updated `99 Error Handling` formatter in `src/n8n/workflows/99-error-handling__R2r3jkL5Rb39zKpyutwhW.json` to suppress Telegram notifications for the known low-signal IMAP trigger auto-deactivation message:
+  - trigger name includes `Email Trigger (IMAP)`
+  - message contains `There was a problem with the trigger node...workflow had to be deactivated`
+- Suppressed events now return no items from the formatter node, so `Send Telegram Message` is skipped for that case.
+
 ## 2026-03-13 — Telegram MarkdownV2 formatter primitives + 10 Read refactor
 
 ### What changed
