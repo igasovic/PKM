@@ -80,6 +80,7 @@ For any config, infra, Docker, cloudflared, LiteLLM, Postgres init or backend-lo
 
 ### Repo-first rule
 Anything that should be reviewed, diffed, rollbackable, and safely editable by agents should live in the repo unless it is secret, runtime-mutable, or persistent service state.
+All non-secret configuration must be authored in repo-managed surfaces, not by ad hoc host-local edits. Host-local files should only hold secrets, credentials, runtime-mutable state, and persistent service data.
 
 ### Secrets rule
 Secrets and credentials must stay off-repo.
@@ -143,6 +144,7 @@ Before coding non-trivial changes, provide a short plan covering:
 - Validate before apply.
 - Do not silently edit runtime stack files as the primary authored surface.
 - Keep apply logic explicit and reviewable.
+- For any non-secret config change, agent should perform all repo/doc updates and provide only the required `checkcfg`/`updatecfg` operator command(s) for apply.
 
 ### Config-change handoff block (mandatory)
 When your change affects config, your final response must include:

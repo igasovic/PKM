@@ -1,6 +1,8 @@
 # Configuration Operations
 
 ## 1. Operator workflow
+Rule: all non-secret config is repo-authored first. Host-local edits are for secrets, credentials, runtime-mutable state, and persistent service data only.
+
 1. Agent changes repo-owned config and/or config-aware code.
 2. Agent commits and pushes.
 3. Agent reports changed surfaces explicitly.
@@ -95,6 +97,7 @@ Notes:
   - if compose/global/ambiguous changes are detected, falls back to full `docker compose up -d`
   - if no managed file changed, skips compose apply
 - `updatecfg docker --pull` pulls managed runtime files into repo.
+- Non-secret service config must be authored in repo-managed `ops/stack/env/<service>.env` files (for example `ops/stack/env/pkm-server.env`), not by ad hoc host `.env` edits.
 
 ### litellm
 - `checkcfg litellm` compares one config file.
