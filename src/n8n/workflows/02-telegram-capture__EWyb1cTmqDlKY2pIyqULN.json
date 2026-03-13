@@ -315,7 +315,7 @@
             }
           ]
         },
-        "jsonBody": "={\n  \"text\": \"{{$json.message.text}}\",\n  \"source\": {\n    \"chat_id\": \"{{ $json.message.chat.id }}\",\n    \"message_id\": \"{{ $json.message.message_id }}\"\n  }\n}",
+        "jsonBody": "={{ JSON.stringify((() => ({ text: $json.message.text, source: { chat_id: $json.message.chat.id, message_id: $json.message.message_id, user_id: ($json.message.from && $json.message.from.id) || null } }))()) }}",
         "method": "POST",
         "options": {},
         "sendBody": true,
@@ -343,7 +343,7 @@
         "additionalFields": {
           "appendAttribution": false
         },
-        "chatId": "1509032341",
+        "chatId": "={{ $json.telegram_chat_id || $json.chat_id || (($json.message && $json.message.chat && $json.message.chat.id) || 1509032341) }}",
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
@@ -429,7 +429,7 @@
         "additionalFields": {
           "appendAttribution": false
         },
-        "chatId": "1509032341",
+        "chatId": "={{ $json.telegram_chat_id || $json.chat_id || (($json.message && $json.message.chat && $json.message.chat.id) || 1509032341) }}",
         "text": "=Message duplicate of entry #{{$json.entry_id}}. Processing stopped."
       },
       "position": [
@@ -453,7 +453,7 @@
         "additionalFields": {
           "appendAttribution": false
         },
-        "chatId": "1509032341",
+        "chatId": "={{ $json.telegram_chat_id || $json.chat_id || (($json.message && $json.message.chat && $json.message.chat.id) || 1509032341) }}",
         "text": "=🧠 Thought saved as entry #{{ $json.entry_id }}. Operation: {{ $json.action }}"
       },
       "position": [

@@ -1,5 +1,12 @@
 'use strict';
 
+function parseCsvEnv(value) {
+  return String(value || '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 const CONFIG_V1 = {
   version: 'v1',
 
@@ -80,6 +87,11 @@ const CONFIG_V1 = {
     timezone: 'America/Chicago',
     family_calendar_id: process.env.FAMILY_CALENDAR_ID || null,
     recipient_email: process.env.FAMILY_CALENDAR_RECIPIENT_EMAIL || 'pkm.gasovic',
+    telegram_access: {
+      enforce_allowlist: String(process.env.CALENDAR_TELEGRAM_ENFORCE_ALLOWLIST || 'false').toLowerCase() === 'true',
+      calendar_allowed_user_ids: parseCsvEnv(process.env.CALENDAR_TELEGRAM_ALLOWED_USER_IDS),
+      pkm_allowed_user_ids: parseCsvEnv(process.env.CALENDAR_TELEGRAM_PKM_ALLOWED_USER_IDS),
+    },
     prefixes: {
       calendar: 'cal:',
       pkm: 'pkm:',

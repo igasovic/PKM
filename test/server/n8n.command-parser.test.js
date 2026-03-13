@@ -2,13 +2,15 @@
 
 const parseCommand = require('../../src/n8n/nodes/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');
 
-async function runParser(text) {
+async function runParser(text, extra = {}) {
   const out = await parseCommand({
     $json: {
       message: {
         text,
         chat: { id: 1509032341 },
+        from: { id: 111 },
       },
+      ...extra,
     },
   });
   expect(Array.isArray(out)).toBe(true);
@@ -58,5 +60,25 @@ describe('n8n command parser', () => {
     const out = await runParser('/distill-run --batch --sync');
     expect(out._reply_now).toBe(true);
     expect(out.telegram_message).toContain('/distill-run [--batch|--sync]');
+  });
+
+  test('enforced allowlist blocks PKM commands for non-pkm user id', async () => {
+    const out = await runParser('/last test', {
+      config: {
+        calendar: {
+          telegram_access: {
+            enforce_allowlist: true,
+            pkm_allowed_user_ids: ['999'],
+          },
+        },
+      },
+      message: {
+        text: '/last test',
+        chat: { id: 1509032341 },
+        from: { id: 222 },
+      },
+    });
+    expect(out._reply_now).toBe(true);
+    expect(out.telegram_message).toContain('calendar-only access');
   });
 });

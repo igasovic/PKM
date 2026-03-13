@@ -381,7 +381,7 @@ Body:
 {
   "text": "Mila dentist tomorrow at 3:00p",
   "actor_code": "igor",
-  "source": { "chat_id": "1509032341", "message_id": "777" },
+  "source": { "chat_id": "1509032341", "message_id": "777", "user_id": "111111111" },
   "run_id": "tg-route-123"
 }
 ```
@@ -403,6 +403,10 @@ Possible routes:
 
 For `ambiguous`, response may include:
 - `clarification_question`
+- `access_denied_reason` (when route was downgraded by Telegram allowlist policy)
+
+When calendar Telegram allowlist enforcement is enabled, disallowed routes are downgraded to
+`ambiguous` with an access clarification message instead of returning `pkm_capture`/calendar routes.
 
 ### `POST /calendar/normalize`
 Normalizes calendar-create intent and drives clarification flow state.
@@ -417,7 +421,7 @@ Body:
 {
   "raw_text": "Mila dentist tomorrow at 3:00p for 60 min at home",
   "actor_code": "igor",
-  "source": { "chat_id": "1509032341", "message_id": "777" },
+  "source": { "chat_id": "1509032341", "message_id": "777", "user_id": "111111111" },
   "run_id": "cal-norm-123"
 }
 ```
@@ -490,6 +494,8 @@ Response (`rejected`):
   "request_status": "ignored"
 }
 ```
+
+`rejected` may also be returned for access policy reasons (for example, sender not in calendar allowlist).
 
 ### `POST /calendar/finalize`
 Persists final create outcome after n8n Google Calendar write.
@@ -1440,6 +1446,9 @@ Optional:
 - `T2_BATCH_REQUEST_MODEL` (optional provider model override for Tier‑2 batch request lines; falls back to `T1_BATCH_REQUEST_MODEL`)
 - `FAMILY_CALENDAR_ID` (optional; shared calendar id surfaced in `/config.calendar.family_calendar_id`)
 - `FAMILY_CALENDAR_RECIPIENT_EMAIL` (optional; default `pkm.gasovic`)
+- `CALENDAR_TELEGRAM_ENFORCE_ALLOWLIST` (`false` default; when `true`, enforces Telegram user id allowlists for calendar/PKM routing)
+- `CALENDAR_TELEGRAM_ALLOWED_USER_IDS` (optional CSV Telegram user ids allowed for calendar flows)
+- `CALENDAR_TELEGRAM_PKM_ALLOWED_USER_IDS` (optional CSV Telegram user ids allowed for PKM capture; treated as subset of calendar users)
 
 LLM auth:
 - `LITELLM_MASTER_KEY` (required; used as Bearer token for LiteLLM)

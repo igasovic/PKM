@@ -98,6 +98,7 @@ Notes:
   - if no managed file changed, skips compose apply
 - `updatecfg docker --pull` pulls managed runtime files into repo.
 - Non-secret service config must be authored in repo-managed `ops/stack/env/<service>.env` files (for example `ops/stack/env/pkm-server.env`), not by ad hoc host `.env` edits.
+  - Example calendar policy vars owned in repo: `CALENDAR_TELEGRAM_ENFORCE_ALLOWLIST`, `CALENDAR_TELEGRAM_ALLOWED_USER_IDS`, `CALENDAR_TELEGRAM_PKM_ALLOWED_USER_IDS`.
 
 ### litellm
 - `checkcfg litellm` compares one config file.

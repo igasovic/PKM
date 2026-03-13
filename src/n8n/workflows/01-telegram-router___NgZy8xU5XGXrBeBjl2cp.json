@@ -153,9 +153,7 @@
       "id": "2d639cfe-b474-4e3a-9834-c2daea9e25a4",
       "name": "Telegram Trigger",
       "parameters": {
-        "additionalFields": {
-          "chatIds": "1509032341"
-        },
+        "additionalFields": {},
         "updates": [
           "message",
           "edited_message"
@@ -173,7 +171,7 @@
       "id": "9fdd2089-7796-4e95-932a-78b6827cf4b3",
       "name": "Prepare Route Input",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n  const message = ($json && $json.message) || ($json && $json.edited_message) || {};\n  const rawText = asText($json.raw_text || message.text || message.caption || '');\n  const lower = rawText.toLowerCase();\n\n  const telegramChatId = asText($json.telegram_chat_id || (message.chat && message.chat.id));\n  const telegramMessageId = asText($json.telegram_message_id || message.message_id);\n  const telegramUserId = asText($json.telegram_user_id || (message.from && message.from.id));\n  const username = asText($json.telegram_username || (message.from && message.from.username));\n  const firstName = asText($json.telegram_first_name || (message.from && message.from.first_name));\n\n  let actorCode = asText($json.actor_code).toLowerCase();\n  if (!actorCode) {\n    const hint = `${username} ${firstName}`.toLowerCase();\n    if (hint.includes('igor')) actorCode = 'igor';\n    else if (hint.includes('danij')) actorCode = 'danijela';\n    else actorCode = 'unknown';\n  }\n\n  let routeHint = 'backend_route';\n  if (/^pkm:\\s*/i.test(rawText)) routeHint = 'pkm_capture';\n  if (/^cal:\\s*/i.test(rawText)) routeHint = 'calendar_create';\n\n  return [{\n    json: {\n      ...$json,\n      message,\n      raw_text: rawText,\n      telegram_chat_id: telegramChatId,\n      telegram_message_id: telegramMessageId,\n      telegram_user_id: telegramUserId,\n      telegram_username: username || null,\n      actor_code: actorCode,\n      is_command: rawText.startsWith('/'),\n      route_hint: routeHint,\n    },\n  }];\n"
+        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n  const message = ($json && $json.message) || ($json && $json.edited_message) || {};\n  const rawText = asText($json.raw_text || message.text || message.caption || '');\n  const lower = rawText.toLowerCase();\n\n  const telegramChatId = asText($json.telegram_chat_id || (message.chat && message.chat.id));\n  const telegramMessageId = asText($json.telegram_message_id || message.message_id);\n  const telegramUserId = asText($json.telegram_user_id || (message.from && message.from.id));\n  const username = asText($json.telegram_username || (message.from && message.from.username));\n  const firstName = asText($json.telegram_first_name || (message.from && message.from.first_name));\n\n  let actorCode = asText($json.actor_code).toLowerCase();\n  if (!actorCode) {\n    const hint = `${username} ${firstName}`.toLowerCase();\n    if (hint.includes('igor')) actorCode = 'igor';\n    else if (hint.includes('danij')) actorCode = 'danijela';\n    else actorCode = 'unknown';\n  }\n\n  let routeHint = 'backend_route';\n  if (/^cal:\\s*/i.test(rawText)) routeHint = 'calendar_create';\n\n  return [{\n    json: {\n      ...$json,\n      message,\n      raw_text: rawText,\n      telegram_chat_id: telegramChatId,\n      telegram_message_id: telegramMessageId,\n      telegram_user_id: telegramUserId,\n      telegram_username: username || null,\n      actor_code: actorCode,\n      is_command: rawText.startsWith('/'),\n      route_hint: routeHint,\n    },\n  }];\n"
       },
       "position": [
         0,
@@ -379,7 +377,7 @@
             }
           ]
         },
-        "jsonBody": "={{ JSON.stringify((() => ({ text: $json.raw_text, actor_code: $json.actor_code, source: { chat_id: $json.telegram_chat_id, message_id: $json.telegram_message_id }, run_id: $execution.id }))()) }}",
+        "jsonBody": "={{ JSON.stringify((() => ({ text: $json.raw_text, actor_code: $json.actor_code, source: { chat_id: $json.telegram_chat_id, message_id: $json.telegram_message_id, user_id: $json.telegram_user_id }, run_id: $execution.id }))()) }}",
         "method": "POST",
         "options": {},
         "sendBody": true,
@@ -548,7 +546,7 @@
         "additionalFields": {
           "appendAttribution": false
         },
-        "chatId": "={{ $json.telegram_chat_id }}",
+        "chatId": "={{ $json.telegram_chat_id || $json.chat_id || (($json.message && $json.message.chat && $json.message.chat.id) || 1509032341) }}",
         "text": "={{ $json.telegram_message }}"
       },
       "position": [

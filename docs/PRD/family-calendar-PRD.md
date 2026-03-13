@@ -108,14 +108,13 @@ Allowed Telegram creators in v1:
 
 No other Telegram users may create family calendar events in v1.
 
-Temporary v1 enforcement:
+v1 enforcement baseline:
 
-- rely on the existing gate in `01 Telegram Router` (Telegram trigger/chat filter plus current workflow identity handling)
-- do not block implementation on a new actor-identity registry in this first pass
-
-Hardening reminder before closing implementation:
-
-- formalize creator allowlist as explicit Telegram numeric IDs in shared config and enforce it in backend calendar APIs (not only in workflow wiring)
+- shared config stores explicit Telegram numeric user-id allowlists
+- calendar flow allowlist includes both Igor and Danijela
+- PKM capture allowlist is a stricter subset (Igor only)
+- backend enforces allowlists in calendar router/normalize APIs using Telegram sender id (`message.from.id`)
+- this works in both direct chat and group chat because authorization is based on sender id, not chat id
 
 ### 5.2 External event authors in scope
 
@@ -185,6 +184,12 @@ The router should evolve from a binary split into this decision order:
 2. **explicit prefix `pkm:`** → PKM capture path
 3. **explicit prefix `cal:`** → calendar path
 4. otherwise call backend **`POST /telegram/route`** for intent routing
+
+Ingress policy:
+
+- Telegram ingress must not be hard-locked to one chat id.
+- Authorization is by Telegram sender user id via shared allowlist policy.
+- Reply chat id should come from request context when available; only non-chat-triggered operational workflows should use a fixed admin chat id fallback.
 
 The backend router should classify into:
 
@@ -924,7 +929,11 @@ Out of scope for Telegram create in v1.
 
 ### 20.6 Actor allowlist hardening
 
-Current v1 uses existing router-level gating. A follow-up hardening task should formalize creator authorization as shared-config Telegram numeric IDs enforced in backend calendar APIs.
+v1 now enforces creator authorization with shared-config Telegram numeric IDs and separate calendar vs PKM allowlists.
+
+Future improvement:
+
+- replace CSV env allowlists with a structured identity registry that maps Telegram user ids to canonical actor profiles and audit metadata
 
 ### 20.7 Endpoint auth hardening
 

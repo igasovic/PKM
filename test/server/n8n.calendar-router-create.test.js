@@ -45,7 +45,7 @@ describe('n8n calendar router/create helpers', () => {
 
     const row = out[0].json;
     expect(row.raw_text).toBe('Mila dentist tomorrow at 3:00p for 60 min');
-    expect(row.source).toEqual({ chat_id: '1509032341', message_id: '777' });
+    expect(row.source).toEqual({ chat_id: '1509032341', message_id: '777', user_id: null });
     expect(row.family_calendar_id).toBe('family@group.calendar.google.com');
   });
 

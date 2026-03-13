@@ -156,6 +156,39 @@ describe('calendar API contract', () => {
     });
   });
 
+  test('POST /telegram/route downgrades PKM route for calendar-only sender when allowlist is enforced', async () => {
+    process.env.CALENDAR_TELEGRAM_ENFORCE_ALLOWLIST = 'true';
+    process.env.CALENDAR_TELEGRAM_ALLOWED_USER_IDS = '111,222';
+    process.env.CALENDAR_TELEGRAM_PKM_ALLOWED_USER_IDS = '111';
+    routeMock.mockReturnValue({
+      route: 'pkm_capture',
+      confidence: 0.99,
+    });
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/telegram/route',
+      JSON.stringify({
+        text: 'pkm: private note',
+        actor_code: 'danijela',
+        source: { chat_id: '1509032341', message_id: '778', user_id: '222' },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      }
+    );
+
+    expect(res.status).toBe(200);
+    const payload = JSON.parse(res.body);
+    expect(payload.route).toBe('ambiguous');
+    expect(payload.clarification_question).toContain('calendar-only access');
+  });
+
   test('POST /calendar/normalize uses latest-open request and propagates run id header', async () => {
     dbMock.getCalendarRequestById.mockResolvedValue(null);
     dbMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
@@ -206,6 +239,43 @@ describe('calendar API contract', () => {
       warning_codes: [],
       message: null,
       request_status: 'needs_clarification',
+    });
+  });
+
+  test('POST /calendar/normalize rejects sender not in calendar allowlist', async () => {
+    process.env.CALENDAR_TELEGRAM_ENFORCE_ALLOWLIST = 'true';
+    process.env.CALENDAR_TELEGRAM_ALLOWED_USER_IDS = '111';
+    process.env.CALENDAR_TELEGRAM_PKM_ALLOWED_USER_IDS = '111';
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/calendar/normalize',
+      JSON.stringify({
+        run_id: 'calendar-run-unauthorized',
+        raw_text: 'Mila dentist tomorrow at 3:00p',
+        source: { chat_id: '1509032341', message_id: '999', user_id: '222' },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      }
+    );
+
+    expect(res.status).toBe(200);
+    expect(normalizeMock).not.toHaveBeenCalled();
+    expect(JSON.parse(res.body)).toEqual({
+      request_id: null,
+      status: 'rejected',
+      missing_fields: [],
+      clarification_question: null,
+      normalized_event: null,
+      warning_codes: ['telegram_user_not_calendar_allowed'],
+      message: 'This Telegram user is not allowed to use the family calendar flow.',
+      request_status: null,
     });
   });
 

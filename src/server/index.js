@@ -35,6 +35,11 @@ const {
   normalizeCalendarRequest,
 } = require('./calendar-service.js');
 const {
+  resolveTelegramAccess,
+  applyRouteAccessPolicy,
+  calendarAccessMessage,
+} = require('./calendar-access.js');
+const {
   createBatchStatusService,
 } = require('./batch-status-service.js');
 const { importEmailMbox } = require('./email-importer.js');
@@ -296,25 +301,28 @@ async function handleRequest(req, res) {
       const raw = await readBody(req);
       const body = parseJsonBody(raw);
       bindRunIdFromBody(body);
+      const source = body && body.source && typeof body.source === 'object' ? body.source : {};
       const routeResult = await logger.step(
         'api.telegram.route',
         async () => routeTelegramInput(body),
         { input: body, output: (out) => out, meta: { route: url.pathname } }
       );
-
-      const source = body && body.source && typeof body.source === 'object' ? body.source : {};
+      const access = resolveTelegramAccess({
+        telegram_user_id: source.user_id || body.telegram_user_id,
+      });
+      const effectiveRoute = applyRouteAccessPolicy(routeResult, access);
       const actorCode = String(body.actor_code || body.actor || '').trim().toLowerCase() || 'unknown';
       const chatId = String(source.chat_id || body.telegram_chat_id || '').trim();
       const messageId = String(source.message_id || body.telegram_message_id || '').trim();
       let requestRow = null;
-      if (chatId && messageId && ['calendar_create', 'calendar_query', 'ambiguous'].includes(routeResult.route)) {
+      if (chatId && messageId && ['calendar_create', 'calendar_query', 'ambiguous'].includes(effectiveRoute.route)) {
         requestRow = await db.upsertCalendarRequest({
           run_id: body.run_id || (getRunContext() && getRunContext().run_id) || `tg-route-${Date.now()}`,
           actor_code: actorCode,
           telegram_chat_id: chatId,
           telegram_message_id: messageId,
-          route_intent: routeResult.route,
-          route_confidence: routeResult.confidence,
+          route_intent: effectiveRoute.route,
+          route_confidence: effectiveRoute.confidence,
           status: 'routed',
           raw_text: body.text || body.raw_text || '',
           idempotency_key_primary: `tgcal:${chatId}:${messageId}`,
@@ -323,7 +331,7 @@ async function handleRequest(req, res) {
       }
 
       return json(res, 200, {
-        ...routeResult,
+        ...effectiveRoute,
         request_id: requestRow ? requestRow.request_id : null,
       });
     } catch (err) {
@@ -348,6 +356,22 @@ async function handleRequest(req, res) {
       const incomingText = String(body.raw_text || body.text || '').trim();
       const chatId = String(source.chat_id || body.telegram_chat_id || '').trim();
       const messageId = String(source.message_id || body.telegram_message_id || '').trim();
+      const access = resolveTelegramAccess({
+        telegram_user_id: source.user_id || body.telegram_user_id,
+      });
+
+      if (!access.calendar_allowed) {
+        return json(res, 200, {
+          request_id: null,
+          status: 'rejected',
+          missing_fields: [],
+          clarification_question: null,
+          normalized_event: null,
+          warning_codes: [access.reason_code || 'telegram_user_not_calendar_allowed'],
+          message: calendarAccessMessage(access),
+          request_status: null,
+        });
+      }
 
       let request = null;
       if (body.request_id) {

@@ -18,10 +18,28 @@ module.exports = async function run(ctx) {
 const msg = $json.message || {};
 const text = String(msg.text || '').trim();
 const chat_id = msg.chat?.id ?? null;
+const sender_user_id = String(msg.from?.id ?? '').trim();
+const accessCfg = ($json.config && $json.config.calendar && $json.config.calendar.telegram_access) || {};
+const enforceAllowlist = accessCfg.enforce_allowlist === true;
+const pkmAllowedIds = new Set(
+  (Array.isArray(accessCfg.pkm_allowed_user_ids) ? accessCfg.pkm_allowed_user_ids : [])
+    .map((v) => String(v ?? '').trim())
+    .filter(Boolean)
+);
 
 // If reused accidentally for non-commands
 if (!text.startsWith('/')) {
   return [{ json: { _ignore: true } }];
+}
+
+if (enforceAllowlist && (!sender_user_id || !pkmAllowedIds.has(sender_user_id))) {
+  return [{
+    json: {
+      _reply_now: true,
+      chat_id,
+      telegram_message: 'This Telegram user has calendar-only access. PKM commands are disabled.',
+    },
+  }];
 }
 
 // Supported commands + defaults

@@ -1,4 +1,54 @@
 # changelog
+## 2026-03-13 — Telegram ingress/reply chat handling improvements
+
+### What changed
+- Updated primary Telegram ingress workflow:
+  - `src/n8n/workflows/01-telegram-router___NgZy8xU5XGXrBeBjl2cp.json`
+  - removed trigger-level `chatIds` lock from `01 Telegram Router` trigger (chat-agnostic ingress)
+  - ambiguous-reply node now resolves `chatId` dynamically from payload (`telegram_chat_id`/`chat_id`/`message.chat.id`) with fallback to admin chat id
+- Updated PKM capture workflow reply routing:
+  - `src/n8n/workflows/02-telegram-capture__EWyb1cTmqDlKY2pIyqULN.json`
+  - all Telegram send nodes now use dynamic chat-id fallback expression instead of hardcoded `1509032341`
+  - `/normalize/telegram` payload now includes `source.user_id` from Telegram sender (`message.from.id`)
+- Updated PKM read workflow reply routing:
+  - `src/n8n/workflows/10-read__dq9Nex-IR8AToJvHksphj.json`
+  - all Telegram send nodes now use dynamic chat-id fallback expression instead of hardcoded `1509032341`
+- Added PKM command allowlist enforcement by Telegram sender id in command parser:
+  - `src/n8n/nodes/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js`
+  - when allowlist enforcement is enabled and sender is not in `pkm_allowed_user_ids`, parser returns immediate calendar-only access message
+- Added parser test coverage:
+  - `test/server/n8n.command-parser.test.js`
+
+## 2026-03-13 — Telegram allowlist enforcement for calendar-only vs PKM access
+
+### What changed
+- Added calendar Telegram access config in `src/libs/config/index.js`:
+  - `calendar.telegram_access.enforce_allowlist`
+  - `calendar.telegram_access.calendar_allowed_user_ids`
+  - `calendar.telegram_access.pkm_allowed_user_ids`
+- Added backend access policy helper:
+  - `src/server/calendar-access.js`
+  - resolves sender access from Telegram `user_id`
+  - downgrades disallowed routes to `ambiguous` with explicit access clarification text
+- Enforced access policy in backend API:
+  - `POST /telegram/route` applies allowlist policy before returning route
+  - `POST /calendar/normalize` returns `status=rejected` when sender is not calendar-allowed
+- Updated n8n workflow payload wiring to pass sender identity:
+  - `src/n8n/workflows/01-telegram-router___NgZy8xU5XGXrBeBjl2cp.json`
+    - explicit `pkm:` now routes through backend route decision
+    - route request now includes `source.user_id`
+  - `src/n8n/workflows/30-calendar-create__valOh9zMfqOZOvmHyOQfa.json`
+    - normalize request now includes Telegram `user_id`
+- Added repo-owned non-secret env placeholders:
+  - `ops/stack/env/pkm-server.env`
+    - `CALENDAR_TELEGRAM_ENFORCE_ALLOWLIST`
+    - `CALENDAR_TELEGRAM_ALLOWED_USER_IDS`
+    - `CALENDAR_TELEGRAM_PKM_ALLOWED_USER_IDS`
+- Updated docs:
+  - `docs/api.md` (calendar route/normalize payload + env vars)
+  - `docs/config_operations.md` (repo ownership for calendar allowlist vars)
+  - `docs/PRD/family-calendar-PRD.md` (formalized allowlist model)
+
 ## 2026-03-12 — Family calendar backend foundation (WP1-WP3 start)
 
 ### What changed
