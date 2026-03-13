@@ -1,4 +1,55 @@
 # changelog
+## 2026-03-12 — Family calendar backend foundation (WP1-WP3 start)
+
+### What changed
+- Added shared calendar config surface in `src/libs/config/index.js`:
+  - timezone/prefix defaults
+  - people registry, category registry
+  - default durations, padding, and clarification policy flags
+  - v1 create rules (`allow_all_day=false`, `allow_recurrence=false`)
+- Added prod-only calendar business-log migration:
+  - `scripts/db/migrations/2026-03-12_calendar_business_logs.sql`
+  - creates:
+    - `pkm.calendar_requests`
+    - `pkm.calendar_event_observations`
+  - includes one-open-request partial unique index for `needs_clarification` status
+- Added calendar backend service module:
+  - `src/server/calendar-service.js`
+  - provides intent routing and normalization logic for v1 create flows
+- Extended backend DB layer (`src/server/db.js`) with prod-pinned calendar methods:
+  - request upsert/get/update/finalize paths
+  - latest-open-request lookup by chat
+  - observation insert path
+- Added new API endpoints in `src/server/index.js`:
+  - `POST /telegram/route` (admin-protected)
+  - `POST /calendar/normalize` (admin-protected)
+  - `POST /calendar/finalize` (admin-protected)
+  - `POST /calendar/observe` (admin-protected)
+- Added tests:
+  - `test/server/calendar-service.test.js`
+  - `test/server/calendar.api-contract.test.js`
+- Updated docs:
+  - `docs/api.md` (new calendar endpoint contracts)
+  - `docs/database_schema.md` (new prod-only calendar tables + invariants)
+- Added n8n workflow routing and calendar workflow scaffolding:
+  - updated `src/n8n/workflows/01-telegram-router___NgZy8xU5XGXrBeBjl2cp.json`
+    - explicit `pkm:` / `cal:` prefix handling
+    - backend fallback routing via `POST /telegram/route`
+    - route fan-out to:
+      - `02 Telegram Capture`
+      - `30 Calendar Create`
+      - `31 Calendar Read`
+      - ambiguous clarification message
+  - added `src/n8n/workflows/30-calendar-create__c3lNDV3YhV8m4N7Q2pRk.json`
+  - added `src/n8n/workflows/31-calendar-read__wQ9kL2mN5pR7tV3xY8Za.json`
+- Added externalized n8n helper modules:
+  - `src/n8n/nodes/01-telegram-router/*`
+  - `src/n8n/nodes/30-calendar-create/*`
+  - `src/n8n/nodes/31-calendar-read/*`
+- Added n8n helper tests:
+  - `test/server/n8n.calendar-router-create.test.js`
+  - `test/server/n8n.calendar-read.test.js`
+
 ## 2026-03-12 — Logger Braintrust sink consolidation + verboss removal
 
 ### What changed

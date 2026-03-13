@@ -2,7 +2,18 @@
   "active": true,
   "activeVersionId": "e73c5e9d-0c51-40cb-8130-fc4636f64cf4",
   "connections": {
-    "IS COMMAND": {
+    "Format Ambiguous Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Ambiguous Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF Is Command": {
       "main": [
         [
           {
@@ -14,7 +25,102 @@
         [
           {
             "index": 0,
+            "node": "Switch Explicit Prefix",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge Route Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Switch Routed Intent",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Telegram Route": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge Route Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Prepare Route Input": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "IF Is Command",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Switch Explicit Prefix": {
+      "main": [
+        [
+          {
+            "index": 0,
             "node": "Call 'Telegram Capture'",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Call 'Calendar Create'",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Telegram Route",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Merge Route Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Switch Routed Intent": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Call 'Telegram Capture'",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Call 'Calendar Create'",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Call 'Calendar Read'",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Format Ambiguous Message",
             "type": "main"
           }
         ]
@@ -25,7 +131,7 @@
         [
           {
             "index": 0,
-            "node": "IS COMMAND",
+            "node": "Prepare Route Input",
             "type": "main"
           }
         ]
@@ -37,41 +143,6 @@
   "isArchived": false,
   "name": "01 Telegram Router",
   "nodes": [
-    {
-      "id": "eb8d4710-428b-43ad-b1db-76f5593d28a7",
-      "name": "IS COMMAND",
-      "notes": "Notes go into different workflow\n",
-      "notesInFlow": true,
-      "parameters": {
-        "conditions": {
-          "combinator": "and",
-          "conditions": [
-            {
-              "id": "d8b97b84-7d20-42f5-8b84-5fa7e7c791f2",
-              "leftValue": "={{ $json.message.text }}",
-              "operator": {
-                "operation": "startsWith",
-                "type": "string"
-              },
-              "rightValue": "/"
-            }
-          ],
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          }
-        },
-        "options": {}
-      },
-      "position": [
-        128,
-        -96
-      ],
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3
-    },
     {
       "credentials": {
         "telegramApi": {
@@ -91,12 +162,59 @@
         ]
       },
       "position": [
-        -96,
+        -224,
         -96
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
       "webhookId": "a111da0e-d82b-4eac-9ca8-ddd49cc09794"
+    },
+    {
+      "id": "9fdd2089-7796-4e95-932a-78b6827cf4b3",
+      "name": "Prepare Route Input",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/01-telegram-router/prepare-route-input__2fc8f31e-0d24-4d3f-88f3-33dc31652d8b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:01-telegram-router/prepare-route-input__2fc8f31e-0d24-4d3f-88f3-33dc31652d8b.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        0,
+        -96
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "4f9bb596-e8d3-4a20-bf6c-b4826f22c22e",
+      "name": "IF Is Command",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "4dbf1008-b299-42c0-bb47-95fd19445f58",
+              "leftValue": "={{ $json.is_command === true }}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": true
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        224,
+        -96
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
     },
     {
       "id": "f5613e86-1374-4afe-b6fb-dd80ab7ff227",
@@ -120,11 +238,100 @@
         }
       },
       "position": [
-        352,
-        -192
+        448,
+        -256
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
+    },
+    {
+      "id": "a8d2d31a-b3ab-4dc3-b8f8-58abf420c460",
+      "name": "Switch Explicit Prefix",
+      "parameters": {
+        "options": {},
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "c5db9128-188c-4730-a196-1180f2b936f4",
+                    "leftValue": "={{ $json.route_hint }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "pkm_capture"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "pkm_capture",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "2ecf8ce1-cf3a-4238-b8e1-0ebf75f47dc3",
+                    "leftValue": "={{ $json.route_hint }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "calendar_create"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "calendar_create",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "fb87c5d7-e2f8-4310-bec9-c06720e1149c",
+                    "leftValue": "={{ $json.route_hint }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "backend_route"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "backend_route",
+              "renameOutput": true
+            }
+          ]
+        }
+      },
+      "position": [
+        448,
+        0
+      ],
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4
     },
     {
       "id": "9a22f55c-2bad-4098-aa84-8a3e8568d7dc",
@@ -150,11 +357,266 @@
         }
       },
       "position": [
-        352,
-        0
+        704,
+        -112
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
+    },
+    {
+      "id": "5d532180-2285-45e5-a83a-60b3e4937441",
+      "name": "Call 'Calendar Create'",
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "30 Calendar Create",
+          "cachedResultUrl": "/workflow/c3lNDV3YhV8m4N7Q2pRk",
+          "mode": "list",
+          "value": "c3lNDV3YhV8m4N7Q2pRk"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        704,
+        16
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "e4e9c2ea-ab31-4ef2-a61f-34af44c74f7b",
+      "name": "PKM Telegram Route",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => ({ text: $json.raw_text, actor_code: $json.actor_code, source: { chat_id: $json.telegram_chat_id, message_id: $json.telegram_message_id }, run_id: $execution.id }))()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/telegram/route"
+      },
+      "position": [
+        704,
+        176
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "36b905a3-6c95-4318-bf23-a1ec12dd1f5f",
+      "name": "Merge Route Context",
+      "parameters": {
+        "combineBy": "combineByPosition",
+        "mode": "combine",
+        "options": {}
+      },
+      "position": [
+        960,
+        176
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
+    },
+    {
+      "id": "0df2c58a-e21e-4f44-b9ea-fd4eccf14a7f",
+      "name": "Switch Routed Intent",
+      "parameters": {
+        "options": {},
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "e9a6e2fb-bfce-4323-9544-fcf46cbb8dd8",
+                    "leftValue": "={{ $json.route }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "pkm_capture"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "pkm_capture",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "b882abc5-4be8-4d9d-8b5c-db4bbd0ba9a1",
+                    "leftValue": "={{ $json.route }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "calendar_create"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "calendar_create",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "f5fc111f-66d2-4a9f-bf1b-ebf17f3d83b7",
+                    "leftValue": "={{ $json.route }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "calendar_query"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "calendar_query",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "96a87cb4-dd37-42e4-b90e-acd207d6a11f",
+                    "leftValue": "={{ $json.route }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "ambiguous"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "ambiguous",
+              "renameOutput": true
+            }
+          ]
+        }
+      },
+      "position": [
+        1200,
+        176
+      ],
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4
+    },
+    {
+      "id": "1344db8c-df4d-4633-85af-793d5e474ce8",
+      "name": "Call 'Calendar Read'",
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "31 Calendar Read",
+          "cachedResultUrl": "/workflow/wQ9kL2mN5pR7tV3xY8Za",
+          "mode": "list",
+          "value": "wQ9kL2mN5pR7tV3xY8Za"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        1456,
+        208
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "f6e29fae-95f8-4b12-8404-5dcfcf3db7a4",
+      "name": "Format Ambiguous Message",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/01-telegram-router/format-ambiguous-message__60efdb4f-8b7d-4729-bc13-5675ec56f4d4.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:01-telegram-router/format-ambiguous-message__60efdb4f-8b7d-4729-bc13-5675ec56f4d4.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1456,
+        352
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "f1995b19-0cc0-4f86-9f3a-0d5ed44c6f1c",
+      "name": "Send Ambiguous Message",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "={{ $json.telegram_chat_id }}",
+        "text": "={{ $json.telegram_message }}"
+      },
+      "position": [
+        1696,
+        352
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2
     }
   ],
   "settings": {
@@ -186,6 +648,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2026-03-06T20:13:28.622Z",
-  "versionCounter": 130
+  "updatedAt": "2026-03-12T18:00:00.000Z",
+  "versionCounter": 131
 }

@@ -427,6 +427,25 @@ Primary objective:
 - `/help` output must include Tier‑2 distill commands and current option flags.
 - `/distill-run` must default to batch execution semantics and allow explicit sync override via command flag (`--sync`).
 
+## Family calendar requirements (v1 foundation)
+- Calendar routing/normalization/finalize/observe must run through backend API endpoints:
+  - `POST /telegram/route`
+  - `POST /calendar/normalize`
+  - `POST /calendar/finalize`
+  - `POST /calendar/observe`
+- These endpoints must require `x-pkm-admin-secret`.
+- `POST /normalize/telegram` remains PKM ingest only and must not be overloaded for calendar-create contracts.
+- Calendar business logs must persist in prod schema `pkm` only:
+  - `pkm.calendar_requests`
+  - `pkm.calendar_event_observations`
+- Calendar business logs are not controlled by `test_mode`.
+- Clarification policy in v1:
+  - allow one open request per chat (`status = needs_clarification`)
+  - continuation resolution uses latest-open request in chat
+  - reply-based linking is a follow-up improvement, not a v1 requirement
+- Finalize path must be idempotent by `request_id`.
+- All-day Telegram event creation is out of scope for v1 and must return rejection/clarification rather than implicit all-day create.
+
 ## Non-goals
 - No duplicate side-table tracking in place of uniqueness constraints.
 - No client-side duplicate suppression as primary mechanism.

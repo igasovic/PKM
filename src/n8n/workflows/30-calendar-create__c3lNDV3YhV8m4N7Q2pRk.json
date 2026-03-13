@@ -1,0 +1,603 @@
+{
+  "active": false,
+  "activeVersionId": "9e7e6f7a-1f0f-49a8-98c6-1f8f8847e3fd",
+  "connections": {
+    "Build Google Event Payload": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Google Calendar Create Event",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Merge Create Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build Normalize Request": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Calendar Normalize",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Merge Normalize Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Create Result Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Create Result Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Normalize Status Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Calendar Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Google Calendar Create Event": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge Create Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge Create Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Prepare Finalize Request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge Finalize Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Create Result Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge Normalize Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Switch Normalize Status",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Calendar Finalize": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge Finalize Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Calendar Normalize": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge Normalize Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Normalize Request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Prepare Finalize Request": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Calendar Finalize",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Merge Finalize Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Switch Normalize Status": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Google Event Payload",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Format Normalize Status Message",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Format Normalize Status Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Config",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-03-12T18:30:00.000Z",
+  "description": "Calendar create workflow (normalize -> create -> finalize)",
+  "isArchived": false,
+  "name": "30 Calendar Create",
+  "nodes": [
+    {
+      "id": "7ebf9b2d-09f7-4dbf-9d50-0b48ab4d9f8a",
+      "name": "When Executed by Another Workflow",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        -224,
+        -96
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "2c5a6f9a-9478-4a17-b577-c47fd79a5ce1",
+      "name": "PKM Config",
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "98 Config",
+          "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
+          "mode": "list",
+          "value": "Ue-cGR6_WP4Fe5C19tA28"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        0,
+        -96
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "f4f4204e-e5ec-4df7-9739-3f9734f9db8f",
+      "name": "Build Normalize Request",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/build-normalize-request__bff8ba8c-b146-4316-a6d4-a7c757a4679b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/build-normalize-request__bff8ba8c-b146-4316-a6d4-a7c757a4679b.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        224,
+        -96
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "4adf4c6e-fd14-4b57-a356-5b4f23f87897",
+      "name": "PKM Calendar Normalize",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => ({ raw_text: $json.raw_text, actor_code: $json.actor_code, source: $json.source, request_id: $json.request_id || undefined, route_confidence: $json.route_confidence, run_id: $execution.id }))()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/calendar/normalize"
+      },
+      "position": [
+        448,
+        -16
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "3ea0e318-e86d-4dbc-8d5a-0ec0e5d62e89",
+      "name": "Merge Normalize Context",
+      "parameters": {
+        "combineBy": "combineByPosition",
+        "mode": "combine",
+        "options": {}
+      },
+      "position": [
+        672,
+        -16
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
+    },
+    {
+      "id": "1687a219-2ca8-4b73-bf2e-7de6d5a70f43",
+      "name": "Switch Normalize Status",
+      "parameters": {
+        "options": {},
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "f40fa9f2-9ea4-4c47-9f13-cfcd19411609",
+                    "leftValue": "={{ $json.status }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "ready_to_create"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "ready_to_create",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "83f8d683-b515-40cb-9164-d7a253b021e9",
+                    "leftValue": "={{ $json.status }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "needs_clarification"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "needs_clarification",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "89f7ca77-d82e-40d0-bf9d-c5a95f88ddfe",
+                    "leftValue": "={{ $json.status }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "rejected"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "rejected",
+              "renameOutput": true
+            }
+          ]
+        }
+      },
+      "position": [
+        896,
+        -16
+      ],
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4
+    },
+    {
+      "id": "0af1807e-cdf2-4012-a671-ee3f205ff9e4",
+      "name": "Format Normalize Status Message",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/format-normalize-status-message__38d61b5d-c5bb-4d31-9119-85344fa59ac3.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/format-normalize-status-message__38d61b5d-c5bb-4d31-9119-85344fa59ac3.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1120,
+        128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "5dba5f73-09ed-4350-b6c6-00abddbf7f0a",
+      "name": "Send Calendar Message",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "={{ $json.telegram_chat_id }}",
+        "text": "={{ $json.telegram_message }}"
+      },
+      "position": [
+        1344,
+        128
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2
+    },
+    {
+      "id": "bb6d3e8a-4461-4ea5-8d5d-0fa8d4f5e479",
+      "name": "Build Google Event Payload",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/build-google-event-payload__2f4ea2fd-0178-4f8c-88f4-2fdf86889d89.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/build-google-event-payload__2f4ea2fd-0178-4f8c-88f4-2fdf86889d89.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1120,
+        -128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "d5f2cb9c-d4bf-4c84-bf9c-d6352c6b8cf4",
+      "name": "Google Calendar Create Event",
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "operation": "create",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.google_calendar_id }}"
+        },
+        "start": "={{ $json.google_start }}",
+        "end": "={{ $json.google_end }}",
+        "additionalFields": {
+          "summary": "={{ $json.google_summary }}",
+          "description": "={{ $json.google_description }}",
+          "location": "={{ $json.google_location }}",
+          "color": "={{ $json.google_color_id }}"
+        }
+      },
+      "position": [
+        1344,
+        -128
+      ],
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "cde4af17-53d8-44f2-8fd2-0cd6e4e8de7e",
+      "name": "Merge Create Context",
+      "parameters": {
+        "combineBy": "combineByPosition",
+        "mode": "combine",
+        "options": {}
+      },
+      "position": [
+        1568,
+        -128
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
+    },
+    {
+      "id": "e114ec84-f1a4-4796-84a0-d4ec1229b304",
+      "name": "Prepare Finalize Request",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/prepare-finalize-request__4c9a5cd8-7c13-4ad8-8d1c-a10f2f23520b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/prepare-finalize-request__4c9a5cd8-7c13-4ad8-8d1c-a10f2f23520b.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1792,
+        -128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "f486d398-fd56-43f7-8b42-b3d85f7fe9c6",
+      "name": "PKM Calendar Finalize",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => ({ request_id: $json.request_id, success: $json.success, final_status: $json.final_status, google_calendar_id: $json.google_calendar_id, google_event_id: $json.google_event_id, error: $json.error, run_id: $execution.id }))()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/calendar/finalize"
+      },
+      "position": [
+        2016,
+        -48
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "4ced4674-c22a-4c5e-b0ad-c7fcb6f6954c",
+      "name": "Merge Finalize Context",
+      "parameters": {
+        "combineBy": "combineByPosition",
+        "mode": "combine",
+        "options": {}
+      },
+      "position": [
+        2240,
+        -48
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
+    },
+    {
+      "id": "e8f7ecd4-c0fe-45e9-8d4a-a31e9c7877f4",
+      "name": "Format Create Result Message",
+      "parameters": {
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/format-create-result-message__dca21952-7c6f-4587-8f86-5df9b4f7f70f.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/format-create-result-message__dca21952-7c6f-4587-8f86-5df9b4f7f70f.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        2464,
+        -48
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "id": "0c286f65-54b5-476f-8be6-03a5a07ea149",
+      "name": "Send Create Result Message",
+      "parameters": {
+        "additionalFields": {
+          "appendAttribution": false
+        },
+        "chatId": "={{ $json.telegram_chat_id }}",
+        "text": "={{ $json.telegram_message }}"
+      },
+      "position": [
+        2688,
+        -48
+      ],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-03-12T18:30:00.000Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-03-12T18:30:00.000Z",
+      "workflowId": "c3lNDV3YhV8m4N7Q2pRk"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-03-12T18:30:00.000Z",
+  "versionCounter": 1
+}

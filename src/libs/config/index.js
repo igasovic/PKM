@@ -76,6 +76,84 @@ const CONFIG_V1 = {
       ],
     },
   },
+  calendar: {
+    timezone: 'America/Chicago',
+    family_calendar_id: process.env.FAMILY_CALENDAR_ID || null,
+    recipient_email: process.env.FAMILY_CALENDAR_RECIPIENT_EMAIL || 'pkm.gasovic',
+    prefixes: {
+      calendar: 'cal:',
+      pkm: 'pkm:',
+    },
+    // v1 temporary actor policy is workflow-level; keep explicit config for backend hardening follow-up.
+    allowed_actor_codes: ['igor', 'danijela'],
+    people: {
+      order: ['M', 'Iv', 'L', 'Ig', 'D'],
+      family_alias: 'FAM',
+      map: {
+        mila: { code: 'M', color: 'purple', google_color_id: '3', telegram_marker: 'purple' },
+        iva: { code: 'Iv', color: 'yellow', google_color_id: '5', telegram_marker: 'yellow' },
+        louie: { code: 'L', color: 'orange', google_color_id: '6', telegram_marker: 'orange' },
+        igor: { code: 'Ig', color: 'blue', google_color_id: '9', telegram_marker: 'blue' },
+        danijela: { code: 'D', color: 'white', google_color_id: '1', telegram_marker: 'white' },
+        fam: { code: 'FAM', color: 'green', google_color_id: '10', telegram_marker: 'green' },
+      },
+      unresolved_external: {
+        color: 'grey',
+        telegram_marker: 'grey',
+      },
+    },
+    categories: {
+      FAM: 'family',
+      MED: 'medical',
+      HOME: 'home',
+      EVT: 'event',
+      KID: 'kids',
+      ADM: 'admin',
+      DOG: 'dog',
+      SCH: 'school',
+      TRV: 'travel',
+      OTH: 'other',
+    },
+    default_duration_minutes: {
+      FAM: 120,
+      MED: 60,
+      HOME: 60,
+      EVT: 120,
+      KID: 60,
+      ADM: 30,
+      DOG: 60,
+      SCH: 60,
+      TRV: 120,
+      OTH: 60,
+      fallback: 60,
+      birthday_override: 180,
+    },
+    padding: {
+      enabled: true,
+      before_minutes: 30,
+      after_minutes: 30,
+      home_literals: ['home'],
+    },
+    reporting: {
+      daily: {
+        hour_local: 5,
+        minute_local: 30,
+      },
+      weekly: {
+        weekday: 'sunday',
+        hour_local: 18,
+        minute_local: 30,
+      },
+    },
+    clarification: {
+      one_open_request_per_chat: true,
+      continuation_strategy: 'latest_open_in_chat',
+    },
+    create_rules: {
+      allow_all_day: false,
+      allow_recurrence: false,
+    },
+  },
   scoring: {
     ordering: ['score_desc', 'created_at_desc'],
 

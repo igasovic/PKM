@@ -1,0 +1,59 @@
+'use strict';
+
+const {
+  routeTelegramInput,
+  normalizeCalendarRequest,
+} = require('../../src/server/calendar-service.js');
+
+describe('calendar-service', () => {
+  test('routeTelegramInput identifies calendar query intent', () => {
+    const out = routeTelegramInput({
+      text: 'What do we have tomorrow on calendar?',
+    });
+    expect(out.route).toBe('calendar_query');
+    expect(out.confidence).toBeGreaterThanOrEqual(0.8);
+  });
+
+  test('routeTelegramInput identifies calendar create intent', () => {
+    const out = routeTelegramInput({
+      text: 'Mila dentist tomorrow at 3:00p',
+    });
+    expect(out.route).toBe('calendar_create');
+  });
+
+  test('normalizeCalendarRequest asks clarification when fields are missing', () => {
+    const out = normalizeCalendarRequest({
+      raw_text: 'birthday party Saturday',
+    });
+    expect(out.status).toBe('needs_clarification');
+    expect(out.missing_fields).toEqual(expect.arrayContaining(['start_time', 'people']));
+    expect(typeof out.clarification_question).toBe('string');
+  });
+
+  test('normalizeCalendarRequest builds ready payload with home no-padding rule', () => {
+    const out = normalizeCalendarRequest({
+      raw_text: 'Mila dentist tomorrow at 3:00p for 60 min at home',
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.subject_code).toContain('[M][MED]');
+    expect(out.normalized_event.block_window.padded).toBe(false);
+    expect(out.normalized_event.color_choice.logical_color).toBe('purple');
+  });
+
+  test('normalizeCalendarRequest collapses to FAM when all canonical people are present', () => {
+    const out = normalizeCalendarRequest({
+      raw_text: 'Mila Iva Louie Igor Danijela birthday party tomorrow at 1:00p',
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.subject_code).toContain('[FAM]');
+    expect(out.normalized_event.color_choice.logical_color).toBe('green');
+  });
+
+  test('normalizeCalendarRequest rejects all-day create in v1', () => {
+    const out = normalizeCalendarRequest({
+      raw_text: 'all-day Mila doctor appointment tomorrow',
+    });
+    expect(out.status).toBe('rejected');
+    expect(out.reason_code).toBe('all_day_not_supported');
+  });
+});

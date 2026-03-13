@@ -60,6 +60,8 @@ Schema grants (current):
 - `idempotency_policies` (~16 kB)
 - `pipeline_events` (size varies by retention)
 - `runtime_config` (~16 kB)
+- `calendar_requests` (size varies by family-calendar usage)
+- `calendar_event_observations` (size varies by read/report volume)
 - `t1_batches` (~16 kB)
 - `t1_batch_items` (~80 kB)
 - `t1_batch_item_results` (~8192 bytes)
@@ -88,6 +90,8 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 | `pkm.entries` | RIUD + TRUNCATE/REF/… | RIUD | R | — |
 | `pkm.pipeline_events` | full | RIUD | — | — |
 | `pkm.runtime_config` | full | RIUD | R | R |
+| `pkm.calendar_requests` | full | RIUD | — | — |
+| `pkm.calendar_event_observations` | full | RIUD | — | — |
 | `pkm.idempotency_policies` | full | RIUD | — | — |
 | `pkm.t1_batches` | full | RIUD | — | — |
 | `pkm.t1_batch_items` | full | RIUD | — | — |
@@ -166,6 +170,8 @@ Mirrored between `pkm` and `pkm_test`:
 
 - `pkm.runtime_config` exists **only in prod**.
   - It currently contains `is_test_mode = false` (jsonb boolean).
+- `pkm.calendar_requests` exists **only in prod** (calendar business-request log).
+- `pkm.calendar_event_observations` exists **only in prod** (external visibility/report observation log).
 
 ### Practical consequences for `/db/delete` and `/db/move`
 
@@ -360,6 +366,73 @@ Always-on lightweight transition logs for backend pipelines (step order, summari
 **Deployment note**
 - This table must exist in the backend-configured schema (`PKM_DB_SCHEMA`, default `pkm`).
 - Required app grants for backend role `pkm_ingest`: `SELECT, INSERT, UPDATE, DELETE`.
+
+---
+
+### `pkm.calendar_requests`
+
+**Purpose**
+Durable business log for Telegram calendar-create requests, including clarification turns and final create outcomes.
+
+**Columns**
+- `request_id` uuid PK default `gen_random_uuid()`
+- `created_at` timestamptz default now()
+- `updated_at` timestamptz default now()
+- `run_id` text NOT NULL
+- `source_system` text NOT NULL default `telegram`
+- `actor_code` text NOT NULL
+- `telegram_chat_id` text NOT NULL
+- `telegram_message_id` text NOT NULL
+- `route_intent` text
+- `route_confidence` numeric
+- `status` text NOT NULL
+- `raw_text` text NOT NULL
+- `clarification_turns` jsonb NOT NULL default `[]`
+- `normalized_event` jsonb
+- `warning_codes` jsonb
+- `error` jsonb
+- `google_calendar_id` text
+- `google_event_id` text
+- `idempotency_key_primary` text NOT NULL
+- `idempotency_key_secondary` text
+
+**Constraints / indexes**
+- PK: `(request_id)`
+- Unique: `(idempotency_key_primary)`
+- Partial unique: `(telegram_chat_id)` where `status = 'needs_clarification'` (one-open-request invariant)
+- Index: `(telegram_chat_id, updated_at DESC)`
+- CHECK: `status IN ('received','routed','needs_clarification','clarified','normalized','calendar_write_started','calendar_created','calendar_failed','query_answered','ignored')`
+
+**Routing rule**
+- This table is intentionally prod-only and is not affected by persisted `test_mode`.
+
+---
+
+### `pkm.calendar_event_observations`
+
+**Purpose**
+Append-only business log for externally authored events observed during calendar read/report workflows.
+
+**Columns**
+- `observation_id` uuid PK default `gen_random_uuid()`
+- `created_at` timestamptz default now()
+- `updated_at` timestamptz default now()
+- `run_id` text NOT NULL
+- `google_calendar_id` text NOT NULL
+- `google_event_id` text NOT NULL
+- `observation_kind` text NOT NULL
+- `source_type` text NOT NULL
+- `event_snapshot` jsonb NOT NULL
+- `resolved_people` jsonb
+- `resolved_color` text
+- `was_reported` boolean NOT NULL default false
+
+**Indexes**
+- `(google_calendar_id, google_event_id, created_at DESC)`
+- `(observation_kind, created_at DESC)`
+
+**Routing rule**
+- This table is intentionally prod-only and is not affected by persisted `test_mode`.
 
 ---
 

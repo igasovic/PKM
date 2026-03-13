@@ -31,6 +31,10 @@ const {
   stopTier2BatchWorker,
 } = require('./tier2-enrichment.js');
 const {
+  routeTelegramInput,
+  normalizeCalendarRequest,
+} = require('./calendar-service.js');
+const {
   createBatchStatusService,
 } = require('./batch-status-service.js');
 const { importEmailMbox } = require('./email-importer.js');
@@ -283,6 +287,286 @@ async function handleRequest(req, res) {
     } catch (err) {
       logError(err, req);
       return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/telegram/route') {
+    try {
+      requireAdminSecret(req);
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const routeResult = await logger.step(
+        'api.telegram.route',
+        async () => routeTelegramInput(body),
+        { input: body, output: (out) => out, meta: { route: url.pathname } }
+      );
+
+      const source = body && body.source && typeof body.source === 'object' ? body.source : {};
+      const actorCode = String(body.actor_code || body.actor || '').trim().toLowerCase() || 'unknown';
+      const chatId = String(source.chat_id || body.telegram_chat_id || '').trim();
+      const messageId = String(source.message_id || body.telegram_message_id || '').trim();
+      let requestRow = null;
+      if (chatId && messageId && ['calendar_create', 'calendar_query', 'ambiguous'].includes(routeResult.route)) {
+        requestRow = await db.upsertCalendarRequest({
+          run_id: body.run_id || (getRunContext() && getRunContext().run_id) || `tg-route-${Date.now()}`,
+          actor_code: actorCode,
+          telegram_chat_id: chatId,
+          telegram_message_id: messageId,
+          route_intent: routeResult.route,
+          route_confidence: routeResult.confidence,
+          status: 'routed',
+          raw_text: body.text || body.raw_text || '',
+          idempotency_key_primary: `tgcal:${chatId}:${messageId}`,
+          idempotency_key_secondary: null,
+        });
+      }
+
+      return json(res, 200, {
+        ...routeResult,
+        request_id: requestRow ? requestRow.request_id : null,
+      });
+    } catch (err) {
+      logError(err, req);
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      const errorCode = status === 403 ? 'forbidden' : 'bad_request';
+      return json(res, status, { error: errorCode, message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/calendar/normalize') {
+    try {
+      requireAdminSecret(req);
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+
+      const source = body && body.source && typeof body.source === 'object' ? body.source : {};
+      const runId = String(body.run_id || (getRunContext() && getRunContext().run_id) || '').trim() || `cal-norm-${Date.now()}`;
+      const actorCode = String(body.actor_code || body.actor || '').trim().toLowerCase() || 'unknown';
+      const incomingText = String(body.raw_text || body.text || '').trim();
+      const chatId = String(source.chat_id || body.telegram_chat_id || '').trim();
+      const messageId = String(source.message_id || body.telegram_message_id || '').trim();
+
+      let request = null;
+      if (body.request_id) {
+        request = await db.getCalendarRequestById(body.request_id);
+        if (!request) {
+          const err = new Error('request not found');
+          err.statusCode = 404;
+          throw err;
+        }
+      } else if (chatId) {
+        request = await db.getLatestOpenCalendarRequestByChat(chatId);
+      }
+
+      if (!request) {
+        if (!chatId || !messageId) {
+          throw new Error('telegram source chat_id and message_id are required for new calendar requests');
+        }
+        if (!incomingText) {
+          throw new Error('raw_text is required');
+        }
+        request = await db.upsertCalendarRequest({
+          run_id: runId,
+          actor_code: actorCode,
+          telegram_chat_id: chatId,
+          telegram_message_id: messageId,
+          route_intent: 'calendar_create',
+          route_confidence: Number.isFinite(Number(body.route_confidence)) ? Number(body.route_confidence) : null,
+          status: 'received',
+          raw_text: incomingText,
+          clarification_turns: [],
+          idempotency_key_primary: `tgcal:${chatId}:${messageId}`,
+          idempotency_key_secondary: null,
+        });
+      }
+
+      const baseText = request.raw_text || incomingText;
+      let clarificationTurns = Array.isArray(request.clarification_turns) ? request.clarification_turns : [];
+      if (request.status === 'needs_clarification' && incomingText) {
+        clarificationTurns = clarificationTurns.concat([{
+          question_text: String(body.question_text || '').trim() || null,
+          answer_text: incomingText,
+          timestamp: new Date().toISOString(),
+          actor: actorCode,
+          missing_fields_before: Array.isArray(body.missing_fields_before) ? body.missing_fields_before : null,
+          missing_fields_after: null,
+        }]);
+      }
+
+      const normalized = await logger.step(
+        'api.calendar.normalize',
+        async () => normalizeCalendarRequest({
+          raw_text: baseText,
+          clarification_turns: clarificationTurns,
+          timezone: body.timezone,
+        }),
+        {
+          input: {
+            request_id: request.request_id,
+            has_turns: clarificationTurns.length > 0,
+            actor_code: actorCode,
+          },
+          output: (out) => ({
+            status: out.status,
+            missing_fields: out.missing_fields,
+            has_event: !!out.normalized_event,
+          }),
+          meta: { route: url.pathname },
+        }
+      );
+
+      let requestUpdate = null;
+      if (normalized.status === 'needs_clarification') {
+        requestUpdate = await db.updateCalendarRequestById(request.request_id, {
+          run_id: runId,
+          status: 'needs_clarification',
+          clarification_turns: clarificationTurns,
+          warning_codes: normalized.warning_codes || null,
+          normalized_event: null,
+        });
+      } else if (normalized.status === 'ready_to_create') {
+        requestUpdate = await db.updateCalendarRequestById(request.request_id, {
+          run_id: runId,
+          status: 'normalized',
+          clarification_turns: clarificationTurns,
+          normalized_event: normalized.normalized_event,
+          warning_codes: normalized.warning_codes || null,
+          error: null,
+        });
+      } else {
+        requestUpdate = await db.updateCalendarRequestById(request.request_id, {
+          run_id: runId,
+          status: 'ignored',
+          clarification_turns: clarificationTurns,
+          warning_codes: normalized.warning_codes || null,
+          error: {
+            reason_code: normalized.reason_code || 'rejected',
+            message: normalized.message || null,
+          },
+        });
+      }
+
+      return json(res, 200, {
+        request_id: request.request_id,
+        status: normalized.status,
+        missing_fields: normalized.missing_fields || [],
+        clarification_question: normalized.clarification_question || null,
+        normalized_event: normalized.normalized_event || null,
+        warning_codes: normalized.warning_codes || [],
+        message: normalized.message || null,
+        request_status: requestUpdate ? requestUpdate.status : request.status,
+      });
+    } catch (err) {
+      logError(err, req);
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      const errorCode = status === 403
+        ? 'forbidden'
+        : status === 404
+          ? 'not_found'
+          : 'bad_request';
+      return json(res, status, { error: errorCode, message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/calendar/finalize') {
+    try {
+      requireAdminSecret(req);
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+
+      const requestId = body.request_id;
+      if (!requestId) throw new Error('request_id is required');
+      const status = String(
+        body.status
+        || body.final_status
+        || (body.success === true ? 'calendar_created' : (body.success === false ? 'calendar_failed' : ''))
+      ).trim();
+      if (!status) throw new Error('status is required');
+
+      const updated = await logger.step(
+        'api.calendar.finalize',
+        async () => db.finalizeCalendarRequestById(requestId, {
+          status,
+          run_id: body.run_id,
+          google_calendar_id: body.google_calendar_id,
+          google_event_id: body.google_event_id,
+          warning_codes: body.warning_codes,
+          error: body.error,
+        }),
+        {
+          input: {
+            request_id: requestId,
+            status,
+            google_event_id: body.google_event_id || null,
+          },
+          output: (out) => ({
+            status: out && out.status,
+            request_id: out && out.request_id,
+            finalize_action: out && out.finalize_action ? out.finalize_action : 'updated',
+          }),
+          meta: { route: url.pathname },
+        }
+      );
+
+      if (!updated) return json(res, 404, { error: 'not_found', message: 'request not found' });
+      return json(res, 200, {
+        request_id: updated.request_id,
+        status: updated.status,
+        google_calendar_id: updated.google_calendar_id || null,
+        google_event_id: updated.google_event_id || null,
+        finalize_action: updated.finalize_action || 'updated',
+      });
+    } catch (err) {
+      logError(err, req);
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      const errorCode = status === 403
+        ? 'forbidden'
+        : status === 404
+          ? 'not_found'
+          : 'bad_request';
+      return json(res, status, { error: errorCode, message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/calendar/observe') {
+    try {
+      requireAdminSecret(req);
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const runId = String(body.run_id || (getRunContext() && getRunContext().run_id) || '').trim();
+      const items = Array.isArray(body.items)
+        ? body.items
+        : (Array.isArray(body.observations) ? body.observations : [body]);
+      const payloadItems = items.map((item) => ({
+        ...(item && typeof item === 'object' ? item : {}),
+        run_id: (item && item.run_id) ? item.run_id : runId,
+      }));
+      const result = await logger.step(
+        'api.calendar.observe',
+        async () => db.insertCalendarObservations({ items: payloadItems }),
+        {
+          input: { count: payloadItems.length },
+          output: (out) => ({ inserted: Number(out && out.rowCount ? out.rowCount : 0) }),
+          meta: { route: url.pathname },
+        }
+      );
+      return json(res, 200, {
+        inserted: Number(result && result.rowCount ? result.rowCount : 0),
+        rows: result && Array.isArray(result.rows) ? result.rows : [],
+      });
+    } catch (err) {
+      logError(err, req);
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      const errorCode = status === 403 ? 'forbidden' : 'bad_request';
+      return json(res, status, { error: errorCode, message: err.message });
     }
   }
 
