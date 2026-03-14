@@ -125,6 +125,44 @@ preview_lines() {
   printf '%s\n' "$text" | sed -n "1,${max_lines}p"
 }
 
+format_n8n_output_line() {
+  local line="${1:-}"
+  if [[ -z "$line" ]]; then
+    printf '%s' "$line"
+    return 0
+  fi
+
+  # Shorten absolute n8n repo paths in output while keeping signal.
+  line="$(printf '%s' "$line" | sed -E \
+    -e 's#([^[:space:]]*/src/n8n/nodes/)#[...]/nodes/#g' \
+    -e 's#([^[:space:]]*/src/n8n/workflows/)#[...]/workflows/#g' \
+    -e 's#__([0-9a-f]{8})[0-9a-f-]*\.js#__\1….js#g')"
+
+  printf '%s' "$line"
+}
+
+add_update_detail_lines() {
+  local text="$1"
+  local prefix="${2:-}"
+  local line
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    line="$(format_n8n_output_line "$line")"
+    add_update_detail "${prefix}${line}"
+  done <<<"$text"
+}
+
+add_check_detail_lines() {
+  local text="$1"
+  local prefix="${2:-}"
+  local line
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    line="$(format_n8n_output_line "$line")"
+    add_check_detail "${prefix}${line}"
+  done <<<"$text"
+}
+
 array_contains() {
   local needle="$1"
   shift
@@ -671,7 +709,7 @@ check_surface_n8n() {
   progress_step "export one-shot n8n snapshot (normalized + raw)"
   if ! run_capture out "$CFG_N8N_SNAPSHOT_SCRIPT" "$tmp_workflows" "$tmp_raw"; then
     mark_check_blocked "n8n snapshot export failed."
-    add_check_detail "  $(preview_lines "$out" 20)"
+    add_check_detail_lines "$(preview_lines "$out" 80)" "  "
     rm -rf "$tmp_root"
     progress_fail "snapshot export failed"
     return 0
@@ -690,7 +728,7 @@ check_surface_n8n() {
   progress_step "externalize and sync code-node sources"
   if ! run_capture out "${sync_args[@]}"; then
     mark_check_blocked "n8n code-node sync failed."
-    add_check_detail "  $(preview_lines "$out" 20)"
+    add_check_detail_lines "$(preview_lines "$out" 120)" "  "
     rm -rf "$tmp_root"
     progress_fail "code-node sync failed"
     return 0
@@ -699,7 +737,7 @@ check_surface_n8n() {
   progress_step "normalize generated workflows"
   if ! run_capture out "$CFG_REPO_ROOT/scripts/n8n/normalize_workflows.sh" "$tmp_workflows"; then
     mark_check_blocked "n8n normalization failed."
-    add_check_detail "  $(preview_lines "$out" 20)"
+    add_check_detail_lines "$(preview_lines "$out" 80)" "  "
     rm -rf "$tmp_root"
     progress_fail "normalize failed"
     return 0
@@ -993,13 +1031,13 @@ update_surface_n8n() {
       record_changed_path "$CFG_REPO_N8N_NODES_DIR"
       add_update_detail "n8n pull sync completed"
     fi
-    add_update_detail "  $(preview_lines "$out" 20)"
+    add_update_detail_lines "$(preview_lines "$out" 40)" "  "
     progress_done "sync complete"
     return 0
   fi
 
   mark_update_blocked "n8n $mode sync failed"
-  add_update_detail "  $(preview_lines "$out" 20)"
+  add_update_detail_lines "$(preview_lines "$out" 200)" "  "
   progress_fail "sync failed"
 }
 
