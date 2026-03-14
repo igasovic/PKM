@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "687f6a4d-be8f-4ad4-968b-fec90a47838c",
+  "activeVersionId": "eb8861ad-0154-4114-84db-8bccf405ae55",
   "connections": {
     "Call 'Tier-1 Enhancement'": {
       "main": [
@@ -30,6 +30,17 @@
           {
             "index": 0,
             "node": "PKM Config",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Duplicate Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send 'duplicate' message",
             "type": "main"
           }
         ]
@@ -82,17 +93,6 @@
             "index": 0,
             "node": "PKM Insert",
             "type": "main"
-          }
-        ]
-      ]
-    },
-    "Format Duplicate Message": {
-      "main": [
-        [
-          {
-            "node": "Send 'duplicate' message",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -337,15 +337,15 @@
     {
       "id": "7ab7a2b4-4a8e-4ad8-9c58-b2c63c0a3d26",
       "name": "Format Duplicate Message",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nreturn [{ json: { ...$json, telegram_message: mdv2Message('Duplicate entry ' + entryId + ' processing stopped') } }];\n"
+      },
       "position": [
         704,
         -576
       ],
-      "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nreturn [{ json: { ...$json, telegram_message: mdv2Message('Duplicate entry ' + entryId + ' processing stopped') } }];\n"
-      }
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
@@ -381,6 +381,6 @@
   },
   "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2026-03-13T16:43:03.419Z",
-  "versionCounter": 349
+  "updatedAt": "2026-03-13T23:00:33.778Z",
+  "versionCounter": 379
 }

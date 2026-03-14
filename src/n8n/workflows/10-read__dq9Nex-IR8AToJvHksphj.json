@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "a85e9f49-6567-4eda-bcfd-afc70739dfc6",
+  "activeVersionId": "0dc0027d-906d-4f13-8625-ebec751201ae",
   "connections": {
     "Build Context Pack": {
       "main": [
@@ -1142,7 +1142,7 @@
       "id": "ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca",
       "name": "Format Distill Message",
       "parameters": {
-        "jsCode": "try {\n  const fn = require('/data/src/n8n/nodes/10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js');\n  return await fn({ $input, $json, $items, $node, $env, helpers });\n} catch (e) {\n  e.message = '[extjs:10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js] ' + e.message;\n  throw e;\n}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -1225,6 +1225,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-13T16:45:20.354Z",
-  "versionCounter": 349
+  "updatedAt": "2026-03-13T23:00:42.710Z",
+  "versionCounter": 378
 }

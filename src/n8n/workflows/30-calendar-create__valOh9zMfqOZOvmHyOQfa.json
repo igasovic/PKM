@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "3729103a-a926-43af-94ae-7b5bfb0d7c8a",
+  "activeVersionId": "eae47601-c212-49a3-b2ab-963c3da19f34",
   "connections": {
     "Build Google Event Payload": {
       "main": [
@@ -46,6 +46,17 @@
           {
             "index": 0,
             "node": "Send Calendar Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Google Calendar Check Conflicts": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Prepare Conflict Context",
             "type": "main"
           }
         ]
@@ -128,6 +139,22 @@
         ]
       ]
     },
+    "Prepare Conflict Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Google Calendar Create Event",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Merge Create Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Prepare Finalize Request": {
       "main": [
         [
@@ -179,33 +206,6 @@
           }
         ]
       ]
-    },
-    "Google Calendar Check Conflicts": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Prepare Conflict Context",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Prepare Conflict Context": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Google Calendar Create Event",
-            "type": "main"
-          },
-          {
-            "index": 0,
-            "node": "Merge Create Context",
-            "type": "main"
-          }
-        ]
-      ]
     }
   },
   "createdAt": "2026-03-13T04:53:08.825Z",
@@ -221,7 +221,7 @@
       },
       "position": [
         -224,
-        -96
+        -32
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -251,7 +251,7 @@
       },
       "position": [
         0,
-        -96
+        -32
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -264,7 +264,7 @@
       },
       "position": [
         224,
-        -96
+        -32
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -295,7 +295,7 @@
       },
       "position": [
         448,
-        -16
+        40
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -310,7 +310,7 @@
       },
       "position": [
         672,
-        -16
+        -32
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -399,7 +399,7 @@
       },
       "position": [
         896,
-        -16
+        -48
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -412,7 +412,7 @@
       },
       "position": [
         1120,
-        128
+        64
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -436,7 +436,7 @@
       },
       "position": [
         1344,
-        128
+        64
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -463,6 +463,7 @@
         }
       },
       "id": "d5f2cb9c-d4bf-4c84-bf9c-d6352c6b8cf4",
+      "maxTries": 2,
       "name": "Google Calendar Create Event",
       "onError": "continueRegularOutput",
       "parameters": {
@@ -481,13 +482,12 @@
         "start": "={{ $json.google_start }}"
       },
       "position": [
-        1344,
-        -128
+        1792,
+        -56
       ],
-      "type": "n8n-nodes-base.googleCalendar",
-      "typeVersion": 1.3,
       "retryOnFail": true,
-      "maxTries": 2
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3
     },
     {
       "id": "cde4af17-53d8-44f2-8fd2-0cd6e4e8de7e",
@@ -498,7 +498,7 @@
         "options": {}
       },
       "position": [
-        1568,
+        2016,
         -128
       ],
       "type": "n8n-nodes-base.merge",
@@ -508,10 +508,10 @@
       "id": "e114ec84-f1a4-4796-84a0-d4ec1229b304",
       "name": "Prepare Finalize Request",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst run = require('/data/src/n8n/nodes/30-calendar-create/prepare-finalize-request__4c9a5cd8-7c13-4ad8-8d1c-a10f2f23520b.js');\nreturn run({ $json, $input, $items, $execution, $env });\n"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/prepare-finalize-request__e114ec84-f1a4-4796-84a0-d4ec1229b304.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/prepare-finalize-request__e114ec84-f1a4-4796-84a0-d4ec1229b304.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1792,
+        2240,
         -128
       ],
       "type": "n8n-nodes-base.code",
@@ -542,8 +542,8 @@
         "url": "http://pkm-server:8080/calendar/finalize"
       },
       "position": [
-        2016,
-        -48
+        2464,
+        -56
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -557,8 +557,8 @@
         "options": {}
       },
       "position": [
-        2240,
-        -48
+        2688,
+        -128
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -570,8 +570,8 @@
         "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\nconst asArray = (value) => Array.isArray(value) ? value : [];\n\nconst parseSubject = (subject) => {\n  const s = asText(subject);\n  const m = s.match(/^\\[([^\\]]+)\\]\\[([^\\]]+)\\]\\s*(.+)$/);\n  if (!m) return { pretty: s || 'Event' };\n  return { pretty: asText(m[1]) + '/' + asText(m[2]) + ' ' + (asText(m[3]) || 'Event') };\n};\n\nconst status = asText($json.status || $json.final_status || $json.request_status);\nconst success = status === 'calendar_created' || $json.success === true;\nconst chatId = asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id));\n\nlet telegramMessage = '';\nif (success) {\n  const subjectRaw = asText($json.confirmation_subject || ($json.normalized_event && $json.normalized_event.subject_code) || 'Event');\n  const parsed = parseSubject(subjectRaw);\n  const start = asText($json.confirmation_block_start || (($json.normalized_event && $json.normalized_event.block_window)\n    ? $json.normalized_event.block_window.start_date_local + ' ' + $json.normalized_event.block_window.start_time_local\n    : ''));\n  const end = asText($json.confirmation_block_end || (($json.normalized_event && $json.normalized_event.block_window)\n    ? $json.normalized_event.block_window.end_date_local + ' ' + $json.normalized_event.block_window.end_time_local\n    : ''));\n\n  const lines = ['Calendar event created', parsed.pretty, start + ' -> ' + end];\n\n  const conflictCount = Number($json.conflict_count || 0);\n  if (Number.isFinite(conflictCount) && conflictCount > 0) {\n    lines.push('Potential conflicts: ' + conflictCount);\n    asArray($json.conflict_preview).map(asText).filter(Boolean).slice(0, 3).forEach((entry) => {\n      lines.push('- ' + entry);\n    });\n  }\n\n  telegramMessage = mdv2Message(lines.join('\\n').trim());\n} else {\n  const errorMessage = asText($json.error && $json.error.message) || asText($json.message) || 'Calendar event could not be created. Please retry.';\n  telegramMessage = mdv2Message(['Calendar event failed', errorMessage].join('\\n'));\n}\n\nreturn [{ json: { ...$json, telegram_chat_id: chatId, telegram_message: telegramMessage } }];\n"
       },
       "position": [
-        2464,
-        -48
+        2912,
+        -128
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -594,8 +594,8 @@
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        2688,
-        -48
+        3136,
+        -128
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -627,7 +627,7 @@
         "timeMin": "={{ $json.google_start }}"
       },
       "position": [
-        1136,
+        1344,
         -128
       ],
       "type": "n8n-nodes-base.googleCalendar",
@@ -637,10 +637,10 @@
       "id": "5bdbddf0-d8cf-4f5a-ae4d-f4cca9dc3f3d",
       "name": "Prepare Conflict Context",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst run = require('/data/src/n8n/nodes/30-calendar-create/prepare-conflict-context__ec57f2a4-7b67-4485-b6d3-3bf7a6b3b0d1.js');\nreturn run({ $json, $input, $items, $execution, $env });\n"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/prepare-conflict-context__5bdbddf0-d8cf-4f5a-ae4d-f4cca9dc3f3d.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/prepare-conflict-context__5bdbddf0-d8cf-4f5a-ae4d-f4cca9dc3f3d.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1248,
+        1568,
         -128
       ],
       "type": "n8n-nodes-base.code",
@@ -675,6 +675,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-13T16:43:09.925Z",
-  "versionCounter": 28
+  "updatedAt": "2026-03-14T19:33:24.560Z",
+  "versionCounter": 72
 }

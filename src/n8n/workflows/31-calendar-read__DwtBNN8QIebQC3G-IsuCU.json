@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "43d6b4c4-2e7c-4ac8-8aa4-a6835f70c215",
+  "activeVersionId": "a51bda30-90ac-46a0-8abc-727efbd7555f",
   "connections": {
     "Format Calendar Read Message": {
       "main": [
@@ -105,7 +105,7 @@
       },
       "position": [
         -224,
-        -96
+        -48
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -135,7 +135,7 @@
       },
       "position": [
         0,
-        -96
+        -48
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -148,7 +148,7 @@
       },
       "position": [
         224,
-        -96
+        -48
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -180,7 +180,7 @@
       },
       "position": [
         448,
-        -96
+        -48
       ],
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3
@@ -189,11 +189,11 @@
       "id": "7ec3a63a-4e24-4d8b-aa65-7644b31d6162",
       "name": "Format Calendar Read Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message='[extjs:31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js] '+e.message;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js] ${e.message}`;throw e;}"
       },
       "position": [
         672,
-        -96
+        -48
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -382,6 +382,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-13T16:43:10.345Z",
-  "versionCounter": 23
+  "updatedAt": "2026-03-14T19:33:42.077Z",
+  "versionCounter": 47
 }

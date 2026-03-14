@@ -134,7 +134,7 @@
       "id": "995314b7-3d8b-4f6d-9c9f-c59153259abc",
       "name": "Build Report Window",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/32-calendar-report/build-report-window__1d7fa7c9-3ac6-4b7e-bf0a-6e2e7789f31a.js');return await fn({$json:{...$json,report_kind:'weekly'},$input,$items,$node,$env,helpers});}catch(e){e.message='[extjs:32-calendar-report/build-report-window__1d7fa7c9-3ac6-4b7e-bf0a-6e2e7789f31a.js] '+e.message;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/33-calendar-weekly-report/build-report-window__995314b7-3d8b-4f6d-9c9f-c59153259abc.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:33-calendar-weekly-report/build-report-window__995314b7-3d8b-4f6d-9c9f-c59153259abc.js] ${e.message}`;throw e;}"
       },
       "position": [
         -672,
@@ -179,7 +179,7 @@
       "id": "17d546c7-033a-4190-951a-da2918721239",
       "name": "Format Calendar Report Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/32-calendar-report/format-calendar-report-message__58f6c53c-5dad-4d29-93d0-00dc8f7d5683.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message='[extjs:32-calendar-report/format-calendar-report-message__58f6c53c-5dad-4d29-93d0-00dc8f7d5683.js] '+e.message;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/33-calendar-weekly-report/format-calendar-report-message__17d546c7-033a-4190-951a-da2918721239.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:33-calendar-weekly-report/format-calendar-report-message__17d546c7-033a-4190-951a-da2918721239.js] ${e.message}`;throw e;}"
       },
       "position": [
         -224,
@@ -281,6 +281,7 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
   "shared": [
@@ -305,6 +306,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2026-03-13T18:50:38.666Z",
-  "versionCounter": 3
+  "updatedAt": "2026-03-13T23:00:45.342Z",
+  "versionCounter": 27
 }

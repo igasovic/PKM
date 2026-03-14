@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "15e5700f-ac52-425c-9f95-94a58143a89b",
+  "activeVersionId": "656a5d7e-f226-4b30-8876-9e10035a6ff5",
   "connections": {
     "Compose Message": {
       "main": [
@@ -70,7 +70,7 @@
       "id": "566912ab-5d96-4405-8443-6a296ef03366",
       "name": "Compose Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst run = require('/data/src/n8n/nodes/99-error-handling/compose-message__566912ab-5d96-4405-8443-6a296ef03366.js');\nreturn run({ $json, $input, $items, $execution, $env });\n"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/99-error-handling/compose-message__566912ab-5d96-4405-8443-6a296ef03366.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:99-error-handling/compose-message__566912ab-5d96-4405-8443-6a296ef03366.js] ${e.message}`;throw e;}"
       },
       "position": [
         -64,
@@ -107,6 +107,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-13T16:43:13.088Z",
-  "versionCounter": 150
+  "updatedAt": "2026-03-14T19:28:17.187Z",
+  "versionCounter": 183
 }

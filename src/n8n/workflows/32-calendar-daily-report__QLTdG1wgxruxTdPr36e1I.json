@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "94f3c299-aa2a-403b-b84e-68dd3becd5c7",
+  "activeVersionId": "77026b6a-6dcb-4947-a2bd-b356a7928eeb",
   "connections": {
     "Build Report Window": {
       "main": [
@@ -280,6 +280,7 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
   "shared": [
@@ -304,6 +305,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2026-03-13T18:50:10.185Z",
-  "versionCounter": 3
+  "updatedAt": "2026-03-13T23:00:44.940Z",
+  "versionCounter": 27
 }
