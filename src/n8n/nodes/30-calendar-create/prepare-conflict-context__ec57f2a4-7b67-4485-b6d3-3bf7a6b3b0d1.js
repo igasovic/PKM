@@ -5,9 +5,13 @@ module.exports = async function run(ctx) {
 
   const base = (() => {
     if (ctx.$items) {
-      const baseItems = ctx.$items('Build Google Event Payload');
-      if (Array.isArray(baseItems) && baseItems[0] && baseItems[0].json) {
-        return baseItems[0].json;
+      try {
+        const baseItems = ctx.$items('Build Google Event Payload');
+        if (Array.isArray(baseItems) && baseItems[0] && baseItems[0].json) {
+          return baseItems[0].json;
+        }
+      } catch (err) {
+        // Branch-safe fallback when "Build Google Event Payload" did not execute.
       }
     }
     return ctx.$json || {};

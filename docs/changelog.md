@@ -1,4 +1,15 @@
 # changelog
+## 2026-03-13 — Calendar conflict-context node branch-safe fallback
+
+### What changed
+- Fixed `Prepare Conflict Context` externalized node to handle branch paths where `Build Google Event Payload` was not executed.
+- Updated `src/n8n/nodes/30-calendar-create/prepare-conflict-context__ec57f2a4-7b67-4485-b6d3-3bf7a6b3b0d1.js`:
+  - wrapped `$items('Build Google Event Payload')` lookup in `try/catch`
+  - falls back to current `ctx.$json` instead of failing execution
+- Prevents runtime errors like:
+  - `Node 'Build Google Event Payload' hasn't been executed`
+  - downstream `ExecutionBaseError` wrapping failures
+
 ## 2026-03-13 — Error handling noise filter for IMAP trigger auto-deactivation
 
 ### What changed
