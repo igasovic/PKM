@@ -1,4 +1,17 @@
 # changelog
+## 2026-03-14 — Calendar finalize hardening for merged warning payloads
+
+### What changed
+- Hardened finalize helper to prevent false `calendar_failed` when Google event was created:
+  - `src/n8n/nodes/30-calendar-create/prepare-finalize-request__4c9a5cd8-7c13-4ad8-8d1c-a10f2f23520b.js`
+  - success now follows event id presence (`id`/`eventId`/`event_id`/`google_event_id`) unless explicit failure was set
+  - recovers missing `request_id` from event description line `PKM request id: ...` as fallback
+  - records non-blocking upstream warning as `calendar_non_blocking_warning` instead of failing finalize
+- Updated workflow node wrapper in:
+  - `src/n8n/workflows/30-calendar-create__valOh9zMfqOZOvmHyOQfa.json`
+- Added regression tests:
+  - `test/server/n8n.calendar-router-create.test.js`
+
 ## 2026-03-14 — Extraction clarification preference + normalize trace + router-owned continuation hardening
 
 ### What changed

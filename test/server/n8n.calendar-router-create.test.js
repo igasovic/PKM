@@ -101,6 +101,36 @@ describe('n8n calendar router/create helpers', () => {
     expect(row.error).toBeNull();
   });
 
+  test('prepare finalize request falls back to request id from description', async () => {
+    const out = await prepareFinalizeRequest({
+      $json: {
+        description: 'PKM request id: req-from-description\\nPKM source key: tgcal:1509032341:777',
+        id: 'google-event-2',
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.request_id).toBe('req-from-description');
+    expect(row.success).toBe(true);
+    expect(row.final_status).toBe('calendar_created');
+  });
+
+  test('prepare finalize request keeps success when non-blocking warning exists with event id', async () => {
+    const out = await prepareFinalizeRequest({
+      $json: {
+        request_id: 'req-1',
+        id: 'google-event-3',
+        error: "ERROR: This parameter's value is invalid. Please enter a valid mode.",
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.success).toBe(true);
+    expect(row.final_status).toBe('calendar_created');
+    expect(row.error).toBeNull();
+    expect(row.warning_codes).toContain('calendar_non_blocking_warning');
+  });
+
   test('prepare finalize request marks failure when id is missing', async () => {
     const out = await prepareFinalizeRequest({
       $json: {

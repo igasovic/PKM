@@ -508,7 +508,7 @@
       "id": "e114ec84-f1a4-4796-84a0-d4ec1229b304",
       "name": "Prepare Finalize Request",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n\n  const requestId = asText($json.request_id);\n  if (!requestId) throw new Error('request_id is required to finalize calendar create');\n\n  const eventId = asText($json.id || $json.eventId || $json.event_id || $json.google_event_id);\n  const nodeError = ($json && $json.error) ? $json.error : null;\n  const explicitFailure = $json.create_success === false;\n  const success = !explicitFailure && !!eventId && !nodeError;\n\n  const errorPayload = success\n    ? null\n    : {\n        code: nodeError ? 'google_create_failed' : 'google_event_id_missing',\n        message: nodeError && nodeError.message ? String(nodeError.message) : 'Google Calendar create did not return an event id',\n      };\n\n  return [{\n    json: {\n      ...$json,\n      success,\n      final_status: success ? 'calendar_created' : 'calendar_failed',\n      google_event_id: eventId || null,\n      error: errorPayload,\n    },\n  }];\n"
+        "jsCode": "'use strict';\n\nconst run = require('/data/src/n8n/nodes/30-calendar-create/prepare-finalize-request__4c9a5cd8-7c13-4ad8-8d1c-a10f2f23520b.js');\nreturn run({ $json, $input, $items, $execution, $env });\n"
       },
       "position": [
         1792,
