@@ -1,4 +1,29 @@
 # changelog
+## 2026-03-14 — Calendar display/timezone routing fixes
+
+### What changed
+- Routing rule update for short query alias:
+  - `src/server/telegram-router/routing.rules.js`
+  - `cal tomorrow` now routes to `calendar_query` (instead of PKM capture fallback)
+- Calendar title normalization update:
+  - `src/server/calendar/deterministic-extractor.js`
+  - removes bare-hour connectors like `at 5` from title text, preventing subjects like `Louie store at 5`
+- Calendar read message timezone/display hardening:
+  - `src/n8n/nodes/31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js`
+  - event time labels are rendered in configured calendar timezone (not host-local timezone)
+  - Telegram-authored coded events display original start label from subject code (for example `2:00p`) while retaining sort by event start
+- Calendar create payload timezone hardening:
+  - `src/n8n/workflows/30-calendar-create__valOh9zMfqOZOvmHyOQfa.json` (`Build Google Event Payload` and result message formatting)
+  - creates Google event timestamps with explicit UTC offset (`YYYY-MM-DDTHH:mm:ss±HH:MM`)
+  - create confirmation now preserves coded subject text (no `L/DOG` rewriting)
+- Added compatibility shims for older node-id paths still referenced by tests/tooling:
+  - under `src/n8n/nodes/01-telegram-router/`, `30-calendar-create/`, `31-calendar-read/`, `32-calendar-report/`
+- Updated tests/fixtures:
+  - `test/fixtures/calendar-evals/routing.json`
+  - `test/server/calendar-service.test.js`
+  - `test/server/n8n.calendar-read.test.js`
+  - `test/server/n8n.calendar-router-create.test.js`
+
 ## 2026-03-14 — Error workflow node-name resolution hardening (WF 99)
 
 ### What changed

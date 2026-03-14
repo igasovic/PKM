@@ -79,8 +79,8 @@ describe('n8n calendar router/create helpers', () => {
 
     const row = out[0].json;
     expect(row.google_calendar_id).toBe('family@group.calendar.google.com');
-    expect(row.google_start).toBe('2026-03-13T15:00:00');
-    expect(row.google_end).toBe('2026-03-13T16:00:00');
+    expect(row.google_start).toMatch(/^2026-03-13T15:00:00[+-]\d{2}:\d{2}$/);
+    expect(row.google_end).toMatch(/^2026-03-13T16:00:00[+-]\d{2}:\d{2}$/);
     expect(row.google_summary).toBe('[M][MED] 3:00p Mila dentist');
     expect(row.google_color_id).toBe('3');
   });

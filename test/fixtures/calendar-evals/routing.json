@@ -15,6 +15,11 @@
     "expect": { "route": "calendar_query" }
   },
   {
+    "name": "short cal alias query",
+    "input": { "text": "cal tomorrow" },
+    "expect": { "route": "calendar_query" }
+  },
+  {
     "name": "obvious calendar create",
     "input": { "text": "Mila dentist tomorrow at 3:00p" },
     "expect": { "route": "calendar_create" }

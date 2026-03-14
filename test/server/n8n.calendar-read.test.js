@@ -84,6 +84,8 @@ describe('n8n calendar read helpers', () => {
     expect(row.telegram_message).toContain('Events for tomorrow');
     expect(row.telegram_message).toContain('🟣');
     expect(row.telegram_message).toContain('⚫');
+    expect(row.telegram_message).toContain('3:00p \\[M\\]\\[MED\\] 3:00p Mila dentist');
+    expect(row.telegram_message).toContain('6:00p School parent meeting');
     expect(row.observe_items).toHaveLength(1);
     expect(row.observe_items[0]).toEqual(expect.objectContaining({
       google_event_id: 'evt-2',

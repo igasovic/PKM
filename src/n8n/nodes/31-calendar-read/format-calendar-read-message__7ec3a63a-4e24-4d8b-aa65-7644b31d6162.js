@@ -12,13 +12,23 @@ function asText(value) {
   return String(value === undefined || value === null ? '' : value).trim();
 }
 
-function parseEventStart(value) {
+function parseEventStart(value, displayTimezone) {
   if (!value || typeof value !== 'object') return { sortKey: '', label: 'time?' };
   if (value.dateTime) {
     const dt = new Date(value.dateTime);
     if (!Number.isNaN(dt.getTime())) {
-      const hh24 = dt.getHours();
-      const mm = dt.getMinutes();
+      const tz = asText(value.timeZone) || asText(displayTimezone) || 'America/Chicago';
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).formatToParts(dt);
+      const hh24 = Number((parts.find((p) => p.type === 'hour') || {}).value);
+      const mm = Number((parts.find((p) => p.type === 'minute') || {}).value);
+      if (!Number.isFinite(hh24) || !Number.isFinite(mm)) {
+        return { sortKey: value.dateTime, label: asText(value.dateTime) };
+      }
       const suffix = hh24 >= 12 ? 'p' : 'a';
       let hh12 = hh24 % 12;
       if (hh12 === 0) hh12 = 12;
@@ -38,6 +48,11 @@ function parseEventStart(value) {
 function peopleTagFromSummary(summary) {
   const m = String(summary || '').match(/^\[([^\]]+)\]/);
   return m ? m[1] : null;
+}
+
+function originalStartFromSummary(summary) {
+  const m = String(summary || '').match(/^\[[^\]]+\]\[[^\]]+\]\s+(\d{1,2}:\d{2}[ap])\b/i);
+  return m ? asText(m[1]).toLowerCase() : null;
 }
 
 function markerFromPeopleTag(tag) {
@@ -69,6 +84,7 @@ module.exports = async function run(ctx) {
 
   const base = Object.assign({}, contextRow || {}, rows[0] || {});
   const queryLabel = asText(base.query_label) || 'requested period';
+  const displayTimezone = asText(base.timezone || (base.config && base.config.calendar && base.config.calendar.timezone)) || 'America/Chicago';
   const chatId = asText(base.telegram_chat_id || (base.message && base.message.chat && base.message.chat.id));
   const requestId = asText(base.request_id) || null;
   const calendarId = asText(base.google_calendar_id) || null;
@@ -77,16 +93,18 @@ module.exports = async function run(ctx) {
     .filter((r) => r && (r.id || r.summary || (r.start && (r.start.dateTime || r.start.date))))
     .map((r) => {
       const summary = asText(r.summary) || '(untitled event)';
-      const start = parseEventStart(r.start);
-      const end = parseEventStart(r.end);
+      const start = parseEventStart(r.start, displayTimezone);
+      const end = parseEventStart(r.end, displayTimezone);
       const peopleTag = peopleTagFromSummary(summary);
       const marker = markerFromPeopleTag(peopleTag);
       const isTelegramAuthored = summary.startsWith('[');
+      const originalStart = originalStartFromSummary(summary);
       return {
         id: asText(r.id),
         summary,
         start,
         end,
+        displayLabel: isTelegramAuthored && originalStart ? originalStart : start.label,
         marker,
         isTelegramAuthored,
         raw: r,
@@ -100,7 +118,7 @@ module.exports = async function run(ctx) {
   } else {
     lines.push(`Events for ${queryLabel}:`);
     events.forEach((e) => {
-      lines.push(`${e.marker} ${e.start.label} ${e.summary}`);
+      lines.push(`${e.marker} ${e.displayLabel} ${e.summary}`);
     });
   }
 

@@ -17,9 +17,9 @@ function buildSignals(rawText) {
   const hasTimeLike = /\b(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)\b/.test(s) || /\b([01]?\d|2[0-3]):([0-5]\d)\b/.test(s);
 
   const hasCreateVerb = /\b(add|create|schedule|book|put|set|plan|remind|appointment|appt|dentist|doctor|meeting|party|practice|trip|flight|birthday)\b/.test(s);
-  const hasQueryVerb = /\b(what|show|list|do we have|have we got|anything|events?|schedule|calendar|plans?)\b/.test(s);
+  const hasQueryVerb = /\b(what|show|list|do we have|have we got|anything|events?|schedule|calendar|cal|plans?)\b/.test(s);
 
-  const hasCalendarWord = /\b(calendar|events?)\b/.test(s);
+  const hasCalendarWord = /\b(calendar|cal|events?)\b/.test(s);
 
   const querySignal = (
     (hasQueryVerb && (hasDateWord || hasWeekday || hasCalendarWord || hasDateLike))

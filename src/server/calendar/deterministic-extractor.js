@@ -240,6 +240,7 @@ function deriveTitle(rawText) {
   s = s.replace(/\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/ig, ' ');
   s = s.replace(/\b(at|on)\s+(?=(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)\b)/ig, ' ');
   s = s.replace(/\b(at|on)\s+\d{1,2}:\d{2}\b/ig, ' ');
+  s = s.replace(/\b(at|on)\s+\d{1,2}(?=\b)/ig, ' ');
   s = s.replace(/\bfor\s+\d{1,3}\s*(m|min|mins|minute|minutes)\b/ig, ' ');
   s = s.replace(/\bfor\s+\d{1,2}\s*(h|hr|hrs|hour|hours)\b/ig, ' ');
   s = s.replace(/\b(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)\b/ig, ' ');

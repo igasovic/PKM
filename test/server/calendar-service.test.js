@@ -96,4 +96,13 @@ describe('calendar-service', () => {
     expect(out.status).toBe('needs_clarification');
     expect(out.clarification_question).toContain('start time');
   });
+
+  test('normalizeCalendarRequestDeterministic removes bare-hour connector from title after clarification', () => {
+    const out = normalizeCalendarRequestDeterministic({
+      raw_text: 'Louie store tomorrow at 5 for 90min',
+      clarification_turns: [{ answer_text: '5pm' }],
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.title).toBe('Louie store');
+  });
 });
