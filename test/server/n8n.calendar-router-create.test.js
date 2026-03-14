@@ -223,4 +223,36 @@ describe('n8n calendar router/create helpers', () => {
     expect(row.conflict_count).toBe(0);
     expect(row.warning_codes).toEqual(['existing_warning']);
   });
+
+  test('prepare conflict context preserves upstream payload when conflict check returns error-only item', async () => {
+    const out = await prepareConflictContext({
+      $json: {
+        error: "ERROR: This parameter's value is invalid. Please enter a valid mode.",
+      },
+      $input: {
+        all: () => [{ json: { error: "ERROR: This parameter's value is invalid. Please enter a valid mode." } }],
+      },
+      $items: (name) => {
+        if (name === 'Build Google Event Payload') {
+          return [{
+            json: {
+              request_id: 'req-ctx-1',
+              google_calendar_id: 'pkm.gasovic@gmail.com',
+              google_start: '2026-03-15T13:30:00',
+              google_end: '2026-03-15T16:00:00',
+              google_summary: '[L][DOG] 2:00p Louie store at 2',
+            },
+          }];
+        }
+        return [];
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.request_id).toBe('req-ctx-1');
+    expect(row.google_calendar_id).toBe('pkm.gasovic@gmail.com');
+    expect(row.conflict_count).toBe(0);
+    expect(row.warning_codes).toContain('calendar_conflict_check_failed');
+    expect(row.warning_message).toContain('invalid. Please enter a valid mode');
+  });
 });

@@ -3,7 +3,8 @@
 module.exports = async function run(ctx) {
   const asText = (value) => String(value === undefined || value === null ? '' : value).trim();
 
-  const base = (() => {
+  const current = (ctx && ctx.$json) ? ctx.$json : {};
+  const upstream = (() => {
     if (ctx.$items) {
       try {
         const baseItems = ctx.$items('Build Google Event Payload');
@@ -14,8 +15,12 @@ module.exports = async function run(ctx) {
         // Branch-safe fallback when "Build Google Event Payload" did not execute.
       }
     }
-    return ctx.$json || {};
+    return {};
   })();
+  const base = {
+    ...upstream,
+    ...current,
+  };
 
   const rawItems = (ctx.$input && typeof ctx.$input.all === 'function') ? ctx.$input.all() : [];
 
@@ -54,9 +59,13 @@ module.exports = async function run(ctx) {
   const existingWarningCodes = Array.isArray(base.warning_codes)
     ? base.warning_codes.filter((value) => asText(value))
     : [];
+  const conflictCheckError = asText(base.error);
 
   if (conflicts.length > 0 && !existingWarningCodes.includes('calendar_conflict_possible')) {
     existingWarningCodes.push('calendar_conflict_possible');
+  }
+  if (conflictCheckError && !existingWarningCodes.includes('calendar_conflict_check_failed')) {
+    existingWarningCodes.push('calendar_conflict_check_failed');
   }
 
   return [{
@@ -65,6 +74,7 @@ module.exports = async function run(ctx) {
       conflict_count: conflicts.length,
       conflict_preview: conflicts.slice(0, 3),
       warning_codes: existingWarningCodes,
+      warning_message: conflictCheckError || asText(base.warning_message) || null,
     },
   }];
 };

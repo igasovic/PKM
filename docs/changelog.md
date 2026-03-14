@@ -15,6 +15,19 @@
 - Added tests:
   - `test/server/n8n.error-handling-message.test.js`
 
+## 2026-03-14 — Conflict-check error path keeps create payload (WF 30)
+
+### What changed
+- Hardened conflict-context builder:
+  - `src/n8n/nodes/30-calendar-create/prepare-conflict-context__ec57f2a4-7b67-4485-b6d3-3bf7a6b3b0d1.js`
+- Behavior on conflict-check error-only items:
+  - preserves upstream `Build Google Event Payload` fields (`request_id`, Google create fields, etc.)
+  - does not let the error-only check payload overwrite create payload
+  - adds `calendar_conflict_check_failed` warning code
+  - surfaces warning text in `warning_message`
+- Added regression test for this exact path:
+  - `test/server/n8n.calendar-router-create.test.js`
+
 ## 2026-03-14 — Calendar finalize hardening for merged warning payloads
 
 ### What changed
