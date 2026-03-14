@@ -1,4 +1,16 @@
 # changelog
+## 2026-03-14 — Router-owned clarification continuation override
+
+### What changed
+- Updated `POST /telegram/route` logic in `src/server/index.js` so continuation routing is owned by router API:
+  - structured checks run first (`/`, `cal:`, `pkm:`)
+  - only non-structured text is eligible for continuation override
+  - if latest open calendar request exists for the chat, route is forced to `calendar_create` and existing `request_id` is reused
+  - continuation reuse skips creating a new `calendar_requests` route row for the same turn
+- Added API contract tests in `test/server/calendar.api-contract.test.js`:
+  - continuation override for non-structured follow-up text
+  - no continuation override for structured prefix text
+
 ## 2026-03-14 — Hybrid Telegram routing + calendar extraction graphs
 
 ### What changed

@@ -156,6 +156,82 @@ describe('calendar API contract', () => {
     });
   });
 
+  test('POST /telegram/route routes continuation to calendar_create after structured checks', async () => {
+    routeMock.mockReturnValue({
+      route: 'pkm_capture',
+      confidence: 0.62,
+    });
+    dbMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
+      request_id: '5c8ceaa0-0f5f-4ec2-badf-3d663ae8c940',
+      status: 'needs_clarification',
+    });
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/telegram/route',
+      JSON.stringify({
+        text: 'at 3:00p tomorrow',
+        actor_code: 'igor',
+        source: { chat_id: '1509032341', message_id: '779' },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      }
+    );
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({
+      route: 'calendar_create',
+      confidence: 0.99,
+      clarification_question: null,
+      request_id: '5c8ceaa0-0f5f-4ec2-badf-3d663ae8c940',
+    });
+    expect(dbMock.upsertCalendarRequest).not.toHaveBeenCalled();
+    expect(dbMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
+  });
+
+  test('POST /telegram/route does not treat structured prefixes as continuation', async () => {
+    routeMock.mockReturnValue({
+      route: 'pkm_capture',
+      confidence: 1,
+    });
+    dbMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
+      request_id: '33f3e37b-f4a4-4437-a6e8-67ce7f2c227f',
+      status: 'needs_clarification',
+    });
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/telegram/route',
+      JSON.stringify({
+        text: 'pkm: private note',
+        actor_code: 'igor',
+        source: { chat_id: '1509032341', message_id: '780' },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      }
+    );
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({
+      route: 'pkm_capture',
+      confidence: 1,
+      request_id: null,
+    });
+    expect(dbMock.getLatestOpenCalendarRequestByChat).not.toHaveBeenCalled();
+  });
+
   test('POST /telegram/route downgrades PKM route for calendar-only sender when allowlist is enforced', async () => {
     process.env.CALENDAR_TELEGRAM_ENFORCE_ALLOWLIST = 'true';
     process.env.CALENDAR_TELEGRAM_ALLOWED_USER_IDS = '111,222';

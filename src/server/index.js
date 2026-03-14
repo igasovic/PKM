@@ -135,6 +135,25 @@ function bindRunIdFromBody(body) {
   setRunIdFromBody(body.run_id);
 }
 
+function asText(value) {
+  return String(value === undefined || value === null ? '' : value).trim();
+}
+
+function lower(value) {
+  return asText(value).toLowerCase();
+}
+
+function isStructuredTelegramRouteInput(rawText, prefixes) {
+  const s = lower(rawText);
+  if (!s) return false;
+  if (s.startsWith('/')) return true;
+
+  const p = prefixes && typeof prefixes === 'object' ? prefixes : {};
+  const calendarPrefix = lower(p.calendar || 'cal:') || 'cal:';
+  const pkmPrefix = lower(p.pkm || 'pkm:') || 'pkm:';
+  return s.startsWith(calendarPrefix) || s.startsWith(pkmPrefix);
+}
+
 async function handleRequest(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const method = (req.method || 'GET').toUpperCase();
@@ -302,20 +321,43 @@ async function handleRequest(req, res) {
       const body = parseJsonBody(raw);
       bindRunIdFromBody(body);
       const source = body && body.source && typeof body.source === 'object' ? body.source : {};
+      const actorCode = asText(body.actor_code || body.actor).toLowerCase() || 'unknown';
+      const chatId = asText(source.chat_id || body.telegram_chat_id);
+      const messageId = asText(source.message_id || body.telegram_message_id);
+      const rawText = asText(body.text || body.raw_text || body.message_text);
+      const config = getConfig();
+      const prefixes = config && config.calendar && config.calendar.prefixes
+        ? config.calendar.prefixes
+        : { calendar: 'cal:', pkm: 'pkm:' };
+      const structuredInput = isStructuredTelegramRouteInput(rawText, prefixes);
+
       const routeResult = await logger.step(
         'api.telegram.route',
         async () => routeTelegramInput(body),
         { input: body, output: (out) => out, meta: { route: url.pathname } }
       );
+
+      let continuationRequest = null;
+      if (!structuredInput && chatId) {
+        continuationRequest = await db.getLatestOpenCalendarRequestByChat(chatId);
+      }
+      const continuationRoute = continuationRequest
+        ? {
+          route: 'calendar_create',
+          confidence: 0.99,
+          clarification_question: null,
+        }
+        : null;
+
       const access = resolveTelegramAccess({
         telegram_user_id: source.user_id || body.telegram_user_id,
       });
-      const effectiveRoute = applyRouteAccessPolicy(routeResult, access);
-      const actorCode = String(body.actor_code || body.actor || '').trim().toLowerCase() || 'unknown';
-      const chatId = String(source.chat_id || body.telegram_chat_id || '').trim();
-      const messageId = String(source.message_id || body.telegram_message_id || '').trim();
+      const effectiveRoute = applyRouteAccessPolicy(continuationRoute || routeResult, access);
+
       let requestRow = null;
-      if (chatId && messageId && ['calendar_create', 'calendar_query', 'ambiguous'].includes(effectiveRoute.route)) {
+      if (continuationRequest) {
+        requestRow = continuationRequest;
+      } else if (chatId && messageId && ['calendar_create', 'calendar_query', 'ambiguous'].includes(effectiveRoute.route)) {
         requestRow = await db.upsertCalendarRequest({
           run_id: body.run_id || (getRunContext() && getRunContext().run_id) || `tg-route-${Date.now()}`,
           actor_code: actorCode,
@@ -324,7 +366,7 @@ async function handleRequest(req, res) {
           route_intent: effectiveRoute.route,
           route_confidence: effectiveRoute.confidence,
           status: 'routed',
-          raw_text: body.text || body.raw_text || '',
+          raw_text: rawText,
           idempotency_key_primary: `tgcal:${chatId}:${messageId}`,
           idempotency_key_secondary: null,
         });
