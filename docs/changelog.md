@@ -1,4 +1,20 @@
 # changelog
+## 2026-03-14 — Error workflow node-name resolution hardening (WF 99)
+
+### What changed
+- Externalized `99 Error Handling` compose node to:
+  - `src/n8n/nodes/99-error-handling/compose-message__566912ab-5d96-4405-8443-6a296ef03366.js`
+- Updated workflow wrapper:
+  - `src/n8n/workflows/99-error-handling__R2r3jkL5Rb39zKpyutwhW.json`
+- Improved node name extraction for Telegram alerts:
+  - reads nested `execution.error.*` fields
+  - parses node script path from stack traces like `/data/src/n8n/nodes/<wf>/<node>__<id>.js`
+  - parses `extjs:<wf>/<node>__<id>.js` style errors
+  - falls back cleanly when no signal exists
+- Kept IMAP auto-deactivation suppression and expanded match to use message text when node name is missing.
+- Added tests:
+  - `test/server/n8n.error-handling-message.test.js`
+
 ## 2026-03-14 — Calendar finalize hardening for merged warning payloads
 
 ### What changed
