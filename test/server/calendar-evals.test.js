@@ -14,18 +14,18 @@ function readFixture(name) {
 }
 
 describe('calendar eval fixtures', () => {
-  test('routing eval set', () => {
+  test('routing eval set', async () => {
     const rows = readFixture('routing.json');
-    rows.forEach((row) => {
-      const out = routeTelegramInput(row.input || {});
+    for (const row of rows) {
+      const out = await routeTelegramInput(row.input || {});
       expect(out.route).toBe(row.expect.route);
-    });
+    }
   });
 
-  test('normalization eval set', () => {
+  test('normalization eval set', async () => {
     const rows = readFixture('normalization.json');
-    rows.forEach((row) => {
-      const out = normalizeCalendarRequest(row.input || {});
+    for (const row of rows) {
+      const out = await normalizeCalendarRequest(row.input || {});
       const expected = row.expect || {};
 
       expect(out.status).toBe(expected.status);
@@ -54,13 +54,13 @@ describe('calendar eval fixtures', () => {
       if (expected.logical_color) {
         expect(out.normalized_event.color_choice.logical_color).toBe(expected.logical_color);
       }
-    });
+    }
   });
 
-  test('clarification eval set', () => {
+  test('clarification eval set', async () => {
     const rows = readFixture('clarification.json');
-    rows.forEach((row) => {
-      const out = normalizeCalendarRequest(row.input || {});
+    for (const row of rows) {
+      const out = await normalizeCalendarRequest(row.input || {});
       const expected = row.expect || {};
 
       expect(out.status).toBe(expected.status);
@@ -71,6 +71,6 @@ describe('calendar eval fixtures', () => {
       if (expected.subject_people_tag) {
         expect(out.normalized_event.subject_people_tag).toBe(expected.subject_people_tag);
       }
-    });
+    }
   });
 });

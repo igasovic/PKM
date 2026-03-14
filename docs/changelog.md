@@ -1,4 +1,26 @@
 # changelog
+## 2026-03-14 — Hybrid Telegram routing + calendar extraction graphs
+
+### What changed
+- Refactored backend calendar intent logic into dedicated graph modules:
+  - routing graph under `src/server/telegram-router/`
+  - extraction graph under `src/server/calendar/`
+- Added routing graph components:
+  - `src/server/telegram-router/routing.rules.js`
+  - `src/server/telegram-router/routing.prompt.js`
+  - `src/server/telegram-router/routing.schema.js`
+  - `src/server/telegram-router/routing.graph.js`
+- Added calendar extraction graph components:
+  - `src/server/calendar/extraction.prompt.js`
+  - `src/server/calendar/extraction.schema.js`
+  - `src/server/calendar/extraction.graph.js`
+  - deterministic validator/extractor moved to `src/server/calendar/deterministic-extractor.js`
+- Converted `src/server/calendar-service.js` into a compatibility facade that delegates to graph runners while preserving the existing API response contract shape.
+- Updated calendar service/eval tests to async graph-backed calls:
+  - `test/server/calendar-service.test.js`
+  - `test/server/calendar-evals.test.js`
+- Updated family-calendar PRD/work-package docs to formalize the hybrid graph architecture and module placement.
+
 ## 2026-03-13 — Calendar conflict-context node branch-safe fallback
 
 ### What changed

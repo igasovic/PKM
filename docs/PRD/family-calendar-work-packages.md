@@ -133,8 +133,12 @@ Introduce the backend calendar intent family without breaking the existing PKM T
 4. Add `POST /calendar/observe`.
 5. Keep `POST /normalize/telegram` unchanged for PKM capture.
 6. Route all LLM logic through LangGraph + LiteLLM.
-7. Require `x-pkm-admin-secret` on new calendar endpoints and on `POST /telegram/route`.
-8. Use shared logger and Braintrust conventions.
+7. Implement graph modules as dedicated components:
+   - `src/server/telegram-router/` for routing graph
+   - `src/server/calendar/` for calendar extraction graph
+8. Keep deterministic validation as final gate before create status.
+9. Require `x-pkm-admin-secret` on new calendar endpoints and on `POST /telegram/route`.
+10. Use shared logger and Braintrust conventions.
 
 ### Deliverables
 

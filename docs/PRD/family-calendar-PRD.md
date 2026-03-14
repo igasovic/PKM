@@ -302,6 +302,34 @@ Future improvement (explicitly not in v1):
 
 - reply-based linking to bind answers to a specific request thread
 
+### 8.6 Hybrid backend orchestration (implemented shape)
+
+Calendar routing and parsing use two small LangGraph graphs, not one monolith.
+
+Routing graph (`src/server/telegram-router/`):
+
+- `load`
+- `rule_gate`
+- `llm_route_if_needed`
+- `parse_route_result`
+- `write_log`
+
+Calendar extraction graph (`src/server/calendar/`):
+
+- `load`
+- `prompt`
+- `llm`
+- `parse`
+- `validate`
+- `write_log`
+
+Design constraints:
+
+- deterministic rules run first for routing
+- LLM routing is fallback-only when rule routing is unresolved
+- calendar extraction can use LLM field candidates, but deterministic validation remains the final create gate
+- both graphs must expose trace-ready outputs so eval harnesses can score routing and extraction quality without changing runtime architecture
+
 ---
 
 ## 9. Event normalization rules

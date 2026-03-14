@@ -6,23 +6,23 @@ const {
 } = require('../../src/server/calendar-service.js');
 
 describe('calendar-service', () => {
-  test('routeTelegramInput identifies calendar query intent', () => {
-    const out = routeTelegramInput({
+  test('routeTelegramInput identifies calendar query intent', async () => {
+    const out = await routeTelegramInput({
       text: 'What do we have tomorrow on calendar?',
     });
     expect(out.route).toBe('calendar_query');
     expect(out.confidence).toBeGreaterThanOrEqual(0.8);
   });
 
-  test('routeTelegramInput identifies calendar create intent', () => {
-    const out = routeTelegramInput({
+  test('routeTelegramInput identifies calendar create intent', async () => {
+    const out = await routeTelegramInput({
       text: 'Mila dentist tomorrow at 3:00p',
     });
     expect(out.route).toBe('calendar_create');
   });
 
-  test('normalizeCalendarRequest asks clarification when fields are missing', () => {
-    const out = normalizeCalendarRequest({
+  test('normalizeCalendarRequest asks clarification when fields are missing', async () => {
+    const out = await normalizeCalendarRequest({
       raw_text: 'birthday party Saturday',
     });
     expect(out.status).toBe('needs_clarification');
@@ -30,8 +30,8 @@ describe('calendar-service', () => {
     expect(typeof out.clarification_question).toBe('string');
   });
 
-  test('normalizeCalendarRequest builds ready payload with home no-padding rule', () => {
-    const out = normalizeCalendarRequest({
+  test('normalizeCalendarRequest builds ready payload with home no-padding rule', async () => {
+    const out = await normalizeCalendarRequest({
       raw_text: 'Mila dentist tomorrow at 3:00p for 60 min at home',
     });
     expect(out.status).toBe('ready_to_create');
@@ -40,16 +40,16 @@ describe('calendar-service', () => {
     expect(out.normalized_event.color_choice.logical_color).toBe('purple');
   });
 
-  test('normalizeCalendarRequest maps "appt" to MED category', () => {
-    const out = normalizeCalendarRequest({
+  test('normalizeCalendarRequest maps "appt" to MED category', async () => {
+    const out = await normalizeCalendarRequest({
       raw_text: 'Mila appt tomorrow at 3:00p',
     });
     expect(out.status).toBe('ready_to_create');
     expect(out.normalized_event.category_code).toBe('MED');
   });
 
-  test('normalizeCalendarRequest title excludes connector before time', () => {
-    const out = normalizeCalendarRequest({
+  test('normalizeCalendarRequest title excludes connector before time', async () => {
+    const out = await normalizeCalendarRequest({
       raw_text: 'Mila dentist tomorrow at 3:00p for 60 min',
     });
     expect(out.status).toBe('ready_to_create');
@@ -57,8 +57,8 @@ describe('calendar-service', () => {
     expect(out.normalized_event.subject_code).toContain('Mila dentist');
   });
 
-  test('normalizeCalendarRequest collapses to FAM when all canonical people are present', () => {
-    const out = normalizeCalendarRequest({
+  test('normalizeCalendarRequest collapses to FAM when all canonical people are present', async () => {
+    const out = await normalizeCalendarRequest({
       raw_text: 'Mila Iva Louie Igor Danijela birthday party tomorrow at 1:00p',
     });
     expect(out.status).toBe('ready_to_create');
@@ -66,8 +66,8 @@ describe('calendar-service', () => {
     expect(out.normalized_event.color_choice.logical_color).toBe('green');
   });
 
-  test('normalizeCalendarRequest rejects all-day create in v1', () => {
-    const out = normalizeCalendarRequest({
+  test('normalizeCalendarRequest rejects all-day create in v1', async () => {
+    const out = await normalizeCalendarRequest({
       raw_text: 'all-day Mila doctor appointment tomorrow',
     });
     expect(out.status).toBe('rejected');
