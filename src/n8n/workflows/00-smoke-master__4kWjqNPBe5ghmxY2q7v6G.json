@@ -1,0 +1,1414 @@
+{
+  "active": false,
+  "activeVersionId": null,
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Init Smoke Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Init Smoke Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Smoke Context": {
+      "main": [
+        [
+          {
+            "node": "Ensure PKM Test Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure PKM Test Mode": {
+      "main": [
+        [
+          {
+            "node": "T01 - Infra",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "T01 - Infra": {
+      "main": [
+        [
+          {
+            "node": "T02 - Public Ingress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "T02 - Public Ingress": {
+      "main": [
+        [
+          {
+            "node": "Build T03 Continue Fixture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T03 Continue Fixture": {
+      "main": [
+        [
+          {
+            "node": "Run T03 Continue Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T03 Continue Router": {
+      "main": [
+        [
+          {
+            "node": "Record T03 Continue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T03 Continue": {
+      "main": [
+        [
+          {
+            "node": "Build T03 Calendar Fixture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T03 Calendar Fixture": {
+      "main": [
+        [
+          {
+            "node": "Run T03 Calendar Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T03 Calendar Router": {
+      "main": [
+        [
+          {
+            "node": "Record T03 Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T03 Calendar": {
+      "main": [
+        [
+          {
+            "node": "Build T03 Ambiguous Fixture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T03 Ambiguous Fixture": {
+      "main": [
+        [
+          {
+            "node": "Run T03 Ambiguous Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T03 Ambiguous Router": {
+      "main": [
+        [
+          {
+            "node": "Record T03 Ambiguous",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T03 Ambiguous": {
+      "main": [
+        [
+          {
+            "node": "Build T03 Capture Fixture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T03 Capture Fixture": {
+      "main": [
+        [
+          {
+            "node": "Run T03 Capture Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T03 Capture Router": {
+      "main": [
+        [
+          {
+            "node": "Record T03 Capture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T03 Capture": {
+      "main": [
+        [
+          {
+            "node": "Build T04 Capture Fixture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T04 Capture Fixture": {
+      "main": [
+        [
+          {
+            "node": "Run T04 Telegram Capture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T04 Telegram Capture": {
+      "main": [
+        [
+          {
+            "node": "Record T04 Capture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T04 Capture": {
+      "main": [
+        [
+          {
+            "node": "Build T05 Email Fixture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T05 Email Fixture": {
+      "main": [
+        [
+          {
+            "node": "Run T05 Email Capture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T05 Email Capture": {
+      "main": [
+        [
+          {
+            "node": "Record T05 Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T05 Email": {
+      "main": [
+        [
+          {
+            "node": "Build T06 Pull Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T06 Pull Command": {
+      "main": [
+        [
+          {
+            "node": "Run T06 Pull",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T06 Pull": {
+      "main": [
+        [
+          {
+            "node": "Record T06 Pull",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T06 Pull": {
+      "main": [
+        [
+          {
+            "node": "Build T07 Continue Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T07 Continue Command": {
+      "main": [
+        [
+          {
+            "node": "Run T07 Continue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T07 Continue": {
+      "main": [
+        [
+          {
+            "node": "Record T07 Continue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T07 Continue": {
+      "main": [
+        [
+          {
+            "node": "Build T08 Distill Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T08 Distill Command": {
+      "main": [
+        [
+          {
+            "node": "Run T08 Distill",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T08 Distill": {
+      "main": [
+        [
+          {
+            "node": "Record T08 Distill",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T08 Distill": {
+      "main": [
+        [
+          {
+            "node": "Build T09 Delete Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T09 Delete Command": {
+      "main": [
+        [
+          {
+            "node": "Run T09 Delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T09 Delete": {
+      "main": [
+        [
+          {
+            "node": "Record T09 Delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T09 Delete": {
+      "main": [
+        [
+          {
+            "node": "Build T10 Calendar Create Fixture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T10 Calendar Create Fixture": {
+      "main": [
+        [
+          {
+            "node": "Run T10 Calendar Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T10 Calendar Create": {
+      "main": [
+        [
+          {
+            "node": "Record T10 Calendar Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T10 Calendar Create": {
+      "main": [
+        [
+          {
+            "node": "Build T10 Clarification Fixture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T10 Clarification Fixture": {
+      "main": [
+        [
+          {
+            "node": "Run T10 Clarification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T10 Clarification": {
+      "main": [
+        [
+          {
+            "node": "Record T10 Clarification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T10 Clarification": {
+      "main": [
+        [
+          {
+            "node": "Build T11 Calendar Read Fixture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build T11 Calendar Read Fixture": {
+      "main": [
+        [
+          {
+            "node": "Run T11 Calendar Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run T11 Calendar Read": {
+      "main": [
+        [
+          {
+            "node": "Record T11 Calendar Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record T11 Calendar Read": {
+      "main": [
+        [
+          {
+            "node": "T99 - Cleanup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "T99 - Cleanup": {
+      "main": [
+        [
+          {
+            "node": "Build Smoke Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Smoke Summary": {
+      "main": [
+        [
+          {
+            "node": "Send Smoke Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-03-14T21:18:13.434Z",
+  "description": null,
+  "isArchived": false,
+  "name": "00 Smoke - Master",
+  "nodes": [
+    {
+      "id": "6e06896e-628d-40fd-bca6-91eb0df34a43",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2208,
+        -224
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "3b835879-1cd3-493a-ba19-05924a249e56",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2208,
+        -32
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "633356e5-9128-42e3-bb27-6edb6d912f52",
+      "name": "Init Smoke Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1984,
+        -128
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst defaults = {\n  smoke_mode: true,\n  pkm_test_mode: true,\n  calendar_test_mode: true,\n  smoke_telegram_dry_run: true,\n  telegram_test_chat_id: '1509032341',\n  test_calendar_id: '831dca29672745da07709e8636e37b6241df174fca270982c66a046b915b2dc1@group.calendar.google.com',\n  prod_calendar_id: 'pkm.gasovic@gmail.com',\n  allow_test_calendar_purge: false,\n  public_ingress_path: 'pkm/smoke/ingress',\n};\nconst now = new Date();\nconst pad = (v) => String(v).padStart(2, '0');\nconst runId = [\n  'smoke',\n  now.getUTCFullYear(),\n  pad(now.getUTCMonth() + 1),\n  pad(now.getUTCDate()),\n  pad(now.getUTCHours()) + pad(now.getUTCMinutes()) + pad(now.getUTCSeconds()),\n].join('_');\n\nreturn [{\n  json: {\n    ...defaults,\n    test_run_id: runId,\n    started_at: now.toISOString(),\n    results: [],\n    artifacts: {},\n    smoke_mode: true,\n    pkm_test_mode: true,\n    calendar_test_mode: true,\n  },\n}];"
+      }
+    },
+    {
+      "id": "7d7b6520-f2bf-4c8a-899e-08c5ba1c972b",
+      "name": "Ensure PKM Test Mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1760,
+        -128
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst headers = { 'X-PKM-Run-Id': String(base.test_run_id || '') };\nlet prior = null;\nlet ok = false;\nlet error = null;\n\ntry {\n  const stateRows = await helpers.httpRequest({\n    method: 'GET',\n    url: 'http://pkm-server:8080/db/test-mode',\n    headers,\n    json: true,\n  });\n  const first = Array.isArray(stateRows) ? stateRows[0] : null;\n  prior = !!(first && first.is_test_mode === true);\n\n  if (!prior) {\n    await helpers.httpRequest({\n      method: 'POST',\n      url: 'http://pkm-server:8080/db/test-mode/toggle',\n      headers,\n      json: true,\n      body: {},\n    });\n  }\n  ok = true;\n} catch (e) {\n  error = { message: String(e && e.message ? e.message : e) };\n}\n\nresults.push({\n  test_case: 'T00-test-mode-setup',\n  ok,\n  run_id: base.test_run_id || null,\n  artifacts: { prior_test_mode: prior },\n  assertions: [\n    { name: 'test_mode_state_read', ok: prior !== null },\n    { name: 'test_mode_enabled_for_run', ok },\n  ],\n  error,\n});\n\nreturn [{ json: { ...base, prior_test_mode: prior, results } }];"
+      }
+    },
+    {
+      "id": "0177c9b0-6285-460f-8406-88703b132f73",
+      "name": "T01 - Infra",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1536,
+        -128
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst headers = { 'X-PKM-Run-Id': String(base.test_run_id || '') };\n\nlet health = null;\nlet ready = null;\nlet probe = null;\nlet error = null;\n\ntry {\n  health = await helpers.httpRequest({ method: 'GET', url: 'http://pkm-server:8080/health', headers, json: true });\n  ready = await helpers.httpRequest({ method: 'GET', url: 'http://pkm-server:8080/ready', headers, json: true });\n  probe = await helpers.httpRequest({\n    method: 'POST',\n    url: 'http://pkm-server:8080/db/read/last',\n    headers,\n    json: true,\n    body: { q: 'smoke', days: 7, limit: 1 },\n  });\n} catch (e) {\n  error = { message: String(e && e.message ? e.message : e) };\n}\n\nconst assertions = [\n  { name: 'health_status_ok', ok: !!health && health.status === 'ok' },\n  { name: 'ready_status_ok', ok: !!ready && ready.status === 'ready' },\n  { name: 'db_probe_completed', ok: error == null && (Array.isArray(probe) || probe != null) },\n];\nconst ok = assertions.every((a) => a.ok === true);\n\nresults.push({\n  test_case: 'T01-infra',\n  ok,\n  run_id: base.test_run_id || null,\n  artifacts: {\n    health: health || null,\n    ready: ready || null,\n  },\n  assertions,\n  error,\n});\n\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "7e11dec5-42b7-4e08-8ba4-c8397c1dd23f",
+      "name": "T02 - Public Ingress",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1312,
+        -128
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nlet response = null;\nlet error = null;\n\nconst ingressPath = String(base.public_ingress_path || 'pkm/smoke/ingress').replace(/^\\/+/, '');\nconst url = 'https://n8n-hook.gasovic.com/' + ingressPath;\n\ntry {\n  response = await helpers.httpRequest({\n    method: 'POST',\n    url,\n    json: true,\n    timeout: 30000,\n    body: {\n      smoke: true,\n      test_run_id: base.test_run_id || null,\n      ts: new Date().toISOString(),\n    },\n  });\n} catch (e) {\n  error = { message: String(e && e.message ? e.message : e) };\n}\n\nconst assertions = [\n  { name: 'public_webhook_called', ok: !error },\n  { name: 'public_webhook_ok', ok: !!response && response.ok === true },\n];\nconst ok = assertions.every((a) => a.ok === true);\n\nresults.push({\n  test_case: 'T02-public-ingress',\n  ok,\n  run_id: base.test_run_id || null,\n  artifacts: {\n    ingress_url: url,\n    ingress_response: response || null,\n  },\n  assertions,\n  error,\n});\n\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "eb21f8f1-0f99-4ad6-9cf5-2d2b1f97945b",
+      "name": "Build T03 Continue Fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        -384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst fixture = {\n  update_id: 235792334,\n  message: {\n    message_id: 1497,\n    from: { id: 1509032341, is_bot: false, first_name: 'igorg', username: 'igorg89', language_code: 'en' },\n    chat: { id: 1509032341, first_name: 'igorg', username: 'igorg89', type: 'private' },\n    date: 1773518809,\n    text: '/continue ai',\n    entities: [{ offset: 0, length: 9, type: 'bot_command' }],\n  },\n};\nreturn [{ json: { ...base, ...fixture, smoke_mode: true, smoke_case: 'router_continue_ai', smoke_expected_route: 'read', current_test_case: 'T03-router-continue', smoke_telegram_dry_run: true } }];"
+      }
+    },
+    {
+      "id": "a6d9e8ce-cb24-419e-afb1-1d8c75a27833",
+      "name": "Run T03 Continue Router",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -864,
+        -384
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "NgZy8xU5XGXrBeBjl2cp",
+          "cachedResultName": "01 Telegram Router",
+          "cachedResultUrl": "/workflow/NgZy8xU5XGXrBeBjl2cp"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "55f8683e-a7b7-49de-b44d-7d49f22d0c0d",
+      "name": "Record T03 Continue",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        -384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst caseName = base.current_test_case || 'T03-router-continue';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'router_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "d51b218c-a0ee-465f-af79-b6dc9092d5a4",
+      "name": "Build T03 Calendar Fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        -128
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst fixture = {\n  update_id: 235792328,\n  message: {\n    message_id: 1485,\n    from: { id: 1509032341, is_bot: false, first_name: 'igorg', username: 'igorg89', language_code: 'en' },\n    chat: { id: 1509032341, first_name: 'igorg', username: 'igorg89', type: 'private' },\n    date: 1773517641,\n    text: 'cal: Louie store tomorrow at 2pm for 90min',\n  },\n};\nreturn [{ json: { ...base, ...fixture, smoke_mode: true, smoke_case: 'router_calendar_create', smoke_expected_route: 'calendar_create', current_test_case: 'T03-router-calendar', smoke_telegram_dry_run: true } }];"
+      }
+    },
+    {
+      "id": "21689e22-802e-4fe3-ba12-bb541514b765",
+      "name": "Run T03 Calendar Router",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -864,
+        -128
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "NgZy8xU5XGXrBeBjl2cp",
+          "cachedResultName": "01 Telegram Router",
+          "cachedResultUrl": "/workflow/NgZy8xU5XGXrBeBjl2cp"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "e5f4e4a6-f51e-4d70-afb0-8449ee2e99a9",
+      "name": "Record T03 Calendar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        -128
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst caseName = base.current_test_case || 'T03-router-calendar';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'router_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "f4fc79cd-cde1-4131-b529-9c1a73d5fb78",
+      "name": "Build T03 Ambiguous Fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        128
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst fixture = {\n  update_id: 235792339,\n  message: {\n    message_id: 1501,\n    from: { id: 1509032341, is_bot: false, first_name: 'igorg', username: 'igorg89', language_code: 'en' },\n    chat: { id: 1509032341, first_name: 'igorg', username: 'igorg89', type: 'private' },\n    date: 1773519950,\n    text: 'can you handle this for tomorrow',\n  },\n};\nreturn [{ json: { ...base, ...fixture, smoke_mode: true, smoke_case: 'router_ambiguous', smoke_expected_route: 'ambiguous', current_test_case: 'T03-router-ambiguous', smoke_telegram_dry_run: true } }];"
+      }
+    },
+    {
+      "id": "52cd124e-998e-47bf-b525-1ed94e082dff",
+      "name": "Run T03 Ambiguous Router",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -864,
+        128
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "NgZy8xU5XGXrBeBjl2cp",
+          "cachedResultName": "01 Telegram Router",
+          "cachedResultUrl": "/workflow/NgZy8xU5XGXrBeBjl2cp"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "b5716384-e687-4135-a098-c01363b0613c",
+      "name": "Record T03 Ambiguous",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        128
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst caseName = base.current_test_case || 'T03-router-ambiguous';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'router_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "c1ce1dbc-528e-42d3-b193-5719ed3d8800",
+      "name": "Build T03 Capture Fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst fixture = {\n  update_id: 235792350,\n  message: {\n    message_id: 1514,\n    from: { id: 1509032341, is_bot: false, first_name: 'igorg', username: 'igorg89', language_code: 'en' },\n    chat: { id: 1509032341, first_name: 'igorg', username: 'igorg89', type: 'private' },\n    date: 1773520400,\n    text: 'Capture smoke note: parser and routing seem stable today',\n  },\n};\nreturn [{ json: { ...base, ...fixture, smoke_mode: true, smoke_case: 'router_capture', smoke_expected_route: 'pkm_capture', current_test_case: 'T03-router-capture', smoke_telegram_dry_run: true } }];"
+      }
+    },
+    {
+      "id": "7a453e7b-cd3c-470b-b4ea-0022256c20c2",
+      "name": "Run T03 Capture Router",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -864,
+        384
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "NgZy8xU5XGXrBeBjl2cp",
+          "cachedResultName": "01 Telegram Router",
+          "cachedResultUrl": "/workflow/NgZy8xU5XGXrBeBjl2cp"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "cac1d45a-67fe-48d4-996a-14901dfcf205",
+      "name": "Record T03 Capture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst caseName = base.current_test_case || 'T03-router-capture';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'router_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "350b772b-53b1-44b0-87cd-34dd28d44611",
+      "name": "Build T04 Capture Fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst fixture = {\n  update_id: 235792351,\n  message: {\n    message_id: 1515,\n    from: { id: 1509032341, is_bot: false, first_name: 'igorg', username: 'igorg89', language_code: 'en' },\n    chat: { id: 1509032341, first_name: 'igorg', username: 'igorg89', type: 'private' },\n    date: 1773520405,\n    text: 'Interesting read on retrieval systems https://example.com/retrieval-playbook',\n  },\n};\nreturn [{ json: { ...base, ...fixture, smoke_mode: true, smoke_case: 'telegram_capture', current_test_case: 'T04-telegram-capture', smoke_telegram_dry_run: true } }];"
+      }
+    },
+    {
+      "id": "c695d71a-a2a5-4bbc-b483-0750b65d62a2",
+      "name": "Run T04 Telegram Capture",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        384
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "EWyb1cTmqDlKY2pIyqULN",
+          "cachedResultName": "02 Telegram Capture",
+          "cachedResultUrl": "/workflow/EWyb1cTmqDlKY2pIyqULN"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "9564cc73-01be-4972-9b7f-cebde2e5e4e5",
+      "name": "Record T04 Capture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst artifacts = { ...(base.artifacts || {}) };\nconst caseName = base.current_test_case || 'T04-telegram-capture';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'capture_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nconst resultArtifacts = base.artifacts && base.artifacts.entry_id ? base.artifacts : (base.artifacts || {});\nif (resultArtifacts.entry_id) artifacts.telegram_capture_entry_id = resultArtifacts.entry_id;\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: resultArtifacts, assertions, error: base.error || null });\nreturn [{ json: { ...base, results, artifacts } }];"
+      }
+    },
+    {
+      "id": "765ace08-272c-466b-a5d4-0f2eb245c529",
+      "name": "Build T05 Email Fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst fixture = {\n  from: 'Seth Godin <seth@example.com>',\n  subject: 'The practice of shipping',\n  date: '2026-03-14T10:00:00Z',\n  textPlain: 'Shipping is a discipline. You can choose to publish before perfect and iterate in public.',\n};\nreturn [{ json: { ...base, ...fixture, smoke_mode: true, smoke_case: 'email_capture', current_test_case: 'T05-email-capture', smoke_telegram_dry_run: true } }];"
+      }
+    },
+    {
+      "id": "2f286790-5727-4f03-90a0-afe7e3eac09e",
+      "name": "Run T05 Email Capture",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        384
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "D7ZqryewKY23am6l",
+          "cachedResultName": "03 E-Mail Capture",
+          "cachedResultUrl": "/workflow/D7ZqryewKY23am6l"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "962321d1-ba35-4b14-aa49-93d6edb34472",
+      "name": "Record T05 Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst artifacts = { ...(base.artifacts || {}) };\nconst caseName = base.current_test_case || 'T05-email-capture';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'email_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nconst resultArtifacts = base.artifacts && base.artifacts.entry_id ? base.artifacts : (base.artifacts || {});\nif (resultArtifacts.entry_id) artifacts.email_capture_entry_id = resultArtifacts.entry_id;\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: resultArtifacts, assertions, error: base.error || null });\nreturn [{ json: { ...base, results, artifacts } }];"
+      }
+    },
+    {
+      "id": "05960bcb-3c48-4979-9209-7612d992656f",
+      "name": "Build T06 Pull Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst entryId = (($json.artifacts || {}).telegram_capture_entry_id || '').toString().trim();\nconst messageText = entryId ? ('/pull ' + entryId) : '/pull 1';\nreturn [{ json: { ...base, current_test_case: 'T06-pull', smoke_mode: true, smoke_case: 'pull', smoke_telegram_dry_run: true, message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
+      }
+    },
+    {
+      "id": "735ba36f-94a4-4b3d-b3cf-90185638a4d5",
+      "name": "Run T06 Pull",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1152,
+        384
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "dq9Nex-IR8AToJvHksphj",
+          "cachedResultName": "10 Read",
+          "cachedResultUrl": "/workflow/dq9Nex-IR8AToJvHksphj"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "6dcf29d3-341a-46bb-830d-589453ef4cd4",
+      "name": "Record T06 Pull",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T06-pull';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'pull_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "4fc384ef-f9fc-47b7-9d19-642f4980b8a6",
+      "name": "Build T07 Continue Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst fixture = {\n  message: {\n    text: '/continue ai',\n    chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id },\n    from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id },\n  },\n  telegram_chat_id: String(base.telegram_test_chat_id || ''),\n};\nreturn [{ json: { ...base, ...fixture, smoke_mode: true, smoke_case: 'continue', current_test_case: 'T07-continue', smoke_telegram_dry_run: true } }];"
+      }
+    },
+    {
+      "id": "88faecc0-2c0e-4ba1-87e0-b4c1f258850f",
+      "name": "Run T07 Continue",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1824,
+        384
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "dq9Nex-IR8AToJvHksphj",
+          "cachedResultName": "10 Read",
+          "cachedResultUrl": "/workflow/dq9Nex-IR8AToJvHksphj"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "4b9bcd07-30e2-4edf-8674-cbfa1ca3e895",
+      "name": "Record T07 Continue",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2048,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T07-continue';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'continue_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "f31ca726-5a9e-450e-8dae-b8df914696d6",
+      "name": "Build T08 Distill Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2272,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst entryId = (($json.artifacts || {}).telegram_capture_entry_id || '').toString().trim();\nconst messageText = entryId ? ('/distill ' + entryId) : '/distill 1';\nreturn [{ json: { ...base, current_test_case: 'T08-distill', smoke_mode: true, smoke_case: 'distill', smoke_telegram_dry_run: true, message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
+      }
+    },
+    {
+      "id": "4e2c51e7-6c62-4768-bede-a157e8d3000d",
+      "name": "Run T08 Distill",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2496,
+        384
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "dq9Nex-IR8AToJvHksphj",
+          "cachedResultName": "10 Read",
+          "cachedResultUrl": "/workflow/dq9Nex-IR8AToJvHksphj"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "787ba787-935f-48cb-8be6-a9b8a58df28e",
+      "name": "Record T08 Distill",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T08-distill';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'distill_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "e0563ce2-6eea-42b3-8148-4cb58f26ded5",
+      "name": "Build T09 Delete Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2944,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst artifacts = $json.artifacts || {};\nconst ids = [artifacts.telegram_capture_entry_id, artifacts.email_capture_entry_id].filter((v) => !!v).map((v) => String(v));\nconst idList = ids.length ? ids.join(',') : '1';\nconst messageText = '/delete test ' + idList + ' --force';\nreturn [{ json: { ...base, current_test_case: 'T09-delete', smoke_mode: true, smoke_case: 'delete', smoke_telegram_dry_run: true, message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
+      }
+    },
+    {
+      "id": "5e8f80e1-6c23-427c-9ad4-13c3e75c75e3",
+      "name": "Run T09 Delete",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        3168,
+        384
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "dq9Nex-IR8AToJvHksphj",
+          "cachedResultName": "10 Read",
+          "cachedResultUrl": "/workflow/dq9Nex-IR8AToJvHksphj"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "a060c1a9-0c71-458d-91b3-ef9d82404663",
+      "name": "Record T09 Delete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3392,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T09-delete';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'delete_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "dec54d69-0203-4586-aa63-e05999b0c74b",
+      "name": "Build T10 Calendar Create Fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3616,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst fixture = {\n  message: {\n    text: 'cal: Louie store tomorrow at 2pm for 90min',\n    chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id },\n    from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id },\n  },\n  telegram_chat_id: String(base.telegram_test_chat_id || ''),\n  telegram_message_id: '3001',\n  actor_code: 'igor',\n};\nreturn [{ json: { ...base, ...fixture, smoke_mode: true, smoke_case: 'calendar_create', current_test_case: 'T10-calendar-create', smoke_telegram_dry_run: true, calendar_test_mode: true, test_calendar_id: $json.test_calendar_id, prod_calendar_id: $json.prod_calendar_id, test_run_id: $json.test_run_id } }];"
+      }
+    },
+    {
+      "id": "29952227-efbc-4e0b-b752-620ba2eb72c4",
+      "name": "Run T10 Calendar Create",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        3840,
+        384
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "valOh9zMfqOZOvmHyOQfa",
+          "cachedResultName": "30 Calendar Create",
+          "cachedResultUrl": "/workflow/valOh9zMfqOZOvmHyOQfa"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "6b60115e-31de-41d6-952e-bef5941dad0f",
+      "name": "Record T10 Calendar Create",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4064,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const artifacts = { ...(base.artifacts || {}) }; const caseName = base.current_test_case || 'T10-calendar-create';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'calendar_create_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nconst resultArtifacts = base.artifacts || {};\nif (resultArtifacts.google_event_id) artifacts.calendar_event_id = resultArtifacts.google_event_id;\nif (resultArtifacts.request_id) artifacts.calendar_request_id = resultArtifacts.request_id;\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: resultArtifacts, assertions, error: base.error || null });\nreturn [{ json: { ...base, results, artifacts } }];"
+      }
+    },
+    {
+      "id": "c12dcc01-b448-40d5-a522-c035be4b7897",
+      "name": "Build T10 Clarification Fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4288,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst fixture = {\n  message: {\n    text: 'cal: Louie store tomorrow',\n    chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id },\n    from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id },\n  },\n  telegram_chat_id: String(base.telegram_test_chat_id || ''),\n  telegram_message_id: '3002',\n  actor_code: 'igor',\n};\nreturn [{ json: { ...base, ...fixture, smoke_mode: true, smoke_case: 'calendar_create_clarify', current_test_case: 'T10-calendar-clarify', smoke_telegram_dry_run: true, calendar_test_mode: true, test_calendar_id: $json.test_calendar_id, prod_calendar_id: $json.prod_calendar_id, test_run_id: $json.test_run_id } }];"
+      }
+    },
+    {
+      "id": "ab9f5822-6504-42bf-bd72-635661adf0ab",
+      "name": "Run T10 Clarification",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        4512,
+        384
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "valOh9zMfqOZOvmHyOQfa",
+          "cachedResultName": "30 Calendar Create",
+          "cachedResultUrl": "/workflow/valOh9zMfqOZOvmHyOQfa"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "e6210ca8-0797-41f0-a381-ca684eafcb57",
+      "name": "Record T10 Clarification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4736,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T10-calendar-clarify';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'calendar_clarify_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "07ac537c-ca8b-403f-bd5f-820d8342dc06",
+      "name": "Build T11 Calendar Read Fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4960,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst expectedId = (($json.artifacts || {}).calendar_event_id || null);\nconst fixture = {\n  message: {\n    text: 'cal tomorrow',\n    chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id },\n    from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id },\n  },\n  telegram_chat_id: String(base.telegram_test_chat_id || ''),\n};\nreturn [{ json: { ...base, ...fixture, current_test_case: 'T11-calendar-read', smoke_mode: true, smoke_case: 'calendar_read', smoke_telegram_dry_run: true, calendar_test_mode: true, test_calendar_id: base.test_calendar_id, prod_calendar_id: base.prod_calendar_id, expected_google_event_id: expectedId, test_run_id: base.test_run_id } }];"
+      }
+    },
+    {
+      "id": "27cf05d4-f6ac-457a-9565-e58fade4de8e",
+      "name": "Run T11 Calendar Read",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        5184,
+        384
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "DwtBNN8QIebQC3G-IsuCU",
+          "cachedResultName": "31 Calendar Read",
+          "cachedResultUrl": "/workflow/DwtBNN8QIebQC3G-IsuCU"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
+    },
+    {
+      "id": "6768349e-d5bd-4504-8d7b-931e57f1c5c8",
+      "name": "Record T11 Calendar Read",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5408,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T11-calendar-read';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'calendar_read_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "f4215c02-bc84-4aea-801b-8a855811849d",
+      "name": "T99 - Cleanup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5632,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst artifacts = { ...(base.artifacts || {}) };\nconst headers = {\n  'X-PKM-Run-Id': String(base.test_run_id || ''),\n  'x-pkm-admin-secret': String($env.PKM_ADMIN_SECRET || ''),\n};\n\nlet deleteResponse = null;\nlet modeRestored = false;\nlet cleanupError = null;\n\ntry {\n  const ids = [artifacts.telegram_capture_entry_id, artifacts.email_capture_entry_id]\n    .filter((v) => Number.isFinite(Number(v)) && Number(v) > 0)\n    .map((v) => Number(v));\n\n  if (ids.length > 0) {\n    deleteResponse = await helpers.httpRequest({\n      method: 'POST',\n      url: 'http://pkm-server:8080/db/delete',\n      headers,\n      json: true,\n      body: {\n        schema: 'pkm_test',\n        entry_ids: ids,\n        force: true,\n      },\n    });\n  }\n\n  const stateRows = await helpers.httpRequest({\n    method: 'GET',\n    url: 'http://pkm-server:8080/db/test-mode',\n    headers: { 'X-PKM-Run-Id': String(base.test_run_id || '') },\n    json: true,\n  });\n  const current = !!(Array.isArray(stateRows) && stateRows[0] && stateRows[0].is_test_mode === true);\n  const prior = base.prior_test_mode === true;\n  if (current !== prior) {\n    await helpers.httpRequest({\n      method: 'POST',\n      url: 'http://pkm-server:8080/db/test-mode/toggle',\n      headers: { 'X-PKM-Run-Id': String(base.test_run_id || '') },\n      json: true,\n      body: {},\n    });\n  }\n  modeRestored = true;\n} catch (e) {\n  cleanupError = { message: String(e && e.message ? e.message : e) };\n}\n\nconst assertions = [\n  { name: 'pkm_cleanup_completed', ok: cleanupError == null },\n  { name: 'test_mode_restored', ok: modeRestored === true },\n  { name: 'calendar_cleanup_skipped', ok: true, reason: 'calendar cleanup requires dedicated Google delete workflow' },\n];\nconst ok = assertions.every((a) => a.ok === true);\n\nresults.push({\n  test_case: 'T99-cleanup',\n  ok,\n  run_id: base.test_run_id || null,\n  artifacts: {\n    delete_response: deleteResponse || null,\n  },\n  assertions,\n  error: cleanupError,\n});\n\nreturn [{ json: { ...base, results } }];"
+      }
+    },
+    {
+      "id": "d24bbd0a-6f62-4e25-bb84-9790f4963b26",
+      "name": "Build Smoke Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5856,
+        384
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? base.results : [];\n\nconst passCount = results.filter((r) => r && r.ok === true).length;\nconst failRows = results.filter((r) => !r || r.ok !== true);\nconst failCount = failRows.length;\nconst overallOk = failCount === 0;\n\nconst lines = [];\nlines.push(overallOk ? 'Smoke passed' : 'Smoke failed');\nlines.push('Run: ' + String(base.test_run_id || '-'));\nlines.push('Passed: ' + String(passCount));\nlines.push('Failed: ' + String(failCount));\n\nif (failRows.length) {\n  lines.push('Failures:');\n  failRows.slice(0, 10).forEach((row) => {\n    const name = String((row && row.test_case) || 'unknown');\n    const msg = String((row && row.error && row.error.message) || 'assertion failure');\n    lines.push('- ' + name + ': ' + msg);\n  });\n}\n\nconst telegram_message = mdv2Message(lines.join('\n'), { maxLen: 4000 });\n\nreturn [{\n  json: {\n    ...base,\n    ended_at: new Date().toISOString(),\n    overall_ok: overallOk,\n    passed_count: passCount,\n    failed_count: failCount,\n    telegram_message,\n  },\n}];"
+      }
+    },
+    {
+      "id": "1afad9ca-00ce-43b1-9fcc-4a4287cf3cc5",
+      "name": "Send Smoke Summary",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        6080,
+        384
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "4svco1wrzYsvoLNB",
+          "name": "Telegram account"
+        }
+      },
+      "parameters": {
+        "chatId": "={{ $json.telegram_test_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID }}",
+        "text": "={{ $json.telegram_message }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2",
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
+        }
+      }
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-03-14T21:18:13.445Z",
+  "versionCounter": 1
+}

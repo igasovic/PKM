@@ -80,11 +80,27 @@ module.exports = async function run(ctx) {
   }
 
   const timezone = asText(event.timezone || ($json.config && $json.config.calendar && $json.config.calendar.timezone)) || 'America/Chicago';
-  const calendarId = asText($json.family_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id)) || 'primary';
+  const calendarTestMode = $json.calendar_test_mode === true;
+  const smokeMode = $json.smoke_mode === true;
+  const testRunId = asText($json.test_run_id);
+  const testCalendarId = asText($json.test_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.test_calendar_id));
+  const prodCalendarId = asText($json.prod_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id));
+  const configuredCalendarId = asText($json.family_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id)) || 'primary';
+  if (calendarTestMode) {
+    if (!testCalendarId) throw new Error('calendar_test_mode requires test_calendar_id');
+    if (!prodCalendarId) throw new Error('calendar_test_mode requires prod_calendar_id');
+    if (testCalendarId === prodCalendarId) {
+      throw new Error('calendar_test_mode blocked: test_calendar_id must differ from prod_calendar_id');
+    }
+  }
+
+  const calendarId = calendarTestMode ? testCalendarId : configuredCalendarId;
   const requestId = asText($json.request_id);
   const chatId = asText($json.telegram_chat_id);
   const messageId = asText($json.telegram_message_id);
   const subjectCode = asText(event.subject_code || event.title);
+  const summaryPrefix = calendarTestMode ? ('[SMOKE ' + (testRunId || 'run') + '] ') : '';
+  const googleSummary = summaryPrefix + subjectCode;
 
   const startLocal = toGoogleDateTime(startDate, startTime, timezone);
   const endLocal = toGoogleDateTime(endDate, endTime, timezone);
@@ -95,6 +111,8 @@ module.exports = async function run(ctx) {
     'PKM source key: tgcal:' + (chatId || '-') + ':' + (messageId || '-'),
     'Original start: ' + (event.original_start && event.original_start.date_local ? (event.original_start.date_local + ' ' + (event.original_start.time_local || '')).trim() : '-'),
   ];
+  if (calendarTestMode) descriptionParts.push('SMOKE test run id: ' + (testRunId || '-'));
+  if (smokeMode) descriptionParts.push('SMOKE mode: true');
 
   return [{
     json: {
@@ -104,13 +122,18 @@ module.exports = async function run(ctx) {
       google_start: startLocal,
       google_end: endLocal,
       google_timezone: timezone,
-      google_summary: subjectCode,
+      google_summary: googleSummary,
       google_description: descriptionParts.join('\n'),
       google_location: location,
       google_color_id: asText(event.color_choice && event.color_choice.google_color_id) || null,
-      confirmation_subject: subjectCode,
+      confirmation_subject: googleSummary,
       confirmation_block_start: startDate + ' ' + startTime,
       confirmation_block_end: endDate + ' ' + endTime,
+      smoke_mode: smokeMode,
+      calendar_test_mode: calendarTestMode,
+      test_calendar_id: testCalendarId || null,
+      prod_calendar_id: prodCalendarId || null,
+      test_run_id: testRunId || null,
     },
   }];
 };

@@ -1,0 +1,21 @@
+{
+  "update_id": 235792351,
+  "message": {
+    "message_id": 1515,
+    "from": {
+      "id": 1509032341,
+      "is_bot": false,
+      "first_name": "igorg",
+      "username": "igorg89",
+      "language_code": "en"
+    },
+    "chat": {
+      "id": 1509032341,
+      "first_name": "igorg",
+      "username": "igorg89",
+      "type": "private"
+    },
+    "date": 1773520405,
+    "text": "Interesting read on retrieval systems https://example.com/retrieval-playbook"
+  }
+}

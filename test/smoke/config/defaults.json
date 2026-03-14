@@ -1,0 +1,11 @@
+{
+  "smoke_mode": true,
+  "pkm_test_mode": true,
+  "calendar_test_mode": true,
+  "smoke_telegram_dry_run": true,
+  "telegram_test_chat_id": "1509032341",
+  "test_calendar_id": "831dca29672745da07709e8636e37b6241df174fca270982c66a046b915b2dc1@group.calendar.google.com",
+  "prod_calendar_id": "pkm.gasovic@gmail.com",
+  "allow_test_calendar_purge": false,
+  "public_ingress_path": "pkm/smoke/ingress"
+}

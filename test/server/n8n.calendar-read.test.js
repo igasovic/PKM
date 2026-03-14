@@ -43,6 +43,24 @@ describe('n8n calendar read helpers', () => {
     expect(row.target_date_local).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
+  test('parse query enforces calendar test mode override', async () => {
+    const out = await parseCalendarQuery({
+      $json: {
+        message: {
+          text: 'cal tomorrow',
+          chat: { id: 1509032341 },
+        },
+        calendar_test_mode: true,
+        test_calendar_id: 'test-calendar@group.calendar.google.com',
+        prod_calendar_id: 'prod-calendar@group.calendar.google.com',
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.calendar_test_mode).toBe(true);
+    expect(row.google_calendar_id).toBe('test-calendar@group.calendar.google.com');
+  });
+
   test('format read message builds output and observe payload for external events', async () => {
     const out = await formatCalendarReadMessage({
       $input: {
@@ -104,5 +122,40 @@ describe('n8n calendar read helpers', () => {
     const row = out[0].json;
     expect(row.telegram_message).toContain('No events for today');
     expect(row.observe_items).toEqual([]);
+  });
+
+  test('format read message marks tagged smoke event when expected id is absent', async () => {
+    const out = await formatCalendarReadMessage({
+      $input: {
+        all: () => [
+          {
+            json: {
+              id: 'evt-smoke-1',
+              summary: '[SMOKE smoke_2026_03_14] [L][DOG] 2:00p Louie store',
+              start: { dateTime: '2026-03-13T14:00:00-05:00' },
+              end: { dateTime: '2026-03-13T15:30:00-05:00' },
+            },
+          },
+        ],
+      },
+      $items: (nodeName) => {
+        if (nodeName === 'Parse Calendar Query') {
+          return [{
+            json: {
+              query_label: 'tomorrow',
+              telegram_chat_id: '1509032341',
+              google_calendar_id: 'test-calendar@group.calendar.google.com',
+              test_run_id: 'smoke_2026_03_14',
+              expected_google_event_id: 'missing-id',
+            },
+          }];
+        }
+        return [];
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.smoke_expected_event_found).toBe(false);
+    expect(row.smoke_tagged_event_found).toBe(true);
   });
 });

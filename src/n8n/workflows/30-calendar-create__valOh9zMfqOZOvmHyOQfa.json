@@ -110,9 +110,9 @@
       "main": [
         [
           {
-            "index": 1,
-            "node": "Merge Finalize Context",
-            "type": "main"
+            "node": "Assert Calendar Finalize",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -121,9 +121,9 @@
       "main": [
         [
           {
-            "index": 1,
-            "node": "Merge Normalize Context",
-            "type": "main"
+            "node": "Assert Calendar Normalize",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -206,6 +206,50 @@
           }
         ]
       ]
+    },
+    "Assert Calendar Normalize": {
+      "main": [
+        [
+          {
+            "node": "Merge Normalize Context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Assert Calendar Finalize": {
+      "main": [
+        [
+          {
+            "node": "Merge Finalize Context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Send Create Result Message": {
+      "main": [
+        [
+          {
+            "node": "Finalize Calendar Create Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Calendar Message": {
+      "main": [
+        [
+          {
+            "node": "Finalize Calendar Create Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "createdAt": "2026-03-13T04:53:08.825Z",
@@ -260,7 +304,7 @@
       "id": "f4f4204e-e5ec-4df7-9739-3f9734f9db8f",
       "name": "Build Normalize Request",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n\n  const message = ($json && $json.message) || {};\n  const rawTextInput = asText($json.raw_text || message.text || message.caption || '');\n  const rawText = rawTextInput.replace(/^cal:\\s*/i, '').trim();\n  const chatId = asText($json.telegram_chat_id || (message.chat && message.chat.id));\n  const messageId = asText($json.telegram_message_id || message.message_id);\n  const actorCode = asText($json.actor_code).toLowerCase() || 'unknown';\n  const userId = asText($json.telegram_user_id || (message.from && message.from.id));\n\n  if (!rawText) throw new Error('calendar create requires raw_text');\n  if (!chatId) throw new Error('calendar create requires telegram_chat_id');\n  if (!messageId) throw new Error('calendar create requires telegram_message_id');\n\n  return [{\n    json: {\n      ...$json,\n      raw_text: rawText,\n      actor_code: actorCode,\n      source: {\n        chat_id: chatId,\n        message_id: messageId,\n        user_id: userId || null,\n      },\n      request_id: asText($json.request_id) || null,\n      telegram_user_id: userId || null,\n      route_confidence: Number.isFinite(Number($json.confidence)) ? Number($json.confidence) : null,\n      family_calendar_id: asText($json.family_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id)) || null,\n    },\n  }];\n"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/build-normalize-request__bff8ba8c-b146-4316-a6d4-a7c757a4679b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/build-normalize-request__bff8ba8c-b146-4316-a6d4-a7c757a4679b.js] ${e.message}`;throw e;}"
       },
       "position": [
         224,
@@ -429,7 +473,8 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2"
+          "parse_mode": "MarkdownV2",
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
@@ -446,7 +491,7 @@
       "id": "bb6d3e8a-4461-4ea5-8d5d-0fa8d4f5e479",
       "name": "Build Google Event Payload",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n\nconst parseGmtOffsetMinutes = (token) => {\n  const m = String(token || '').match(/GMT([+-])(d{1,2})(?::?(d{2}))?/i);\n  if (!m) return null;\n  const sign = m[1] === '-' ? -1 : 1;\n  const hh = Number(m[2] || 0);\n  const mm = Number(m[3] || 0);\n  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;\n  return sign * (hh * 60 + mm);\n};\n\nconst offsetAtUtcMs = (utcMs, timezone) => {\n  const parts = new Intl.DateTimeFormat('en-US', {\n    timeZone: timezone,\n    timeZoneName: 'shortOffset',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit',\n    hour: '2-digit',\n    minute: '2-digit',\n    second: '2-digit',\n    hour12: false,\n  }).formatToParts(new Date(utcMs));\n  const token = (parts.find((p) => p.type === 'timeZoneName') || {}).value;\n  return parseGmtOffsetMinutes(token);\n};\n\nconst formatOffset = (minutes) => {\n  const m = Number(minutes || 0);\n  const sign = m < 0 ? '-' : '+';\n  const abs = Math.abs(m);\n  const hh = Math.floor(abs / 60);\n  const mm = abs % 60;\n  return sign + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');\n};\n\nconst toGoogleDateTime = (dateLocal, timeLocal, timezone) => {\n  const dm = String(dateLocal || '').match(/^(d{4})-(d{2})-(d{2})$/);\n  const tm = String(timeLocal || '').match(/^(d{2}):(d{2})$/);\n  if (!dm || !tm) return '';\n\n  const y = Number(dm[1]);\n  const mo = Number(dm[2]);\n  const d = Number(dm[3]);\n  const hh = Number(tm[1]);\n  const mm = Number(tm[2]);\n\n  const baseUtc = Date.UTC(y, mo - 1, d, hh, mm, 0);\n  let offset = offsetAtUtcMs(baseUtc, timezone);\n  if (!Number.isFinite(offset)) offset = 0;\n\n  let correctedUtc = baseUtc - offset * 60000;\n  const correctedOffset = offsetAtUtcMs(correctedUtc, timezone);\n  if (Number.isFinite(correctedOffset) && correctedOffset !== offset) {\n    offset = correctedOffset;\n    correctedUtc = baseUtc - offset * 60000;\n  }\n\n  return dateLocal + 'T' + timeLocal + ':00' + formatOffset(offset);\n};\n\nconst event = ($json && $json.normalized_event) || null;\nif (!event || $json.status !== 'ready_to_create') {\n  throw new Error('expected status=ready_to_create with normalized_event');\n}\n\nconst block = event.block_window || {};\nconst startDate = asText(block.start_date_local || event.date_local);\nconst startTime = asText(block.start_time_local || event.start_time_local);\nconst endDate = asText(block.end_date_local || event.end_date_local);\nconst endTime = asText(block.end_time_local || event.end_time_local);\n\nif (!startDate || !startTime || !endDate || !endTime) {\n  throw new Error('normalized event block window is incomplete');\n}\n\nconst timezone = asText(event.timezone || ($json.config && $json.config.calendar && $json.config.calendar.timezone)) || 'America/Chicago';\nconst calendarId = asText($json.family_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id)) || 'primary';\nconst requestId = asText($json.request_id);\nconst chatId = asText($json.telegram_chat_id);\nconst messageId = asText($json.telegram_message_id);\nconst subjectCode = asText(event.subject_code || event.title);\n\nconst startLocal = toGoogleDateTime(startDate, startTime, timezone);\nconst endLocal = toGoogleDateTime(endDate, endTime, timezone);\nconst location = asText(event.location) || null;\n\nconst descriptionParts = [\n  'PKM request id: ' + (requestId || '-'),\n  'PKM source key: tgcal:' + (chatId || '-') + ':' + (messageId || '-'),\n  'Original start: ' + (event.original_start && event.original_start.date_local ? (event.original_start.date_local + ' ' + (event.original_start.time_local || '')).trim() : '-'),\n];\n\nreturn [{\n  json: {\n    ...$json,\n    request_id: requestId,\n    google_calendar_id: calendarId,\n    google_start: startLocal,\n    google_end: endLocal,\n    google_timezone: timezone,\n    google_summary: subjectCode,\n    google_description: descriptionParts.join('\\n'),\n    google_location: location,\n    google_color_id: asText(event.color_choice && event.color_choice.google_color_id) || null,\n    confirmation_subject: subjectCode,\n    confirmation_block_start: startDate + ' ' + startTime,\n    confirmation_block_end: endDate + ' ' + endTime,\n  },\n}];"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/build-google-event-payload__2f4ea2fd-0178-4f8c-88f4-2fdf86889d89.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/build-google-event-payload__2f4ea2fd-0178-4f8c-88f4-2fdf86889d89.js] ${e.message}`;throw e;}"
       },
       "position": [
         1120,
@@ -588,7 +633,8 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2"
+          "parse_mode": "MarkdownV2",
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
@@ -645,6 +691,45 @@
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
+    },
+    {
+      "id": "35b0609a-4803-446a-882c-51d16a574091",
+      "name": "Assert Calendar Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        -256
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst status = String($json.status || '').trim();\nassertions.push({ name: 'normalize_status_present', ok: !!status, status: status || null });\nif (status === 'ready_to_create') {\n  assertions.push({ name: 'normalized_event_present', ok: !!$json.normalized_event });\n}\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
+      }
+    },
+    {
+      "id": "a7f92c0f-4c3e-4fd9-b82d-bbe778de8257",
+      "name": "Assert Calendar Finalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        -96
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst status = String($json.status || $json.final_status || '').trim();\nassertions.push({ name: 'finalize_status_present', ok: !!status, status: status || null });\nif ($json.calendar_test_mode === true) {\n  assertions.push({ name: 'calendar_id_is_test', ok: !!$json.google_calendar_id && $json.google_calendar_id === $json.test_calendar_id });\n}\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
+      }
+    },
+    {
+      "id": "6c2fab92-780e-4b50-b6e4-ade0354b8955",
+      "name": "Finalize Calendar Create Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        -96
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'telegram_message_non_empty', ok: msg.length > 0 });\nconst status = String($json.status || $json.final_status || '').trim();\nif (status === 'calendar_created') {\n  assertions.push({ name: 'google_event_id_present', ok: !!$json.google_event_id });\n}\nconst ok = assertions.every((a) => a.ok === true);\nreturn [{\n  json: {\n    ...$json,\n    test_case: 'calendar_create',\n    ok,\n    run_id: $json.test_run_id || null,\n    artifacts: {\n      google_event_id: $json.google_event_id ?? null,\n      google_calendar_id: $json.google_calendar_id ?? null,\n      request_id: $json.request_id ?? null,\n      telegram_message: msg || null,\n    },\n    assertions,\n    error: ok ? null : { message: 'calendar create assertions failed' },\n  },\n}];"
+      }
     }
   ],
   "settings": {

@@ -23,6 +23,7 @@ module.exports = async function run(ctx) {
 
   let routeHint = 'backend_route';
   if (/^cal:\s*/i.test(rawText)) routeHint = 'calendar_create';
+  else if (/^pkm:\s*/i.test(rawText)) routeHint = 'pkm_capture';
 
   return [{
     json: {
@@ -36,6 +37,9 @@ module.exports = async function run(ctx) {
       actor_code: actorCode,
       is_command: rawText.startsWith('/'),
       route_hint: routeHint,
+      smoke_mode: $json.smoke_mode === true,
+      test_run_id: asText($json.test_run_id) || null,
+      smoke_expected_route: asText($json.smoke_expected_route) || null,
     },
   }];
 };

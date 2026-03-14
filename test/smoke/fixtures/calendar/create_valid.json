@@ -1,0 +1,10 @@
+{
+  "message": {
+    "text": "cal: Louie store tomorrow at 2pm for 90min",
+    "chat": { "id": 1509032341 },
+    "from": { "id": 1509032341 }
+  },
+  "telegram_chat_id": "1509032341",
+  "telegram_message_id": "3001",
+  "actor_code": "igor"
+}

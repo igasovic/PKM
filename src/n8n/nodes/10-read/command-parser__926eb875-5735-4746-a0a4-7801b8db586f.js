@@ -24,8 +24,10 @@ module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
 const msg = $json.message || {};
-const text = String(msg.text || '').trim();
+const text = String($json.raw_text || msg.text || '').trim();
 const telegram_chat_id = $json.telegram_chat_id ?? msg.chat?.id ?? null;
+const smoke_mode = $json.smoke_mode === true;
+const smoke_case = String($json.smoke_case || '').trim() || null;
 const sender_user_id = String(msg.from?.id ?? '').trim();
 const accessCfg = ($json.config && $json.config.calendar && $json.config.calendar.telegram_access) || {};
 const enforceAllowlist = accessCfg.enforce_allowlist === true;
@@ -111,6 +113,8 @@ function replyNow(telegram_chat_id, message) {
       _reply_now: true,
       telegram_chat_id,
       telegram_message: mdv2Message(message, { maxLen: 4000 }),
+      smoke_mode,
+      smoke_case,
     },
   }];
 }
@@ -145,7 +149,9 @@ if (cmd === 'pull') {
       cmd,
       entry_id,
       want_excerpt,
-      telegram_chat_id
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
     }
   }];
 }
@@ -173,7 +179,9 @@ if (cmd === 'debug') {
         ? '/debug/run/last'
         : `/debug/run/${encodeURIComponent(token)}`,
       debug_method: 'GET',
-      telegram_chat_id
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
     }
   }];
 }
@@ -189,7 +197,9 @@ if (cmd === 'distill') {
     json: {
       cmd,
       entry_id: mId[1],
-      telegram_chat_id
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
     }
   }];
 }
@@ -236,7 +246,9 @@ if (cmd === 'distillrun') {
       max_sync_items,
       persist_eligibility,
       execution_mode,
-      telegram_chat_id
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
     }
   }];
 }
@@ -272,7 +284,9 @@ if (cmd === 'status') {
       status_stage,
       status_limit,
       status_include_terminal,
-      telegram_chat_id
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
     }
   }];
 }
@@ -357,7 +371,9 @@ if (cmd === 'delete' || cmd === 'move') {
         range: parsed.range || null,
         dry_run,
         force,
-        telegram_chat_id
+        telegram_chat_id,
+        smoke_mode,
+        smoke_case,
       }
     }];
   }
@@ -388,7 +404,9 @@ if (cmd === 'delete' || cmd === 'move') {
       range: parsed.range || null,
       dry_run,
       force,
-      telegram_chat_id
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
     }
   }];
 }
@@ -432,7 +450,9 @@ return [{
     q,
     days,
     limit,
-    telegram_chat_id
+    telegram_chat_id,
+    smoke_mode,
+    smoke_case,
   }
 }];
 };

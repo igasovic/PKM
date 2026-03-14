@@ -1,0 +1,28 @@
+{
+  "update_id": 235792334,
+  "message": {
+    "message_id": 1497,
+    "from": {
+      "id": 1509032341,
+      "is_bot": false,
+      "first_name": "igorg",
+      "username": "igorg89",
+      "language_code": "en"
+    },
+    "chat": {
+      "id": 1509032341,
+      "first_name": "igorg",
+      "username": "igorg89",
+      "type": "private"
+    },
+    "date": 1773518809,
+    "text": "/continue ai",
+    "entities": [
+      {
+        "offset": 0,
+        "length": 9,
+        "type": "bot_command"
+      }
+    ]
+  }
+}

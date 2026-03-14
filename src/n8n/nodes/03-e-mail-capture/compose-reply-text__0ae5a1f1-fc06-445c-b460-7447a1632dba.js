@@ -65,12 +65,17 @@ if (flagBits.length) lines.push(`\n${flagBits.join(' · ')}`);
 let telegram_message = lines.join('\n');
 
 const config = getConfig();
+const smokeDryRun = $json.smoke_telegram_dry_run === true;
 if (config?.db?.is_test_mode === true) {
   telegram_message = `⚗️🧪 TEST MODE
+${telegram_message}`;
+}
+if (smokeDryRun) {
+  telegram_message = `[SMOKE DRY RUN]
 ${telegram_message}`;
 }
 
 telegram_message = mdv2Message(telegram_message, { maxLen: 4000 });
 
-return [{ json: { ...$json, telegram_message } }];
+return [{ json: { ...$json, telegram_message, smoke_telegram_dry_run: smokeDryRun } }];
 };

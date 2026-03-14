@@ -74,7 +74,20 @@ module.exports = async function run(ctx) {
   }
 
   const nextDate = addDays(targetDate, 1);
-  const calendarId = asText($json.family_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id)) || 'primary';
+  const calendarTestMode = $json.calendar_test_mode === true;
+  const smokeMode = $json.smoke_mode === true;
+  const testRunId = asText($json.test_run_id);
+  const testCalendarId = asText($json.test_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.test_calendar_id));
+  const prodCalendarId = asText($json.prod_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id));
+  const configuredCalendarId = asText($json.family_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id)) || 'primary';
+  if (calendarTestMode) {
+    if (!testCalendarId) throw new Error('calendar_test_mode requires test_calendar_id');
+    if (!prodCalendarId) throw new Error('calendar_test_mode requires prod_calendar_id');
+    if (testCalendarId === prodCalendarId) {
+      throw new Error('calendar_test_mode blocked: test_calendar_id must differ from prod_calendar_id');
+    }
+  }
+  const calendarId = calendarTestMode ? testCalendarId : configuredCalendarId;
 
   return [{
     json: {
@@ -86,6 +99,11 @@ module.exports = async function run(ctx) {
       window_start_local: `${targetDate}T00:00:00`,
       window_end_local: `${nextDate}T00:00:00`,
       google_calendar_id: calendarId,
+      smoke_mode: smokeMode,
+      calendar_test_mode: calendarTestMode,
+      test_calendar_id: testCalendarId || null,
+      prod_calendar_id: prodCalendarId || null,
+      test_run_id: testRunId || null,
       telegram_chat_id: asText($json.telegram_chat_id || (message.chat && message.chat.id)),
       request_id: asText($json.request_id) || null,
     },

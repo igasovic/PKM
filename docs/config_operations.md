@@ -78,6 +78,7 @@ Bootstrap helper for first-time runtime->repo import:
 | `postgres` | `ops/stack/postgres/init/*`, optional `ops/stack/postgres/postgresql.conf`, `ops/stack/postgres/pg_hba.conf` | `/home/igasovic/stack/postgres-init/*`, optional `/home/igasovic/stack/postgres/*.conf` | authoritative | versioned, non-secret, host-local runtime target | infra/db | dir+file drift compare (excludes live data dir) | copy init/config only; never touches live data | pull init/config only; never touches live data |
 | `cloudflared` | `ops/stack/cloudflared/config.yml` | runtime cloudflared config path + host-local credentials JSON | authoritative | versioned config + host-local credential dependency | infra | file drift compare + credentials presence check | copy config + restart `cloudflared` (credentials required) | copy runtime config to repo |
 | `backend` | `src/libs/config/`, compatibility entrypoint `src/libs/config.js`, related `src/server/**` config readers | backend deployment/runtime state | authoritative (partial) | versioned code/config | backend | readiness check (`scripts/cfg/backend_push.sh` present + executable) | run `scripts/cfg/backend_push.sh` (targeted `pkm-server` deploy) | blocked (no runtime-to-repo import path) |
+| `smoke` | `test/smoke/config/defaults.json` | n8n runtime reads via `/data/test/smoke/config/defaults.json` mount path | authoritative | versioned, non-secret | n8n/smoke harness | blocked (no dedicated adapter yet) | blocked (repo-authored; no operator push step) | blocked |
 
 Notes:
 - Secrets and credentials are host-local and never copied from repo.
@@ -166,3 +167,4 @@ Keep this list updated whenever a new surface is discovered or ownership changes
 - `pkm.runtime_config` (runtime-mutable DB state)
 - shell exports for `N8N_API_*`
 - cloudflared local-managed config + host-local credentials JSON
+- `test/smoke/config/defaults.json`

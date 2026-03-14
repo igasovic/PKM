@@ -50,6 +50,40 @@ describe('n8n calendar router/create helpers', () => {
     expect(row.family_calendar_id).toBe('family@group.calendar.google.com');
   });
 
+  test('build normalize request enforces explicit calendar test mode guardrails', async () => {
+    const out = await buildNormalizeRequest({
+      $json: {
+        raw_text: 'cal: Louie store tomorrow at 2pm',
+        actor_code: 'igor',
+        telegram_chat_id: '1509032341',
+        telegram_message_id: '777',
+        calendar_test_mode: true,
+        test_calendar_id: 'test-calendar@group.calendar.google.com',
+        prod_calendar_id: 'prod-calendar@group.calendar.google.com',
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.calendar_test_mode).toBe(true);
+    expect(row.family_calendar_id).toBe('test-calendar@group.calendar.google.com');
+    expect(row.test_calendar_id).toBe('test-calendar@group.calendar.google.com');
+    expect(row.prod_calendar_id).toBe('prod-calendar@group.calendar.google.com');
+  });
+
+  test('build normalize request blocks calendar test mode when ids collide', async () => {
+    await expect(buildNormalizeRequest({
+      $json: {
+        raw_text: 'cal: Louie store tomorrow at 2pm',
+        actor_code: 'igor',
+        telegram_chat_id: '1509032341',
+        telegram_message_id: '777',
+        calendar_test_mode: true,
+        test_calendar_id: 'same-calendar@group.calendar.google.com',
+        prod_calendar_id: 'same-calendar@group.calendar.google.com',
+      },
+    })).rejects.toThrow('test_calendar_id must differ from prod_calendar_id');
+  });
+
   test('build google payload maps normalized event to calendar create fields', async () => {
     const out = await buildGoogleEventPayload({
       $json: {
@@ -83,6 +117,41 @@ describe('n8n calendar router/create helpers', () => {
     expect(row.google_end).toMatch(/^2026-03-13T16:00:00[+-]\d{2}:\d{2}$/);
     expect(row.google_summary).toBe('[M][MED] 3:00p Mila dentist');
     expect(row.google_color_id).toBe('3');
+  });
+
+  test('build google payload applies smoke summary prefix in calendar test mode', async () => {
+    const out = await buildGoogleEventPayload({
+      $json: {
+        status: 'ready_to_create',
+        request_id: 'req-2',
+        telegram_chat_id: '1509032341',
+        telegram_message_id: '778',
+        calendar_test_mode: true,
+        test_run_id: 'smoke_2026_03_14',
+        test_calendar_id: 'test-calendar@group.calendar.google.com',
+        prod_calendar_id: 'prod-calendar@group.calendar.google.com',
+        normalized_event: {
+          subject_code: '[L][DOG] 2:00p Louie store',
+          date_local: '2026-03-13',
+          start_time_local: '14:00',
+          end_date_local: '2026-03-13',
+          end_time_local: '15:30',
+          color_choice: { google_color_id: '6' },
+          original_start: { date_local: '2026-03-13', time_local: '14:00' },
+          block_window: {
+            start_date_local: '2026-03-13',
+            start_time_local: '14:00',
+            end_date_local: '2026-03-13',
+            end_time_local: '15:30',
+          },
+        },
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.google_calendar_id).toBe('test-calendar@group.calendar.google.com');
+    expect(row.google_summary).toBe('[SMOKE smoke_2026_03_14] [L][DOG] 2:00p Louie store');
+    expect(row.google_description).toContain('SMOKE test run id: smoke_2026_03_14');
   });
 
   test('prepare finalize request marks success when event id exists', async () => {

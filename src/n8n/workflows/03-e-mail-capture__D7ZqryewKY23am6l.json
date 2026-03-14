@@ -6,9 +6,9 @@
       "main": [
         [
           {
-            "index": 0,
-            "node": "Compose Reply Text",
-            "type": "main"
+            "node": "Assert Tier1 Email",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -17,9 +17,9 @@
       "main": [
         [
           {
-            "index": 0,
-            "node": "Send a text message",
-            "type": "main"
+            "node": "Assert Format Email Reply",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -39,9 +39,9 @@
       "main": [
         [
           {
-            "index": 0,
-            "node": "Send 'duplicate' message",
-            "type": "main"
+            "node": "Assert Format Email Duplicate",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -79,9 +79,9 @@
       "main": [
         [
           {
-            "index": 0,
-            "node": "If 'skipped'",
-            "type": "main"
+            "node": "Assert Insert Email",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -90,9 +90,97 @@
       "main": [
         [
           {
-            "index": 0,
+            "node": "Assert Normalize Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "PKM Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Normalize Email": {
+      "main": [
+        [
+          {
             "node": "PKM Insert",
-            "type": "main"
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Insert Email": {
+      "main": [
+        [
+          {
+            "node": "If 'skipped'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Tier1 Email": {
+      "main": [
+        [
+          {
+            "node": "Compose Reply Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Format Email Reply": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Format Email Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Send 'duplicate' message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Finalize Email Capture Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send 'duplicate' message": {
+      "main": [
+        [
+          {
+            "node": "Finalize Email Capture Result",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -150,9 +238,10 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2"
+          "parse_mode": "MarkdownV2",
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
         },
-        "chatId": "1509032341",
+        "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
@@ -294,7 +383,7 @@
             }
           ]
         },
-        "jsonBody": "={{ JSON.stringify((() => {\n  const body = {\n    raw_text: $json.textPlain,\n    from: $json.from,\n    date: $json.date,\n    subject: $json.subject,\n  };\n\n  return body;\n})()) }}",
+        "jsonBody": "={{ JSON.stringify((() => ({ raw_text: $json.textPlain || $json.raw_text || '', from: $json.from || null, subject: $json.subject || null, source: { message_id: ($json.message_id || ($json.external_ref && $json.external_ref.message_id) || null), date: ($json.date || null) } }))()) }}",
         "method": "POST",
         "options": {},
         "sendBody": true,
@@ -321,9 +410,10 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2"
+          "parse_mode": "MarkdownV2",
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
         },
-        "chatId": "1509032341",
+        "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
@@ -346,6 +436,95 @@
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
+    },
+    {
+      "id": "590ec4b9-e771-4e7a-9bee-7ead689b2095",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1104,
+        -416
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "2b8c1f77-7a96-49e2-b87a-a2d9717513b5",
+      "name": "Assert Normalize Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        -512
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst ok = !!$json.content_type && !!$json.capture_text;\nassertions.push({ name: 'normalize_email_ok', ok });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
+      }
+    },
+    {
+      "id": "bbb486c2-c6b7-4c7e-b8e2-1f8a5a90b050",
+      "name": "Assert Insert Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        -512
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst action = String($json.action || '').trim();\nconst actionOk = action === 'inserted' || action === 'updated' || action === 'skipped';\nconst entryIdOk = action === 'skipped' ? true : !!$json.entry_id;\nassertions.push({ name: 'insert_action_valid', ok: actionOk, action });\nassertions.push({ name: 'entry_id_present', ok: entryIdOk, entry_id: $json.entry_id ?? null });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
+      }
+    },
+    {
+      "id": "d2214b37-a8d7-4c99-b085-a12509f67917",
+      "name": "Assert Tier1 Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        -512
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nassertions.push({ name: 'tier1_ok', ok: !$json.error });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
+      }
+    },
+    {
+      "id": "2763bf0b-2606-4e1b-bc0b-db77cbd7a5ed",
+      "name": "Assert Format Email Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        -512
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'format_reply_non_empty', ok: msg.length > 0 });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
+      }
+    },
+    {
+      "id": "972d3dbb-07d2-406b-bda9-d08092f5a763",
+      "name": "Assert Format Email Duplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        -608
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'format_duplicate_non_empty', ok: msg.length > 0 });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
+      }
+    },
+    {
+      "id": "d09e7e00-035e-42c6-a9a4-fae254c8bf84",
+      "name": "Finalize Email Capture Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        -512
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'telegram_send_message_present', ok: msg.length > 0 });\nconst telegramMessageId = $json.message_id ?? ($json.result && $json.result.message_id) ?? null;\nif (telegramMessageId != null) assertions.push({ name: 'telegram_message_id_present', ok: true });\nconst ok = assertions.every((a) => a.ok === true);\nreturn [{\n  json: {\n    ...$json,\n    test_case: 'email_capture_fixture',\n    ok,\n    run_id: $json.test_run_id || null,\n    artifacts: {\n      entry_id: $json.entry_id ?? null,\n      action: $json.action ?? null,\n      telegram_message: msg || null,\n      telegram_message_id: telegramMessageId,\n    },\n    assertions,\n    error: ok ? null : { message: 'email capture assertions failed' },\n  },\n}];"
+      }
     }
   ],
   "settings": {

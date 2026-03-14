@@ -1,0 +1,8 @@
+{
+  "message": {
+    "text": "cal tomorrow",
+    "chat": { "id": 1509032341 },
+    "from": { "id": 1509032341 }
+  },
+  "telegram_chat_id": "1509032341"
+}

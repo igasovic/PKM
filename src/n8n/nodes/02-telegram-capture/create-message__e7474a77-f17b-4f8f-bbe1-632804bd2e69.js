@@ -17,6 +17,7 @@ module.exports = async function run(ctx) {
 
   const config = getConfig();
   const isTestMode = !!(config && config.db && config.db.is_test_mode);
+  const smokeDryRun = $json.smoke_telegram_dry_run === true;
 
   const entryId = s($json.entry_id);
 
@@ -64,6 +65,7 @@ module.exports = async function run(ctx) {
   let msg = lines.join('\n');
 
   if (isTestMode) msg = `⚗️🧪 TEST MODE\n` + msg;
+  if (smokeDryRun) msg = `[SMOKE DRY RUN]\n` + msg;
 
   // Escape + truncate through shared MarkdownV2 helper.
   msg = mdv2Message(msg, { maxLen: 4000 });
@@ -88,6 +90,7 @@ module.exports = async function run(ctx) {
       // updated length derived from clean_text (your requirement)
       text_len: cleanLen,
       clean_len: cleanLen,
+      smoke_telegram_dry_run: smokeDryRun,
     }
   }];
 };

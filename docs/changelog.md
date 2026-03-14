@@ -1,4 +1,28 @@
 # changelog
+## 2026-03-14 — Smoke harness implementation (n8n-first)
+
+### What changed
+- Added smoke orchestration workflows:
+  - `src/n8n/workflows/00-smoke-master__4kWjqNPBe5ghmxY2q7v6G.json`
+  - `src/n8n/workflows/00-smoke-public-ingress__X8t6FxE3d8asR3hMz2yqA.json`
+- Added smoke fixtures/config:
+  - `test/smoke/fixtures/**`
+  - `test/smoke/config/defaults.json`
+- Updated core workflows for smoke assertions/result contracts and dry-run notifications:
+  - `01 Telegram Router`
+  - `02 Telegram Capture`
+  - `03 E-Mail Capture`
+  - `10 Read`
+  - `30 Calendar Create`
+  - `31 Calendar Read`
+- Added/updated calendar smoke guardrails in externalized node logic:
+  - enforce explicit `test_calendar_id` and `prod_calendar_id` in `calendar_test_mode`
+  - hard-fail when IDs collide
+  - add `[SMOKE <test_run_id>]` tagging in calendar-create summaries
+- Added/updated Jest coverage for calendar-create/read smoke-mode behavior:
+  - `test/server/n8n.calendar-router-create.test.js`
+  - `test/server/n8n.calendar-read.test.js`
+
 ## 2026-03-14 — Calendar display/timezone routing fixes
 
 ### What changed

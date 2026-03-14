@@ -88,6 +88,8 @@ module.exports = async function run(ctx) {
   const chatId = asText(base.telegram_chat_id || (base.message && base.message.chat && base.message.chat.id));
   const requestId = asText(base.request_id) || null;
   const calendarId = asText(base.google_calendar_id) || null;
+  const expectedSmokeEventId = asText(base.expected_google_event_id) || asText(base.google_event_id);
+  const expectedSmokeRunId = asText(base.test_run_id);
 
   const events = rows
     .filter((r) => r && (r.id || r.summary || (r.start && (r.start.dateTime || r.start.date))))
@@ -139,6 +141,13 @@ module.exports = async function run(ctx) {
       was_reported: true,
     }));
 
+  const foundExpectedEvent = expectedSmokeEventId
+    ? events.some((e) => e.id === expectedSmokeEventId)
+    : false;
+  const foundTaggedEvent = expectedSmokeRunId
+    ? events.some((e) => e.summary.includes(`[SMOKE ${expectedSmokeRunId}]`))
+    : false;
+
   return [{
     json: {
       ...base,
@@ -147,6 +156,8 @@ module.exports = async function run(ctx) {
       telegram_message: mdv2Message(lines.join('\n'), { maxLen: 4000 }),
       observe_items: observeItems,
       events_count: events.length,
+      smoke_expected_event_found: foundExpectedEvent,
+      smoke_tagged_event_found: foundTaggedEvent,
     },
   }];
 };

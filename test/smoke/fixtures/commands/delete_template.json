@@ -1,0 +1,4 @@
+{
+  "template": "/delete test {{entry_ids}} --force",
+  "telegram_chat_id": "1509032341"
+}

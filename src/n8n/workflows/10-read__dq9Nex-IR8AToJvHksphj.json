@@ -338,6 +338,17 @@
           }
         ]
       ]
+    },
+    "Send MarkdownV2 Message": {
+      "main": [
+        [
+          {
+            "node": "Build Read Smoke Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "createdAt": "2026-01-18T03:45:24.643Z",
@@ -1006,7 +1017,8 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2"
+          "parse_mode": "MarkdownV2",
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || (($node[\"Command Parser\"] && $node[\"Command Parser\"].json && $node[\"Command Parser\"].json.telegram_chat_id) || $env.TELEGRAM_ADMIN_CHAT_ID)) }}",
         "text": "={{$json.telegram_message}}"
@@ -1027,7 +1039,7 @@
           "parameters": [
             {
               "name": "x-pkm-admin-secret",
-              "value": "your-long-random-secretdfdsfdsfdsfsdf"
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
             },
             {
               "name": "X-PKM-Run-Id",
@@ -1071,7 +1083,7 @@
           "parameters": [
             {
               "name": "x-pkm-admin-secret",
-              "value": "your-long-random-secretdfdsfdsfdsfsdf"
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
             },
             {
               "name": "X-PKM-Run-Id",
@@ -1115,7 +1127,7 @@
           "parameters": [
             {
               "name": "x-pkm-admin-secret",
-              "value": "your-long-random-secretdfdsfdsfdsfsdf"
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
             },
             {
               "name": "X-PKM-Run-Id",
@@ -1159,7 +1171,7 @@
           "parameters": [
             {
               "name": "x-pkm-admin-secret",
-              "value": "your-long-random-secretdfdsfdsfdsfsdf"
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
             },
             {
               "name": "X-PKM-Run-Id",
@@ -1194,6 +1206,19 @@
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
+    },
+    {
+      "id": "93ed61ff-ed68-4a8d-bb78-047a8812675e",
+      "name": "Build Read Smoke Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1472,
+        -64
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst smokeMode = $json.smoke_mode === true;\nif (!smokeMode) {\n  return [{ json: { ...$json } }];\n}\n\nconst assertions = [];\nconst cmd = String($json.cmd || '').trim();\nassertions.push({ name: 'command_present', ok: !!cmd, command: cmd || null });\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'telegram_message_non_empty', ok: msg.length > 0 });\nconst telegramMessageId = $json.message_id ?? ($json.result && $json.result.message_id) ?? null;\nif (telegramMessageId != null) assertions.push({ name: 'telegram_message_id_present', ok: true });\n\nif (cmd === 'pull') {\n  assertions.push({ name: 'pull_entry_present', ok: !!($json.entry_id || ($json.rows && $json.rows.length)) });\n}\nif (cmd === 'continue') {\n  const count = Number($json.count_hits || $json.rows_count || 0);\n  assertions.push({ name: 'continue_rows_available', ok: count >= 0, count });\n}\nif (cmd === 'distill') {\n  const status = String($json.status || '').toLowerCase();\n  assertions.push({ name: 'distill_status_present', ok: status.length > 0, status });\n}\nif (cmd === 'delete') {\n  const deleted = Number($json.deleted_count ?? 0);\n  assertions.push({ name: 'delete_response_present', ok: Number.isFinite(deleted), deleted_count: deleted });\n}\n\nconst ok = assertions.every((a) => a.ok === true);\nreturn [{\n  json: {\n    ...$json,\n    test_case: 'read_command',\n    ok,\n    run_id: $json.test_run_id || null,\n    artifacts: {\n      command: cmd,\n      telegram_message: msg || null,\n      telegram_message_id: telegramMessageId,\n      entry_id: $json.entry_id ?? null,\n      deleted_count: $json.deleted_count ?? null,\n    },\n    assertions,\n    error: ok ? null : { message: 'read command assertions failed' },\n  },\n}];"
+      }
     }
   ],
   "settings": {

@@ -1,0 +1,62 @@
+{
+  "active": true,
+  "activeVersionId": null,
+  "connections": {
+    "Smoke Ingress Webhook": {
+      "main": [
+        [
+          {
+            "node": "Compose Smoke Ingress Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-03-14T21:18:13.448Z",
+  "description": null,
+  "isArchived": false,
+  "name": "00 Smoke - Public Ingress",
+  "nodes": [
+    {
+      "id": "c02cfb46-ea0c-47b9-b75f-0f4ffed41103",
+      "name": "Smoke Ingress Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -480,
+        -128
+      ],
+      "webhookId": "e12ab21e-e97d-44fa-863d-d15fea818fd2",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pkm/smoke/ingress",
+        "options": {}
+      }
+    },
+    {
+      "id": "fb7e1873-a7f9-495f-b43f-4c4f1dbfb99f",
+      "name": "Compose Smoke Ingress Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -128
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst b = $json.body || {};\nreturn [{\n  json: {\n    ok: true,\n    ingress: 'pkm/smoke/ingress',\n    received_at: new Date().toISOString(),\n    test_run_id: b.test_run_id || null,\n    smoke: b.smoke === true,\n  },\n}];"
+      }
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-03-14T21:18:13.448Z",
+  "versionCounter": 1
+}
