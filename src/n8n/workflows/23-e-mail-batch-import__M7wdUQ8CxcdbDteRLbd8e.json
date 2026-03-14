@@ -2,6 +2,28 @@
   "active": false,
   "activeVersionId": null,
   "connections": {
+    "Format Import Summary Telegram Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Start Telegram Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Get files": {
       "main": [
         [
@@ -41,28 +63,6 @@
             "index": 0,
             "node": "Get files",
             "type": "main"
-          }
-        ]
-      ]
-    },
-    "Format Start Telegram Message": {
-      "main": [
-        [
-          {
-            "node": "Send a text message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Import Summary Telegram Message": {
-      "main": [
-        [
-          {
-            "node": "Send a text message1",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -183,28 +183,28 @@
     {
       "id": "3c25a3f6-0b0a-4a11-9fb7-c18c5f2d1b44",
       "name": "Format Start Telegram Message",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst mailbox = String($json?.stdout ?? 'empty');\nreturn [{ json: { ...$json, telegram_message: mdv2Message('Importing mailbox ' + mailbox) } }];\n"
+      },
       "position": [
         -144,
         -240
       ],
-      "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst mailbox = String($json?.stdout ?? 'empty');\nreturn [{ json: { ...$json, telegram_message: mdv2Message('Importing mailbox ' + mailbox) } }];\n"
-      }
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "id": "9d54b88b-0f8c-4e5f-8bf1-d6de76ec1f8f",
       "name": "Format Import Summary Telegram Message",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst b = $json || {};\nconst batch = Array.isArray(b.tier1_batches) && b.tier1_batches[0] ? b.tier1_batches[0] : {};\nconst lines = [\n  'Email backlog import update',\n  '',\n  'Import: ' + String(b.import_id ?? ''),\n  'MBOX: ' + String(b.mbox_path ?? ''),\n  '',\n  'Messages: ' + String(b.total_messages ?? 0),\n  'Normalized: ' + String(b.normalized_ok ?? 0) + ' errors ' + String(b.normalize_errors ?? 0),\n  '',\n  'Schema: ' + String(batch.schema ?? ''),\n  'Inserted: ' + String(b.inserted ?? 0) + ' errors ' + String(b.insert_errors ?? 0),\n  'Updated: ' + String(b.updated ?? 0),\n  'Skipped: ' + String(b.skipped ?? 0),\n  '',\n  'Tier-1 candidates: ' + String(b.tier1_candidates ?? 0),\n  'Tier-1 enqueued: ' + String(b.tier1_enqueued_items ?? 0),\n  'Tier-1 requests: ' + String(batch.request_count ?? 0),\n  'Status: ' + String(batch.status ?? ''),\n];\nreturn [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];\n"
+      },
       "position": [
         96,
         -48
       ],
-      "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst b = $json || {};\nconst batch = Array.isArray(b.tier1_batches) && b.tier1_batches[0] ? b.tier1_batches[0] : {};\nconst lines = [\n  'Email backlog import update',\n  '',\n  'Import: ' + String(b.import_id ?? ''),\n  'MBOX: ' + String(b.mbox_path ?? ''),\n  '',\n  'Messages: ' + String(b.total_messages ?? 0),\n  'Normalized: ' + String(b.normalized_ok ?? 0) + ' errors ' + String(b.normalize_errors ?? 0),\n  '',\n  'Schema: ' + String(batch.schema ?? ''),\n  'Inserted: ' + String(b.inserted ?? 0) + ' errors ' + String(b.insert_errors ?? 0),\n  'Updated: ' + String(b.updated ?? 0),\n  'Skipped: ' + String(b.skipped ?? 0),\n  '',\n  'Tier-1 candidates: ' + String(b.tier1_candidates ?? 0),\n  'Tier-1 enqueued: ' + String(b.tier1_enqueued_items ?? 0),\n  'Tier-1 requests: ' + String(batch.request_count ?? 0),\n  'Status: ' + String(batch.status ?? ''),\n];\nreturn [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];\n"
-      }
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
@@ -234,6 +234,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-13T16:43:09.684Z",
-  "versionCounter": 23
+  "updatedAt": "2026-03-13T23:00:43.908Z",
+  "versionCounter": 26
 }

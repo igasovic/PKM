@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "191dc36a-9b27-4913-953c-9076c162245a",
+  "activeVersionId": "e701a3cc-8ac5-462f-9996-4e5101f84575",
   "connections": {
     "Call '06 Web Extraction'": {
       "main": [
@@ -30,6 +30,28 @@
           {
             "index": 0,
             "node": "Send a text message1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Duplicate Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send 'duplicate' message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Thought Saved Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send 'thought saved' message",
             "type": "main"
           }
         ]
@@ -122,28 +144,6 @@
             "index": 0,
             "node": "PKM Config",
             "type": "main"
-          }
-        ]
-      ]
-    },
-    "Format Duplicate Message": {
-      "main": [
-        [
-          {
-            "node": "Send 'duplicate' message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Thought Saved Message": {
-      "main": [
-        [
-          {
-            "node": "Send 'thought saved' message",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -492,28 +492,28 @@
     {
       "id": "c3f2f6d4-4e0a-4d9d-9d3d-51d0e9c77a21",
       "name": "Format Duplicate Message",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nreturn [{ json: { ...$json, telegram_message: mdv2Message('Duplicate entry ' + entryId + ' processing stopped') } }];\n"
+      },
       "position": [
         -96,
         -608
       ],
-      "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nreturn [{ json: { ...$json, telegram_message: mdv2Message('Duplicate entry ' + entryId + ' processing stopped') } }];\n"
-      }
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "id": "42a2c7f4-b0fb-4b18-8f1e-8b9f1d3bcb6a",
       "name": "Format Thought Saved Message",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nconst action = String($json.action ?? 'inserted').trim() || 'inserted';\nconst text = 'Thought saved as entry ' + entryId + ' operation ' + action;\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\n"
+      },
       "position": [
         128,
         -320
       ],
-      "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nconst action = String($json.action ?? 'inserted').trim() || 'inserted';\nconst text = 'Thought saved as entry ' + entryId + ' operation ' + action;\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\n"
-      }
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
@@ -545,6 +545,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-13T16:43:02.735Z",
-  "versionCounter": 327
+  "updatedAt": "2026-03-13T23:00:33.134Z",
+  "versionCounter": 352
 }
