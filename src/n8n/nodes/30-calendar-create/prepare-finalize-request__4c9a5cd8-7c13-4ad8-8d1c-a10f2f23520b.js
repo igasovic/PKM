@@ -11,8 +11,36 @@ module.exports = async function run(ctx) {
     return m ? asText(m[1]) : '';
   };
 
+  const tryRequestIdFromItems = () => {
+    if (!ctx || typeof ctx.$items !== 'function') return '';
+    const candidateNodes = [
+      'Build Google Event Payload',
+      'Merge Create Context',
+      'PKM Calendar Normalize',
+      'Merge Normalize Context',
+    ];
+    for (const nodeName of candidateNodes) {
+      let rows = [];
+      try {
+        rows = ctx.$items(nodeName);
+      } catch (_err) {
+        rows = [];
+      }
+      if (!Array.isArray(rows) || !rows.length) continue;
+      for (const item of rows) {
+        const row = (item && item.json) || {};
+        const fromField = asText(row.request_id);
+        if (fromField) return fromField;
+        const fromDescription = parseRequestIdFromDescription(row.google_description || row.description);
+        if (fromDescription) return fromDescription;
+      }
+    }
+    return '';
+  };
+
   const requestId = asText($json.request_id)
-    || parseRequestIdFromDescription($json.google_description || $json.description);
+    || parseRequestIdFromDescription($json.google_description || $json.description)
+    || tryRequestIdFromItems();
   if (!requestId) throw new Error('request_id is required to finalize calendar create');
 
   const eventId = asText($json.id || $json.eventId || $json.event_id || $json.google_event_id);

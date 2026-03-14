@@ -115,6 +115,29 @@ describe('n8n calendar router/create helpers', () => {
     expect(row.final_status).toBe('calendar_created');
   });
 
+  test('prepare finalize request falls back to request id from upstream items', async () => {
+    const out = await prepareFinalizeRequest({
+      $json: {
+        id: 'google-event-4',
+      },
+      $items: (name) => {
+        if (name === 'Build Google Event Payload') {
+          return [{
+            json: {
+              request_id: 'req-from-items',
+            },
+          }];
+        }
+        return [];
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.request_id).toBe('req-from-items');
+    expect(row.success).toBe(true);
+    expect(row.final_status).toBe('calendar_created');
+  });
+
   test('prepare finalize request keeps success when non-blocking warning exists with event id', async () => {
     const out = await prepareFinalizeRequest({
       $json: {
