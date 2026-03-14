@@ -401,6 +401,11 @@ Possible routes:
 - `calendar_query`
 - `ambiguous`
 
+Continuation rule:
+- for non-structured text (not starting with `/`, `cal:`, or `pkm:`), router checks latest open calendar clarification request in chat
+- if one exists, router forces `calendar_create` and returns the existing `request_id`
+- structured inputs are never continuation-overridden
+
 For `ambiguous`, response may include:
 - `clarification_question`
 - `access_denied_reason` (when route was downgraded by Telegram allowlist policy)
@@ -413,8 +418,8 @@ Normalizes calendar-create intent and drives clarification flow state.
 
 Behavior:
 - uses `request_id` when supplied
-- otherwise, if chat has an open clarification request, continues the latest open request
 - otherwise creates/uses request row keyed by Telegram idempotency key (`tgcal:<chat_id>:<message_id>`)
+- continuation without `request_id` is intentionally not inferred here; router endpoint owns continuation selection
 
 Body:
 ```json
@@ -422,9 +427,14 @@ Body:
   "raw_text": "Mila dentist tomorrow at 3:00p for 60 min at home",
   "actor_code": "igor",
   "source": { "chat_id": "1509032341", "message_id": "777", "user_id": "111111111" },
-  "run_id": "cal-norm-123"
+  "run_id": "cal-norm-123",
+  "include_trace": false
 }
 ```
+
+`include_trace`:
+- optional boolean
+- when `true`, response includes `normalize_trace` (graph metadata for eval/debug)
 
 Response (`needs_clarification`):
 ```json
@@ -436,7 +446,13 @@ Response (`needs_clarification`):
   "normalized_event": null,
   "warning_codes": [],
   "message": null,
-  "request_status": "needs_clarification"
+  "request_status": "needs_clarification",
+  "normalize_trace": {
+    "llm_used": false,
+    "llm_reason": "litellm_not_configured",
+    "parse_status": "skipped",
+    "status": "needs_clarification"
+  }
 }
 ```
 

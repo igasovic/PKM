@@ -3,6 +3,7 @@
 const {
   routeTelegramInput,
   normalizeCalendarRequest,
+  normalizeCalendarRequestDeterministic,
 } = require('../../src/server/calendar-service.js');
 
 describe('calendar-service', () => {
@@ -72,5 +73,27 @@ describe('calendar-service', () => {
     });
     expect(out.status).toBe('rejected');
     expect(out.reason_code).toBe('all_day_not_supported');
+  });
+
+  test('normalizeCalendarRequestDeterministic prefers llm clarification question when missing fields remain', () => {
+    const out = normalizeCalendarRequestDeterministic({
+      raw_text: 'birthday party Saturday',
+      llm_extraction: {
+        clarification_question: 'What time should I schedule this, and who is it for?',
+      },
+    });
+    expect(out.status).toBe('needs_clarification');
+    expect(out.clarification_question).toBe('What time should I schedule this, and who is it for?');
+  });
+
+  test('normalizeCalendarRequestDeterministic falls back when llm clarification question is invalid', () => {
+    const out = normalizeCalendarRequestDeterministic({
+      raw_text: 'birthday party Saturday',
+      llm_extraction: {
+        clarification_question: '  ',
+      },
+    });
+    expect(out.status).toBe('needs_clarification');
+    expect(out.clarification_question).toContain('start time');
   });
 });

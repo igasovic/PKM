@@ -33,6 +33,7 @@ const {
 const {
   routeTelegramInput,
   normalizeCalendarRequest,
+  normalizeCalendarRequestWithTrace,
 } = require('./calendar-service.js');
 const {
   resolveTelegramAccess,
@@ -398,6 +399,7 @@ async function handleRequest(req, res) {
       const incomingText = String(body.raw_text || body.text || '').trim();
       const chatId = String(source.chat_id || body.telegram_chat_id || '').trim();
       const messageId = String(source.message_id || body.telegram_message_id || '').trim();
+      const includeTrace = body && body.include_trace === true;
       const access = resolveTelegramAccess({
         telegram_user_id: source.user_id || body.telegram_user_id,
       });
@@ -423,8 +425,6 @@ async function handleRequest(req, res) {
           err.statusCode = 404;
           throw err;
         }
-      } else if (chatId) {
-        request = await db.getLatestOpenCalendarRequestByChat(chatId);
       }
 
       if (!request) {
@@ -462,13 +462,20 @@ async function handleRequest(req, res) {
         }]);
       }
 
-      const normalized = await logger.step(
+      const normalizeRun = await logger.step(
         'api.calendar.normalize',
-        async () => normalizeCalendarRequest({
-          raw_text: baseText,
-          clarification_turns: clarificationTurns,
-          timezone: body.timezone,
-        }),
+        async () => {
+          const payload = {
+            raw_text: baseText,
+            clarification_turns: clarificationTurns,
+            timezone: body.timezone,
+          };
+          if (!includeTrace) {
+            const result = await normalizeCalendarRequest(payload);
+            return { result, trace: null };
+          }
+          return normalizeCalendarRequestWithTrace(payload);
+        },
         {
           input: {
             request_id: request.request_id,
@@ -476,13 +483,16 @@ async function handleRequest(req, res) {
             actor_code: actorCode,
           },
           output: (out) => ({
-            status: out.status,
-            missing_fields: out.missing_fields,
-            has_event: !!out.normalized_event,
+            status: out && out.result ? out.result.status : null,
+            missing_fields: out && out.result ? out.result.missing_fields : null,
+            has_event: !!(out && out.result && out.result.normalized_event),
           }),
           meta: { route: url.pathname },
         }
       );
+      const normalized = normalizeRun && normalizeRun.result ? normalizeRun.result : null;
+      const normalizeTrace = normalizeRun && normalizeRun.trace ? normalizeRun.trace : null;
+      if (!normalized) throw new Error('normalize returned empty result');
 
       let requestUpdate = null;
       if (normalized.status === 'needs_clarification') {
@@ -524,6 +534,7 @@ async function handleRequest(req, res) {
         warning_codes: normalized.warning_codes || [],
         message: normalized.message || null,
         request_status: requestUpdate ? requestUpdate.status : request.status,
+        normalize_trace: includeTrace ? normalizeTrace : undefined,
       });
     } catch (err) {
       logError(err, req);

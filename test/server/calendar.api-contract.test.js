@@ -32,6 +32,7 @@ describe('calendar API contract', () => {
 
   const routeMock = jest.fn();
   const normalizeMock = jest.fn();
+  const normalizeWithTraceMock = jest.fn();
   const dbMock = {
     upsertCalendarRequest: jest.fn(),
     getCalendarRequestById: jest.fn(),
@@ -48,6 +49,7 @@ describe('calendar API contract', () => {
     process.env.PKM_ADMIN_SECRET = 'test-admin-secret';
     routeMock.mockReset();
     normalizeMock.mockReset();
+    normalizeWithTraceMock.mockReset();
     Object.values(dbMock).forEach((fn) => fn.mockReset());
   });
 
@@ -64,6 +66,7 @@ describe('calendar API contract', () => {
     jest.doMock('../../src/server/calendar-service.js', () => ({
       routeTelegramInput: routeMock,
       normalizeCalendarRequest: normalizeMock,
+      normalizeCalendarRequestWithTrace: normalizeWithTraceMock,
     }));
 
     jest.doMock('../../src/server/db.js', () => ({
@@ -265,9 +268,8 @@ describe('calendar API contract', () => {
     expect(payload.clarification_question).toContain('calendar-only access');
   });
 
-  test('POST /calendar/normalize uses latest-open request and propagates run id header', async () => {
-    dbMock.getCalendarRequestById.mockResolvedValue(null);
-    dbMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
+  test('POST /calendar/normalize uses explicit request_id for continuation and propagates run id header', async () => {
+    dbMock.getCalendarRequestById.mockResolvedValue({
       request_id: 'f12556d4-c454-4885-a89c-d61dc28db3fd',
       status: 'needs_clarification',
       raw_text: 'Mila dentist',
@@ -296,7 +298,8 @@ describe('calendar API contract', () => {
       JSON.stringify({
         run_id: 'calendar-run-123',
         raw_text: 'tomorrow 3pm',
-        source: { chat_id: '1509032341' },
+        request_id: 'f12556d4-c454-4885-a89c-d61dc28db3fd',
+        source: { chat_id: '1509032341', message_id: '999' },
       }),
       {
         'Content-Type': 'application/json',
@@ -316,6 +319,114 @@ describe('calendar API contract', () => {
       message: null,
       request_status: 'needs_clarification',
     });
+    expect(dbMock.getLatestOpenCalendarRequestByChat).not.toHaveBeenCalled();
+  });
+
+  test('POST /calendar/normalize optionally returns normalize trace metadata', async () => {
+    dbMock.upsertCalendarRequest.mockResolvedValue({
+      request_id: '627ff0cd-3461-4b93-a6c8-5eb66e5f30a8',
+      status: 'received',
+      raw_text: 'Mila dentist tomorrow at 3:00p',
+      clarification_turns: [],
+    });
+    normalizeWithTraceMock.mockResolvedValue({
+      result: {
+        status: 'ready_to_create',
+        missing_fields: [],
+        clarification_question: null,
+        normalized_event: {
+          title: 'Mila dentist',
+        },
+        warning_codes: [],
+        message: null,
+      },
+      trace: {
+        llm_used: false,
+        llm_reason: 'litellm_not_configured',
+        parse_status: 'skipped',
+        status: 'ready_to_create',
+      },
+    });
+    dbMock.updateCalendarRequestById.mockResolvedValue({
+      request_id: '627ff0cd-3461-4b93-a6c8-5eb66e5f30a8',
+      status: 'normalized',
+    });
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/calendar/normalize',
+      JSON.stringify({
+        raw_text: 'Mila dentist tomorrow at 3:00p',
+        actor_code: 'igor',
+        include_trace: true,
+        source: { chat_id: '1509032341', message_id: '901' },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      }
+    );
+
+    expect(res.status).toBe(200);
+    const payload = JSON.parse(res.body);
+    expect(payload.status).toBe('ready_to_create');
+    expect(payload.normalize_trace).toEqual({
+      llm_used: false,
+      llm_reason: 'litellm_not_configured',
+      parse_status: 'skipped',
+      status: 'ready_to_create',
+    });
+    expect(normalizeWithTraceMock).toHaveBeenCalled();
+  });
+
+  test('POST /calendar/normalize creates a new request when request_id is omitted', async () => {
+    dbMock.upsertCalendarRequest.mockResolvedValue({
+      request_id: 'b11c6085-8949-45ef-8e03-11c35a1eac62',
+      status: 'received',
+      raw_text: 'Mila dentist tomorrow at 3:00p',
+      clarification_turns: [],
+    });
+    normalizeMock.mockReturnValue({
+      status: 'needs_clarification',
+      missing_fields: ['duration'],
+      clarification_question: 'How long should I schedule it for?',
+      normalized_event: null,
+      warning_codes: [],
+      message: null,
+    });
+    dbMock.updateCalendarRequestById.mockResolvedValue({
+      request_id: 'b11c6085-8949-45ef-8e03-11c35a1eac62',
+      status: 'needs_clarification',
+    });
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/calendar/normalize',
+      JSON.stringify({
+        raw_text: 'Mila dentist tomorrow at 3:00p',
+        actor_code: 'igor',
+        source: { chat_id: '1509032341', message_id: '902' },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      }
+    );
+
+    expect(res.status).toBe(200);
+    const payload = JSON.parse(res.body);
+    expect(payload.request_id).toBe('b11c6085-8949-45ef-8e03-11c35a1eac62');
+    expect(payload.status).toBe('needs_clarification');
+    expect(dbMock.getLatestOpenCalendarRequestByChat).not.toHaveBeenCalled();
+    expect(dbMock.upsertCalendarRequest).toHaveBeenCalled();
   });
 
   test('POST /calendar/normalize rejects sender not in calendar allowlist', async () => {

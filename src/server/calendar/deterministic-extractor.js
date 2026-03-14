@@ -41,6 +41,17 @@ function listMissingFieldsMessage(missing) {
   return `I can add this, but I still need the ${head}, and ${tail}.`;
 }
 
+function resolveClarificationQuestion(llmExtraction, missing) {
+  const raw = text(llmExtraction && llmExtraction.clarification_question);
+  if (raw) {
+    const compact = raw.replace(/\s+/g, ' ').trim();
+    if (compact.length >= 8 && compact.length <= 280) {
+      return compact;
+    }
+  }
+  return listMissingFieldsMessage(missing);
+}
+
 function nowDateInTz(timezone) {
   const fmt = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
@@ -451,6 +462,13 @@ function normalizeCalendarRequestDeterministic(input) {
   const data = input && typeof input === 'object' ? input : {};
   const config = getConfig().calendar;
   const rawText = text(data.raw_text || data.text);
+  const llmExtraction = (
+    data &&
+    data.llm_extraction &&
+    typeof data.llm_extraction === 'object'
+  )
+    ? data.llm_extraction
+    : null;
   if (!rawText) throw new Error('raw_text is required');
 
   if (/\ball[- ]day\b/i.test(rawText)) {
@@ -478,7 +496,7 @@ function normalizeCalendarRequestDeterministic(input) {
     return {
       status: 'needs_clarification',
       missing_fields: missing,
-      clarification_question: listMissingFieldsMessage(missing),
+      clarification_question: resolveClarificationQuestion(llmExtraction, missing),
       normalized_event: null,
       warning_codes: [],
       message: null,
@@ -540,6 +558,7 @@ function normalizeCalendarRequestDeterministic(input) {
 
 module.exports = {
   listMissingFieldsMessage,
+  resolveClarificationQuestion,
   mergeTextWithClarificationTurns,
   normalizeCalendarRequestDeterministic,
   buildDeterministicDraft,

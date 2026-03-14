@@ -1,4 +1,22 @@
 # changelog
+## 2026-03-14 — Extraction clarification preference + normalize trace + router-owned continuation hardening
+
+### What changed
+- Strengthened deterministic calendar validation to prefer LLM-provided clarification wording when fields are still missing:
+  - `src/server/calendar/deterministic-extractor.js`
+  - falls back to deterministic missing-fields prompt when LLM question is absent/invalid
+- Hardened router-owned continuation boundary:
+  - `/calendar/normalize` no longer infers continuation via latest-open-by-chat
+  - continuation is selected by `/telegram/route` and passed as explicit `request_id`
+- Added optional normalize trace exposure for eval/debug:
+  - `POST /calendar/normalize` accepts `include_trace=true`
+  - response includes `normalize_trace` when requested
+- Added/updated tests:
+  - `test/server/calendar-service.test.js` (LLM clarification preference + fallback)
+  - `test/server/calendar.api-contract.test.js` (explicit request_id continuation + include_trace response)
+- Updated contract docs:
+  - `docs/api.md`
+
 ## 2026-03-14 — Router-owned clarification continuation override
 
 ### What changed
