@@ -1,7 +1,29 @@
 {
   "active": true,
-  "activeVersionId": "eae47601-c212-49a3-b2ab-963c3da19f34",
+  "activeVersionId": "ca164456-b3f3-48a1-8bb0-2e9c238acf70",
   "connections": {
+    "Assert Calendar Finalize": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge Finalize Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Assert Calendar Normalize": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge Normalize Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Build Google Event Payload": {
       "main": [
         [
@@ -110,9 +132,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Assert Calendar Finalize",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -121,9 +143,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Assert Calendar Normalize",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -171,6 +193,28 @@
         ]
       ]
     },
+    "Send Calendar Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Finalize Calendar Create Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Send Create Result Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Finalize Calendar Create Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Switch Normalize Status": {
       "main": [
         [
@@ -206,50 +250,6 @@
           }
         ]
       ]
-    },
-    "Assert Calendar Normalize": {
-      "main": [
-        [
-          {
-            "node": "Merge Normalize Context",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Assert Calendar Finalize": {
-      "main": [
-        [
-          {
-            "node": "Merge Finalize Context",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Send Create Result Message": {
-      "main": [
-        [
-          {
-            "node": "Finalize Calendar Create Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send Calendar Message": {
-      "main": [
-        [
-          {
-            "node": "Finalize Calendar Create Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "createdAt": "2026-03-13T04:53:08.825Z",
@@ -265,7 +265,7 @@
       },
       "position": [
         -224,
-        -32
+        -160
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -295,7 +295,7 @@
       },
       "position": [
         0,
-        -32
+        -160
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -304,11 +304,11 @@
       "id": "f4f4204e-e5ec-4df7-9739-3f9734f9db8f",
       "name": "Build Normalize Request",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/build-normalize-request__bff8ba8c-b146-4316-a6d4-a7c757a4679b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/build-normalize-request__bff8ba8c-b146-4316-a6d4-a7c757a4679b.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n\n  const message = ($json && $json.message) || {};\n  const rawTextInput = asText($json.raw_text || message.text || message.caption || '');\n  const rawText = rawTextInput.replace(/^cal:\\s*/i, '').trim();\n  const chatId = asText($json.telegram_chat_id || (message.chat && message.chat.id));\n  const messageId = asText($json.telegram_message_id || message.message_id);\n  const actorCode = asText($json.actor_code).toLowerCase() || 'unknown';\n  const userId = asText($json.telegram_user_id || (message.from && message.from.id));\n  const smokeMode = $json.smoke_mode === true;\n  const calendarTestMode = $json.calendar_test_mode === true;\n  const testRunId = asText($json.test_run_id);\n  const explicitTestCalendarId = asText($json.test_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.test_calendar_id));\n  const explicitProdCalendarId = asText($json.prod_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id));\n  const configuredCalendarId = asText($json.family_calendar_id || ($json.config && $json.config.calendar && $json.config.calendar.family_calendar_id));\n\n  if (!rawText) throw new Error('calendar create requires raw_text');\n  if (!chatId) throw new Error('calendar create requires telegram_chat_id');\n  if (!messageId) throw new Error('calendar create requires telegram_message_id');\n\n  if (calendarTestMode) {\n    if (!explicitTestCalendarId) throw new Error('calendar_test_mode requires test_calendar_id');\n    if (!explicitProdCalendarId) throw new Error('calendar_test_mode requires prod_calendar_id');\n    if (explicitTestCalendarId === explicitProdCalendarId) {\n      throw new Error('calendar_test_mode blocked: test_calendar_id must differ from prod_calendar_id');\n    }\n  }\n\n  return [{\n    json: {\n      ...$json,\n      raw_text: rawText,\n      actor_code: actorCode,\n      source: {\n        chat_id: chatId,\n        message_id: messageId,\n        user_id: userId || null,\n      },\n      request_id: asText($json.request_id) || null,\n      telegram_user_id: userId || null,\n      route_confidence: Number.isFinite(Number($json.confidence)) ? Number($json.confidence) : null,\n      smoke_mode: smokeMode,\n      test_run_id: testRunId || null,\n      calendar_test_mode: calendarTestMode,\n      test_calendar_id: explicitTestCalendarId || null,\n      prod_calendar_id: explicitProdCalendarId || null,\n      family_calendar_id: calendarTestMode ? explicitTestCalendarId : configuredCalendarId || null,\n    },\n  }];\n"
       },
       "position": [
         224,
-        -32
+        -160
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -339,7 +339,7 @@
       },
       "position": [
         448,
-        40
+        -88
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -353,8 +353,8 @@
         "options": {}
       },
       "position": [
-        672,
-        -32
+        896,
+        -160
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -442,8 +442,8 @@
         }
       },
       "position": [
-        896,
-        -48
+        1120,
+        -176
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -455,8 +455,8 @@
         "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\nconst status = asText($json.status);\nconst chatId = asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id));\n\nlet text = '';\nif (status === 'needs_clarification') {\n  text = asText($json.clarification_question) || 'I need a bit more detail before creating this event.';\n} else if (status === 'rejected') {\n  text = asText($json.message) || 'This request is not supported in the current calendar flow.';\n} else {\n  text = 'Calendar request status updated.';\n}\n\nreturn [{ json: { ...$json, telegram_chat_id: chatId, telegram_message: mdv2Message(text) } }];\n"
       },
       "position": [
-        1120,
-        64
+        3360,
+        -16
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -473,15 +473,15 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2",
-          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}",
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        1344,
-        64
+        3584,
+        -16
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -491,11 +491,11 @@
       "id": "bb6d3e8a-4461-4ea5-8d5d-0fa8d4f5e479",
       "name": "Build Google Event Payload",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/build-google-event-payload__2f4ea2fd-0178-4f8c-88f4-2fdf86889d89.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/build-google-event-payload__2f4ea2fd-0178-4f8c-88f4-2fdf86889d89.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/build-google-event-payload__bb6d3e8a-4461-4ea5-8d5d-0fa8d4f5e479.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/build-google-event-payload__bb6d3e8a-4461-4ea5-8d5d-0fa8d4f5e479.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1120,
-        -128
+        1344,
+        -256
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -527,8 +527,8 @@
         "start": "={{ $json.google_start }}"
       },
       "position": [
-        1792,
-        -56
+        2016,
+        -184
       ],
       "retryOnFail": true,
       "type": "n8n-nodes-base.googleCalendar",
@@ -543,8 +543,8 @@
         "options": {}
       },
       "position": [
-        2016,
-        -128
+        2240,
+        -256
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -556,8 +556,8 @@
         "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/prepare-finalize-request__e114ec84-f1a4-4796-84a0-d4ec1229b304.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/prepare-finalize-request__e114ec84-f1a4-4796-84a0-d4ec1229b304.js] ${e.message}`;throw e;}"
       },
       "position": [
-        2240,
-        -128
+        2464,
+        -256
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -587,8 +587,8 @@
         "url": "http://pkm-server:8080/calendar/finalize"
       },
       "position": [
-        2464,
-        -56
+        2688,
+        -184
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -602,8 +602,8 @@
         "options": {}
       },
       "position": [
-        2688,
-        -128
+        3136,
+        -256
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -615,8 +615,8 @@
         "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\nconst asArray = (value) => Array.isArray(value) ? value : [];\n\nconst status = asText($json.status || $json.final_status || $json.request_status);\nconst success = status === 'calendar_created' || $json.success === true;\nconst chatId = asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id));\n\nlet telegramMessage = '';\nif (success) {\n  const subjectRaw = asText($json.confirmation_subject || ($json.normalized_event && $json.normalized_event.subject_code) || 'Event');\n  const start = asText($json.confirmation_block_start || (($json.normalized_event && $json.normalized_event.block_window)\n    ? $json.normalized_event.block_window.start_date_local + ' ' + $json.normalized_event.block_window.start_time_local\n    : ''));\n  const end = asText($json.confirmation_block_end || (($json.normalized_event && $json.normalized_event.block_window)\n    ? $json.normalized_event.block_window.end_date_local + ' ' + $json.normalized_event.block_window.end_time_local\n    : ''));\n\n  const lines = ['Calendar event created', subjectRaw, start + ' -> ' + end];\n\n  const conflictCount = Number($json.conflict_count || 0);\n  if (Number.isFinite(conflictCount) && conflictCount > 0) {\n    lines.push('Potential conflicts: ' + conflictCount);\n    asArray($json.conflict_preview).map(asText).filter(Boolean).slice(0, 3).forEach((entry) => {\n      lines.push('- ' + entry);\n    });\n  }\n\n  if (asArray($json.warning_codes).includes('calendar_conflict_check_failed')) {\n    lines.push('Conflict check unavailable; event created anyway.');\n  }\n\n  telegramMessage = mdv2Message(lines.join('\\n').trim());\n} else {\n  const errorMessage = asText($json.error && $json.error.message) || asText($json.message) || 'Calendar event could not be created. Please retry.';\n  telegramMessage = mdv2Message(['Calendar event failed', errorMessage].join('\\n'));\n}\n\nreturn [{ json: { ...$json, telegram_chat_id: chatId, telegram_message: telegramMessage } }];"
       },
       "position": [
-        2912,
-        -128
+        3360,
+        -256
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -633,15 +633,15 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2",
-          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}",
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        3136,
-        -128
+        3584,
+        -256
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -673,8 +673,8 @@
         "timeMin": "={{ $json.google_start }}"
       },
       "position": [
-        1344,
-        -128
+        1568,
+        -256
       ],
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3
@@ -686,8 +686,8 @@
         "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/prepare-conflict-context__5bdbddf0-d8cf-4f5a-ae4d-f4cca9dc3f3d.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/prepare-conflict-context__5bdbddf0-d8cf-4f5a-ae4d-f4cca9dc3f3d.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1568,
-        -128
+        1792,
+        -256
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -695,41 +695,41 @@
     {
       "id": "35b0609a-4803-446a-882c-51d16a574091",
       "name": "Assert Calendar Normalize",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        32,
-        -256
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst status = String($json.status || '').trim();\nassertions.push({ name: 'normalize_status_present', ok: !!status, status: status || null });\nif (status === 'ready_to_create') {\n  assertions.push({ name: 'normalized_event_present', ok: !!$json.normalized_event });\n}\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
-      }
+      },
+      "position": [
+        672,
+        -88
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "id": "a7f92c0f-4c3e-4fd9-b82d-bbe778de8257",
       "name": "Assert Calendar Finalize",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        976,
-        -96
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst status = String($json.status || $json.final_status || '').trim();\nassertions.push({ name: 'finalize_status_present', ok: !!status, status: status || null });\nif ($json.calendar_test_mode === true) {\n  assertions.push({ name: 'calendar_id_is_test', ok: !!$json.google_calendar_id && $json.google_calendar_id === $json.test_calendar_id });\n}\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
-      }
+      },
+      "position": [
+        2912,
+        -184
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "id": "6c2fab92-780e-4b50-b6e4-ade0354b8955",
       "name": "Finalize Calendar Create Result",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1536,
-        -96
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'telegram_message_non_empty', ok: msg.length > 0 });\nconst status = String($json.status || $json.final_status || '').trim();\nif (status === 'calendar_created') {\n  assertions.push({ name: 'google_event_id_present', ok: !!$json.google_event_id });\n}\nconst ok = assertions.every((a) => a.ok === true);\nreturn [{\n  json: {\n    ...$json,\n    test_case: 'calendar_create',\n    ok,\n    run_id: $json.test_run_id || null,\n    artifacts: {\n      google_event_id: $json.google_event_id ?? null,\n      google_calendar_id: $json.google_calendar_id ?? null,\n      request_id: $json.request_id ?? null,\n      telegram_message: msg || null,\n    },\n    assertions,\n    error: ok ? null : { message: 'calendar create assertions failed' },\n  },\n}];"
-      }
+      },
+      "position": [
+        3808,
+        -160
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
@@ -760,6 +760,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-14T19:33:24.560Z",
-  "versionCounter": 72
+  "updatedAt": "2026-03-14T23:26:20.708Z",
+  "versionCounter": 107
 }

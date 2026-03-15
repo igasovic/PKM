@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "a51bda30-90ac-46a0-8abc-727efbd7555f",
+  "activeVersionId": "f6b45c97-282e-4432-9682-45dcf0388601",
   "connections": {
     "Format Calendar Read Message": {
       "main": [
@@ -80,6 +80,17 @@
         ]
       ]
     },
+    "Send Calendar Read Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Finalize Calendar Read Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "When Executed by Another Workflow": {
       "main": [
         [
@@ -87,17 +98,6 @@
             "index": 0,
             "node": "PKM Config",
             "type": "main"
-          }
-        ]
-      ]
-    },
-    "Send Calendar Read Message": {
-      "main": [
-        [
-          {
-            "node": "Finalize Calendar Read Result",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -221,8 +221,8 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2",
-          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}",
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
@@ -368,15 +368,15 @@
     {
       "id": "b0f1fd81-c09c-436e-a25d-bab916ee899e",
       "name": "Finalize Calendar Read Result",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        960,
-        -160
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = [];\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'telegram_message_non_empty', ok: msg.length > 0 });\nassertions.push({ name: 'events_count_present', ok: Number.isFinite(Number($json.events_count ?? 0)) });\nif ($json.calendar_test_mode === true) {\n  assertions.push({ name: 'calendar_id_is_test', ok: !!$json.google_calendar_id && $json.google_calendar_id === $json.test_calendar_id });\n}\nif ($json.expected_google_event_id) {\n  assertions.push({ name: 'expected_event_found', ok: $json.smoke_expected_event_found === true || $json.smoke_tagged_event_found === true });\n}\nconst ok = assertions.every((a) => a.ok === true);\nreturn [{\n  json: {\n    ...$json,\n    test_case: 'calendar_read',\n    ok,\n    run_id: $json.test_run_id || null,\n    artifacts: {\n      google_calendar_id: $json.google_calendar_id ?? null,\n      expected_google_event_id: $json.expected_google_event_id ?? null,\n      events_count: $json.events_count ?? 0,\n      telegram_message: msg || null,\n      smoke_expected_event_found: $json.smoke_expected_event_found === true,\n      smoke_tagged_event_found: $json.smoke_tagged_event_found === true,\n    },\n    assertions,\n    error: ok ? null : { message: 'calendar read assertions failed' },\n  },\n}];"
-      }
+      },
+      "position": [
+        1120,
+        -240
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
@@ -407,6 +407,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-14T19:33:42.077Z",
-  "versionCounter": 47
+  "updatedAt": "2026-03-14T23:26:48.881Z",
+  "versionCounter": 70
 }
