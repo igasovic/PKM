@@ -37,6 +37,14 @@ Current cleanup behavior:
 - PKM test entries are deleted from `pkm_test` in `T99 - Cleanup`
 - backend persisted test-mode state is restored in `T99 - Cleanup`
 - calendar cleanup is intentionally not destructive by default and is reported as skipped unless a dedicated delete workflow is enabled
+- cleanup is step-isolated so test-mode restore still runs even when PKM delete fails
+- cleanup deduplicates and deletes any captured entry IDs available from artifacts/results (partial cleanup support)
+
+Current smoke failure behavior:
+
+- execute-workflow test calls use node-level error handling (`onError`) and `alwaysOutputData` so the chain reaches `T99 - Cleanup`
+- `00 Smoke - Master` now hard-fails at the end when any test case failed, after sending summary
+- `/pull`, `/distill`, and `/delete` smoke command builders no longer fall back to entry `1`
 
 ---
 

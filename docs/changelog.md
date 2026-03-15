@@ -1,4 +1,26 @@
 # changelog
+## 2026-03-15 — Smoke harness failure propagation + safe fallback removal
+
+### What changed
+- Updated smoke capture URL fixtures to use a real extractable page:
+  - `https://paulgraham.com/todo.html`
+  - affected:
+    - `test/smoke/fixtures/telegram/capture_with_url.json`
+    - `test/smoke/fixtures/telegram/capture_duplicate.json`
+    - `src/n8n/workflows/00-smoke-master__2DB1S0mq7UQN4U3InXRM0.json` (`Build T04 Capture Fixture`)
+- Removed unsafe fallback command defaults that previously targeted entry `1`:
+  - `Build T06 Pull Command` now falls back to `/pull` (usage path)
+  - `Build T08 Distill Command` now falls back to `/distill` (usage path)
+  - `Build T09 Delete Command` now falls back to `/delete test` (usage path)
+- Hardened smoke master error semantics:
+  - `Run T03..T11` execute-workflow nodes now use explicit node-level error handling (`onError=continueRegularOutput`) with `alwaysOutputData=true`
+  - added final `Fail Smoke Run` node after summary send to mark workflow failed when any smoke test failed
+  - `Send Smoke Summary` now routes both success and error outputs to final fail gate
+- Hardened `T99 - Cleanup` externalized node:
+  - delete and test-mode restore are isolated steps (restore still runs if delete fails)
+  - cleanup aggregates IDs from artifacts and prior results and deduplicates before delete
+  - cleanup reports targeted IDs in artifacts (`deleted_ids`)
+
 ## 2026-03-14 — Smoke harness implementation (n8n-first)
 
 ### What changed

@@ -518,6 +518,29 @@
           }
         ]
       ]
+    },
+    "Send Smoke Summary": {
+      "main": [
+        [
+          {
+            "node": "Fail Smoke Run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail Smoke Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail Smoke Run": {
+      "main": [
+        []
+      ]
     }
   },
   "createdAt": "2026-03-14T23:02:45.099Z",
@@ -619,7 +642,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "a6d9e8ce-cb24-419e-afb1-1d8c75a27833",
       "name": "Run T03 Continue Router",
       "parameters": {
@@ -647,7 +669,9 @@
         -384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "55f8683e-a7b7-49de-b44d-7d49f22d0c0d",
@@ -676,7 +700,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "21689e22-802e-4fe3-ba12-bb541514b765",
       "name": "Run T03 Calendar Router",
       "parameters": {
@@ -704,7 +727,9 @@
         -128
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "e5f4e4a6-f51e-4d70-afb0-8449ee2e99a9",
@@ -733,7 +758,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "52cd124e-998e-47bf-b525-1ed94e082dff",
       "name": "Run T03 Ambiguous Router",
       "parameters": {
@@ -761,7 +785,9 @@
         128
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "b5716384-e687-4135-a098-c01363b0613c",
@@ -790,7 +816,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "7a453e7b-cd3c-470b-b4ea-0022256c20c2",
       "name": "Run T03 Capture Router",
       "parameters": {
@@ -818,7 +843,9 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "cac1d45a-67fe-48d4-996a-14901dfcf205",
@@ -837,7 +864,7 @@
       "id": "350b772b-53b1-44b0-87cd-34dd28d44611",
       "name": "Build T04 Capture Fixture",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst fixture = {\n  update_id: 235792351,\n  message: {\n    message_id: 1515,\n    from: { id: 1509032341, is_bot: false, first_name: 'igorg', username: 'igorg89', language_code: 'en' },\n    chat: { id: 1509032341, first_name: 'igorg', username: 'igorg89', type: 'private' },\n    date: 1773520405,\n    text: 'Interesting read on retrieval systems https://example.com/retrieval-playbook',\n  },\n};\nreturn [{ json: { ...base, ...fixture, smoke_mode: true, smoke_case: 'telegram_capture', current_test_case: 'T04-telegram-capture', smoke_telegram_dry_run: true } }];"
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst fixture = {\n  update_id: 235792351,\n  message: {\n    message_id: 1515,\n    from: { id: 1509032341, is_bot: false, first_name: 'igorg', username: 'igorg89', language_code: 'en' },\n    chat: { id: 1509032341, first_name: 'igorg', username: 'igorg89', type: 'private' },\n    date: 1773520405,\n    text: 'Interesting read on retrieval systems https://paulgraham.com/todo.html',\n  },\n};\nreturn [{ json: { ...base, ...fixture, smoke_mode: true, smoke_case: 'telegram_capture', current_test_case: 'T04-telegram-capture', smoke_telegram_dry_run: true } }];"
       },
       "position": [
         -416,
@@ -847,7 +874,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "c695d71a-a2a5-4bbc-b483-0750b65d62a2",
       "name": "Run T04 Telegram Capture",
       "parameters": {
@@ -875,7 +901,9 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "9564cc73-01be-4972-9b7f-cebde2e5e4e5",
@@ -904,7 +932,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "2f286790-5727-4f03-90a0-afe7e3eac09e",
       "name": "Run T05 Email Capture",
       "parameters": {
@@ -932,7 +959,9 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "962321d1-ba35-4b14-aa49-93d6edb34472",
@@ -951,7 +980,7 @@
       "id": "05960bcb-3c48-4979-9209-7612d992656f",
       "name": "Build T06 Pull Command",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst entryId = (($json.artifacts || {}).telegram_capture_entry_id || '').toString().trim();\nconst messageText = entryId ? ('/pull ' + entryId) : '/pull 1';\nreturn [{ json: { ...base, current_test_case: 'T06-pull', smoke_mode: true, smoke_case: 'pull', smoke_telegram_dry_run: true, message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst entryId = (($json.artifacts || {}).telegram_capture_entry_id || '').toString().trim();\nconst hasEntryId = entryId.length > 0;\nconst messageText = hasEntryId ? ('/pull ' + entryId) : '/pull';\nreturn [{ json: { ...base, current_test_case: 'T06-pull', smoke_mode: true, smoke_case: 'pull', smoke_telegram_dry_run: true, smoke_precheck_error: hasEntryId ? null : 'missing telegram_capture_entry_id', message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
       },
       "position": [
         928,
@@ -961,7 +990,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "735ba36f-94a4-4b3d-b3cf-90185638a4d5",
       "name": "Run T06 Pull",
       "parameters": {
@@ -989,7 +1017,9 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "6dcf29d3-341a-46bb-830d-589453ef4cd4",
@@ -1018,7 +1048,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "88faecc0-2c0e-4ba1-87e0-b4c1f258850f",
       "name": "Run T07 Continue",
       "parameters": {
@@ -1046,7 +1075,9 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "4b9bcd07-30e2-4edf-8674-cbfa1ca3e895",
@@ -1065,7 +1096,7 @@
       "id": "f31ca726-5a9e-450e-8dae-b8df914696d6",
       "name": "Build T08 Distill Command",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst entryId = (($json.artifacts || {}).telegram_capture_entry_id || '').toString().trim();\nconst messageText = entryId ? ('/distill ' + entryId) : '/distill 1';\nreturn [{ json: { ...base, current_test_case: 'T08-distill', smoke_mode: true, smoke_case: 'distill', smoke_telegram_dry_run: true, message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst entryId = (($json.artifacts || {}).telegram_capture_entry_id || '').toString().trim();\nconst hasEntryId = entryId.length > 0;\nconst messageText = hasEntryId ? ('/distill ' + entryId) : '/distill';\nreturn [{ json: { ...base, current_test_case: 'T08-distill', smoke_mode: true, smoke_case: 'distill', smoke_telegram_dry_run: true, smoke_precheck_error: hasEntryId ? null : 'missing telegram_capture_entry_id', message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
       },
       "position": [
         2272,
@@ -1075,7 +1106,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "4e2c51e7-6c62-4768-bede-a157e8d3000d",
       "name": "Run T08 Distill",
       "parameters": {
@@ -1103,7 +1133,9 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "787ba787-935f-48cb-8be6-a9b8a58df28e",
@@ -1122,7 +1154,7 @@
       "id": "e0563ce2-6eea-42b3-8148-4cb58f26ded5",
       "name": "Build T09 Delete Command",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst artifacts = $json.artifacts || {};\nconst ids = [artifacts.telegram_capture_entry_id, artifacts.email_capture_entry_id].filter((v) => !!v).map((v) => String(v));\nconst idList = ids.length ? ids.join(',') : '1';\nconst messageText = '/delete test ' + idList + ' --force';\nreturn [{ json: { ...base, current_test_case: 'T09-delete', smoke_mode: true, smoke_case: 'delete', smoke_telegram_dry_run: true, message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst artifacts = $json.artifacts || {};\nconst ids = [artifacts.telegram_capture_entry_id, artifacts.email_capture_entry_id].filter((v) => !!v).map((v) => String(v));\nconst hasIds = ids.length > 0;\nconst idList = ids.join(',');\nconst messageText = hasIds ? ('/delete test ' + idList + ' --force') : '/delete test';\nreturn [{ json: { ...base, current_test_case: 'T09-delete', smoke_mode: true, smoke_case: 'delete', smoke_telegram_dry_run: true, smoke_precheck_error: hasIds ? null : 'missing capture entry IDs for delete', message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
       },
       "position": [
         2944,
@@ -1132,7 +1164,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "5e8f80e1-6c23-427c-9ad4-13c3e75c75e3",
       "name": "Run T09 Delete",
       "parameters": {
@@ -1160,7 +1191,9 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "a060c1a9-0c71-458d-91b3-ef9d82404663",
@@ -1189,7 +1222,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "29952227-efbc-4e0b-b752-620ba2eb72c4",
       "name": "Run T10 Calendar Create",
       "parameters": {
@@ -1217,7 +1249,9 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "6b60115e-31de-41d6-952e-bef5941dad0f",
@@ -1246,7 +1280,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "ab9f5822-6504-42bf-bd72-635661adf0ab",
       "name": "Run T10 Clarification",
       "parameters": {
@@ -1274,7 +1307,9 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "e6210ca8-0797-41f0-a381-ca684eafcb57",
@@ -1303,7 +1338,6 @@
       "typeVersion": 2
     },
     {
-      "continueOnFail": true,
       "id": "27cf05d4-f6ac-457a-9565-e58fade4de8e",
       "name": "Run T11 Calendar Read",
       "parameters": {
@@ -1331,7 +1365,9 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "id": "6768349e-d5bd-4504-8d7b-931e57f1c5c8",
@@ -1396,7 +1432,22 @@
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "webhookId": "2e7a6d72-ce4a-4ae1-86aa-07dca8557fee"
+      "webhookId": "2e7a6d72-ce4a-4ae1-86aa-07dca8557fee",
+      "onError": "continueErrorOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "b7db6e4a-cdc4-44fc-a9ec-9d907f4e05be",
+      "name": "Fail Smoke Run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        -96
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nlet summary = null;\ntry {\n  const items = $items('Build Smoke Summary', 0, 0);\n  summary = Array.isArray(items) && items[0] && items[0].json ? { ...items[0].json } : null;\n} catch (_err) {\n  summary = null;\n}\n\nif (!summary) {\n  throw new Error('Smoke summary missing; cannot finalize run status');\n}\n\nif ($json && $json.error) {\n  const sendErr = String(($json.error && $json.error.message) || $json.error);\n  throw new Error('Smoke summary send failed: ' + sendErr);\n}\n\nif (summary.overall_ok !== true) {\n  const failed = Number(summary.failed_count || 0);\n  const runId = String(summary.test_run_id || 'unknown');\n  throw new Error('Smoke run failed: ' + failed + ' test(s) failed (run ' + runId + ')');\n}\n\nreturn [{ json: { ...summary, smoke_final_status: 'passed' } }];\n"
+      }
     }
   ],
   "settings": {
