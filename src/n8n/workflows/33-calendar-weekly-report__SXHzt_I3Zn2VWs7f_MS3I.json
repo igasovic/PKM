@@ -153,7 +153,6 @@
       },
       "id": "5df0fc21-169e-4789-bb54-cec03853f527",
       "name": "Google Calendar Get Events",
-      "onError": "continueRegularOutput",
       "parameters": {
         "calendar": {
           "__rl": true,

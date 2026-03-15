@@ -42,9 +42,11 @@ Current cleanup behavior:
 
 Current smoke failure behavior:
 
-- execute-workflow test calls use node-level error handling (`onError`) and `alwaysOutputData` so the chain reaches `T99 - Cleanup`
-- `00 Smoke - Master` now hard-fails at the end when any test case failed, after sending summary
+- fail-fast policy is enforced (no node-level continue-on-fail settings)
+- dependent tests hard-fail at precheck when required artifacts are missing (`telegram_capture_entry_id` before `T06`/`T08`)
 - `/pull`, `/distill`, and `/delete` smoke command builders no longer fall back to entry `1`
+- `00 Smoke - Master` routes failures into `99 Error Handling` (`errorWorkflow`)
+- `99 Error Handling` detects smoke master failures, executes smoke cleanup, and reports cleanup status in the failure Telegram alert
 
 ---
 

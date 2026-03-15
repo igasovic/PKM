@@ -510,7 +510,6 @@
       "id": "d5f2cb9c-d4bf-4c84-bf9c-d6352c6b8cf4",
       "maxTries": 2,
       "name": "Google Calendar Create Event",
-      "onError": "continueRegularOutput",
       "parameters": {
         "additionalFields": {
           "color": "={{ $json.google_color_id }}",
@@ -657,7 +656,6 @@
       },
       "id": "4f5207df-f6f9-469a-8c2b-f2a1d274f74a",
       "name": "Google Calendar Check Conflicts",
-      "onError": "continueRegularOutput",
       "parameters": {
         "calendar": {
           "__rl": true,

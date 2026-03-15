@@ -55,6 +55,11 @@ return rows.map(r => ({ json: r }));
 const { getConfig } = require('/data/src/libs/config.js');
 ```
 
+### 3.4 Fail-fast error handling
+- Do not set `continueOnFail: true` on any node.
+- Do not set node `onError` to continuation modes (`continueRegularOutput`, `continueErrorOutput`).
+- Default behavior must be fail-fast so workflow errors stop execution unless a PRD explicitly documents an exception.
+
 ## 4) Telegram Node Rules
 
 ### 4.1 Trigger and entry-point policy

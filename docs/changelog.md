@@ -1,4 +1,30 @@
 # changelog
+## 2026-03-15 — Smoke cleanup on error path via WF99
+
+### What changed
+- Wired smoke master to use WF99 as `errorWorkflow`:
+  - `src/n8n/workflows/00-smoke-master__2DB1S0mq7UQN4U3InXRM0.json`
+- Extended WF99 compose logic to detect smoke-master failures and run cleanup on the error path:
+  - `src/n8n/nodes/99-error-handling/compose-message__566912ab-5d96-4405-8443-6a296ef03366.js`
+  - detects smoke by workflow id/name
+  - invokes smoke cleanup helper (`00-smoke-master/t99-cleanup__...js`)
+  - includes cleanup status/details in Telegram failure report (`Smoke cleanup: ok|failed`, deleted IDs, cleanup error)
+- Updated smoke PRD snapshot/failure behavior notes:
+  - `docs/PRD/smoke-test-PRD.md`
+
+## 2026-03-15 — Fail-fast n8n workflow policy + smoke precheck hard-fail
+
+### What changed
+- Enforced fail-fast workflow behavior across `src/n8n/workflows/`:
+  - removed all `continueOnFail: true`
+  - removed node-level continuation error modes (`onError: continueRegularOutput|continueErrorOutput`)
+- Updated smoke master command prechecks so dependent tests are not called with missing IDs:
+  - `Build T06 Pull Command` now throws when `telegram_capture_entry_id` is missing
+  - `Build T08 Distill Command` now throws when `telegram_capture_entry_id` is missing
+  - `Build T09 Delete Command` now throws when no capture IDs are available
+- Added style-guide rule:
+  - `docs/n8n_node_style_guide.md` section `3.4 Fail-fast error handling`
+
 ## 2026-03-15 — Smoke harness failure propagation + safe fallback removal
 
 ### What changed

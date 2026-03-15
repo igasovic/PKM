@@ -670,7 +670,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -728,7 +727,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -786,7 +784,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -844,7 +841,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -902,7 +898,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -960,7 +955,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -980,7 +974,7 @@
       "id": "05960bcb-3c48-4979-9209-7612d992656f",
       "name": "Build T06 Pull Command",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst entryId = (($json.artifacts || {}).telegram_capture_entry_id || '').toString().trim();\nconst hasEntryId = entryId.length > 0;\nconst messageText = hasEntryId ? ('/pull ' + entryId) : '/pull';\nreturn [{ json: { ...base, current_test_case: 'T06-pull', smoke_mode: true, smoke_case: 'pull', smoke_telegram_dry_run: true, smoke_precheck_error: hasEntryId ? null : 'missing telegram_capture_entry_id', message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst entryId = (($json.artifacts || {}).telegram_capture_entry_id || '').toString().trim();\nif (!entryId) {\n  throw new Error('T06 precheck failed: telegram_capture_entry_id is required before /pull');\n}\nconst messageText = '/pull ' + entryId;\nreturn [{ json: { ...base, current_test_case: 'T06-pull', smoke_mode: true, smoke_case: 'pull', smoke_telegram_dry_run: true, message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
       },
       "position": [
         928,
@@ -1018,7 +1012,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -1076,7 +1069,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -1096,7 +1088,7 @@
       "id": "f31ca726-5a9e-450e-8dae-b8df914696d6",
       "name": "Build T08 Distill Command",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst entryId = (($json.artifacts || {}).telegram_capture_entry_id || '').toString().trim();\nconst hasEntryId = entryId.length > 0;\nconst messageText = hasEntryId ? ('/distill ' + entryId) : '/distill';\nreturn [{ json: { ...base, current_test_case: 'T08-distill', smoke_mode: true, smoke_case: 'distill', smoke_telegram_dry_run: true, smoke_precheck_error: hasEntryId ? null : 'missing telegram_capture_entry_id', message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst entryId = (($json.artifacts || {}).telegram_capture_entry_id || '').toString().trim();\nif (!entryId) {\n  throw new Error('T08 precheck failed: telegram_capture_entry_id is required before /distill');\n}\nconst messageText = '/distill ' + entryId;\nreturn [{ json: { ...base, current_test_case: 'T08-distill', smoke_mode: true, smoke_case: 'distill', smoke_telegram_dry_run: true, message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
       },
       "position": [
         2272,
@@ -1134,7 +1126,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -1154,7 +1145,7 @@
       "id": "e0563ce2-6eea-42b3-8148-4cb58f26ded5",
       "name": "Build T09 Delete Command",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst artifacts = $json.artifacts || {};\nconst ids = [artifacts.telegram_capture_entry_id, artifacts.email_capture_entry_id].filter((v) => !!v).map((v) => String(v));\nconst hasIds = ids.length > 0;\nconst idList = ids.join(',');\nconst messageText = hasIds ? ('/delete test ' + idList + ' --force') : '/delete test';\nreturn [{ json: { ...base, current_test_case: 'T09-delete', smoke_mode: true, smoke_case: 'delete', smoke_telegram_dry_run: true, smoke_precheck_error: hasIds ? null : 'missing capture entry IDs for delete', message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst artifacts = $json.artifacts || {};\nconst ids = [artifacts.telegram_capture_entry_id, artifacts.email_capture_entry_id].filter((v) => !!v).map((v) => String(v));\nif (!ids.length) {\n  throw new Error('T09 precheck failed: no capture entry IDs available for delete');\n}\nconst idList = ids.join(',');\nconst messageText = '/delete test ' + idList + ' --force';\nreturn [{ json: { ...base, current_test_case: 'T09-delete', smoke_mode: true, smoke_case: 'delete', smoke_telegram_dry_run: true, message: { text: messageText, chat: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id }, from: { id: Number(base.telegram_test_chat_id || 0) || base.telegram_test_chat_id } }, telegram_chat_id: String(base.telegram_test_chat_id || '') } }];\n"
       },
       "position": [
         2944,
@@ -1192,7 +1183,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -1250,7 +1240,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -1308,7 +1297,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -1366,7 +1354,6 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
-      "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
@@ -1433,7 +1420,6 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "webhookId": "2e7a6d72-ce4a-4ae1-86aa-07dca8557fee",
-      "onError": "continueErrorOutput",
       "alwaysOutputData": true
     },
     {
@@ -1453,7 +1439,8 @@
   "settings": {
     "availableInMCP": false,
     "callerPolicy": "workflowsFromSameOwner",
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW"
   },
   "shared": [
     {

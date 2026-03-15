@@ -8,8 +8,55 @@ module.exports = async function run(ctx) {
     ({ mdv2Message } = require('../../../libs/telegram-markdown.js'));
   }
   const e = (ctx && ctx.$json) || {};
+  const SMOKE_MASTER_WORKFLOW_ID = '2DB1S0mq7UQN4U3InXRM0';
+  const SMOKE_MASTER_WORKFLOW_NAME = '00 Smoke - Master';
+  const SMOKE_CLEANUP_NODE_PATH = '/data/src/n8n/nodes/00-smoke-master/t99-cleanup__f4215c02-bc84-4aea-801b-8a855811849d.js';
 
   const asText = (value) => String(value === undefined || value === null ? '' : value).trim();
+
+  const findFirstValueByKey = (obj, key) => {
+    const target = String(key || '').trim();
+    if (!target || obj == null) return null;
+    const stack = [obj];
+    const seen = new Set();
+    while (stack.length) {
+      const current = stack.pop();
+      if (!current || typeof current !== 'object') continue;
+      if (seen.has(current)) continue;
+      seen.add(current);
+      if (Object.prototype.hasOwnProperty.call(current, target) && current[target] != null) {
+        return current[target];
+      }
+      if (Array.isArray(current)) {
+        current.forEach((v) => stack.push(v));
+      } else {
+        Object.keys(current).forEach((k) => stack.push(current[k]));
+      }
+    }
+    return null;
+  };
+
+  const collectEntryIds = (obj) => {
+    const ids = new Set();
+    const stack = [obj];
+    const seen = new Set();
+    while (stack.length) {
+      const current = stack.pop();
+      if (!current || typeof current !== 'object') continue;
+      if (seen.has(current)) continue;
+      seen.add(current);
+      if (Array.isArray(current)) {
+        current.forEach((v) => stack.push(v));
+        continue;
+      }
+      const maybeEntryId = current.entry_id;
+      if (Number.isFinite(Number(maybeEntryId)) && Number(maybeEntryId) > 0) {
+        ids.add(Number(maybeEntryId));
+      }
+      Object.keys(current).forEach((k) => stack.push(current[k]));
+    }
+    return Array.from(ids);
+  };
 
   const toTitle = (slug) => {
     return asText(slug)
@@ -45,6 +92,10 @@ module.exports = async function run(ctx) {
     || asText(e.workflowName)
     || asText(e.workflow && e.workflow.id)
     || 'unknown-workflow';
+  const workflowId = asText(e.workflow && e.workflow.id)
+    || asText(e.workflowId)
+    || asText(findFirstValueByKey(e, 'workflowId'))
+    || '';
 
   const message = asText(e.error && e.error.message)
     || asText(e.errorMessage)
@@ -91,14 +142,68 @@ module.exports = async function run(ctx) {
     return [];
   }
 
+  let smokeCleanupSummary = null;
+  const isSmokeMasterError = workflowId === SMOKE_MASTER_WORKFLOW_ID || workflowName === SMOKE_MASTER_WORKFLOW_NAME;
+  if (isSmokeMasterError) {
+    try {
+      const cleanupFn = require(SMOKE_CLEANUP_NODE_PATH);
+      const extractedRunId = asText(findFirstValueByKey(e, 'test_run_id')) || asText(message.match(/\b(smoke_\d{4}_\d{2}_\d{2}_\d{6})\b/i)?.[1]);
+      const extractedPrior = findFirstValueByKey(e, 'prior_test_mode');
+      const extractedEntryIds = collectEntryIds(e);
+      const cleanupInput = {
+        test_run_id: extractedRunId || null,
+        prior_test_mode: typeof extractedPrior === 'boolean' ? extractedPrior : false,
+        results: [],
+        artifacts: {
+          telegram_capture_entry_id: extractedEntryIds[0] || null,
+          email_capture_entry_id: extractedEntryIds[1] || null,
+        },
+      };
+      const cleanupRows = await cleanupFn({
+        ...ctx,
+        $json: cleanupInput,
+      });
+      const cleanupJson = Array.isArray(cleanupRows) && cleanupRows[0] && cleanupRows[0].json ? cleanupRows[0].json : null;
+      const cleanupResult = cleanupJson && Array.isArray(cleanupJson.results)
+        ? cleanupJson.results.find((row) => row && row.test_case === 'T99-cleanup') || null
+        : null;
+      smokeCleanupSummary = {
+        ok: !!(cleanupResult && cleanupResult.ok === true),
+        runId: extractedRunId || null,
+        deletedIds: cleanupResult && cleanupResult.artifacts && Array.isArray(cleanupResult.artifacts.deleted_ids)
+          ? cleanupResult.artifacts.deleted_ids
+          : extractedEntryIds,
+        cleanupError: cleanupResult && cleanupResult.error ? asText(cleanupResult.error.message) : '',
+      };
+    } catch (cleanupErr) {
+      smokeCleanupSummary = {
+        ok: false,
+        runId: null,
+        deletedIds: [],
+        cleanupError: asText(cleanupErr && cleanupErr.message ? cleanupErr.message : cleanupErr),
+      };
+    }
+  }
+
   const lines = [
     `n8n error run ${execId}`,
     `WF: ${workflowName}`,
+    workflowId ? `WFID: ${workflowId}` : '',
     `Node: ${nodeName}`,
     `When: ${time}`,
     `Msg: ${message.slice(0, 500)}`,
-  ];
+  ].filter(Boolean);
   if (execUrl) lines.push(`Exec: ${execUrl}`);
+  if (smokeCleanupSummary) {
+    lines.push(`Smoke cleanup: ${smokeCleanupSummary.ok ? 'ok' : 'failed'}`);
+    if (smokeCleanupSummary.runId) lines.push(`Smoke run: ${smokeCleanupSummary.runId}`);
+    if (Array.isArray(smokeCleanupSummary.deletedIds) && smokeCleanupSummary.deletedIds.length) {
+      lines.push(`Deleted IDs: ${smokeCleanupSummary.deletedIds.join(',')}`);
+    }
+    if (smokeCleanupSummary.cleanupError) {
+      lines.push(`Cleanup error: ${smokeCleanupSummary.cleanupError.slice(0, 300)}`);
+    }
+  }
 
   return [{ json: { telegram_message: mdv2Message(lines.join('\n')) } }];
 };
