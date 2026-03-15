@@ -8,6 +8,7 @@ services:
     volumes:
       - ./homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
+      - /home/igasovic/backup:/backup:ro
 
   matter-server:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
