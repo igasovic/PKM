@@ -1,6 +1,6 @@
 {
   "active": true,
-  "activeVersionId": "656a5d7e-f226-4b30-8876-9e10035a6ff5",
+  "activeVersionId": "260ba9a2-6923-4fab-aa52-684a6ac8793c",
   "connections": {
     "Compose Message": {
       "main": [
@@ -107,6 +107,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-14T19:28:17.187Z",
-  "versionCounter": 183
+  "updatedAt": "2026-03-14T23:14:43.280Z",
+  "versionCounter": 207
 }

@@ -1,0 +1,81 @@
+{
+  "active": true,
+  "activeVersionId": "7c0d4db1-399e-4a8e-95fc-be006a8ba594",
+  "connections": {
+    "Smoke Ingress Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Compose Smoke Ingress Response",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-03-14T23:03:14.501Z",
+  "description": null,
+  "isArchived": false,
+  "name": "00 Smoke - Public Ingress",
+  "nodes": [
+    {
+      "id": "c02cfb46-ea0c-47b9-b75f-0f4ffed41103",
+      "name": "Smoke Ingress Webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {},
+        "path": "pkm/smoke/ingress"
+      },
+      "position": [
+        -480,
+        -128
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "webhookId": "e12ab21e-e97d-44fa-863d-d15fea818fd2"
+    },
+    {
+      "id": "fb7e1873-a7f9-495f-b43f-4c4f1dbfb99f",
+      "name": "Compose Smoke Ingress Response",
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst b = $json.body || {};\nreturn [{\n  json: {\n    ok: true,\n    ingress: 'pkm/smoke/ingress',\n    received_at: new Date().toISOString(),\n    test_run_id: b.test_run_id || null,\n    smoke: b.smoke === true,\n  },\n}];"
+      },
+      "position": [
+        -224,
+        -128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1"
+  },
+  "shared": [
+    {
+      "createdAt": "2026-03-14T23:03:14.501Z",
+      "project": {
+        "createdAt": "2026-01-12T01:58:24.486Z",
+        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
+        "description": null,
+        "icon": null,
+        "id": "m23P41JejIbnV7Xa",
+        "name": "Igor Gasovic <skljstore@gmail.com>",
+        "type": "personal",
+        "updatedAt": "2026-01-12T04:27:38.916Z"
+      },
+      "projectId": "m23P41JejIbnV7Xa",
+      "role": "workflow:owner",
+      "updatedAt": "2026-03-14T23:03:14.501Z",
+      "workflowId": "XUTDLS671MB81uJfn-rzY"
+    }
+  ],
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-03-14T23:14:32.264Z",
+  "versionCounter": 16
+}

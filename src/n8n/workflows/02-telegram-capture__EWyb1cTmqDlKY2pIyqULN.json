@@ -1,14 +1,91 @@
 {
   "active": true,
-  "activeVersionId": "e701a3cc-8ac5-462f-9996-4e5101f84575",
+  "activeVersionId": "613e1bf4-74fd-42fc-b174-39d6d775a516",
   "connections": {
+    "Assert Format Create Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Assert Format Duplicate Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send 'duplicate' message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Assert Format Thought Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send 'thought saved' message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Assert Insert Telegram": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "If 'skipped'",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Assert Normalize Telegram": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Insert",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Assert Tier1 Telegram": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Create Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Assert Web Extraction": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Call 'Tier-1 Enhancement'",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Call '06 Web Extraction'": {
       "main": [
         [
           {
+            "index": 0,
             "node": "Assert Web Extraction",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -17,9 +94,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Assert Tier1 Telegram",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -28,9 +105,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Assert Format Create Message",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -39,9 +116,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Assert Format Duplicate Message",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -50,9 +127,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Assert Format Thought Message",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -108,9 +185,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Assert Insert Telegram",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -119,9 +196,42 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Assert Normalize Telegram",
-            "type": "main",
-            "index": 0
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Send 'duplicate' message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Finalize Telegram Capture Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Send 'thought saved' message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Finalize Telegram Capture Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Finalize Telegram Capture Result",
+            "type": "main"
           }
         ]
       ]
@@ -144,116 +254,6 @@
             "index": 0,
             "node": "PKM Config",
             "type": "main"
-          }
-        ]
-      ]
-    },
-    "Assert Normalize Telegram": {
-      "main": [
-        [
-          {
-            "node": "PKM Insert",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Assert Insert Telegram": {
-      "main": [
-        [
-          {
-            "node": "If 'skipped'",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Assert Web Extraction": {
-      "main": [
-        [
-          {
-            "node": "Call 'Tier-1 Enhancement'",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Assert Tier1 Telegram": {
-      "main": [
-        [
-          {
-            "node": "Create Message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Assert Format Create Message": {
-      "main": [
-        [
-          {
-            "node": "Send a text message1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Assert Format Duplicate Message": {
-      "main": [
-        [
-          {
-            "node": "Send 'duplicate' message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Assert Format Thought Message": {
-      "main": [
-        [
-          {
-            "node": "Send 'thought saved' message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send a text message1": {
-      "main": [
-        [
-          {
-            "node": "Finalize Telegram Capture Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send 'duplicate' message": {
-      "main": [
-        [
-          {
-            "node": "Finalize Telegram Capture Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send 'thought saved' message": {
-      "main": [
-        [
-          {
-            "node": "Finalize Telegram Capture Result",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -292,8 +292,8 @@
         "options": {}
       },
       "position": [
-        16,
-        -416
+        464,
+        -320
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2
@@ -305,8 +305,8 @@
         "jsCode": "try{const fn=require('/data/src/n8n/nodes/02-telegram-capture/create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:02-telegram-capture/create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js] ${e.message}`;throw e;}"
       },
       "position": [
-        688,
-        -512
+        1584,
+        -416
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -319,7 +319,7 @@
       },
       "position": [
         -1104,
-        -416
+        -320
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -344,7 +344,7 @@
       },
       "position": [
         -1104,
-        -608
+        -512
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -375,7 +375,7 @@
       },
       "position": [
         -880,
-        -512
+        -416
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -402,8 +402,8 @@
         }
       },
       "position": [
-        464,
-        -512
+        1136,
+        -416
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -429,8 +429,8 @@
         "url": "http://pkm-server:8080/db/insert"
       },
       "position": [
-        -432,
-        -512
+        -208,
+        -416
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -457,7 +457,7 @@
       },
       "position": [
         -656,
-        -512
+        -416
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -474,15 +474,15 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2",
-          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}",
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        912,
-        -512
+        2032,
+        -416
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -510,8 +510,8 @@
         }
       },
       "position": [
-        240,
-        -512
+        688,
+        -416
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -544,8 +544,8 @@
         "options": {}
       },
       "position": [
-        -208,
-        -512
+        240,
+        -416
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -562,14 +562,14 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2",
-          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}",
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        16,
+        2032,
         -608
       ],
       "type": "n8n-nodes-base.telegram",
@@ -588,15 +588,15 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2",
-          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}",
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        240,
-        -320
+        2032,
+        -224
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -609,7 +609,7 @@
         "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nreturn [{ json: { ...$json, telegram_message: mdv2Message('Duplicate entry ' + entryId + ' processing stopped') } }];\n"
       },
       "position": [
-        -96,
+        1584,
         -608
       ],
       "type": "n8n-nodes-base.code",
@@ -622,8 +622,8 @@
         "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nconst action = String($json.action ?? 'inserted').trim() || 'inserted';\nconst text = 'Thought saved as entry ' + entryId + ' operation ' + action;\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\n"
       },
       "position": [
-        128,
-        -320
+        1584,
+        -224
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -631,106 +631,106 @@
     {
       "id": "2951ec5e-03c5-4d1c-b028-a78d9a484e6a",
       "name": "Assert Normalize Telegram",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -544,
-        -512
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nassertions.push({ name: 'normalize_ok', ok: !!$json.intent && !!$json.content_type && !!$json.capture_text });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
-      }
+      },
+      "position": [
+        -432,
+        -416
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "id": "a0c77ec1-f2ba-4b55-b4f9-f91c238dc067",
       "name": "Assert Insert Telegram",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -320,
-        -512
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst action = String($json.action || '').trim();\nconst actionOk = action === 'inserted' || action === 'updated' || action === 'skipped';\nconst entryIdOk = action === 'skipped' ? true : !!$json.entry_id;\nassertions.push({ name: 'insert_action_valid', ok: actionOk, action });\nassertions.push({ name: 'entry_id_present', ok: entryIdOk, entry_id: $json.entry_id ?? null });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
-      }
+      },
+      "position": [
+        16,
+        -416
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "id": "76ec27b0-b519-4af1-9f33-6b83e94e42fa",
       "name": "Assert Web Extraction",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        336,
-        -512
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst hasUrl = !!($json.url || $json.url_canonical);\nconst ok = !hasUrl || !!($json.clean_text || $json.extracted_text || $json.capture_text);\nassertions.push({ name: 'web_extraction_path_ok', ok, has_url: hasUrl });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
-      }
+      },
+      "position": [
+        912,
+        -416
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "id": "8a1d8f71-80e9-4ab5-a5e0-d6426aa26ecc",
       "name": "Assert Tier1 Telegram",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        560,
-        -512
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst ok = !$json.error;\nassertions.push({ name: 'tier1_ok', ok });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
-      }
+      },
+      "position": [
+        1360,
+        -416
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "id": "5f35ead7-60be-4a81-ab17-0dc2730b06be",
       "name": "Assert Format Create Message",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        800,
-        -512
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'format_message_non_empty', ok: msg.length > 0 });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
-      }
+      },
+      "position": [
+        1808,
+        -416
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "id": "1a214f79-4447-42d6-b359-d6dfca0b900d",
       "name": "Assert Format Duplicate Message",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        16,
-        -608
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'format_duplicate_non_empty', ok: msg.length > 0 });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
-      }
+      },
+      "position": [
+        1808,
+        -608
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "id": "f957c43e-323e-4e53-8cb4-4aa4b3178d79",
       "name": "Assert Format Thought Message",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        224,
-        -320
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'format_thought_non_empty', ok: msg.length > 0 });\nreturn [{ json: { ...$json, smoke_assertions: assertions } }];"
-      }
+      },
+      "position": [
+        1808,
+        -224
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "id": "c383f185-c954-4091-bde4-4709fc0c0b9a",
       "name": "Finalize Telegram Capture Result",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1136,
-        -512
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'telegram_send_message_present', ok: msg.length > 0 });\nconst telegramMessageId = $json.message_id ?? ($json.result && $json.result.message_id) ?? null;\nif (telegramMessageId != null) {\n  assertions.push({ name: 'telegram_message_id_present', ok: true });\n}\nconst ok = assertions.every((a) => a.ok === true);\nreturn [{\n  json: {\n    ...$json,\n    test_case: 'telegram_capture',\n    ok,\n    run_id: $json.test_run_id || null,\n    artifacts: {\n      entry_id: $json.entry_id ?? null,\n      action: $json.action ?? null,\n      telegram_message: msg || null,\n      telegram_message_id: telegramMessageId,\n    },\n    assertions,\n    error: ok ? null : { message: 'telegram capture assertions failed' },\n  },\n}];"
-      }
+      },
+      "position": [
+        2256,
+        -416
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
@@ -762,6 +762,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-03-13T23:00:33.134Z",
-  "versionCounter": 352
+  "updatedAt": "2026-03-14T23:25:11.689Z",
+  "versionCounter": 379
 }

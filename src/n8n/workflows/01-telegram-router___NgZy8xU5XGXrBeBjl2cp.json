@@ -1,7 +1,51 @@
 {
   "active": true,
-  "activeVersionId": "b1fe7aa7-b69a-427a-8557-31b217f6cf2a",
+  "activeVersionId": "fa5476a7-534a-4b5f-afe8-6ad5b941d087",
   "connections": {
+    "Call '30 Calendar Create'": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Router Smoke Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Call '31 Calendar Read'": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Router Smoke Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Call 'PKM Read'": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Router Smoke Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Call 'Telegram Capture'": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Router Smoke Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Format Ambiguous Message": {
       "main": [
         [
@@ -59,6 +103,17 @@
           {
             "index": 0,
             "node": "IF Is Command",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Send Ambiguous Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Router Smoke Result",
             "type": "main"
           }
         ]
@@ -141,64 +196,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Prepare Route Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Call 'PKM Read'": {
-      "main": [
-        [
-          {
-            "node": "Build Router Smoke Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Call 'Telegram Capture'": {
-      "main": [
-        [
-          {
-            "node": "Build Router Smoke Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Call '30 Calendar Create'": {
-      "main": [
-        [
-          {
-            "node": "Build Router Smoke Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Call '31 Calendar Read'": {
-      "main": [
-        [
-          {
-            "node": "Build Router Smoke Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send Ambiguous Message": {
-      "main": [
-        [
-          {
-            "node": "Build Router Smoke Result",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -227,7 +227,7 @@
       },
       "position": [
         -224,
-        -160
+        -112
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -237,11 +237,11 @@
       "id": "9fdd2089-7796-4e95-932a-78b6827cf4b3",
       "name": "Prepare Route Input",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/01-telegram-router/prepare-route-input__2fc8f31e-0d24-4d3f-88f3-33dc31652d8b.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:01-telegram-router/prepare-route-input__2fc8f31e-0d24-4d3f-88f3-33dc31652d8b.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n\n  const message = ($json && $json.message) || ($json && $json.edited_message) || {};\n  const rawText = asText($json.raw_text || message.text || message.caption || '');\n\n  const telegramChatId = asText($json.telegram_chat_id || (message.chat && message.chat.id));\n  const telegramMessageId = asText($json.telegram_message_id || message.message_id);\n  const telegramUserId = asText($json.telegram_user_id || (message.from && message.from.id));\n  const username = asText($json.telegram_username || (message.from && message.from.username));\n  const firstName = asText($json.telegram_first_name || (message.from && message.from.first_name));\n\n  let actorCode = asText($json.actor_code).toLowerCase();\n  if (!actorCode) {\n    const hint = `${username} ${firstName}`.toLowerCase();\n    if (hint.includes('igor')) actorCode = 'igor';\n    else if (hint.includes('danij')) actorCode = 'danijela';\n    else actorCode = 'unknown';\n  }\n\n  let routeHint = 'backend_route';\n  if (/^cal:\\s*/i.test(rawText)) routeHint = 'calendar_create';\n  else if (/^pkm:\\s*/i.test(rawText)) routeHint = 'pkm_capture';\n\n  return [{\n    json: {\n      ...$json,\n      message,\n      raw_text: rawText,\n      telegram_chat_id: telegramChatId,\n      telegram_message_id: telegramMessageId,\n      telegram_user_id: telegramUserId,\n      telegram_username: username || null,\n      actor_code: actorCode,\n      is_command: rawText.startsWith('/'),\n      route_hint: routeHint,\n      smoke_mode: $json.smoke_mode === true,\n      test_run_id: asText($json.test_run_id) || null,\n      smoke_expected_route: asText($json.smoke_expected_route) || null,\n    },\n  }];\n"
       },
       "position": [
         0,
-        -160
+        -16
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -275,7 +275,7 @@
       },
       "position": [
         224,
-        -160
+        -16
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -302,7 +302,7 @@
         }
       },
       "position": [
-        448,
+        1568,
         -256
       ],
       "type": "n8n-nodes-base.executeWorkflow",
@@ -392,7 +392,7 @@
       },
       "position": [
         448,
-        -64
+        136
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -422,7 +422,7 @@
       },
       "position": [
         1344,
-        -208
+        -32
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -453,7 +453,7 @@
       },
       "position": [
         672,
-        288
+        416
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -468,7 +468,7 @@
       },
       "position": [
         896,
-        208
+        320
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -581,7 +581,7 @@
       },
       "position": [
         1120,
-        176
+        288
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -594,7 +594,7 @@
       },
       "position": [
         1344,
-        368
+        560
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -611,15 +611,15 @@
       "parameters": {
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "MarkdownV2",
-          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}"
+          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}",
+          "parse_mode": "MarkdownV2"
         },
         "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
         1568,
-        368
+        560
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -650,7 +650,7 @@
       },
       "position": [
         1344,
-        -32
+        160
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -679,8 +679,8 @@
         }
       },
       "position": [
-        1344,
-        176
+        1568,
+        368
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -688,26 +688,28 @@
     {
       "id": "63e437ea-1108-452d-923e-f0076ec6cf6c",
       "name": "When Executed by Another Workflow",
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "typeVersion": 1.1,
+      "parameters": {
+        "inputSource": "passthrough"
+      },
       "position": [
         -224,
-        -32
+        80
       ],
-      "parameters": {}
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
     },
     {
       "id": "e1b9d8a8-2e45-4ecc-b17a-7df02a09c580",
       "name": "Build Router Smoke Result",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1408,
-        -224
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nconst routeRaw = String($json.route || '').trim();\nconst route = $json.is_command === true ? 'read' : (routeRaw || String($json.route_hint || '').trim() || 'unknown');\nconst smokeMode = $json.smoke_mode === true;\nif (!smokeMode) {\n  return [{ json: { ...$json, route } }];\n}\n\nconst expected = String($json.smoke_expected_route || '').trim() || null;\nconst assertions = [];\nassertions.push({ name: 'route_present', ok: !!route });\nif (expected) {\n  assertions.push({ name: 'route_matches_expected', ok: expected === route, expected, actual: route });\n}\nconst telegramMessage = String($json.telegram_message || '');\nif (route === 'ambiguous') {\n  assertions.push({ name: 'ambiguous_message_non_empty', ok: telegramMessage.length > 0 });\n}\nconst ok = assertions.every((a) => a.ok === true);\n\nreturn [{\n  json: {\n    ...$json,\n    test_case: 'telegram_router',\n    ok,\n    run_id: $json.test_run_id || null,\n    artifacts: {\n      route,\n      telegram_message: telegramMessage || null,\n      telegram_message_id: $json.message_id ?? null,\n    },\n    assertions,\n    error: ok ? null : { message: 'router assertion failed' },\n  },\n}];"
-      }
+      },
+      "position": [
+        1792,
+        160
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
@@ -739,6 +741,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2026-03-13T23:00:31.273Z",
-  "versionCounter": 208
+  "updatedAt": "2026-03-14T23:24:57.348Z",
+  "versionCounter": 231
 }
