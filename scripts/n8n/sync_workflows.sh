@@ -267,6 +267,8 @@ recreate_n8n() {
   echo "[push 2/2] Recreate n8n container"
   if command -v recreate >/dev/null 2>&1; then
     recreate n8n
+    # `recreate` already waits for service readiness.
+    return 0
   else
     docker restart n8n >/dev/null
     echo "n8n container restarted."
