@@ -72,7 +72,7 @@ services:
       - "127.0.0.1:5432:5432"
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n:2.11.2
     container_name: n8n
     restart: unless-stopped
     depends_on:
@@ -91,11 +91,17 @@ services:
       - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
       - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
       - TZ=${TZ}
-      - N8N_RUNNERS_DISABLE_PYTHON=true
+
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_RUNNERS_MODE=external
+      - N8N_RUNNERS_BROKER_LISTEN_ADDRESS=0.0.0.0
+      - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}
+
       - NODE_FUNCTION_ALLOW_EXTERNAL=*
       - NODE_FUNCTION_ALLOW_BUILTIN=node:process,node:path
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      - N8N_EDITOR_BASE_URL=http://127.0.0.1:5680
+
+      - N8N_EDITOR_BASE_URL=https://n8n.gasovic.com
 
     ports:
       - "127.0.0.1:5678:5678"
@@ -103,7 +109,23 @@ services:
       - ./n8n:/home/node/.n8n
       - /home/igasovic/repos/n8n-workflows:/data:ro
       - /home/igasovic/backup/postgres:/home/node/.n8n-files/backup-postgres:ro
+    networks:
+      - internal
 
+  task-runners:
+    image: n8nio/runners:2.11.2
+    container_name: n8n-runners
+    restart: unless-stopped
+    depends_on:
+      - n8n
+    environment:
+      - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN}
+      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n:5679
+      - N8N_RUNNERS_LAUNCHER_LOG_LEVEL=debug
+
+      - NODE_FUNCTION_ALLOW_EXTERNAL=*
+      - NODE_FUNCTION_ALLOW_BUILTIN=node:process,node:path
+      - GENERIC_TIMEZONE=${TZ}
     networks:
       - internal
 
