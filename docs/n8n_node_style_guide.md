@@ -154,6 +154,10 @@ try {
 }
 ```
 
+Compatibility exception:
+- If upgraded n8n/task-runner allowlist behavior rejects deep subpath imports as disallowed, a Code node may temporarily require the package root (`@igasovic/n8n-blocks`) and call a named root export.
+- Use this only for targeted compatibility fixes; keep the default pattern on stable `nodes/...` or `shared/...` package subpaths.
+
 Externalized file:
 ```js
 'use strict';

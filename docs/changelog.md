@@ -1334,3 +1334,4 @@ Final verification commands (passed):
 - smoke: added `scripts/n8n/run_smoke.sh` as the operator helper to execute the smoke master on the Pi via documented `n8n execute --id <workflow-id>` CLI flow.
 - n8n: added `scripts/n8n/validate_cutover.sh` to validate Pi cutover state end-to-end: image pins, running containers, proxy/runtime env, runners package resolution, CLI readiness, and optional smoke execution.
 - tests/docs: added Jest coverage for the n8n operator helpers and clarified migration status wording so the PRD now distinguishes repo-side completion from the final live Pi validation step.
+- n8n: added a targeted package-root export trial for `10 Read -> Command Parser`, preserving the existing folder tree while testing whether root-only allowlisting works around stricter n8n disallowed-module checks for deep package subpaths.

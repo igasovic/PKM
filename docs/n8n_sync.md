@@ -125,6 +125,7 @@ Avoid:
    - keep short Code nodes inline in workflow JSON
    - move node JS to the correct `src/n8n/nodes/<workflow-slug>/` folder when workflow/node location changed
    - update wrappers to canonical package imports under `@igasovic/n8n-blocks/nodes/...`
+   - package-root exports under `@igasovic/n8n-blocks` are allowed only as a compatibility escape hatch when n8n disallows deep package subpath imports
    - remove orphan managed canonical files (`*__<node-id>.js`) under `src/n8n/nodes/`
 4. Push mode builds `src/n8n/package/` from `src/n8n/package.manifest.json`.
 5. Push mode builds the local `pkm-n8n-runners:2.10.3` image from `ops/stack/n8n-runners/Dockerfile`.
@@ -137,7 +138,8 @@ Avoid:
 - No automatic workflow deletion in n8n.
 - Node relocation is move/copy-first to avoid losing existing code.
 - Non-canonical wrapper paths are forbidden in canonical repo workflows.
-- Canonical runtime imports must use only `@igasovic/n8n-blocks/nodes/...` or `@igasovic/n8n-blocks/shared/...`.
+- Canonical runtime imports should use `@igasovic/n8n-blocks/nodes/...` or `@igasovic/n8n-blocks/shared/...` by default.
+- Package-root imports from `@igasovic/n8n-blocks` are allowed only as a compatibility escape hatch for n8n allowlist/runtime issues.
 - `/data/...` runtime imports are forbidden after the package migration. The repo mount may remain for non-runtime purposes, but it is not part of the code import contract.
 
 ## Change logs emitted by sync

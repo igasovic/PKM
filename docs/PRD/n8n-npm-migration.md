@@ -601,7 +601,7 @@ Recommended work packages:
 
 Open items that should remain explicit rather than guessed:
 
-1. resolved: package exports use stable subpaths under `@igasovic/n8n-blocks/nodes/...` and `@igasovic/n8n-blocks/shared/...`
+1. resolved with one documented exception: package exports use stable subpaths under `@igasovic/n8n-blocks/nodes/...` and `@igasovic/n8n-blocks/shared/...`; package-root exports are also allowed as a compatibility escape hatch when stricter n8n allowlist behavior rejects deep subpath imports
 2. resolved: custom runners Dockerfile lives at `ops/stack/n8n-runners/Dockerfile`
 3. resolved for current scope: `src/libs/config.js` and `src/libs/config/index.js` are reused as staged shared modules without a special wrapper
 4. resolved for current scope: main `n8n` image does not install the internal package; runners own runtime execution dependencies

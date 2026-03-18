@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Internal runtime package for n8n Code-node blocks.",
+  "rootExports": {
+    "readCommandParser": "nodes/10-read/command-parser.js"
+  },
   "shared": [
     "config.js",
     "config/index.js",

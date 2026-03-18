@@ -757,7 +757,7 @@
       "id": "926eb875-5735-4746-a0a4-7801b8db586f",
       "name": "Command Parser",
       "parameters": {
-        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/10-read/command-parser.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {readCommandParser}=require('@igasovic/n8n-blocks');return await readCommandParser({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js] ${e.message}`;throw e;}"
       },
       "position": [
         672,

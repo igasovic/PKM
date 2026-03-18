@@ -1,6 +1,7 @@
 'use strict';
 
 const parseCommand = require('../../src/n8n/nodes/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');
+const { readCommandParser } = require('../../src/n8n/package/index.js');
 
 function unescapeMdv2(value) {
   return String(value || '').replace(/\\([_*[\]()~`>#+\-=|{}.!\\])/g, '$1');
@@ -8,6 +9,22 @@ function unescapeMdv2(value) {
 
 async function runParser(text, extra = {}) {
   const out = await parseCommand({
+    $json: {
+      message: {
+        text,
+        chat: { id: 1509032341 },
+        from: { id: 111 },
+      },
+      ...extra,
+    },
+  });
+  expect(Array.isArray(out)).toBe(true);
+  expect(out).toHaveLength(1);
+  return out[0].json;
+}
+
+async function runRootExportParser(text, extra = {}) {
+  const out = await readCommandParser({
     $json: {
       message: {
         text,
@@ -30,6 +47,13 @@ describe('n8n command parser', () => {
     expect(out.telegram_chat_id).toBe(1509032341);
     expect(text).toContain('/distill-run [--batch|--sync]');
     expect(text).toContain('append --help');
+  });
+
+  test('package root export resolves command parser for /help', async () => {
+    const out = await runRootExportParser('/help');
+    const text = unescapeMdv2(out.telegram_message);
+    expect(out._reply_now).toBe(true);
+    expect(text).toContain('/pull <id> [--excerpt]');
   });
 
   test('/distill-run defaults to execution_mode=batch', async () => {

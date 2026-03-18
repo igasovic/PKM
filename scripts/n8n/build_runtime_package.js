@@ -113,6 +113,20 @@ function validateSharedFile(relativePath) {
   }
 }
 
+function validateRootExportTarget(relativePath) {
+  const normalized = toPosixPath(String(relativePath || '').trim()).replace(/^\.?\//, '');
+  if (!normalized || !normalized.endsWith('.js')) {
+    die(`Invalid root export target: ${relativePath}`);
+  }
+
+  const targetPath = path.join(OUTPUT_ROOT, normalized);
+  if (!fs.existsSync(targetPath) || !fs.statSync(targetPath).isFile()) {
+    die(`Root export target missing from package output: ${normalized}`);
+  }
+
+  return normalized;
+}
+
 function buildPackage() {
   const manifest = readJson(MANIFEST_PATH);
   if (manifest.name !== PACKAGE_NAME) {
@@ -155,6 +169,12 @@ function buildPackage() {
       ? manifest.dependencies
       : {},
   };
+  const rootExports = manifest.rootExports && typeof manifest.rootExports === 'object'
+    ? manifest.rootExports
+    : {};
+  if (Object.keys(rootExports).length > 0) {
+    packageJson.exports['.'] = './index.js';
+  }
   fs.writeFileSync(
     path.join(OUTPUT_ROOT, 'package.json'),
     `${JSON.stringify(packageJson, null, 2)}\n`,
@@ -164,6 +184,22 @@ function buildPackage() {
   fs.writeFileSync(
     path.join(OUTPUT_ROOT, 'package.manifest.json'),
     `${JSON.stringify(manifest, null, 2)}\n`,
+    'utf8',
+  );
+
+  const rootExportLines = [
+    "'use strict';",
+    '',
+    'module.exports = {',
+  ];
+  for (const [exportName, target] of Object.entries(rootExports)) {
+    const normalizedTarget = validateRootExportTarget(target);
+    rootExportLines.push(`  ${JSON.stringify(exportName)}: require('./${normalizedTarget}'),`);
+  }
+  rootExportLines.push('};', '');
+  fs.writeFileSync(
+    path.join(OUTPUT_ROOT, 'index.js'),
+    rootExportLines.join('\n'),
     'utf8',
   );
 
