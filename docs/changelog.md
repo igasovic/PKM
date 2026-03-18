@@ -1323,3 +1323,6 @@ Final verification commands (passed):
 ### Developer impact
 - Builders fail fast if `PKM Config` is missing.
 - Configuration flow is explicit, deterministic, and auditable.
+# 2026-03-18
+
+- n8n: added `scripts/n8n/recreate_stack.sh` as the canonical manual recreate path; it now rebuilds `pkm-n8n-runners` before recreating `n8n` and `task-runners`, and `sync_workflows.sh --mode push` delegates to the same helper.

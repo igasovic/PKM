@@ -64,6 +64,11 @@ Use these modes depending on intent:
 ./scripts/n8n/sync_workflows.sh --mode push --workflow-name "10 Read"
 ```
 
+4. Rebuild the custom runners image and recreate `n8n` + `task-runners` without patching workflows:
+```bash
+./scripts/n8n/recreate_stack.sh
+```
+
 Prerequisites in current shell:
 ```bash
 export N8N_API_BASE_URL='http://127.0.0.1:5678'
@@ -129,6 +134,7 @@ All workflow-management scripts live under `scripts/n8n/`:
 - `scripts/n8n/sync_nodes.py`
 - `scripts/n8n/build_runtime_package.js`
 - `scripts/n8n/build_runners_image.sh`
+- `scripts/n8n/recreate_stack.sh`
 - `scripts/n8n/export_workflows.sh`
 - `scripts/n8n/normalize_workflows.sh`
 - `scripts/n8n/rename_workflows_by_name.sh`

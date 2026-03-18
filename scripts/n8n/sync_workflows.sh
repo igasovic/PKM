@@ -12,6 +12,7 @@ PYTHON_BIN="${PYTHON_BIN:-}"
 NODE_BIN="${NODE_BIN:-node}"
 BUILD_PACKAGE_SCRIPT="$REPO_DIR/scripts/n8n/build_runtime_package.js"
 BUILD_RUNNERS_IMAGE_SCRIPT="$REPO_DIR/scripts/n8n/build_runners_image.sh"
+RECREATE_STACK_SCRIPT="$REPO_DIR/scripts/n8n/recreate_stack.sh"
 
 MODE="pull"
 DO_COMMIT=0
@@ -117,6 +118,7 @@ require_file "$REPO_DIR/scripts/n8n/sync_code_nodes.py"
 require_file "$REPO_DIR/scripts/n8n/sync_nodes.py"
 require_file "$BUILD_PACKAGE_SCRIPT"
 require_file "$BUILD_RUNNERS_IMAGE_SCRIPT"
+require_file "$RECREATE_STACK_SCRIPT"
 require_file "$PACKAGE_MANIFEST"
 require_file "$COMPOSE_FILE"
 
@@ -232,11 +234,6 @@ build_runtime_package() {
   "$NODE_BIN" "$BUILD_PACKAGE_SCRIPT"
 }
 
-build_runners_image() {
-  echo "[push 2/4] Build custom n8n runners image"
-  SKIP_PACKAGE_BUILD=1 "$BUILD_RUNNERS_IMAGE_SCRIPT"
-}
-
 run_pull() {
   echo "[pull 1/3] Export + normalize workflows to repo"
   "$REPO_DIR/scripts/n8n/export_workflows.sh" "$WORKFLOWS_DIR"
@@ -281,7 +278,6 @@ run_push() {
   fi
   build_runtime_package
   if [[ "$DRY_RUN" -eq 0 ]]; then
-    build_runners_image
     recreate_n8n_stack
   fi
   echo "[push 3/4] Patch repo workflows to n8n via API (in-place)"
@@ -289,18 +285,8 @@ run_push() {
 }
 
 recreate_n8n_stack() {
-  echo "[push 2b/4] Recreate n8n and n8n-runners"
-  docker compose -f "$COMPOSE_FILE" --project-directory "$STACK_ROOT" up -d n8n task-runners >/dev/null
-  echo "Waiting for n8n CLI to become ready..."
-  for i in $(seq 1 30); do
-    if docker exec -u node n8n n8n --help >/dev/null 2>&1; then
-      echo "n8n CLI is ready."
-      return 0
-    fi
-    sleep 2
-  done
-  echo "n8n did not become ready in time after restart." >&2
-  exit 1
+  echo "[push 2/4] Recreate n8n stack"
+  SKIP_PACKAGE_BUILD=1 "$RECREATE_STACK_SCRIPT"
 }
 
 case "$MODE" in

@@ -100,6 +100,7 @@ This is not a general cleanup initiative. It is specifically:
 - sync no longer rewrites wrappers to canonical `/data/...` runtime paths
 - docs are updated to reflect the new model
 - Pi deployment can be rebuilt and validated through a documented operator flow
+- manual `n8n` recreate flow also rebuilds the local runners image before bringing up `task-runners`
 
 ## 5. Non-goals
 
