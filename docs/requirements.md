@@ -1,7 +1,8 @@
 # Idempotency Requirements
 
 Implementation note (2026-03-17):
-- `docs/PRD/n8n-npm-migration.md` is now implemented.
+- `docs/PRD/n8n-npm-migration.md` is repo-side implemented.
+- Live Pi validation remains the final cutover step.
 - n8n runtime code imports shared helpers through the internal package `@igasovic/n8n-blocks`.
 - Idempotency/API requirements in this document are unchanged by that migration.
 

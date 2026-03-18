@@ -1,12 +1,17 @@
 # n8n Internal JS Package Migration PRD
 
-- Status: Implemented on 2026-03-17
+- Status: Repo-side implementation complete on 2026-03-18; live Pi validation still required to close cutover
 - Owner: Igor Gasovic
 - Executor: Coding agent with full repo access
 - Primary runtime target: Raspberry Pi stack deployment
 - PRD location in repo: `docs/PRD/n8n-npm-migration.md`
 
 ## 1. Title, status, owners, scope
+
+Implementation status snapshot:
+- `WP1` through `WP8`: repo-side complete
+- `WP9`: operator helpers and validation paths are implemented in repo
+- remaining closeout: execute cutover validation and smoke on the Pi, then confirm representative live flows
 
 This PRD covers migration of reusable n8n Code-node JavaScript from the current path-based `/data/...` import model to a package-based runtime model compatible with n8n Task Runners.
 
