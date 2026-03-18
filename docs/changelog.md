@@ -1328,3 +1328,4 @@ Final verification commands (passed):
 - n8n: added `scripts/n8n/recreate_stack.sh` as the canonical manual recreate path; it now rebuilds `pkm-n8n-runners` before recreating `n8n` and `task-runners`, and `sync_workflows.sh --mode push` delegates to the same helper.
 - n8n: operator scripts now resolve `node` or `nodejs` automatically for runtime package builds, so Pi hosts without a `node` symlink still support `checkcfg n8n`, `updatecfg n8n`, and `scripts/n8n/recreate_stack.sh`.
 - n8n: runtime package builds now fall back to a short-lived `node:22-bookworm-slim` Docker container when the host has no Node runtime installed, so Pi operators do not need host-level Node just to rebuild `pkm-n8n-runners`.
+- ops: `scripts/redeploy` now supports `backend` and `n8n` targets and delegates to the canonical deploy helpers (`scripts/cfg/backend_push.sh` and `scripts/n8n/sync_workflows.sh --mode push`).

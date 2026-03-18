@@ -1,17 +1,68 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_DIR="/home/igasovic/repos/n8n-workflows"
-STACK_DIR="/home/igasovic/stack"
-SERVICE="pkm-server"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="${REPO_DIR:-/home/igasovic/repos/n8n-workflows}"
+BACKEND_PUSH_SCRIPT="${BACKEND_PUSH_SCRIPT:-$REPO_DIR/scripts/cfg/backend_push.sh}"
+N8N_SYNC_SCRIPT="${N8N_SYNC_SCRIPT:-$REPO_DIR/scripts/n8n/sync_workflows.sh}"
+TARGET="${1:-backend}"
+shift $(( $# > 0 ? 1 : 0 ))
 
-echo "==> Updating repo: $REPO_DIR"
-cd "$REPO_DIR"
-git pull
+usage() {
+  cat >&2 <<'EOF'
+Usage: scripts/redeploy [backend|n8n] [-- <extra args>]
 
-echo "==> Redeploying: $SERVICE (compose in $STACK_DIR)"
-cd "$STACK_DIR"
-docker compose up -d --build "$SERVICE"
+Targets:
+  backend  Pull repo, then run scripts/cfg/backend_push.sh
+  n8n      Pull repo, then run scripts/n8n/sync_workflows.sh --mode push
 
-echo "==> Tailing logs: $SERVICE"
-docker compose logs -f --tail=50 "$SERVICE"
+Extra args after the target are passed through to the target helper.
+EOF
+  exit "${1:-1}"
+}
+
+require_cmd() {
+  local bin="$1"
+  if ! command -v "$bin" >/dev/null 2>&1; then
+    echo "Missing required command: $bin" >&2
+    exit 1
+  fi
+}
+
+require_file() {
+  local file="$1"
+  if [[ ! -f "$file" ]]; then
+    echo "Missing required file: $file" >&2
+    exit 1
+  fi
+}
+
+run_git_pull() {
+  echo "==> Updating repo: $REPO_DIR"
+  git -C "$REPO_DIR" pull --ff-only
+}
+
+if [[ "$TARGET" == "-h" || "$TARGET" == "--help" ]]; then
+  usage 0
+fi
+
+require_cmd git
+
+case "$TARGET" in
+  backend)
+    require_file "$BACKEND_PUSH_SCRIPT"
+    run_git_pull
+    echo "==> Redeploying backend via $BACKEND_PUSH_SCRIPT"
+    CFG_BACKEND_GIT_PULL_MODE=none "$BACKEND_PUSH_SCRIPT" "$@"
+    ;;
+  n8n)
+    require_file "$N8N_SYNC_SCRIPT"
+    run_git_pull
+    echo "==> Redeploying n8n via $N8N_SYNC_SCRIPT --mode push"
+    "$N8N_SYNC_SCRIPT" --mode push "$@"
+    ;;
+  *)
+    echo "Unknown redeploy target: $TARGET" >&2
+    usage
+    ;;
+esac

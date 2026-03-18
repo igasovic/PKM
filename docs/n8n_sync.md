@@ -69,6 +69,11 @@ Use these modes depending on intent:
 ./scripts/n8n/recreate_stack.sh
 ```
 
+5. Convenience redeploy wrapper (pull repo first, then push n8n changes):
+```bash
+./scripts/redeploy n8n
+```
+
 Prerequisites in current shell:
 ```bash
 export N8N_API_BASE_URL='http://127.0.0.1:5678'

@@ -354,6 +354,12 @@ Implemented n8n redeploy path:
 - patch workflows in-place
 - validate live export
 
+Implemented convenience redeploy entrypoints:
+- `scripts/redeploy backend`
+- `scripts/redeploy n8n`
+
+Both redeploy targets pull the repo first, then delegate to the canonical backend/n8n deploy helpers rather than duplicating apply logic.
+
 ### 12.3 Cutover posture
 - single hard cutover
 - no dual mode
