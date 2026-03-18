@@ -23,10 +23,13 @@ CFG_CLOUDFLARED_CREDENTIALS_FILE="${CFG_CLOUDFLARED_CREDENTIALS_FILE:-$CFG_STACK
 
 CFG_N8N_SYNC_SCRIPT="${CFG_N8N_SYNC_SCRIPT:-$CFG_REPO_ROOT/scripts/n8n/sync_workflows.sh}"
 CFG_N8N_SNAPSHOT_SCRIPT="${CFG_N8N_SNAPSHOT_SCRIPT:-$CFG_REPO_ROOT/scripts/n8n/export_workflows_snapshot.sh}"
+CFG_N8N_PACKAGE_BUILD_SCRIPT="${CFG_N8N_PACKAGE_BUILD_SCRIPT:-$CFG_REPO_ROOT/scripts/n8n/build_runtime_package.js}"
+CFG_N8N_RUNNERS_DOCKERFILE="${CFG_N8N_RUNNERS_DOCKERFILE:-$CFG_REPO_ROOT/ops/stack/n8n-runners/Dockerfile}"
 CFG_N8N_MIN_JS_LINES="${CFG_N8N_MIN_JS_LINES:-50}"
 
 CFG_REPO_N8N_WORKFLOWS_DIR="${CFG_REPO_N8N_WORKFLOWS_DIR:-$CFG_REPO_ROOT/src/n8n/workflows}"
 CFG_REPO_N8N_NODES_DIR="${CFG_REPO_N8N_NODES_DIR:-$CFG_REPO_ROOT/src/n8n/nodes}"
+CFG_REPO_N8N_PACKAGE_MANIFEST="${CFG_REPO_N8N_PACKAGE_MANIFEST:-$CFG_REPO_ROOT/src/n8n/package.manifest.json}"
 
 CFG_BACKEND_DEPLOY_SCRIPT="${CFG_BACKEND_DEPLOY_SCRIPT:-$CFG_REPO_ROOT/scripts/cfg/backend_push.sh}"
 
@@ -666,14 +669,19 @@ sync_dir_runtime_to_repo_if_changed() {
 check_surface_n8n() {
   add_check_repo_source "$CFG_REPO_N8N_WORKFLOWS_DIR"
   add_check_repo_source "$CFG_REPO_N8N_NODES_DIR"
+  add_check_repo_source "$CFG_REPO_N8N_PACKAGE_MANIFEST"
+  add_check_repo_source "$CFG_N8N_RUNNERS_DOCKERFILE"
   add_check_runtime_target "live n8n workflow state"
-  progress_start "checkcfg:n8n" 5
+  progress_start "checkcfg:n8n" 6
   progress_step "validate prerequisites"
 
   local required=(
     "$CFG_N8N_SNAPSHOT_SCRIPT"
     "$CFG_REPO_ROOT/scripts/n8n/normalize_workflows.sh"
     "$CFG_REPO_ROOT/scripts/n8n/sync_code_nodes.py"
+    "$CFG_N8N_PACKAGE_BUILD_SCRIPT"
+    "$CFG_REPO_N8N_PACKAGE_MANIFEST"
+    "$CFG_N8N_RUNNERS_DOCKERFILE"
   )
   local f
   for f in "${required[@]}"; do
@@ -687,6 +695,12 @@ check_surface_n8n() {
   if ! command -v docker >/dev/null 2>&1; then
     mark_check_blocked "n8n check requires docker in PATH."
     progress_fail "docker missing"
+    return 0
+  fi
+
+  if ! command -v node >/dev/null 2>&1; then
+    mark_check_blocked "n8n check requires node in PATH."
+    progress_fail "node missing"
     return 0
   fi
 
@@ -706,6 +720,16 @@ check_surface_n8n() {
   mkdir -p "$tmp_workflows" "$tmp_raw" "$tmp_patched" "$tmp_nodes"
 
   local out
+  progress_step "build generated n8n runtime package"
+  if ! run_capture out node "$CFG_N8N_PACKAGE_BUILD_SCRIPT"; then
+    mark_check_blocked "n8n runtime package build failed."
+    add_check_detail_lines "$(preview_lines "$out" 80)" "  "
+    rm -rf "$tmp_root"
+    progress_fail "runtime package build failed"
+    return 0
+  fi
+  add_check_detail_lines "$(preview_lines "$out" 20)" "  "
+
   progress_step "export one-shot n8n snapshot (normalized + raw)"
   if ! run_capture out "$CFG_N8N_SNAPSHOT_SCRIPT" "$tmp_workflows" "$tmp_raw"; then
     mark_check_blocked "n8n snapshot export failed."

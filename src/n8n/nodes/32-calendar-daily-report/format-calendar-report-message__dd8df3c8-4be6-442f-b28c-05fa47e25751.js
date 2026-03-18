@@ -1,12 +1,6 @@
 'use strict';
 
-const { mdv2Message } = (() => {
-  try {
-    return require('/data/src/libs/telegram-markdown.js');
-  } catch (err) {
-    return require('../../../libs/telegram-markdown.js');
-  }
-})();
+const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
 
 const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

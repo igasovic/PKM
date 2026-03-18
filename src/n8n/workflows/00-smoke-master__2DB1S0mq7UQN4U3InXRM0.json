@@ -1373,7 +1373,7 @@
       "id": "f4215c02-bc84-4aea-801b-8a855811849d",
       "name": "T99 - Cleanup",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/00-smoke-master/t99-cleanup__f4215c02-bc84-4aea-801b-8a855811849d.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:00-smoke-master/t99-cleanup__f4215c02-bc84-4aea-801b-8a855811849d.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/t99-cleanup.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:00-smoke-master/t99-cleanup__f4215c02-bc84-4aea-801b-8a855811849d.js] ${e.message}`;throw e;}"
       },
       "position": [
         5632,
@@ -1386,7 +1386,7 @@
       "id": "d24bbd0a-6f62-4e25-bb84-9790f4963b26",
       "name": "Build Smoke Summary",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? base.results : [];\n\nconst passCount = results.filter((r) => r && r.ok === true).length;\nconst failRows = results.filter((r) => !r || r.ok !== true);\nconst failCount = failRows.length;\nconst overallOk = failCount === 0;\n\nconst lines = [];\nlines.push(overallOk ? 'Smoke passed' : 'Smoke failed');\nlines.push('Run: ' + String(base.test_run_id || '-'));\nlines.push('Passed: ' + String(passCount));\nlines.push('Failed: ' + String(failCount));\n\nif (failRows.length) {\n  lines.push('Failures:');\n  failRows.slice(0, 10).forEach((row) => {\n    const name = String((row && row.test_case) || 'unknown');\n    const msg = String((row && row.error && row.error.message) || 'assertion failure');\n    lines.push('- ' + name + ': ' + msg);\n  });\n}\n\nconst telegram_message = mdv2Message(lines.join('\n'), { maxLen: 4000 });\n\nreturn [{\n  json: {\n    ...base,\n    ended_at: new Date().toISOString(),\n    overall_ok: overallOk,\n    passed_count: passCount,\n    failed_count: failCount,\n    telegram_message,\n  },\n}];"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? base.results : [];\n\nconst passCount = results.filter((r) => r && r.ok === true).length;\nconst failRows = results.filter((r) => !r || r.ok !== true);\nconst failCount = failRows.length;\nconst overallOk = failCount === 0;\n\nconst lines = [];\nlines.push(overallOk ? 'Smoke passed' : 'Smoke failed');\nlines.push('Run: ' + String(base.test_run_id || '-'));\nlines.push('Passed: ' + String(passCount));\nlines.push('Failed: ' + String(failCount));\n\nif (failRows.length) {\n  lines.push('Failures:');\n  failRows.slice(0, 10).forEach((row) => {\n    const name = String((row && row.test_case) || 'unknown');\n    const msg = String((row && row.error && row.error.message) || 'assertion failure');\n    lines.push('- ' + name + ': ' + msg);\n  });\n}\n\nconst telegram_message = mdv2Message(lines.join('\n'), { maxLen: 4000 });\n\nreturn [{\n  json: {\n    ...base,\n    ended_at: new Date().toISOString(),\n    overall_ok: overallOk,\n    passed_count: passCount,\n    failed_count: failCount,\n    telegram_message,\n  },\n}];"
       },
       "position": [
         5856,

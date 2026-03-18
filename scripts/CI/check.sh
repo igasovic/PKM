@@ -66,16 +66,23 @@ fi
 echo "==> Checking n8n workflow safety rules..."
 N8N_WF_DIR="$ROOT/src/n8n/workflows"
 N8N_NODES_DIR="$ROOT/src/n8n/nodes"
+N8N_PACKAGE_BUILD_SCRIPT="$ROOT/scripts/n8n/build_runtime_package.js"
 
 if [[ -d "$N8N_WF_DIR" ]]; then
-  NON_CANONICAL_WRAPPERS="$(
-    (rg -n -o -S "/data/[^\"'[:space:]]+\\.js" "$N8N_WF_DIR" 2>/dev/null || true) \
-      | grep -v "/data/src/n8n/nodes/" \
-      | grep -v "/data/src/libs/" || true
+  if [[ ! -x "$N8N_PACKAGE_BUILD_SCRIPT" ]]; then
+    echo "ERROR: n8n runtime package build script missing or not executable: $N8N_PACKAGE_BUILD_SCRIPT"
+    exit 1
+  fi
+
+  echo "==> Building generated n8n runtime package..."
+  node "$N8N_PACKAGE_BUILD_SCRIPT"
+
+  LEGACY_RUNTIME_IMPORTS="$(
+    rg -n -S "/data/src/(n8n|libs)/" "$N8N_WF_DIR" "$N8N_NODES_DIR" 2>/dev/null || true
   )"
-  if [[ -n "$NON_CANONICAL_WRAPPERS" ]]; then
-    echo "ERROR: Non-canonical wrapper paths found in workflows:"
-    echo "$NON_CANONICAL_WRAPPERS"
+  if [[ -n "$LEGACY_RUNTIME_IMPORTS" ]]; then
+    echo "ERROR: Legacy /data runtime imports found in canonical n8n sources:"
+    echo "$LEGACY_RUNTIME_IMPORTS"
     exit 1
   fi
 
@@ -96,8 +103,16 @@ for wf in sorted(wf_dir.glob("*.json")):
         continue
     for node in data.get("nodes", []):
         js = (node.get("parameters") or {}).get("jsCode", "")
-        m = re.search(r"/data/src/n8n/nodes/([^'\\\"]+\\.js)", js)
-        if m and not (nodes_dir / m.group(1)).exists():
+        m = re.search(r"@igasovic/n8n-blocks/nodes/([^'\\\"]+\\.js)", js)
+        if not m:
+            continue
+        rel = pathlib.Path(m.group(1))
+        direct = nodes_dir / rel
+        if direct.exists():
+            continue
+        workflow_dir = nodes_dir / rel.parent
+        matches = list(workflow_dir.glob(f"{rel.stem}__*.js")) if workflow_dir.exists() else []
+        if not matches:
             missing.append(f"{wf.name}: {node.get('name')} -> {m.group(1)}")
 if missing:
     print("\n".join(missing))

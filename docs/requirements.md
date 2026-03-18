@@ -1,5 +1,10 @@
 # Idempotency Requirements
 
+Implementation note (2026-03-17):
+- `docs/PRD/n8n-npm-migration.md` is now implemented.
+- n8n runtime code imports shared helpers through the internal package `@igasovic/n8n-blocks`.
+- Idempotency/API requirements in this document are unchanged by that migration.
+
 ## Scope
 This document defines how idempotency must work for ingest and backfill across:
 - `pkm` (prod schema)

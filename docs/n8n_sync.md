@@ -5,6 +5,8 @@ Canonical process for syncing n8n workflows and externalized Code-node JS with t
 Canonical repo locations:
 - Workflows: `src/n8n/workflows`
 - Externalized code nodes: `src/n8n/nodes`
+- Runtime package manifest: `src/n8n/package.manifest.json`
+- Generated runtime package: `src/n8n/package` (build output, ignored)
 
 ## One command
 
@@ -16,7 +18,7 @@ Run from repo root:
 
 Modes:
 - `--mode pull` (default): n8n -> repo (export/normalize + externalize code nodes)
-- `--mode push`: repo -> n8n in-place API patch (no delete/import)
+- `--mode push`: build runtime package + runners image, recreate n8n/runners, patch repo workflows to n8n in-place
 - `--mode full`: pull + push
 
 Push local workflow node/wiring changes to n8n in-place (no delete/import):
@@ -82,6 +84,7 @@ Expected: `HTTP 200`.
 Avoid:
 - direct DB edits for workflow state
 - relative externalized imports like `../../../src/...`
+- `/data/src/...` runtime imports in canonical workflows or externalized node code
 
 ## Flow (orchestrated)
 
@@ -91,20 +94,21 @@ Avoid:
    - externalize only Code nodes with `>= MIN_JS_LINES`
    - keep short Code nodes inline in workflow JSON
    - move node JS to the correct `src/n8n/nodes/<workflow-slug>/` folder when workflow/node location changed
-   - update wrappers to canonical `/data/src/n8n/nodes/...` paths
+   - update wrappers to canonical package imports under `@igasovic/n8n-blocks/nodes/...`
    - remove orphan managed canonical files (`*__<node-id>.js`) under `src/n8n/nodes/`
-4. Push mode patches existing workflows in-place via n8n API (`PATCH`, fallback `PUT`).
-5. Commit changes only if `--commit` is set.
+4. Push mode builds `src/n8n/package/` from `src/n8n/package.manifest.json`.
+5. Push mode builds the local `pkm-n8n-runners:2.10.3` image from `ops/stack/n8n-runners/Dockerfile`.
+6. Push mode recreates `n8n` and `n8n-runners`.
+7. Push mode patches existing workflows in-place via n8n API (`PATCH`, fallback `PUT`).
+8. Commit changes only if `--commit` is set.
 
 ## Safety rules
 
-- Compose guard: reads `docker-compose.yml` (default `/home/igasovic/stack/docker-compose.yml`, override via `COMPOSE_FILE`) and requires n8n mount:
-  - `/home/igasovic/repos/n8n-workflows:/data:ro`
 - No automatic workflow deletion in n8n.
 - Node relocation is move/copy-first to avoid losing existing code.
 - Non-canonical wrapper paths are forbidden in canonical repo workflows.
-- Externalized code-node imports must not use relative repo paths like `../../../src/...`.
-  Use absolute mount paths (for example `require('/data/src/libs/config.js')`) so runtime resolution is stable inside the n8n container.
+- Canonical runtime imports must use only `@igasovic/n8n-blocks/nodes/...` or `@igasovic/n8n-blocks/shared/...`.
+- `/data/...` runtime imports are forbidden after the package migration. The repo mount may remain for non-runtime purposes, but it is not part of the code import contract.
 
 ## Change logs emitted by sync
 
@@ -123,6 +127,8 @@ All workflow-management scripts live under `scripts/n8n/`:
 
 - `scripts/n8n/sync_workflows.sh` (entrypoint)
 - `scripts/n8n/sync_nodes.py`
+- `scripts/n8n/build_runtime_package.js`
+- `scripts/n8n/build_runners_image.sh`
 - `scripts/n8n/export_workflows.sh`
 - `scripts/n8n/normalize_workflows.sh`
 - `scripts/n8n/rename_workflows_by_name.sh`

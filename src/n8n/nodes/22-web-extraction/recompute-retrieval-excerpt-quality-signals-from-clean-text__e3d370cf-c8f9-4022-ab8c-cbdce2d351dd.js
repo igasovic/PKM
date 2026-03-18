@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { getConfig } = require('/data/src/libs/config.js');
+const { getConfig } = require('@igasovic/n8n-blocks/shared/config.js');
 
 module.exports = async function run(ctx) {
   const { $json, $items } = ctx;

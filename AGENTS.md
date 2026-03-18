@@ -69,6 +69,8 @@ For any config, infra, Docker, cloudflared, LiteLLM, Postgres init or backend-lo
 - Follow `docs/repo-map.md`.
 - New n8n logic belongs under `src/n8n/`.
 - Legacy `js/` workflow tree is sunset. Use only `src/n8n/workflows/` and `src/n8n/nodes/`.
+- n8n runtime package metadata belongs in `src/n8n/package.manifest.json`.
+- `src/n8n/package/` is generated output only; do not treat it as the authoring surface.
 
 ### Runtime and environment boundary
 - `docs/env.md` is authoritative for service topology, ports, mounts, container names, and runtime stack root.
@@ -111,7 +113,9 @@ At minimum, treat these as active config surfaces:
 - `src/server/**` direct env reads
 - `src/n8n/workflows/`
 - `src/n8n/nodes/`
+- `src/n8n/package.manifest.json`
 - `scripts/n8n/**`
+- `ops/stack/n8n-runners/Dockerfile`
 - `scripts/db/**`
 - `pkm.runtime_config`
 - shell exports for `N8N_API_*`
@@ -138,6 +142,7 @@ Before coding non-trivial changes, provide a short plan covering:
 ### n8n workflow editing model
 - Workflow wiring changes: edit in n8n UI, export JSON, commit.
 - Code node logic: externalize into repo files and keep Code nodes thin wrappers.
+- Runtime imports in canonical workflows and externalized node code must use package subpaths under `@igasovic/n8n-blocks/...`, never `/data/...`.
 
 ### Config and infra workflow
 - Author versioned config in repo first.

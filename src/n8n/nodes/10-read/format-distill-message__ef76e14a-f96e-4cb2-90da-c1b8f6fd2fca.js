@@ -1,12 +1,6 @@
 'use strict';
 
-const { mdv2, bold, bullet, joinLines, finalizeMarkdownV2 } = (() => {
-  try {
-    return require('/data/src/libs/telegram-markdown.js');
-  } catch (err) {
-    return require('../../../libs/telegram-markdown.js');
-  }
-})();
+const { mdv2, bold, bullet, joinLines, finalizeMarkdownV2 } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
 
 module.exports = async function run(ctx) {
   const { $json = {} } = ctx || {};

@@ -54,12 +54,15 @@ Hard rules:
 Owns:
 - Code used by n8n Code nodes (externalized JS)
 - Workflow JSON under `src/n8n/workflows`
+- Runtime package manifest under `src/n8n/package.manifest.json`
+- Generated runtime package output under `src/n8n/package/` (non-authoritative build artifact)
 
 Hard rules:
 - No direct DB access
 - No raw SQL
 - Must call backend ONLY via endpoints documented in docs/api.md
 - Keep Code node wrappers thin; logic lives in files here
+- Canonical runtime imports use `@igasovic/n8n-blocks/...`, never `/data/...`
 
 Migration policy:
 - New features: put new n8n logic under src/n8n/

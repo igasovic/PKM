@@ -12,14 +12,8 @@
  */
 'use strict';
 
-const { getConfig } = require('/data/src/libs/config.js');
-const { mdv2, bold, kv, arrow, joinLines, finalizeMarkdownV2 } = (() => {
-  try {
-    return require('/data/src/libs/telegram-markdown.js');
-  } catch (err) {
-    return require('../../../libs/telegram-markdown.js');
-  }
-})();
+const { getConfig } = require('@igasovic/n8n-blocks/shared/config.js');
+const { mdv2, bold, kv, arrow, joinLines, finalizeMarkdownV2 } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;

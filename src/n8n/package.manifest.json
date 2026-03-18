@@ -1,0 +1,19 @@
+{
+  "name": "@igasovic/n8n-blocks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Internal runtime package for n8n Code-node blocks.",
+  "shared": [
+    "config.js",
+    "config/index.js",
+    "telegram-markdown.js",
+    "context-pack-builder.js",
+    "content-hash.js"
+  ],
+  "dependencies": {},
+  "builtins": [
+    "crypto",
+    "node:path",
+    "node:process"
+  ]
+}

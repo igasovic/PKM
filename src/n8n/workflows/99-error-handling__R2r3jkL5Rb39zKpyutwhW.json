@@ -70,7 +70,7 @@
       "id": "566912ab-5d96-4405-8443-6a296ef03366",
       "name": "Compose Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/99-error-handling/compose-message__566912ab-5d96-4405-8443-6a296ef03366.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:99-error-handling/compose-message__566912ab-5d96-4405-8443-6a296ef03366.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/99-error-handling/compose-message.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:99-error-handling/compose-message__566912ab-5d96-4405-8443-6a296ef03366.js] ${e.message}`;throw e;}"
       },
       "position": [
         -64,

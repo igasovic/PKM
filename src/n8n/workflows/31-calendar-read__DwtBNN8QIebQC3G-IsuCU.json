@@ -155,7 +155,7 @@
       "id": "4e50a2c6-39cc-4f56-bb9f-a5cc0f6ff6f8",
       "name": "Parse Calendar Query",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/31-calendar-read/parse-calendar-query__4e50a2c6-39cc-4f56-bb9f-a5cc0f6ff6f8.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:31-calendar-read/parse-calendar-query__4e50a2c6-39cc-4f56-bb9f-a5cc0f6ff6f8.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/31-calendar-read/parse-calendar-query.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:31-calendar-read/parse-calendar-query__4e50a2c6-39cc-4f56-bb9f-a5cc0f6ff6f8.js] ${e.message}`;throw e;}"
       },
       "position": [
         224,
@@ -199,7 +199,7 @@
       "id": "7ec3a63a-4e24-4d8b-aa65-7644b31d6162",
       "name": "Format Calendar Read Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/31-calendar-read/format-calendar-read-message.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:31-calendar-read/format-calendar-read-message__7ec3a63a-4e24-4d8b-aa65-7644b31d6162.js] ${e.message}`;throw e;}"
       },
       "position": [
         672,

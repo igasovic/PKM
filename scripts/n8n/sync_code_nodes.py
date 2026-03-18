@@ -5,7 +5,10 @@ import shutil
 import sys
 from pathlib import Path
 
-CANONICAL_WRAPPER_PREFIX = "/data/src/n8n/nodes/"
+LEGACY_WRAPPER_PREFIX = "/data/src/n8n/nodes/"
+PACKAGE_NAME = "@igasovic/n8n-blocks"
+PACKAGE_WRAPPER_PREFIX = f"{PACKAGE_NAME}/nodes/"
+PACKAGE_SHARED_PREFIX = f"{PACKAGE_NAME}/shared/"
 
 
 def die(message: str) -> None:
@@ -99,12 +102,25 @@ def module_to_inline_code(text: str):
 
 def rewrite_repo_imports(text: str) -> str:
     normalized = normalize_newlines(text)
-    # Normalize older relative requires used before path migration.
-    # Code-node files run from /data/src/n8n/nodes/<workflow>/..., so using absolute
-    # /data/src/libs/... avoids fragile relative traversal.
+
+    normalized = re.sub(
+        r"""require\(\s*['"]/data/src/libs/([^'"]+)['"]\s*\)""",
+        rf"require('{PACKAGE_SHARED_PREFIX}\1')",
+        normalized,
+    )
+    normalized = re.sub(
+        r"""require\(\s*['"](?:\.\./)+libs/([^'"]+)['"]\s*\)""",
+        rf"require('{PACKAGE_SHARED_PREFIX}\1')",
+        normalized,
+    )
     normalized = re.sub(
         r"""require\(\s*['"](?:\.\./){3}src/libs/([^'"]+)['"]\s*\)""",
-        r"require('/data/src/libs/\1')",
+        rf"require('{PACKAGE_SHARED_PREFIX}\1')",
+        normalized,
+    )
+    normalized = re.sub(
+        r"""require\(\s*['"]/data/src/n8n/nodes/([^/'"]+/)([^/'"]+)__[^/'"]+\.js['"]\s*\)""",
+        rf"require('{PACKAGE_WRAPPER_PREFIX}\1\2.js')",
         normalized,
     )
     return normalized
@@ -122,20 +138,33 @@ def path_is_under(path_obj: Path, root: Path) -> bool:
         return False
 
 
+def stable_wrapper_relative_path(source_rel: str) -> str:
+    source_path = Path(source_rel)
+    file_name = re.sub(r"__([^.\\/]+)\.js$", ".js", source_path.name)
+    return to_posix_path(source_path.with_name(file_name))
+
+
 def extract_wrapper_relative_path(js_code: str):
     normalized = normalize_newlines(js_code)
-    match = re.search(
-        rf"""require\(\s*['"]{re.escape(CANONICAL_WRAPPER_PREFIX)}([^'"]+?\.js)['"]\s*\)""",
+    legacy_match = re.search(
+        rf"""require\(\s*['"]{re.escape(LEGACY_WRAPPER_PREFIX)}([^'"]+?\.js)['"]\s*\)""",
         normalized,
     )
-    if match:
-        return CANONICAL_WRAPPER_PREFIX, match.group(1)
+    if legacy_match:
+        return LEGACY_WRAPPER_PREFIX, legacy_match.group(1)
+    package_match = re.search(
+        rf"""require\(\s*['"]{re.escape(PACKAGE_WRAPPER_PREFIX)}([^'"]+?\.js)['"]\s*\)""",
+        normalized,
+    )
+    if package_match:
+        return PACKAGE_WRAPPER_PREFIX, package_match.group(1)
     return None, None
 
 
 def build_wrapper(wrapper_rel: str) -> str:
+    runtime_rel = stable_wrapper_relative_path(wrapper_rel)
     return (
-        f"try{{const fn=require('{CANONICAL_WRAPPER_PREFIX}{wrapper_rel}');"
+        f"try{{const fn=require('{PACKAGE_WRAPPER_PREFIX}{runtime_rel}');"
         "return await fn({$input,$json,$items,$node,$env,helpers});}"
         f"catch(e){{e.message=`[extjs:{wrapper_rel}] ${{e.message}}`;throw e;}}"
     )
@@ -253,8 +282,14 @@ def resolve_source_for_wrapper(
         return None, None
 
     candidates = []
-    if wrapper_prefix == CANONICAL_WRAPPER_PREFIX:
+    if wrapper_prefix == LEGACY_WRAPPER_PREFIX:
         candidates.append(nodes_root_dir / Path(wrapper_rel))
+    elif wrapper_prefix == PACKAGE_WRAPPER_PREFIX:
+        runtime_path = Path(wrapper_rel)
+        node_name = runtime_path.stem
+        workflow_dir = nodes_root_dir / runtime_path.parent
+        if workflow_dir.exists():
+            candidates.extend(sorted(workflow_dir.glob(f"{node_name}__*.js")))
 
     candidates.append(nodes_root_dir / Path(wrapper_rel))
 

@@ -222,16 +222,17 @@ Instead:
 ## 5) Docker services (what runs, ports, networks, mounts)
 
 ### Networks
-- `internal` bridge network for: `postgres`, `n8n`, `litellm`, `pkm-server`
+- `internal` bridge network for: `postgres`, `n8n`, `n8n-runners`, `litellm`, `pkm-server`
 - host networking for: `homeassistant`, `matter-server`, `cloudflared`
 
 ### Containers (as observed)
 | Container | Image | Restart | Published ports | Network mode |
 |---|---|---|---|---|
 | `postgres` | `postgres:16-alpine` | unless-stopped | none (internal only) | `stack_internal` |
-| `n8n` | `docker.n8n.io/n8nio/n8n:latest` | unless-stopped | `127.0.0.1:5678->5678` | `stack_internal` |
+| `n8n` | `docker.n8n.io/n8nio/n8n:2.10.3` | unless-stopped | `127.0.0.1:5678->5678` | `stack_internal` |
+| `n8n-runners` | `pkm-n8n-runners:2.10.3` (built from repo) | unless-stopped | none (internal only) | `stack_internal` |
 | `litellm` | `docker.litellm.ai/berriai/litellm:main-stable` | unless-stopped | `0.0.0.0:4000->4000` | `stack_internal` |
-| `stack-pkm-server-1` | `stack-pkm-server` (built) | unless-stopped | `0.0.0.0:3010->8080` | `stack_internal` |
+| `pkm-server` | `pkm-server` (built) | unless-stopped | `0.0.0.0:3010->8080` | `stack_internal` |
 | `homeassistant` | `ghcr.io/home-assistant/home-assistant:stable` | unless-stopped | `0.0.0.0:8123` | host |
 | `matter-server` | `ghcr.io/home-assistant-libs/python-matter-server:stable` | unless-stopped | `0.0.0.0:5580` | host |
 | `cloudflared` | `cloudflare/cloudflared:latest` | unless-stopped | (tunnel) | host |
@@ -242,8 +243,8 @@ Instead:
   - `/home/igasovic/stack/postgres-init` → `/docker-entrypoint-initdb.d`
 - n8n:
   - `/home/igasovic/stack/n8n` → `/home/node/.n8n`
-  - `/home/igasovic/repos/n8n-workflows` → `/data` (read-only)
-  - `/home/igasovic/pkm-import` → `/files` (used for file imports/backfills)
+  - `/home/igasovic/repos/n8n-workflows` → `/data` (read-only; not part of the runtime import contract)
+  - `/home/igasovic/backup/postgres` → `/home/node/.n8n-files/backup-postgres` (read-only)
 - LiteLLM:
   - `/home/igasovic/stack/litellm/config.yaml` → `/app/config.yaml` (read-only)
 - PKM server:
@@ -287,6 +288,7 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 ## 7) n8n
 
 **Container:** `n8n`  
+**Task runners:** external sidecar `n8n-runners`  
 **DB:** uses Postgres via `DB_TYPE=postgresdb` and `DB_POSTGRESDB_HOST=postgres`
 
 **Security:**
@@ -298,12 +300,19 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 - `N8N_HOST=n8n.gasovic.com`
 - `N8N_PROTOCOL=https`
 - `N8N_EDITOR_BASE_URL=https://n8n.gasovic.com`
-- `WEBHOOK_URL=https://n8n-hook.gasovic.com`
+- `WEBHOOK_URL=https://n8n-hook.gasovic.com/`
+- `N8N_PROXY_HOPS=1`
 - `TZ=America/Chicago`
+- `N8N_RUNNERS_MODE=external`
+- `NODE_FUNCTION_ALLOW_EXTERNAL=@igasovic/n8n-blocks`
+- `NODE_FUNCTION_ALLOW_BUILTIN=crypto,node:path,node:process`
 
 **Externalized workflow code & GitOps**
 - Repo root: `/home/igasovic/repos/n8n-workflows`
-- Mount: repo → `/data` (read-only)
+- Canonical runtime package: `@igasovic/n8n-blocks`
+- Generated package output: `src/n8n/package/` (repo build output, ignored)
+- Custom runners image source: `ops/stack/n8n-runners/Dockerfile`
+- Mount: repo → `/data` (read-only, kept for non-runtime reasons only)
 - Canonical docs (in this project):
   - `n8n_sync.md` (canonical n8n<->Git sync flow)
 - Local shell env for n8n API automation (recommended in `~/.zshrc`):
@@ -315,7 +324,7 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 ## 8) PKM server
 
 **Purpose:** lightweight API service used by n8n and future clients.  
-**Container:** `stack-pkm-server-1` (service `pkm-server`)  
+**Container:** `pkm-server`  
 **LAN URL:** http://192.168.5.4:3010
 
 **Health endpoints (validated):**

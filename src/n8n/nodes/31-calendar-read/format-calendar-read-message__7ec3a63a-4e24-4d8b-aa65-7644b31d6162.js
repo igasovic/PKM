@@ -1,12 +1,6 @@
 'use strict';
 
-const { mdv2Message } = (() => {
-  try {
-    return require('/data/src/libs/telegram-markdown.js');
-  } catch (err) {
-    return require('../../../libs/telegram-markdown.js');
-  }
-})();
+const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
 
 function asText(value) {
   return String(value === undefined || value === null ? '' : value).trim();

@@ -1,6 +1,6 @@
 # n8n Internal JS Package Migration PRD
 
-- Status: Draft, approved for implementation shaping
+- Status: Implemented on 2026-03-17
 - Owner: Igor Gasovic
 - Executor: Coding agent with full repo access
 - Primary runtime target: Raspberry Pi stack deployment
@@ -253,6 +253,10 @@ Both externalized and non-externalized nodes may continue using approved shared 
 Use a custom runners image derived from:
 - `n8nio/runners:2.10.3`
 
+Implemented image/tag:
+- local runtime image: `pkm-n8n-runners:2.10.3`
+- repo Dockerfile: `ops/stack/n8n-runners/Dockerfile`
+
 This image owns:
 - installation of the generated internal package
 - installation of third-party npm dependencies required by that package
@@ -332,14 +336,22 @@ Keep the current operator contract:
 - operator verifies with `checkcfg`
 - operator applies with `updatecfg --push`
 
-Expected apply surfaces:
+Implemented apply surfaces:
 - `n8n`
 - `docker`
 
+Implemented apply order when both surfaces changed:
+1. `updatecfg docker --push`
+2. `updatecfg n8n --push`
+
 ### 12.2 Redeploy flow
-The redeploy script should expose two operator paths:
-- `redeploy backend`: current execution path
-- `redeploy n8n`: `git pull`, build npm package, recreate `n8n` and `n8n-runners`
+Implemented n8n redeploy path:
+- `updatecfg n8n --push` via `scripts/n8n/sync_workflows.sh`
+- build generated package
+- build local runners image
+- recreate `n8n` and `n8n-runners`
+- patch workflows in-place
+- validate live export
 
 ### 12.3 Cutover posture
 - single hard cutover
@@ -572,12 +584,12 @@ Recommended work packages:
 
 Open items that should remain explicit rather than guessed:
 
-1. exact package export surface and subpath layout
-2. exact file placement for the custom runners Dockerfile/build context under `ops/stack/**`
-3. whether any config-loader behavior from `src/libs/config/**` requires a wrapper or can be reused safely as-is
-4. whether the main `n8n` image needs the package for any non-execution reason
-5. whether the repo mount `/data` remains for any non-runtime purpose after cutover
-6. whether `src/n8n/nodes/**` remains the canonical source tree permanently or is later reorganized
+1. resolved: package exports use stable subpaths under `@igasovic/n8n-blocks/nodes/...` and `@igasovic/n8n-blocks/shared/...`
+2. resolved: custom runners Dockerfile lives at `ops/stack/n8n-runners/Dockerfile`
+3. resolved for current scope: `src/libs/config.js` and `src/libs/config/index.js` are reused as staged shared modules without a special wrapper
+4. resolved for current scope: main `n8n` image does not install the internal package; runners own runtime execution dependencies
+5. resolved: the repo mount `/data` may remain for non-runtime purposes only and is not part of the code import contract
+6. TBD: whether `src/n8n/nodes/**` remains the canonical source tree permanently or is later reorganized
 
 ## Validation basis
 

@@ -1,4 +1,35 @@
 # changelog
+## 2026-03-17 — n8n runtime package migration (`@igasovic/n8n-blocks`)
+
+### What changed
+- Replaced canonical n8n runtime imports from `/data/...` with package imports under `@igasovic/n8n-blocks/...`:
+  - workflow wrappers now call stable package subpaths like `@igasovic/n8n-blocks/nodes/<workflow>/<node>.js`
+  - shared helper imports now use `@igasovic/n8n-blocks/shared/...`
+- Added generated n8n runtime package flow:
+  - `src/n8n/package.manifest.json`
+  - `scripts/n8n/build_runtime_package.js`
+  - generated output under ignored `src/n8n/package/`
+- Added custom runners image build flow:
+  - `ops/stack/n8n-runners/Dockerfile`
+  - `scripts/n8n/build_runners_image.sh`
+  - compose now uses local image `pkm-n8n-runners:2.10.3`
+- Updated n8n sync/apply behavior:
+  - `scripts/n8n/sync_workflows.sh` now builds the runtime package, builds the runners image, recreates `n8n` + `n8n-runners`, patches workflows, and validates the live export
+  - `scripts/n8n/sync_code_nodes.py` and `scripts/n8n/sync_nodes.py` now canonicalize and validate package imports instead of `/data/...` imports
+  - `scripts/cfg/lib.sh` `checkcfg n8n` now validates the generated runtime package before live comparison
+- Updated test/CI wiring:
+  - `src/server/package.json` builds the runtime package before Jest and resolves it through `NODE_PATH`
+  - `scripts/CI/check.sh` now builds the runtime package and forbids legacy `/data/src/...` runtime imports in canonical n8n sources
+- Updated repo and ops docs:
+  - `AGENTS.md`
+  - `docs/env.md`
+  - `docs/n8n_sync.md`
+  - `docs/n8n_node_style_guide.md`
+  - `docs/config_operations.md`
+  - `docs/repo-map.md`
+  - `docs/requirements.md`
+  - `docs/PRD/n8n-npm-migration.md`
+
 ## 2026-03-15 — Smoke cleanup on error path via WF99
 
 ### What changed

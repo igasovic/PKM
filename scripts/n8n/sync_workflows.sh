@@ -4,10 +4,14 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORKFLOWS_DIR="$REPO_DIR/src/n8n/workflows"
 NODES_ROOT_DIR="$REPO_DIR/src/n8n/nodes"
+PACKAGE_MANIFEST="$REPO_DIR/src/n8n/package.manifest.json"
 RAW_DIR="$REPO_DIR/tmp/n8n-sync/raw"
 PATCHED_RAW_DIR="$REPO_DIR/tmp/n8n-sync/patched"
 MIN_JS_LINES="${MIN_JS_LINES:-50}"
 PYTHON_BIN="${PYTHON_BIN:-}"
+NODE_BIN="${NODE_BIN:-node}"
+BUILD_PACKAGE_SCRIPT="$REPO_DIR/scripts/n8n/build_runtime_package.js"
+BUILD_RUNNERS_IMAGE_SCRIPT="$REPO_DIR/scripts/n8n/build_runners_image.sh"
 
 MODE="pull"
 DO_COMMIT=0
@@ -102,7 +106,7 @@ if [[ -z "$PYTHON_BIN" ]]; then
 fi
 
 COMPOSE_FILE="${COMPOSE_FILE:-/home/igasovic/stack/docker-compose.yml}"
-EXPECTED_MOUNT="/home/igasovic/repos/n8n-workflows:/data:ro"
+STACK_ROOT="$(cd "$(dirname "$COMPOSE_FILE")" && pwd)"
 
 require_cmd docker
 require_cmd jq
@@ -111,33 +115,24 @@ require_file "$REPO_DIR/scripts/n8n/normalize_workflows.sh"
 require_file "$REPO_DIR/scripts/n8n/rename_workflows_by_name.sh"
 require_file "$REPO_DIR/scripts/n8n/sync_code_nodes.py"
 require_file "$REPO_DIR/scripts/n8n/sync_nodes.py"
+require_file "$BUILD_PACKAGE_SCRIPT"
+require_file "$BUILD_RUNNERS_IMAGE_SCRIPT"
+require_file "$PACKAGE_MANIFEST"
 require_file "$COMPOSE_FILE"
+
+if ! command -v "$NODE_BIN" >/dev/null 2>&1; then
+  echo "Missing required command: $NODE_BIN" >&2
+  exit 1
+fi
 
 if ! docker ps --format '{{.Names}}' | grep -qx 'n8n'; then
   echo "Container 'n8n' is not running." >&2
   exit 1
 fi
 
-N8N_BLOCK="$(awk '
-  /^[[:space:]]{2}n8n:[[:space:]]*$/ {in_n8n=1; print; next}
-  in_n8n && /^[[:space:]]{2}[a-zA-Z0-9_-]+:[[:space:]]*$/ {exit}
-  in_n8n {print}
-' "$COMPOSE_FILE")"
-
-if [[ -z "$N8N_BLOCK" ]]; then
-  echo "Service block 'n8n:' not found in $COMPOSE_FILE" >&2
-  exit 1
-fi
-
-if ! printf '%s\n' "$N8N_BLOCK" | grep -Fq "$EXPECTED_MOUNT"; then
-  echo "Required n8n mount '$EXPECTED_MOUNT' not found in $COMPOSE_FILE" >&2
-  echo "Stop and confirm compose mount before updating wrapper paths." >&2
-  exit 1
-fi
-
 mkdir -p "$RAW_DIR" "$PATCHED_RAW_DIR" "$WORKFLOWS_DIR" "$NODES_ROOT_DIR"
 
-validate_no_noncanonical_wrappers() {
+validate_no_legacy_runtime_imports() {
   local workflows_dir="$1"
   local label="$2"
   "$PYTHON_BIN" - "$workflows_dir" "$label" <<'PY'
@@ -148,8 +143,8 @@ import sys
 
 workflows_dir = pathlib.Path(sys.argv[1])
 label = sys.argv[2]
-canonical_prefix = "/data/src/n8n/nodes/"
-allowed_shared_prefix = "/data/src/libs/"
+package_node_prefix = "@igasovic/n8n-blocks/nodes/"
+package_shared_prefix = "@igasovic/n8n-blocks/shared/"
 forbidden = []
 
 for wf in sorted(workflows_dir.glob("*.json")):
@@ -161,16 +156,23 @@ for wf in sorted(workflows_dir.glob("*.json")):
         js = (node.get("parameters") or {}).get("jsCode", "")
         if not isinstance(js, str):
             continue
-        for match in re.finditer(r"""require\(\s*['"](/data/[^'\"`]+\.js)['"]\s*\)""", js):
+        for match in re.finditer(r"""require\(\s*['"]([^'\"`]+)['"]\s*\)""", js):
             wrapper_path = match.group(1)
-            if not (
-                wrapper_path.startswith(canonical_prefix)
-                or wrapper_path.startswith(allowed_shared_prefix)
-            ):
+            if wrapper_path.startswith("/data/src/"):
+                forbidden.append((wf.name, node.get("name"), wrapper_path))
+            elif wrapper_path.startswith("/data/"):
+                forbidden.append((wf.name, node.get("name"), wrapper_path))
+            elif wrapper_path.startswith("@igasovic/n8n-blocks/"):
+                if not (
+                    wrapper_path.startswith(package_node_prefix)
+                    or wrapper_path.startswith(package_shared_prefix)
+                ):
+                    forbidden.append((wf.name, node.get("name"), wrapper_path))
+            elif wrapper_path.startswith("/"):
                 forbidden.append((wf.name, node.get("name"), wrapper_path))
 
 if forbidden:
-    print(f"Non-canonical wrapper paths found in {label} workflows:", file=sys.stderr)
+    print(f"Forbidden runtime imports found in {label} workflows:", file=sys.stderr)
     for wf_name, node_name, wrapper_path in forbidden:
         print(f"- {wf_name} :: {node_name} -> {wrapper_path}", file=sys.stderr)
     sys.exit(1)
@@ -178,7 +180,7 @@ PY
 }
 
 validate_repo_workflows() {
-  validate_no_noncanonical_wrappers "$WORKFLOWS_DIR" "repo"
+  validate_no_legacy_runtime_imports "$WORKFLOWS_DIR" "repo"
 
   "$PYTHON_BIN" - "$WORKFLOWS_DIR" "$NODES_ROOT_DIR" <<'PY'
 import json
@@ -194,8 +196,16 @@ for wf in sorted(workflows_dir.glob("*.json")):
     data = json.loads(wf.read_text(encoding="utf-8"))
     for node in data.get("nodes", []):
         js = (node.get("parameters") or {}).get("jsCode", "")
-        m = re.search(r"/data/src/n8n/nodes/([^'\"`]+\.js)", js)
-        if m and not (nodes_root_dir / m.group(1)).exists():
+        m = re.search(r"@igasovic/n8n-blocks/nodes/([^'\"`]+\.js)", js)
+        if not m:
+            continue
+        rel_path = pathlib.Path(m.group(1))
+        target = nodes_root_dir / rel_path
+        if target.exists():
+            continue
+        workflow_dir = nodes_root_dir / rel_path.parent
+        matches = list(workflow_dir.glob(f"{rel_path.stem}__*.js")) if workflow_dir.exists() else []
+        if not matches:
             missing.append((wf.name, node.get("name"), m.group(1)))
 
 if missing:
@@ -214,7 +224,17 @@ validate_live_workflows() {
   docker exec -u node n8n sh -lc 'rm -rf /tmp/workflows_live_validate && mkdir -p /tmp/workflows_live_validate'
   docker exec -u node n8n n8n export:workflow --backup --output=/tmp/workflows_live_validate
   docker cp n8n:/tmp/workflows_live_validate/. "$live_validate_dir/"
-  validate_no_noncanonical_wrappers "$live_validate_dir" "live"
+  validate_no_legacy_runtime_imports "$live_validate_dir" "live"
+}
+
+build_runtime_package() {
+  echo "[push 1/4] Build n8n runtime package"
+  "$NODE_BIN" "$BUILD_PACKAGE_SCRIPT"
+}
+
+build_runners_image() {
+  echo "[push 2/4] Build custom n8n runners image"
+  SKIP_PACKAGE_BUILD=1 "$BUILD_RUNNERS_IMAGE_SCRIPT"
 }
 
 run_pull() {
@@ -259,20 +279,18 @@ run_push() {
       args+=("--workflow-name" "$wf")
     done
   fi
-  echo "[push 1/1] Patch repo workflows to n8n via API (in-place)"
+  build_runtime_package
+  if [[ "$DRY_RUN" -eq 0 ]]; then
+    build_runners_image
+    recreate_n8n_stack
+  fi
+  echo "[push 3/4] Patch repo workflows to n8n via API (in-place)"
   "${args[@]}"
 }
 
-recreate_n8n() {
-  echo "[push 2/2] Recreate n8n container"
-  if command -v recreate >/dev/null 2>&1; then
-    recreate n8n
-    # `recreate` already waits for service readiness.
-    return 0
-  else
-    docker restart n8n >/dev/null
-    echo "n8n container restarted."
-  fi
+recreate_n8n_stack() {
+  echo "[push 2b/4] Recreate n8n and n8n-runners"
+  docker compose -f "$COMPOSE_FILE" --project-directory "$STACK_ROOT" up -d n8n task-runners >/dev/null
   echo "Waiting for n8n CLI to become ready..."
   for i in $(seq 1 30); do
     if docker exec -u node n8n n8n --help >/dev/null 2>&1; then
@@ -291,14 +309,18 @@ case "$MODE" in
     ;;
   push)
     run_push
-    recreate_n8n
-    validate_live_workflows
+    if [[ "$DRY_RUN" -eq 0 ]]; then
+      echo "[push 4/4] Validate live workflows"
+      validate_live_workflows
+    fi
     ;;
   full)
     run_pull
     run_push
-    recreate_n8n
-    validate_live_workflows
+    if [[ "$DRY_RUN" -eq 0 ]]; then
+      echo "[push 4/4] Validate live workflows"
+      validate_live_workflows
+    fi
     ;;
 esac
 

@@ -1,0 +1,6 @@
+.git
+.DS_Store
+tmp/
+src/server/node_modules/
+src/web/pkm-debug-ui/node_modules/
+src/n8n/package/node_modules/

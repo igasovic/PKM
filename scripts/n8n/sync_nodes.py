@@ -10,6 +10,12 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+PACKAGE_NAME = "@igasovic/n8n-blocks"
+PACKAGE_NODE_PREFIX = f"{PACKAGE_NAME}/nodes/"
+PACKAGE_SHARED_PREFIX = f"{PACKAGE_NAME}/shared/"
+LEGACY_NODE_PREFIX = "/data/src/n8n/nodes/"
+LEGACY_SHARED_PREFIX = "/data/src/libs/"
+
 
 def die(message: str, code: int = 1) -> None:
     print(message, file=sys.stderr)
@@ -114,6 +120,7 @@ def build_live_workflow_map():
 def extract_wrapper_targets(workflow_payload):
     canonical = []
     shared = []
+    legacy = []
     forbidden = []
     nodes = workflow_payload.get("nodes", [])
     for node in nodes:
@@ -121,17 +128,32 @@ def extract_wrapper_targets(workflow_payload):
         js_code = params.get("jsCode")
         if not isinstance(js_code, str):
             continue
-        for match in re.finditer(r"""require\(\s*['"](/data/[^'\"`]+\.js)['"]\s*\)""", js_code):
+        for match in re.finditer(r"""require\(\s*['"]([^'\"`]+)['"]\s*\)""", js_code):
             wrapper_path = match.group(1)
-            canonical_prefix = "/data/src/n8n/nodes/"
-            shared_prefix = "/data/src/libs/"
-            if wrapper_path.startswith(canonical_prefix):
-                canonical.append(wrapper_path[len(canonical_prefix):])
-            elif wrapper_path.startswith(shared_prefix):
-                shared.append(wrapper_path[len(shared_prefix):])
-            else:
+            if wrapper_path.startswith(PACKAGE_NODE_PREFIX):
+                canonical.append(wrapper_path[len(PACKAGE_NODE_PREFIX):])
+            elif wrapper_path.startswith(PACKAGE_SHARED_PREFIX):
+                shared.append(wrapper_path[len(PACKAGE_SHARED_PREFIX):])
+            elif wrapper_path.startswith(LEGACY_NODE_PREFIX) or wrapper_path.startswith(LEGACY_SHARED_PREFIX):
+                legacy.append(wrapper_path)
+            elif wrapper_path.startswith("/data/"):
                 forbidden.append(wrapper_path)
-    return canonical, shared, forbidden
+    return canonical, shared, legacy, forbidden
+
+
+def package_wrapper_target_exists(nodes_root_dir: Path, rel_path: str) -> bool:
+    target = nodes_root_dir / rel_path
+    if target.exists():
+        return True
+
+    runtime_path = Path(rel_path)
+    workflow_dir = nodes_root_dir / runtime_path.parent
+    stem = runtime_path.stem
+    if not workflow_dir.exists():
+        return False
+
+    matches = list(workflow_dir.glob(f"{stem}__*.js"))
+    return len(matches) > 0
 
 
 def validate_wrapper_targets(
@@ -142,12 +164,13 @@ def validate_wrapper_targets(
     for workflow_path in workflow_files:
         data = load_json(workflow_path)
         wf_name = data.get("name", workflow_path.name)
-        canonical_targets, _shared_targets, forbidden_targets = extract_wrapper_targets(data)
+        canonical_targets, _shared_targets, legacy_targets, forbidden_targets = extract_wrapper_targets(data)
+        for wrapper_path in legacy_targets:
+            missing.append((wf_name, wrapper_path, "legacy /data runtime import"))
         for wrapper_path in forbidden_targets:
-            missing.append((wf_name, wrapper_path, "non-canonical wrapper path"))
+            missing.append((wf_name, wrapper_path, "forbidden /data runtime import"))
         for rel_path in canonical_targets:
-            target = nodes_root_dir / rel_path
-            if not target.exists():
+            if not package_wrapper_target_exists(nodes_root_dir, rel_path):
                 missing.append((wf_name, rel_path, "missing canonical target"))
     if missing:
         print("Wrapper validation failed:", file=sys.stderr)

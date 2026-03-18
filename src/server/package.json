@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "jest --runInBand --rootDir ../.. test/server"
+    "pretest": "node ../../scripts/n8n/build_runtime_package.js",
+    "test": "NODE_PATH=../../src/n8n/package/node_modules${NODE_PATH:+:$NODE_PATH} jest --runInBand --rootDir ../.. test/server"
   },
   "dependencies": {
     "@langchain/core": "^0.3.79",

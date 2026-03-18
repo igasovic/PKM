@@ -452,7 +452,7 @@
       "id": "0af1807e-cdf2-4012-a671-ee3f205ff9e4",
       "name": "Format Normalize Status Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\nconst status = asText($json.status);\nconst chatId = asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id));\n\nlet text = '';\nif (status === 'needs_clarification') {\n  text = asText($json.clarification_question) || 'I need a bit more detail before creating this event.';\n} else if (status === 'rejected') {\n  text = asText($json.message) || 'This request is not supported in the current calendar flow.';\n} else {\n  text = 'Calendar request status updated.';\n}\n\nreturn [{ json: { ...$json, telegram_chat_id: chatId, telegram_message: mdv2Message(text) } }];\n"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\nconst status = asText($json.status);\nconst chatId = asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id));\n\nlet text = '';\nif (status === 'needs_clarification') {\n  text = asText($json.clarification_question) || 'I need a bit more detail before creating this event.';\n} else if (status === 'rejected') {\n  text = asText($json.message) || 'This request is not supported in the current calendar flow.';\n} else {\n  text = 'Calendar request status updated.';\n}\n\nreturn [{ json: { ...$json, telegram_chat_id: chatId, telegram_message: mdv2Message(text) } }];\n"
       },
       "position": [
         3360,
@@ -491,7 +491,7 @@
       "id": "bb6d3e8a-4461-4ea5-8d5d-0fa8d4f5e479",
       "name": "Build Google Event Payload",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/build-google-event-payload__bb6d3e8a-4461-4ea5-8d5d-0fa8d4f5e479.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/build-google-event-payload__bb6d3e8a-4461-4ea5-8d5d-0fa8d4f5e479.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/30-calendar-create/build-google-event-payload.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/build-google-event-payload__bb6d3e8a-4461-4ea5-8d5d-0fa8d4f5e479.js] ${e.message}`;throw e;}"
       },
       "position": [
         1344,
@@ -552,7 +552,7 @@
       "id": "e114ec84-f1a4-4796-84a0-d4ec1229b304",
       "name": "Prepare Finalize Request",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/prepare-finalize-request__e114ec84-f1a4-4796-84a0-d4ec1229b304.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/prepare-finalize-request__e114ec84-f1a4-4796-84a0-d4ec1229b304.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/30-calendar-create/prepare-finalize-request.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/prepare-finalize-request__e114ec84-f1a4-4796-84a0-d4ec1229b304.js] ${e.message}`;throw e;}"
       },
       "position": [
         2464,
@@ -611,7 +611,7 @@
       "id": "e8f7ecd4-c0fe-45e9-8d4a-a31e9c7877f4",
       "name": "Format Create Result Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('/data/src/libs/telegram-markdown.js');\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\nconst asArray = (value) => Array.isArray(value) ? value : [];\n\nconst status = asText($json.status || $json.final_status || $json.request_status);\nconst success = status === 'calendar_created' || $json.success === true;\nconst chatId = asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id));\n\nlet telegramMessage = '';\nif (success) {\n  const subjectRaw = asText($json.confirmation_subject || ($json.normalized_event && $json.normalized_event.subject_code) || 'Event');\n  const start = asText($json.confirmation_block_start || (($json.normalized_event && $json.normalized_event.block_window)\n    ? $json.normalized_event.block_window.start_date_local + ' ' + $json.normalized_event.block_window.start_time_local\n    : ''));\n  const end = asText($json.confirmation_block_end || (($json.normalized_event && $json.normalized_event.block_window)\n    ? $json.normalized_event.block_window.end_date_local + ' ' + $json.normalized_event.block_window.end_time_local\n    : ''));\n\n  const lines = ['Calendar event created', subjectRaw, start + ' -> ' + end];\n\n  const conflictCount = Number($json.conflict_count || 0);\n  if (Number.isFinite(conflictCount) && conflictCount > 0) {\n    lines.push('Potential conflicts: ' + conflictCount);\n    asArray($json.conflict_preview).map(asText).filter(Boolean).slice(0, 3).forEach((entry) => {\n      lines.push('- ' + entry);\n    });\n  }\n\n  if (asArray($json.warning_codes).includes('calendar_conflict_check_failed')) {\n    lines.push('Conflict check unavailable; event created anyway.');\n  }\n\n  telegramMessage = mdv2Message(lines.join('\\n').trim());\n} else {\n  const errorMessage = asText($json.error && $json.error.message) || asText($json.message) || 'Calendar event could not be created. Please retry.';\n  telegramMessage = mdv2Message(['Calendar event failed', errorMessage].join('\\n'));\n}\n\nreturn [{ json: { ...$json, telegram_chat_id: chatId, telegram_message: telegramMessage } }];"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\nconst asArray = (value) => Array.isArray(value) ? value : [];\n\nconst status = asText($json.status || $json.final_status || $json.request_status);\nconst success = status === 'calendar_created' || $json.success === true;\nconst chatId = asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id));\n\nlet telegramMessage = '';\nif (success) {\n  const subjectRaw = asText($json.confirmation_subject || ($json.normalized_event && $json.normalized_event.subject_code) || 'Event');\n  const start = asText($json.confirmation_block_start || (($json.normalized_event && $json.normalized_event.block_window)\n    ? $json.normalized_event.block_window.start_date_local + ' ' + $json.normalized_event.block_window.start_time_local\n    : ''));\n  const end = asText($json.confirmation_block_end || (($json.normalized_event && $json.normalized_event.block_window)\n    ? $json.normalized_event.block_window.end_date_local + ' ' + $json.normalized_event.block_window.end_time_local\n    : ''));\n\n  const lines = ['Calendar event created', subjectRaw, start + ' -> ' + end];\n\n  const conflictCount = Number($json.conflict_count || 0);\n  if (Number.isFinite(conflictCount) && conflictCount > 0) {\n    lines.push('Potential conflicts: ' + conflictCount);\n    asArray($json.conflict_preview).map(asText).filter(Boolean).slice(0, 3).forEach((entry) => {\n      lines.push('- ' + entry);\n    });\n  }\n\n  if (asArray($json.warning_codes).includes('calendar_conflict_check_failed')) {\n    lines.push('Conflict check unavailable; event created anyway.');\n  }\n\n  telegramMessage = mdv2Message(lines.join('\\n').trim());\n} else {\n  const errorMessage = asText($json.error && $json.error.message) || asText($json.message) || 'Calendar event could not be created. Please retry.';\n  telegramMessage = mdv2Message(['Calendar event failed', errorMessage].join('\\n'));\n}\n\nreturn [{ json: { ...$json, telegram_chat_id: chatId, telegram_message: telegramMessage } }];"
       },
       "position": [
         3360,
@@ -681,7 +681,7 @@
       "id": "5bdbddf0-d8cf-4f5a-ae4d-f4cca9dc3f3d",
       "name": "Prepare Conflict Context",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/30-calendar-create/prepare-conflict-context__5bdbddf0-d8cf-4f5a-ae4d-f4cca9dc3f3d.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/prepare-conflict-context__5bdbddf0-d8cf-4f5a-ae4d-f4cca9dc3f3d.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/30-calendar-create/prepare-conflict-context.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:30-calendar-create/prepare-conflict-context__5bdbddf0-d8cf-4f5a-ae4d-f4cca9dc3f3d.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,

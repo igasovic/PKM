@@ -72,7 +72,7 @@ Bootstrap helper for first-time runtime->repo import:
 
 | Surface | Repo source | Runtime target / live target | Class | Attributes | Owner | `checkcfg` | `updatecfg --push` | `updatecfg --pull` |
 |---|---|---|---|---|---|---|---|---|
-| `n8n` | `src/n8n/workflows/`, `src/n8n/nodes/` | live n8n workflow state | authoritative | versioned, non-secret | n8n | live export+normalize+externalize snapshot compare | `scripts/n8n/sync_workflows.sh --mode push` | `scripts/n8n/sync_workflows.sh --mode pull` |
+| `n8n` | `src/n8n/workflows/`, `src/n8n/nodes/`, `src/n8n/package.manifest.json`, `ops/stack/n8n-runners/Dockerfile` | live n8n workflow state + local `pkm-n8n-runners:2.10.3` build definition | authoritative | versioned, non-secret | n8n | build generated runtime package, then compare live export+normalize+externalize snapshot | `scripts/n8n/sync_workflows.sh --mode push` | `scripts/n8n/sync_workflows.sh --mode pull` |
 | `docker` | `ops/stack/docker-compose.yml`, `ops/stack/env/*.env` | `/home/igasovic/stack/docker-compose.yml`, `/home/igasovic/stack/*.env` (managed non-secret env only) | authoritative | versioned, non-secret | infra | file drift compare + affected-service summary | copy managed files + targeted compose apply when scope is known (fallback full apply) | copy managed runtime files to repo |
 | `litellm` | `ops/stack/litellm/config.yaml` | `/home/igasovic/stack/litellm/config.yaml` | authoritative | versioned, non-secret | infra | file drift compare | copy config + restart `litellm` | copy runtime config to repo |
 | `postgres` | `ops/stack/postgres/init/*`, optional `ops/stack/postgres/postgresql.conf`, `ops/stack/postgres/pg_hba.conf` | `/home/igasovic/stack/postgres-init/*`, optional `/home/igasovic/stack/postgres/*.conf` | authoritative | versioned, non-secret, host-local runtime target | infra/db | dir+file drift compare (excludes live data dir) | copy init/config only; never touches live data | pull init/config only; never touches live data |
@@ -88,8 +88,10 @@ Notes:
 ## 4. Current adapter behavior details
 
 ### n8n
-- `checkcfg n8n` compares repo workflows/nodes against a fresh live snapshot built with a one-shot export fan-out (single n8n export reused for normalized + raw views).
-- `updatecfg n8n --push|--pull` delegates to the same mode in `scripts/n8n/sync_workflows.sh`.
+- `checkcfg n8n` first builds the generated runtime package from `src/n8n/package.manifest.json`, then compares repo workflows/nodes against a fresh live snapshot built with a one-shot export fan-out (single n8n export reused for normalized + raw views).
+- `updatecfg n8n --push` builds the generated runtime package, builds the local `pkm-n8n-runners:2.10.3` image from `ops/stack/n8n-runners/Dockerfile`, recreates `n8n` + `n8n-runners`, patches workflows in-place via API, and validates the live workflow export.
+- `updatecfg n8n --pull` exports live workflows, normalizes them, and resynchronizes externalized node sources.
+- Canonical n8n workflow/node runtime imports are package-based (`@igasovic/n8n-blocks/...`). `/data/src/...` runtime imports are forbidden after the migration.
 
 ### docker
 - `checkcfg docker` compares managed repo Compose/env files to stack runtime files and reports affected services when scope can be resolved.
@@ -100,7 +102,7 @@ Notes:
 - `updatecfg docker --pull` pulls managed runtime files into repo.
 - Non-secret service config must be authored in repo-managed `ops/stack/env/<service>.env` files (for example `ops/stack/env/pkm-server.env`), not by ad hoc host `.env` edits.
   - Example calendar policy vars owned in repo: `CALENDAR_TELEGRAM_ENFORCE_ALLOWLIST`, `CALENDAR_TELEGRAM_ALLOWED_USER_IDS`, `CALENDAR_TELEGRAM_PKM_ALLOWED_USER_IDS`.
-  - Example Telegram routing var owned in repo: `TELEGRAM_ADMIN_CHAT_ID` (in `ops/stack/env/n8n.env`).
+  - Example Telegram/n8n runtime vars owned in repo: `TELEGRAM_ADMIN_CHAT_ID`, `N8N_EDITOR_BASE_URL`, `WEBHOOK_URL`, `N8N_PROXY_HOPS`, `NODE_FUNCTION_ALLOW_EXTERNAL`, `NODE_FUNCTION_ALLOW_BUILTIN` (in `ops/stack/env/n8n.env`).
 
 ### litellm
 - `checkcfg litellm` compares one config file.
@@ -162,7 +164,9 @@ Keep this list updated whenever a new surface is discovered or ownership changes
 - `src/server/**` direct env reads until removed
 - `src/n8n/workflows/`
 - `src/n8n/nodes/`
+- `src/n8n/package.manifest.json`
 - `scripts/n8n/**`
+- `ops/stack/n8n-runners/Dockerfile`
 - `scripts/db/**`
 - `pkm.runtime_config` (runtime-mutable DB state)
 - shell exports for `N8N_API_*`

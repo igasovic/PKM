@@ -134,7 +134,7 @@
       "id": "995314b7-3d8b-4f6d-9c9f-c59153259abc",
       "name": "Build Report Window",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/33-calendar-weekly-report/build-report-window__995314b7-3d8b-4f6d-9c9f-c59153259abc.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:33-calendar-weekly-report/build-report-window__995314b7-3d8b-4f6d-9c9f-c59153259abc.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/33-calendar-weekly-report/build-report-window.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:33-calendar-weekly-report/build-report-window__995314b7-3d8b-4f6d-9c9f-c59153259abc.js] ${e.message}`;throw e;}"
       },
       "position": [
         -672,
@@ -178,7 +178,7 @@
       "id": "17d546c7-033a-4190-951a-da2918721239",
       "name": "Format Calendar Report Message",
       "parameters": {
-        "jsCode": "try{const fn=require('/data/src/n8n/nodes/33-calendar-weekly-report/format-calendar-report-message__17d546c7-033a-4190-951a-da2918721239.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:33-calendar-weekly-report/format-calendar-report-message__17d546c7-033a-4190-951a-da2918721239.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/33-calendar-weekly-report/format-calendar-report-message.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:33-calendar-weekly-report/format-calendar-report-message__17d546c7-033a-4190-951a-da2918721239.js] ${e.message}`;throw e;}"
       },
       "position": [
         -224,

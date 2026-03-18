@@ -47,12 +47,14 @@ return rows.map(r => ({ json: r }));
 - Use n8n runtime variables directly.
 - Return explicit n8n item arrays.
 
-### 3.3 Externalized path rules
-- Use absolute mounted paths under `/data/...`.
+### 3.3 Runtime import rules
+- Canonical runtime imports must use package subpaths under `@igasovic/n8n-blocks/...`.
+- Do not use `/data/...` runtime imports.
 - Do not use fragile relative repo imports like `../../../src/...`.
+- Shared helpers from `src/libs/**` are available to n8n only when they are explicitly staged through `src/n8n/package.manifest.json`.
 - Example:
 ```js
-const { getConfig } = require('/data/src/libs/config.js');
+const { getConfig } = require('@igasovic/n8n-blocks/shared/config.js');
 ```
 
 ### 3.4 Fail-fast error handling
@@ -144,7 +146,7 @@ Template:
 Workflow wrapper:
 ```js
 try {
-  const fn = require('/data/src/n8n/nodes/10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js');
+  const fn = require('@igasovic/n8n-blocks/nodes/10-read/format-telegram-message.js');
   return await fn({ $input, $json, $items, $node, $env, helpers });
 } catch (e) {
   e.message = `[extjs:10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js] ${e.message}`;
@@ -174,7 +176,7 @@ return [{ json: { ...$json, isCommand } }];
 
 ### 6.3 MarkdownV2 Telegram message builder
 ```js
-const { bold, kv, joinLines, finalizeMarkdownV2 } = require('/data/src/libs/telegram-markdown.js');
+const { bold, kv, joinLines, finalizeMarkdownV2 } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
 
 const telegram_message = finalizeMarkdownV2(joinLines([
   bold('Entry summary'),
@@ -197,7 +199,7 @@ return [{ json: { ...$json, telegram_message } }];
 
 - `Cannot find module ...`
   - Cause: wrong path/import style.
-  - Fix: use absolute `/data/...` paths and verify compose mount.
+  - Fix: use `@igasovic/n8n-blocks/...` package imports and verify the generated runtime package/runners image were rebuilt.
 
 - `"[object Object]"` in HTTP payload
   - Cause: object embedded as quoted interpolation.

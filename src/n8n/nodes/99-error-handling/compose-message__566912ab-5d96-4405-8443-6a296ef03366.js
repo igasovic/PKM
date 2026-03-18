@@ -1,16 +1,11 @@
 'use strict';
 
 module.exports = async function run(ctx) {
-  let mdv2Message;
-  try {
-    ({ mdv2Message } = require('/data/src/libs/telegram-markdown.js'));
-  } catch (_err) {
-    ({ mdv2Message } = require('../../../libs/telegram-markdown.js'));
-  }
+  const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
   const e = (ctx && ctx.$json) || {};
   const SMOKE_MASTER_WORKFLOW_ID = '2DB1S0mq7UQN4U3InXRM0';
   const SMOKE_MASTER_WORKFLOW_NAME = '00 Smoke - Master';
-  const SMOKE_CLEANUP_NODE_PATH = '/data/src/n8n/nodes/00-smoke-master/t99-cleanup__f4215c02-bc84-4aea-801b-8a855811849d.js';
+  const SMOKE_CLEANUP_NODE_PATH = '@igasovic/n8n-blocks/nodes/00-smoke-master/t99-cleanup.js';
 
   const asText = (value) => String(value === undefined || value === null ? '' : value).trim();
 
