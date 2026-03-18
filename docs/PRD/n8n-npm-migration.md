@@ -396,6 +396,10 @@ Cutover is only complete when:
 - smoke tests execute successfully
 - representative flows execute successfully on the Pi
 
+Operator helper for this phase:
+- `./scripts/n8n/validate_cutover.sh`
+- `./scripts/n8n/validate_cutover.sh --with-smoke`
+
 ## 13. Config surface and documentation impact
 
 ### 13.1 Changed config surfaces

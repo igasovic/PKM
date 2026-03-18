@@ -74,7 +74,17 @@ Use these modes depending on intent:
 ./scripts/redeploy n8n
 ```
 
-6. Run the smoke master from the Pi shell after deploy:
+6. Validate the cutover/runtime state on the Pi:
+```bash
+./scripts/n8n/validate_cutover.sh
+```
+
+7. Validate and execute smoke in one go:
+```bash
+./scripts/n8n/validate_cutover.sh --with-smoke
+```
+
+8. Run the smoke master from the Pi shell directly:
 ```bash
 ./scripts/n8n/run_smoke.sh
 ```
@@ -151,6 +161,7 @@ All workflow-management scripts live under `scripts/n8n/`:
 - `scripts/n8n/build_runtime_package.sh`
 - `scripts/n8n/build_runners_image.sh`
 - `scripts/n8n/recreate_stack.sh`
+- `scripts/n8n/validate_cutover.sh`
 - `scripts/n8n/run_smoke.sh`
 - `scripts/n8n/export_workflows.sh`
 - `scripts/n8n/normalize_workflows.sh`
