@@ -676,7 +676,7 @@
       "id": "55f8683e-a7b7-49de-b44d-7d49f22d0c0d",
       "name": "Record T03 Continue",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst caseName = base.current_test_case || 'T03-router-continue';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'router_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T03 Continue Fixture\",\"defaultCaseName\":\"T03-router-continue\",\"defaultAssertionName\":\"router_execution_ok\",\"artifactAliases\":{}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         -640,
@@ -733,7 +733,7 @@
       "id": "e5f4e4a6-f51e-4d70-afb0-8449ee2e99a9",
       "name": "Record T03 Calendar",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst caseName = base.current_test_case || 'T03-router-calendar';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'router_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T03 Calendar Fixture\",\"defaultCaseName\":\"T03-router-calendar\",\"defaultAssertionName\":\"router_execution_ok\",\"artifactAliases\":{}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         -640,
@@ -790,7 +790,7 @@
       "id": "b5716384-e687-4135-a098-c01363b0613c",
       "name": "Record T03 Ambiguous",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst caseName = base.current_test_case || 'T03-router-ambiguous';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'router_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T03 Ambiguous Fixture\",\"defaultCaseName\":\"T03-router-ambiguous\",\"defaultAssertionName\":\"router_execution_ok\",\"artifactAliases\":{}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         -640,
@@ -847,7 +847,7 @@
       "id": "cac1d45a-67fe-48d4-996a-14901dfcf205",
       "name": "Record T03 Capture",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst caseName = base.current_test_case || 'T03-router-capture';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'router_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T03 Capture Fixture\",\"defaultCaseName\":\"T03-router-capture\",\"defaultAssertionName\":\"router_execution_ok\",\"artifactAliases\":{}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         -640,
@@ -904,7 +904,7 @@
       "id": "9564cc73-01be-4972-9b7f-cebde2e5e4e5",
       "name": "Record T04 Capture",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst artifacts = { ...(base.artifacts || {}) };\nconst caseName = base.current_test_case || 'T04-telegram-capture';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'capture_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nconst resultArtifacts = base.artifacts && base.artifacts.entry_id ? base.artifacts : (base.artifacts || {});\nif (resultArtifacts.entry_id) artifacts.telegram_capture_entry_id = resultArtifacts.entry_id;\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: resultArtifacts, assertions, error: base.error || null });\nreturn [{ json: { ...base, results, artifacts } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T04 Capture Fixture\",\"defaultCaseName\":\"T04-telegram-capture\",\"defaultAssertionName\":\"capture_execution_ok\",\"artifactAliases\":{\"entry_id\":\"telegram_capture_entry_id\"}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         32,
@@ -961,7 +961,7 @@
       "id": "962321d1-ba35-4b14-aa49-93d6edb34472",
       "name": "Record T05 Email",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nconst artifacts = { ...(base.artifacts || {}) };\nconst caseName = base.current_test_case || 'T05-email-capture';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'email_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nconst resultArtifacts = base.artifacts && base.artifacts.entry_id ? base.artifacts : (base.artifacts || {});\nif (resultArtifacts.entry_id) artifacts.email_capture_entry_id = resultArtifacts.entry_id;\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: resultArtifacts, assertions, error: base.error || null });\nreturn [{ json: { ...base, results, artifacts } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T05 Email Fixture\",\"defaultCaseName\":\"T05-email-capture\",\"defaultAssertionName\":\"email_execution_ok\",\"artifactAliases\":{\"entry_id\":\"email_capture_entry_id\"}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         704,
@@ -1018,7 +1018,7 @@
       "id": "6dcf29d3-341a-46bb-830d-589453ef4cd4",
       "name": "Record T06 Pull",
       "parameters": {
-        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T06-pull';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'pull_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T06 Pull Command\",\"defaultCaseName\":\"T06-pull\",\"defaultAssertionName\":\"pull_execution_ok\",\"artifactAliases\":{}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         1376,
@@ -1075,7 +1075,7 @@
       "id": "4b9bcd07-30e2-4edf-8674-cbfa1ca3e895",
       "name": "Record T07 Continue",
       "parameters": {
-        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T07-continue';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'continue_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T07 Continue Command\",\"defaultCaseName\":\"T07-continue\",\"defaultAssertionName\":\"continue_execution_ok\",\"artifactAliases\":{}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         2048,
@@ -1132,7 +1132,7 @@
       "id": "787ba787-935f-48cb-8be6-a9b8a58df28e",
       "name": "Record T08 Distill",
       "parameters": {
-        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T08-distill';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'distill_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T08 Distill Command\",\"defaultCaseName\":\"T08-distill\",\"defaultAssertionName\":\"distill_execution_ok\",\"artifactAliases\":{}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         2720,
@@ -1189,7 +1189,7 @@
       "id": "a060c1a9-0c71-458d-91b3-ef9d82404663",
       "name": "Record T09 Delete",
       "parameters": {
-        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T09-delete';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'delete_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T09 Delete Command\",\"defaultCaseName\":\"T09-delete\",\"defaultAssertionName\":\"delete_execution_ok\",\"artifactAliases\":{}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         3392,
@@ -1246,7 +1246,7 @@
       "id": "6b60115e-31de-41d6-952e-bef5941dad0f",
       "name": "Record T10 Calendar Create",
       "parameters": {
-        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const artifacts = { ...(base.artifacts || {}) }; const caseName = base.current_test_case || 'T10-calendar-create';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'calendar_create_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nconst resultArtifacts = base.artifacts || {};\nif (resultArtifacts.google_event_id) artifacts.calendar_event_id = resultArtifacts.google_event_id;\nif (resultArtifacts.request_id) artifacts.calendar_request_id = resultArtifacts.request_id;\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: resultArtifacts, assertions, error: base.error || null });\nreturn [{ json: { ...base, results, artifacts } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T10 Calendar Create Fixture\",\"defaultCaseName\":\"T10-calendar-create\",\"defaultAssertionName\":\"calendar_create_execution_ok\",\"artifactAliases\":{\"google_event_id\":\"calendar_event_id\",\"request_id\":\"calendar_request_id\"}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         4064,
@@ -1303,7 +1303,7 @@
       "id": "e6210ca8-0797-41f0-a381-ca684eafcb57",
       "name": "Record T10 Clarification",
       "parameters": {
-        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T10-calendar-clarify';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'calendar_clarify_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T10 Clarification Fixture\",\"defaultCaseName\":\"T10-calendar-clarify\",\"defaultAssertionName\":\"calendar_clarify_execution_ok\",\"artifactAliases\":{}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         4736,
@@ -1360,7 +1360,7 @@
       "id": "6768349e-d5bd-4504-8d7b-931e57f1c5c8",
       "name": "Record T11 Calendar Read",
       "parameters": {
-        "jsCode": "'use strict';\nconst base = { ...$json }; const results = Array.isArray(base.results) ? [...base.results] : []; const caseName = base.current_test_case || 'T11-calendar-read';\nconst assertions = Array.isArray(base.assertions) ? base.assertions : [{ name: 'calendar_read_execution_ok', ok: !base.error }];\nconst ok = base.ok === true && assertions.every((a) => a.ok === true);\nresults.push({ test_case: caseName, ok, run_id: base.test_run_id || null, artifacts: base.artifacts || {}, assertions, error: base.error || null });\nreturn [{ json: { ...base, results } }];"
+        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/00-smoke-master/record-step.js');return await fn({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T11 Calendar Read Fixture\",\"defaultCaseName\":\"T11-calendar-read\",\"defaultAssertionName\":\"calendar_read_execution_ok\",\"artifactAliases\":{}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
       },
       "position": [
         5408,

@@ -74,6 +74,11 @@ Use these modes depending on intent:
 ./scripts/redeploy n8n
 ```
 
+6. Run the smoke master from the Pi shell after deploy:
+```bash
+./scripts/n8n/run_smoke.sh
+```
+
 Prerequisites in current shell:
 ```bash
 export N8N_API_BASE_URL='http://127.0.0.1:5678'
@@ -146,6 +151,7 @@ All workflow-management scripts live under `scripts/n8n/`:
 - `scripts/n8n/build_runtime_package.sh`
 - `scripts/n8n/build_runners_image.sh`
 - `scripts/n8n/recreate_stack.sh`
+- `scripts/n8n/run_smoke.sh`
 - `scripts/n8n/export_workflows.sh`
 - `scripts/n8n/normalize_workflows.sh`
 - `scripts/n8n/rename_workflows_by_name.sh`

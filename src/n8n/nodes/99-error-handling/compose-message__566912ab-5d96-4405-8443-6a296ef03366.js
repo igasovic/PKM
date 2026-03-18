@@ -2,6 +2,7 @@
 
 module.exports = async function run(ctx) {
   const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
+  const { collectEntryIds } = require('@igasovic/n8n-blocks/nodes/00-smoke-master/smoke-state.js');
   const e = (ctx && ctx.$json) || {};
   const SMOKE_MASTER_WORKFLOW_ID = '2DB1S0mq7UQN4U3InXRM0';
   const SMOKE_MASTER_WORKFLOW_NAME = '00 Smoke - Master';
@@ -29,28 +30,6 @@ module.exports = async function run(ctx) {
       }
     }
     return null;
-  };
-
-  const collectEntryIds = (obj) => {
-    const ids = new Set();
-    const stack = [obj];
-    const seen = new Set();
-    while (stack.length) {
-      const current = stack.pop();
-      if (!current || typeof current !== 'object') continue;
-      if (seen.has(current)) continue;
-      seen.add(current);
-      if (Array.isArray(current)) {
-        current.forEach((v) => stack.push(v));
-        continue;
-      }
-      const maybeEntryId = current.entry_id;
-      if (Number.isFinite(Number(maybeEntryId)) && Number(maybeEntryId) > 0) {
-        ids.add(Number(maybeEntryId));
-      }
-      Object.keys(current).forEach((k) => stack.push(current[k]));
-    }
-    return Array.from(ids);
   };
 
   const toTitle = (slug) => {
@@ -144,14 +123,16 @@ module.exports = async function run(ctx) {
       const cleanupFn = require(SMOKE_CLEANUP_NODE_PATH);
       const extractedRunId = asText(findFirstValueByKey(e, 'test_run_id')) || asText(message.match(/\b(smoke_\d{4}_\d{2}_\d{2}_\d{6})\b/i)?.[1]);
       const extractedPrior = findFirstValueByKey(e, 'prior_test_mode');
-      const extractedEntryIds = collectEntryIds(e);
+      const extractedResults = findFirstValueByKey(e, 'results');
+      const extractedArtifacts = findFirstValueByKey(e, 'artifacts');
+      const extractedEntryIds = collectEntryIds(extractedResults, extractedArtifacts, e);
       const cleanupInput = {
         test_run_id: extractedRunId || null,
         prior_test_mode: typeof extractedPrior === 'boolean' ? extractedPrior : false,
-        results: [],
+        results: Array.isArray(extractedResults) ? extractedResults : [],
         artifacts: {
-          telegram_capture_entry_id: extractedEntryIds[0] || null,
-          email_capture_entry_id: extractedEntryIds[1] || null,
+          ...(extractedArtifacts && typeof extractedArtifacts === 'object' ? extractedArtifacts : {}),
+          created_entry_ids: extractedEntryIds,
         },
       };
       const cleanupRows = await cleanupFn({

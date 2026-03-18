@@ -1329,3 +1329,6 @@ Final verification commands (passed):
 - n8n: operator scripts now resolve `node` or `nodejs` automatically for runtime package builds, so Pi hosts without a `node` symlink still support `checkcfg n8n`, `updatecfg n8n`, and `scripts/n8n/recreate_stack.sh`.
 - n8n: runtime package builds now fall back to a short-lived `node:22-bookworm-slim` Docker container when the host has no Node runtime installed, so Pi operators do not need host-level Node just to rebuild `pkm-n8n-runners`.
 - ops: `scripts/redeploy` now supports `backend` and `n8n` targets and delegates to the canonical deploy helpers (`scripts/cfg/backend_push.sh` and `scripts/n8n/sync_workflows.sh --mode push`).
+- tests: n8n calendar Jest suites now resolve inline/externalized nodes via stable workflow slugs and node stems instead of dead UUID-suffixed filenames, matching the migration’s stable import model.
+- smoke: `00 Smoke - Master` record nodes now rebuild suite state from their `Build T*` inputs rather than relying on tested workflow payload pass-through; cleanup now recursively deletes all recoverable smoke entry ids and WF99 passes recovered smoke state into cleanup on failure.
+- smoke: added `scripts/n8n/run_smoke.sh` as the operator helper to execute the smoke master on the Pi via documented `n8n execute --id <workflow-id>` CLI flow.

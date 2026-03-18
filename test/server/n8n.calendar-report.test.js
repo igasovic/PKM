@@ -1,11 +1,15 @@
 'use strict';
 
-const buildReportWindow = require('../../src/n8n/nodes/32-calendar-report/build-report-window__1d7fa7c9-3ac6-4b7e-bf0a-6e2e7789f31a.js');
-const formatCalendarReportMessage = require('../../src/n8n/nodes/32-calendar-report/format-calendar-report-message__58f6c53c-5dad-4d29-93d0-00dc8f7d5683.js');
+const { requireExternalizedNode } = require('./n8n-node-loader');
+
+const buildDailyReportWindow = requireExternalizedNode('32-calendar-daily-report', 'build-report-window');
+const formatDailyReportMessage = requireExternalizedNode('32-calendar-daily-report', 'format-calendar-report-message');
+const buildWeeklyReportWindow = requireExternalizedNode('33-calendar-weekly-report', 'build-report-window');
+const formatWeeklyReportMessage = requireExternalizedNode('33-calendar-weekly-report', 'format-calendar-report-message');
 
 describe('n8n calendar report helpers', () => {
   test('build report window resolves daily range and admin chat fallback', async () => {
-    const out = await buildReportWindow({
+    const out = await buildDailyReportWindow({
       $json: {
         report_kind: 'daily',
         now_local_date: '2026-03-13',
@@ -30,7 +34,7 @@ describe('n8n calendar report helpers', () => {
   });
 
   test('build report window resolves next monday-sunday for weekly mode', async () => {
-    const out = await buildReportWindow({
+    const out = await buildWeeklyReportWindow({
       $json: {
         report_kind: 'weekly',
         now_local_date: '2026-03-13',
@@ -46,7 +50,7 @@ describe('n8n calendar report helpers', () => {
   });
 
   test('format daily report includes explicit no-events-today and skips empty future days', async () => {
-    const out = await formatCalendarReportMessage({
+    const out = await formatDailyReportMessage({
       $input: {
         all: () => [
           {
@@ -78,7 +82,7 @@ describe('n8n calendar report helpers', () => {
   });
 
   test('format weekly report skips empty days and logs external observe items', async () => {
-    const out = await formatCalendarReportMessage({
+    const out = await formatWeeklyReportMessage({
       $input: {
         all: () => [
           {

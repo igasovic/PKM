@@ -22,10 +22,17 @@ Current repo implementation adds:
 - public ingress probe workflow: `00 Smoke - Public Ingress`
 - fixture tree under `test/smoke/fixtures/`
 - smoke defaults under `test/smoke/config/defaults.json`
+- operator helper: `scripts/n8n/run_smoke.sh`
 
 Selected public ingress path:
 
 - `POST https://n8n-hook.gasovic.com/pkm/smoke/ingress`
+
+Current operator execution paths:
+
+- n8n UI/manual trigger on `00 Smoke - Master`
+- schedule trigger on `00 Smoke - Master`
+- Pi shell helper: `./scripts/n8n/run_smoke.sh`
 
 Calendar test-mode IDs currently wired in repo defaults:
 
@@ -38,7 +45,7 @@ Current cleanup behavior:
 - backend persisted test-mode state is restored in `T99 - Cleanup`
 - calendar cleanup is intentionally not destructive by default and is reported as skipped unless a dedicated delete workflow is enabled
 - cleanup is step-isolated so test-mode restore still runs even when PKM delete fails
-- cleanup deduplicates and deletes any captured entry IDs available from artifacts/results (partial cleanup support)
+- cleanup recursively deduplicates and deletes all smoke entry IDs recoverable from artifacts/results, including `created_entry_ids`
 
 Current smoke failure behavior:
 
@@ -47,6 +54,7 @@ Current smoke failure behavior:
 - `/pull`, `/distill`, and `/delete` smoke command builders no longer fall back to entry `1`
 - `00 Smoke - Master` routes failures into `99 Error Handling` (`errorWorkflow`)
 - `99 Error Handling` detects smoke master failures, executes smoke cleanup, and reports cleanup status in the failure Telegram alert
+- smoke record nodes rebuild suite state from their originating `Build T*` nodes instead of assuming tested subworkflows pass state through unchanged
 
 ---
 
@@ -75,6 +83,10 @@ These are not open questions anymore.
 
 7. **Assertions are structural, not semantic.**
    The smoke system checks that workflows run, payloads are accepted, writes happen, reads return results, messages render, and sends succeed.
+
+8. **Smoke state must not rely on downstream payload pass-through.**
+
+   The suite must preserve results/artifacts from the orchestrator side and treat tested workflow outputs as replaceable payloads.
 
 ---
 

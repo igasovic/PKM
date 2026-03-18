@@ -1,7 +1,9 @@
 'use strict';
 
-const parseCalendarQuery = require('../../src/n8n/nodes/31-calendar-read/parse-calendar-query__2eaf2dbf-a4ee-4e95-a691-dd14b4f89f4f.js');
-const formatCalendarReadMessage = require('../../src/n8n/nodes/31-calendar-read/format-calendar-read-message__0f4f9202-36bf-4337-8f15-2f6fb1122e68.js');
+const { requireExternalizedNode } = require('./n8n-node-loader');
+
+const parseCalendarQuery = requireExternalizedNode('31-calendar-read', 'parse-calendar-query');
+const formatCalendarReadMessage = requireExternalizedNode('31-calendar-read', 'format-calendar-read-message');
 
 describe('n8n calendar read helpers', () => {
   test('parse query resolves tomorrow window and label', async () => {

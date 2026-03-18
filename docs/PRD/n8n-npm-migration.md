@@ -475,6 +475,7 @@ Migration is incomplete unless:
 
 ### 14.7 Repo quality gate
 Run the repo quality gate before commit.
+Migration-aligned n8n tests should resolve canonical nodes by stable workflow slug and stable node stem or workflow node name, not by UUID-suffixed filenames.
 
 ## 15. Migration phases
 
