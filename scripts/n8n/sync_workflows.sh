@@ -9,8 +9,8 @@ RAW_DIR="$REPO_DIR/tmp/n8n-sync/raw"
 PATCHED_RAW_DIR="$REPO_DIR/tmp/n8n-sync/patched"
 MIN_JS_LINES="${MIN_JS_LINES:-50}"
 PYTHON_BIN="${PYTHON_BIN:-}"
-NODE_BIN="${NODE_BIN:-}"
 BUILD_PACKAGE_SCRIPT="$REPO_DIR/scripts/n8n/build_runtime_package.js"
+BUILD_PACKAGE_RUNNER="$REPO_DIR/scripts/n8n/build_runtime_package.sh"
 BUILD_RUNNERS_IMAGE_SCRIPT="$REPO_DIR/scripts/n8n/build_runners_image.sh"
 RECREATE_STACK_SCRIPT="$REPO_DIR/scripts/n8n/recreate_stack.sh"
 
@@ -80,30 +80,6 @@ require_file() {
   fi
 }
 
-resolve_node_bin() {
-  if [[ -n "$NODE_BIN" ]]; then
-    if command -v "$NODE_BIN" >/dev/null 2>&1; then
-      printf '%s\n' "$NODE_BIN"
-      return 0
-    fi
-    echo "Missing required command: $NODE_BIN" >&2
-    exit 1
-  fi
-
-  if command -v node >/dev/null 2>&1; then
-    printf '%s\n' "node"
-    return 0
-  fi
-
-  if command -v nodejs >/dev/null 2>&1; then
-    printf '%s\n' "nodejs"
-    return 0
-  fi
-
-  echo "Missing required command: node or nodejs" >&2
-  exit 1
-}
-
 if [[ "$MODE" != "pull" && "$MODE" != "push" && "$MODE" != "full" ]]; then
   echo "Invalid mode: $MODE" >&2
   usage
@@ -141,12 +117,11 @@ require_file "$REPO_DIR/scripts/n8n/rename_workflows_by_name.sh"
 require_file "$REPO_DIR/scripts/n8n/sync_code_nodes.py"
 require_file "$REPO_DIR/scripts/n8n/sync_nodes.py"
 require_file "$BUILD_PACKAGE_SCRIPT"
+require_file "$BUILD_PACKAGE_RUNNER"
 require_file "$BUILD_RUNNERS_IMAGE_SCRIPT"
 require_file "$RECREATE_STACK_SCRIPT"
 require_file "$PACKAGE_MANIFEST"
 require_file "$COMPOSE_FILE"
-
-NODE_BIN="$(resolve_node_bin)"
 
 if ! docker ps --format '{{.Names}}' | grep -qx 'n8n'; then
   echo "Container 'n8n' is not running." >&2
@@ -252,7 +227,7 @@ validate_live_workflows() {
 
 build_runtime_package() {
   echo "[push 1/4] Build n8n runtime package"
-  "$NODE_BIN" "$BUILD_PACKAGE_SCRIPT"
+  "$BUILD_PACKAGE_RUNNER"
 }
 
 run_pull() {

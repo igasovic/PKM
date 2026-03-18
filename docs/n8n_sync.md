@@ -76,7 +76,8 @@ export N8N_API_KEY='...'
 ```
 
 Node runtime note:
-- n8n operator scripts resolve `node` or `nodejs` automatically.
+- n8n operator scripts use local `node`/`nodejs` when available.
+- If host Node is absent, runtime package builds fall back to a short-lived `node:22-bookworm-slim` Docker container.
 - Override explicitly with `NODE_BIN=/path/to/node` if needed.
 
 Persist once in `~/.zshrc` (recommended) so `--mode push/full` works without re-exporting each shell.
@@ -137,6 +138,7 @@ All workflow-management scripts live under `scripts/n8n/`:
 - `scripts/n8n/sync_workflows.sh` (entrypoint)
 - `scripts/n8n/sync_nodes.py`
 - `scripts/n8n/build_runtime_package.js`
+- `scripts/n8n/build_runtime_package.sh`
 - `scripts/n8n/build_runners_image.sh`
 - `scripts/n8n/recreate_stack.sh`
 - `scripts/n8n/export_workflows.sh`

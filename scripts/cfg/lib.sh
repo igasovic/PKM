@@ -24,6 +24,7 @@ CFG_CLOUDFLARED_CREDENTIALS_FILE="${CFG_CLOUDFLARED_CREDENTIALS_FILE:-$CFG_STACK
 CFG_N8N_SYNC_SCRIPT="${CFG_N8N_SYNC_SCRIPT:-$CFG_REPO_ROOT/scripts/n8n/sync_workflows.sh}"
 CFG_N8N_SNAPSHOT_SCRIPT="${CFG_N8N_SNAPSHOT_SCRIPT:-$CFG_REPO_ROOT/scripts/n8n/export_workflows_snapshot.sh}"
 CFG_N8N_PACKAGE_BUILD_SCRIPT="${CFG_N8N_PACKAGE_BUILD_SCRIPT:-$CFG_REPO_ROOT/scripts/n8n/build_runtime_package.js}"
+CFG_N8N_PACKAGE_BUILD_RUNNER="${CFG_N8N_PACKAGE_BUILD_RUNNER:-$CFG_REPO_ROOT/scripts/n8n/build_runtime_package.sh}"
 CFG_N8N_RUNNERS_DOCKERFILE="${CFG_N8N_RUNNERS_DOCKERFILE:-$CFG_REPO_ROOT/ops/stack/n8n-runners/Dockerfile}"
 CFG_N8N_MIN_JS_LINES="${CFG_N8N_MIN_JS_LINES:-50}"
 
@@ -59,20 +60,6 @@ print_supported_update_modes() {
   for m in "${SUPPORTED_UPDATE_MODES[@]}"; do
     echo "- $m"
   done
-}
-
-resolve_node_bin() {
-  if command -v node >/dev/null 2>&1; then
-    printf '%s\n' "node"
-    return 0
-  fi
-
-  if command -v nodejs >/dev/null 2>&1; then
-    printf '%s\n' "nodejs"
-    return 0
-  fi
-
-  return 1
 }
 
 is_supported_surface() {
@@ -694,6 +681,7 @@ check_surface_n8n() {
     "$CFG_REPO_ROOT/scripts/n8n/normalize_workflows.sh"
     "$CFG_REPO_ROOT/scripts/n8n/sync_code_nodes.py"
     "$CFG_N8N_PACKAGE_BUILD_SCRIPT"
+    "$CFG_N8N_PACKAGE_BUILD_RUNNER"
     "$CFG_REPO_N8N_PACKAGE_MANIFEST"
     "$CFG_N8N_RUNNERS_DOCKERFILE"
   )
@@ -709,13 +697,6 @@ check_surface_n8n() {
   if ! command -v docker >/dev/null 2>&1; then
     mark_check_blocked "n8n check requires docker in PATH."
     progress_fail "docker missing"
-    return 0
-  fi
-
-  local node_bin
-  if ! node_bin="$(resolve_node_bin)"; then
-    mark_check_blocked "n8n check requires node or nodejs in PATH."
-    progress_fail "node missing"
     return 0
   fi
 
@@ -736,7 +717,7 @@ check_surface_n8n() {
 
   local out
   progress_step "build generated n8n runtime package"
-  if ! run_capture out "$node_bin" "$CFG_N8N_PACKAGE_BUILD_SCRIPT"; then
+  if ! run_capture out "$CFG_N8N_PACKAGE_BUILD_RUNNER"; then
     mark_check_blocked "n8n runtime package build failed."
     add_check_detail_lines "$(preview_lines "$out" 80)" "  "
     rm -rf "$tmp_root"
