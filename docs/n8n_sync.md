@@ -75,6 +75,10 @@ export N8N_API_BASE_URL='http://127.0.0.1:5678'
 export N8N_API_KEY='...'
 ```
 
+Node runtime note:
+- n8n operator scripts resolve `node` or `nodejs` automatically.
+- Override explicitly with `NODE_BIN=/path/to/node` if needed.
+
 Persist once in `~/.zshrc` (recommended) so `--mode push/full` works without re-exporting each shell.
 
 Quick auth check:

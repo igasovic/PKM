@@ -61,6 +61,20 @@ print_supported_update_modes() {
   done
 }
 
+resolve_node_bin() {
+  if command -v node >/dev/null 2>&1; then
+    printf '%s\n' "node"
+    return 0
+  fi
+
+  if command -v nodejs >/dev/null 2>&1; then
+    printf '%s\n' "nodejs"
+    return 0
+  fi
+
+  return 1
+}
+
 is_supported_surface() {
   local needle="${1:-}"
   local s
@@ -698,8 +712,9 @@ check_surface_n8n() {
     return 0
   fi
 
-  if ! command -v node >/dev/null 2>&1; then
-    mark_check_blocked "n8n check requires node in PATH."
+  local node_bin
+  if ! node_bin="$(resolve_node_bin)"; then
+    mark_check_blocked "n8n check requires node or nodejs in PATH."
     progress_fail "node missing"
     return 0
   fi
@@ -721,7 +736,7 @@ check_surface_n8n() {
 
   local out
   progress_step "build generated n8n runtime package"
-  if ! run_capture out node "$CFG_N8N_PACKAGE_BUILD_SCRIPT"; then
+  if ! run_capture out "$node_bin" "$CFG_N8N_PACKAGE_BUILD_SCRIPT"; then
     mark_check_blocked "n8n runtime package build failed."
     add_check_detail_lines "$(preview_lines "$out" 80)" "  "
     rm -rf "$tmp_root"

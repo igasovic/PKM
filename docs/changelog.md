@@ -1326,3 +1326,4 @@ Final verification commands (passed):
 # 2026-03-18
 
 - n8n: added `scripts/n8n/recreate_stack.sh` as the canonical manual recreate path; it now rebuilds `pkm-n8n-runners` before recreating `n8n` and `task-runners`, and `sync_workflows.sh --mode push` delegates to the same helper.
+- n8n: operator scripts now resolve `node` or `nodejs` automatically for runtime package builds, so Pi hosts without a `node` symlink still support `checkcfg n8n`, `updatecfg n8n`, and `scripts/n8n/recreate_stack.sh`.
