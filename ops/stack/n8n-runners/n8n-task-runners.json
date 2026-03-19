@@ -3,6 +3,7 @@
     {
       "runner-type": "javascript",
       "workdir": "/home/runner",
+      "working-directory": "/home/runner",
       "command": "/usr/local/bin/node",
       "args": [
         "--disallow-code-generation-from-strings",
@@ -33,6 +34,7 @@
     {
       "runner-type": "python",
       "workdir": "/home/runner",
+      "working-directory": "/home/runner",
       "command": "/opt/runners/task-runner-python/.venv/bin/python",
       "args": [
         "-I",

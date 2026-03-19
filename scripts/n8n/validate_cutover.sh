@@ -149,8 +149,9 @@ validate_runner_launcher_config() {
     echo "FAIL: runners launcher config missing python runner entry" >&2
     exit 1
   fi
-  if [[ "$launcher_config" != *'"workdir": "/home/runner"'* && "$launcher_config" != *'"workdir":"/home/runner"'* ]]; then
-    echo "FAIL: runners launcher config missing /home/runner workdir" >&2
+  if [[ "$launcher_config" != *'"workdir": "/home/runner"'* && "$launcher_config" != *'"workdir":"/home/runner"'* && \
+        "$launcher_config" != *'"working-directory": "/home/runner"'* && "$launcher_config" != *'"working-directory":"/home/runner"'* ]]; then
+    echo "FAIL: runners launcher config missing /home/runner working directory" >&2
     exit 1
   fi
   if [[ "$launcher_config" != *'/opt/runners/task-runner-javascript/dist/start.js'* ]]; then
