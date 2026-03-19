@@ -304,12 +304,13 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 - `N8N_PROXY_HOPS=1`
 - `TZ=America/Chicago`
 - `N8N_RUNNERS_MODE=external`
-- `NODE_FUNCTION_ALLOW_EXTERNAL=@igasovic/n8n-blocks`
+- `NODE_FUNCTION_ALLOW_EXTERNAL=@igasovic/n8n-blocks,igasovic-n8n-blocks`
 - `NODE_FUNCTION_ALLOW_BUILTIN=crypto,node:path,node:process`
 
 **Externalized workflow code & GitOps**
 - Repo root: `/home/igasovic/repos/n8n-workflows`
 - Canonical runtime package: `@igasovic/n8n-blocks`
+- Workflow-10 compatibility alias: `igasovic-n8n-blocks`
 - Generated package output: `src/n8n/package/` (repo build output, ignored)
 - Custom runners image source: `ops/stack/n8n-runners/Dockerfile`
 - Mount: repo → `/data` (read-only, kept for non-runtime reasons only)

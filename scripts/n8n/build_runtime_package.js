@@ -10,6 +10,7 @@ const NODES_ROOT = path.join(REPO_ROOT, 'src', 'n8n', 'nodes');
 const LIBS_ROOT = path.join(REPO_ROOT, 'src', 'libs');
 const OUTPUT_ROOT = path.join(REPO_ROOT, 'src', 'n8n', 'package');
 const PACKAGE_NAME = '@igasovic/n8n-blocks';
+const WORKFLOW10_COMPAT_PACKAGE_NAME = 'igasovic-n8n-blocks';
 
 function die(message) {
   console.error(message);
@@ -208,6 +209,9 @@ function buildPackage() {
   const selfLinkPath = path.join(scopeDir, 'n8n-blocks');
   fs.rmSync(selfLinkPath, { recursive: true, force: true });
   fs.symlinkSync(path.relative(scopeDir, OUTPUT_ROOT), selfLinkPath, 'dir');
+  const unscopedLinkPath = path.join(OUTPUT_ROOT, 'node_modules', WORKFLOW10_COMPAT_PACKAGE_NAME);
+  fs.rmSync(unscopedLinkPath, { recursive: true, force: true });
+  fs.symlinkSync(path.relative(path.dirname(unscopedLinkPath), OUTPUT_ROOT), unscopedLinkPath, 'dir');
 
   const legacyImportHits = [];
   for (const filePath of listFilesRecursive(OUTPUT_ROOT)) {

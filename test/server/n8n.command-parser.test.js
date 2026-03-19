@@ -1,7 +1,7 @@
 'use strict';
 
 const parseCommand = require('../../src/n8n/nodes/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');
-const { readCommandParser } = require('../../src/n8n/package/index.js');
+const aliasCommandParser = require('../../src/n8n/package/node_modules/igasovic-n8n-blocks/nodes/10-read/command-parser.js');
 
 function unescapeMdv2(value) {
   return String(value || '').replace(/\\([_*[\]()~`>#+\-=|{}.!\\])/g, '$1');
@@ -23,8 +23,8 @@ async function runParser(text, extra = {}) {
   return out[0].json;
 }
 
-async function runRootExportParser(text, extra = {}) {
-  const out = await readCommandParser({
+async function runAliasParser(text, extra = {}) {
+  const out = await aliasCommandParser({
     $json: {
       message: {
         text,
@@ -49,8 +49,8 @@ describe('n8n command parser', () => {
     expect(text).toContain('append --help');
   });
 
-  test('package root export resolves command parser for /help', async () => {
-    const out = await runRootExportParser('/help');
+  test('unscoped compatibility alias resolves command parser for /help', async () => {
+    const out = await runAliasParser('/help');
     const text = unescapeMdv2(out.telegram_message);
     expect(out._reply_now).toBe(true);
     expect(text).toContain('/pull <id> [--excerpt]');

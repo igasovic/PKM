@@ -140,6 +140,7 @@ Avoid:
 - Non-canonical wrapper paths are forbidden in canonical repo workflows.
 - Canonical runtime imports should use `@igasovic/n8n-blocks/nodes/...` or `@igasovic/n8n-blocks/shared/...` by default.
 - Package-root imports from `@igasovic/n8n-blocks` are allowed only as a compatibility escape hatch for n8n allowlist/runtime issues.
+- A targeted unscoped alias, `igasovic-n8n-blocks`, is currently allowed only for workflow-10 compatibility testing against stricter n8n external-module gating.
 - `/data/...` runtime imports are forbidden after the package migration. The repo mount may remain for non-runtime purposes, but it is not part of the code import contract.
 
 ## Change logs emitted by sync

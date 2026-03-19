@@ -103,6 +103,7 @@ Notes:
 - Non-secret service config must be authored in repo-managed `ops/stack/env/<service>.env` files (for example `ops/stack/env/pkm-server.env`), not by ad hoc host `.env` edits.
   - Example calendar policy vars owned in repo: `CALENDAR_TELEGRAM_ENFORCE_ALLOWLIST`, `CALENDAR_TELEGRAM_ALLOWED_USER_IDS`, `CALENDAR_TELEGRAM_PKM_ALLOWED_USER_IDS`.
   - Example Telegram/n8n runtime vars owned in repo: `TELEGRAM_ADMIN_CHAT_ID`, `N8N_EDITOR_BASE_URL`, `WEBHOOK_URL`, `N8N_PROXY_HOPS`, `NODE_FUNCTION_ALLOW_EXTERNAL`, `NODE_FUNCTION_ALLOW_BUILTIN` (in `ops/stack/env/n8n.env`).
+  - Current allowlist includes both the canonical scoped runtime package and a targeted unscoped compatibility alias for `10 Read`: `@igasovic/n8n-blocks,igasovic-n8n-blocks`.
 
 ### litellm
 - `checkcfg litellm` compares one config file.
