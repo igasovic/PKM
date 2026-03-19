@@ -149,11 +149,17 @@ validate_runner_launcher_config() {
     echo "FAIL: runners launcher config missing python runner entry" >&2
     exit 1
   fi
-  if [[ "$launcher_config" != *"\"health-check-server-port\": $EXPECTED_JS_HEALTH_PORT"* && "$launcher_config" != *"\"health-check-server-port\":$EXPECTED_JS_HEALTH_PORT"* ]]; then
+  if [[ "$launcher_config" != *"\"health-check-server-port\": \"$EXPECTED_JS_HEALTH_PORT\""* && \
+        "$launcher_config" != *"\"health-check-server-port\":\"$EXPECTED_JS_HEALTH_PORT\""* && \
+        "$launcher_config" != *"\"health-check-server-port\": $EXPECTED_JS_HEALTH_PORT"* && \
+        "$launcher_config" != *"\"health-check-server-port\":$EXPECTED_JS_HEALTH_PORT"* ]]; then
     echo "FAIL: runners launcher config missing javascript health-check-server-port $EXPECTED_JS_HEALTH_PORT" >&2
     exit 1
   fi
-  if [[ "$launcher_config" != *"\"health-check-server-port\": $EXPECTED_PY_HEALTH_PORT"* && "$launcher_config" != *"\"health-check-server-port\":$EXPECTED_PY_HEALTH_PORT"* ]]; then
+  if [[ "$launcher_config" != *"\"health-check-server-port\": \"$EXPECTED_PY_HEALTH_PORT\""* && \
+        "$launcher_config" != *"\"health-check-server-port\":\"$EXPECTED_PY_HEALTH_PORT\""* && \
+        "$launcher_config" != *"\"health-check-server-port\": $EXPECTED_PY_HEALTH_PORT"* && \
+        "$launcher_config" != *"\"health-check-server-port\":$EXPECTED_PY_HEALTH_PORT"* ]]; then
     echo "FAIL: runners launcher config missing python health-check-server-port $EXPECTED_PY_HEALTH_PORT" >&2
     exit 1
   fi

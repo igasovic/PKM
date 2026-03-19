@@ -2,7 +2,7 @@
   "task-runners": [
     {
       "runner-type": "javascript",
-      "health-check-server-port": 5680,
+      "health-check-server-port": "5680",
       "env-overrides": {
         "NODE_FUNCTION_ALLOW_BUILTIN": "crypto,node:path,node:process",
         "NODE_FUNCTION_ALLOW_EXTERNAL": "@igasovic/n8n-blocks,igasovic-n8n-blocks"
@@ -10,7 +10,7 @@
     },
     {
       "runner-type": "python",
-      "health-check-server-port": 5681,
+      "health-check-server-port": "5681",
       "env-overrides": {
         "PYTHONPATH": "/opt/runners/task-runner-python"
       }
