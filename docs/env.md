@@ -306,7 +306,7 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 - `N8N_RUNNERS_MODE=external`
 - `NODE_FUNCTION_ALLOW_EXTERNAL=@igasovic/n8n-blocks,igasovic-n8n-blocks`
 - `NODE_FUNCTION_ALLOW_BUILTIN=crypto,node:path,node:process`
-- external runner launcher config is mounted from `ops/stack/n8n-runners/n8n-task-runners.json` to `/etc/n8n-task-runners.json`
+- external runner launcher config is copied to `/home/igasovic/stack/n8n-task-runners.json` and mounted to `/etc/n8n-task-runners.json`
 
 **Externalized workflow code & GitOps**
 - Repo root: `/home/igasovic/repos/n8n-workflows`

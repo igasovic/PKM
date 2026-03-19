@@ -121,7 +121,7 @@ services:
       - N8N_RUNNERS_LAUNCHER_LOG_LEVEL=debug
       - GENERIC_TIMEZONE=${TZ}
     volumes:
-      - /home/igasovic/repos/n8n-workflows/ops/stack/n8n-runners/n8n-task-runners.json:/etc/n8n-task-runners.json:ro
+      - ./n8n-task-runners.json:/etc/n8n-task-runners.json:ro
     networks:
       - internal
 

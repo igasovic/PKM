@@ -8,6 +8,8 @@ CFG_COMPOSE_FILE="${CFG_COMPOSE_FILE:-$CFG_STACK_ROOT/docker-compose.yml}"
 
 CFG_REPO_DOCKER_COMPOSE="${CFG_REPO_DOCKER_COMPOSE:-$CFG_REPO_ROOT/ops/stack/docker-compose.yml}"
 CFG_REPO_DOCKER_ENV_DIR="${CFG_REPO_DOCKER_ENV_DIR:-$CFG_REPO_ROOT/ops/stack/env}"
+CFG_REPO_DOCKER_RUNNERS_CONFIG="${CFG_REPO_DOCKER_RUNNERS_CONFIG:-$CFG_REPO_ROOT/ops/stack/n8n-runners/n8n-task-runners.json}"
+CFG_RUNTIME_DOCKER_RUNNERS_CONFIG="${CFG_RUNTIME_DOCKER_RUNNERS_CONFIG:-$CFG_STACK_ROOT/n8n-task-runners.json}"
 
 CFG_REPO_LITELLM_FILE="${CFG_REPO_LITELLM_FILE:-$CFG_REPO_ROOT/ops/stack/litellm/config.yaml}"
 CFG_RUNTIME_LITELLM_FILE="${CFG_RUNTIME_LITELLM_FILE:-$CFG_STACK_ROOT/litellm/config.yaml}"
@@ -771,6 +773,7 @@ check_surface_n8n() {
 check_surface_docker() {
   local compose_drift=0
   local -a drifted_env_files=()
+  local runners_config_drift=0
 
   if [[ ! -f "$CFG_REPO_DOCKER_COMPOSE" || ! -f "$CFG_COMPOSE_FILE" ]] || \
     ! cmp -s "$CFG_REPO_DOCKER_COMPOSE" "$CFG_COMPOSE_FILE"; then
@@ -808,6 +811,9 @@ check_surface_docker() {
   shopt -u nullglob
 
   local total=$(( 1 + ${#env_files[@]} ))
+  if [[ -f "$CFG_REPO_DOCKER_RUNNERS_CONFIG" || -f "$CFG_RUNTIME_DOCKER_RUNNERS_CONFIG" ]]; then
+    total=$(( total + 1 ))
+  fi
   progress_start "checkcfg:docker" "$total"
   progress_step "compare docker compose file"
   compare_file_for_check "$CFG_REPO_DOCKER_COMPOSE" "$CFG_COMPOSE_FILE" "docker compose"
@@ -829,6 +835,18 @@ check_surface_docker() {
     progress_step "compare $(basename "$f")"
     compare_file_for_check "$f" "$runtime_env" "docker env $(basename "$f")"
   done
+
+  if [[ -f "$CFG_REPO_DOCKER_RUNNERS_CONFIG" || -f "$CFG_RUNTIME_DOCKER_RUNNERS_CONFIG" ]]; then
+    if [[ ! -f "$CFG_REPO_DOCKER_RUNNERS_CONFIG" || ! -f "$CFG_RUNTIME_DOCKER_RUNNERS_CONFIG" ]] || \
+      ! cmp -s "$CFG_REPO_DOCKER_RUNNERS_CONFIG" "$CFG_RUNTIME_DOCKER_RUNNERS_CONFIG"; then
+      runners_config_drift=1
+    fi
+    progress_step "compare n8n-task-runners.json"
+    compare_file_for_check \
+      "$CFG_REPO_DOCKER_RUNNERS_CONFIG" \
+      "$CFG_RUNTIME_DOCKER_RUNNERS_CONFIG" \
+      "docker config n8n-task-runners.json"
+  fi
 
   if [[ "$CHECK_STATE" == "clean" ]]; then
     add_check_detail "docker affected services: none (surface clean)"
@@ -853,6 +871,12 @@ check_surface_docker() {
     else
       add_check_detail "docker affected services: all (compose file drift; unable to resolve compose services)"
     fi
+    progress_done "comparison complete"
+    return 0
+  fi
+
+  if [[ "$runners_config_drift" -eq 1 ]]; then
+    add_check_detail "docker affected services: task-runners (n8n-task-runners.json drift)"
     progress_done "comparison complete"
     return 0
   fi
@@ -1062,13 +1086,20 @@ update_surface_docker() {
   local mode="$1"
   local -a env_files=()
   local env_count=0
+  local runners_config_present=0
   if [[ -d "$CFG_REPO_DOCKER_ENV_DIR" ]]; then
     shopt -s nullglob
     env_files=("$CFG_REPO_DOCKER_ENV_DIR"/*.env)
     shopt -u nullglob
     env_count="${#env_files[@]}"
   fi
+  if [[ -f "$CFG_REPO_DOCKER_RUNNERS_CONFIG" || -f "$CFG_RUNTIME_DOCKER_RUNNERS_CONFIG" ]]; then
+    runners_config_present=1
+  fi
   local total=$(( 1 + env_count ))
+  if [[ "$runners_config_present" -eq 1 ]]; then
+    total=$(( total + 1 ))
+  fi
   if [[ "$mode" == "push" ]]; then
     total=$(( total + 2 ))
   fi
@@ -1098,6 +1129,21 @@ update_surface_docker() {
   else
     mark_update_blocked "docker env source dir missing ($CFG_REPO_DOCKER_ENV_DIR)."
     progress_fail "env source missing"
+  fi
+
+  if [[ "$runners_config_present" -eq 1 ]]; then
+    progress_step "sync n8n-task-runners.json ($mode)"
+    if [[ "$mode" == "push" ]]; then
+      copy_file_if_changed \
+        "$CFG_REPO_DOCKER_RUNNERS_CONFIG" \
+        "$CFG_RUNTIME_DOCKER_RUNNERS_CONFIG" \
+        "docker config n8n-task-runners.json"
+    else
+      copy_file_runtime_to_repo_if_changed \
+        "$CFG_RUNTIME_DOCKER_RUNNERS_CONFIG" \
+        "$CFG_REPO_DOCKER_RUNNERS_CONFIG" \
+        "docker config n8n-task-runners.json"
+    fi
   fi
 
   if [[ "$UPDATE_STATE" == "blocked" ]]; then
@@ -1131,6 +1177,7 @@ update_surface_docker() {
   local apply_scope="full"
   local scope_reason=""
   local -a target_services=()
+  local targeted_scope_reason=""
 
   if [[ "$compose_changed" -eq 1 ]]; then
     scope_reason="docker compose file changed"
@@ -1160,6 +1207,13 @@ update_surface_docker() {
         scope_reason="docker compose file changed"
         break
       fi
+      if [[ "$changed_file" == "n8n-task-runners.json" ]]; then
+        if ! array_contains "task-runners" "${target_services[@]-}"; then
+          target_services+=("task-runners")
+        fi
+        targeted_scope_reason="task-runners launcher config changed"
+        continue
+      fi
       if [[ "$changed_file" != *.env ]]; then
         needs_full_apply=1
         scope_reason="non-env docker-managed file changed ($changed_file)"
@@ -1185,7 +1239,11 @@ update_surface_docker() {
 
     if [[ "$needs_full_apply" -eq 0 && ${#target_services[@]} -gt 0 ]]; then
       apply_scope="targeted"
-      scope_reason="service env files changed: ${target_services[*]}"
+      if [[ -n "$targeted_scope_reason" ]]; then
+        scope_reason="$targeted_scope_reason"
+      else
+        scope_reason="service env files changed: ${target_services[*]}"
+      fi
     else
       apply_scope="full"
       if [[ -z "$scope_reason" ]]; then

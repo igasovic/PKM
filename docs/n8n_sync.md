@@ -82,12 +82,18 @@ Use these modes depending on intent:
 The runners launcher config is repo-managed at:
 - `ops/stack/n8n-runners/n8n-task-runners.json`
 
-It is mounted into the runners container at:
+It is copied to the Pi stack at:
+- `/home/igasovic/stack/n8n-task-runners.json`
+
+Then mounted into the runners container at:
 - `/etc/n8n-task-runners.json`
 
 Keep both launcher entries present:
 - `runner-type: javascript`
 - `runner-type: python`
+Keep both health-check ports present too:
+- `5680` for `javascript`
+- `5681` for `python`
 
 7. Validate and execute smoke in one go:
 ```bash

@@ -18,6 +18,8 @@ EXPECTED_ALLOW_BUILTIN="${EXPECTED_ALLOW_BUILTIN:-crypto,node:path,node:process}
 EXPECTED_RUNNERS_BROKER_URI="${EXPECTED_RUNNERS_BROKER_URI:-http://n8n:5679}"
 RUN_SMOKE_SCRIPT="${RUN_SMOKE_SCRIPT:-$REPO_DIR/scripts/n8n/run_smoke.sh}"
 RUNNERS_LAUNCHER_CONFIG_PATH="${RUNNERS_LAUNCHER_CONFIG_PATH:-/etc/n8n-task-runners.json}"
+EXPECTED_JS_HEALTH_PORT="${EXPECTED_JS_HEALTH_PORT:-5680}"
+EXPECTED_PY_HEALTH_PORT="${EXPECTED_PY_HEALTH_PORT:-5681}"
 
 usage() {
   cat >&2 <<'EOF'
@@ -145,6 +147,14 @@ validate_runner_launcher_config() {
   fi
   if [[ "$launcher_config" != *'"runner-type": "python"'* && "$launcher_config" != *'"runner-type":"python"'* ]]; then
     echo "FAIL: runners launcher config missing python runner entry" >&2
+    exit 1
+  fi
+  if [[ "$launcher_config" != *"\"health-check-server-port\": $EXPECTED_JS_HEALTH_PORT"* && "$launcher_config" != *"\"health-check-server-port\":$EXPECTED_JS_HEALTH_PORT"* ]]; then
+    echo "FAIL: runners launcher config missing javascript health-check-server-port $EXPECTED_JS_HEALTH_PORT" >&2
+    exit 1
+  fi
+  if [[ "$launcher_config" != *"\"health-check-server-port\": $EXPECTED_PY_HEALTH_PORT"* && "$launcher_config" != *"\"health-check-server-port\":$EXPECTED_PY_HEALTH_PORT"* ]]; then
+    echo "FAIL: runners launcher config missing python health-check-server-port $EXPECTED_PY_HEALTH_PORT" >&2
     exit 1
   fi
   if [[ "$launcher_config" != *"$EXPECTED_ALLOW_EXTERNAL"* ]]; then

@@ -652,4 +652,53 @@ describe('config ops scripts', () => {
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });
+
+  test('updatecfg docker push targets task-runners when launcher config changed', () => {
+    const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
+
+    const repoCompose = path.join(tempRepoRoot, 'ops/stack/docker-compose.yml');
+    const runtimeCompose = path.join(tempStackRoot, 'docker-compose.yml');
+    const repoEnvDir = path.join(tempRepoRoot, 'ops/stack/env');
+    const repoEnv = path.join(repoEnvDir, 'pkm-server.env');
+    const runtimeEnv = path.join(tempStackRoot, 'pkm-server.env');
+    const repoRunnersConfig = path.join(tempRepoRoot, 'ops/stack/n8n-runners/n8n-task-runners.json');
+    const runtimeRunnersConfig = path.join(tempStackRoot, 'n8n-task-runners.json');
+
+    fs.mkdirSync(path.dirname(repoCompose), { recursive: true });
+    fs.mkdirSync(path.dirname(runtimeCompose), { recursive: true });
+    fs.mkdirSync(repoEnvDir, { recursive: true });
+    fs.mkdirSync(path.dirname(repoRunnersConfig), { recursive: true });
+
+    const composePayload = [
+      'services:',
+      '  task-runners:',
+      '    image: example/task-runners',
+      '  n8n:',
+      '    image: example/n8n',
+      '',
+    ].join('\n');
+
+    fs.writeFileSync(repoCompose, composePayload, 'utf8');
+    fs.writeFileSync(runtimeCompose, composePayload, 'utf8');
+    fs.writeFileSync(repoEnv, 'PKM_FEATURE_X=false\n', 'utf8');
+    fs.writeFileSync(runtimeEnv, 'PKM_FEATURE_X=false\n', 'utf8');
+    fs.writeFileSync(repoRunnersConfig, '{"task-runners":[{"runner-type":"javascript"}]}\n', 'utf8');
+    fs.writeFileSync(runtimeRunnersConfig, '{"task-runners":[]}\n', 'utf8');
+
+    const fakeDocker = setupFakeDocker(tempRoot, 'task-runners\nn8n\n');
+    const res = runScript(updatecfgPath, ['docker', '--push'], {
+      CFG_REPO_ROOT: tempRepoRoot,
+      CFG_STACK_ROOT: tempStackRoot,
+      ...fakeDocker.dockerEnv,
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('docker compose targeted apply: task-runners');
+    expect(res.stdout).toContain('scope reason: task-runners launcher config changed');
+
+    const dockerLog = fs.readFileSync(fakeDocker.dockerLogPath, 'utf8');
+    expect(dockerLog).toContain('up -d task-runners');
+
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
 });
