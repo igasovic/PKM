@@ -92,8 +92,8 @@ Keep both launcher entries present:
 - `runner-type: javascript`
 - `runner-type: python`
 Keep both health-check ports present too:
-- `5680` for `javascript`
-- `5681` for `python`
+- `5681` for `javascript` (launcher default is `5680`)
+- `5682` for `python`
 
 7. Validate and execute smoke in one go:
 ```bash

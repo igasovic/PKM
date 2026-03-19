@@ -1342,3 +1342,4 @@ Final verification commands (passed):
 - n8n/docker: added the required `python` runner entry back into `ops/stack/n8n-runners/n8n-task-runners.json`; without it, `n8n-runners` crash-loops before any JS task can run.
 - docker/n8n: moved `n8n-task-runners.json` under the stack-managed docker surface (`/home/igasovic/stack/n8n-task-runners.json`) so `checkcfg/updatecfg docker` can detect/apply launcher-config changes; also added required per-runner `health-check-server-port` values for multi-runner launcher mode.
 - n8n-runners: fixed launcher config typing so `health-check-server-port` values are strings (`\"5680\"`, `\"5681\"`), matching runner config parsing on the Pi image.
+- n8n-runners: moved runner health-check ports to `\"5681\"` (javascript) and `\"5682\"` (python) to avoid conflicting with launcher default port `5680`.
