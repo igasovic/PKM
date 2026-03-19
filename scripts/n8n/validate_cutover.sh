@@ -139,6 +139,14 @@ validate_runner_launcher_config() {
     echo "FAIL: runners launcher config missing NODE_FUNCTION_ALLOW_EXTERNAL" >&2
     exit 1
   fi
+  if [[ "$launcher_config" != *'"runner-type": "javascript"'* && "$launcher_config" != *'"runner-type":"javascript"'* ]]; then
+    echo "FAIL: runners launcher config missing javascript runner entry" >&2
+    exit 1
+  fi
+  if [[ "$launcher_config" != *'"runner-type": "python"'* && "$launcher_config" != *'"runner-type":"python"'* ]]; then
+    echo "FAIL: runners launcher config missing python runner entry" >&2
+    exit 1
+  fi
   if [[ "$launcher_config" != *"$EXPECTED_ALLOW_EXTERNAL"* ]]; then
     echo "FAIL: runners launcher config missing expected external allowlist" >&2
     echo "  expected substring: $EXPECTED_ALLOW_EXTERNAL" >&2

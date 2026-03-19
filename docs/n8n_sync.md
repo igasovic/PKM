@@ -85,6 +85,10 @@ The runners launcher config is repo-managed at:
 It is mounted into the runners container at:
 - `/etc/n8n-task-runners.json`
 
+Keep both launcher entries present:
+- `runner-type: javascript`
+- `runner-type: python`
+
 7. Validate and execute smoke in one go:
 ```bash
 ./scripts/n8n/validate_cutover.sh --with-smoke
