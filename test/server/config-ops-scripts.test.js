@@ -10,6 +10,7 @@ const checkcfgPath = path.join(repoRoot, 'scripts/cfg/checkcfg');
 const updatecfgPath = path.join(repoRoot, 'scripts/cfg/updatecfg');
 const importcfgPath = path.join(repoRoot, 'scripts/cfg/importcfg');
 const bootstrapcfgPath = path.join(repoRoot, 'scripts/cfg/bootstrapcfg');
+const normalizeWorkflowsPath = path.join(repoRoot, 'scripts/n8n/normalize_workflows.sh');
 
 function runScript(scriptPath, args = [], env = {}) {
   try {
@@ -254,6 +255,44 @@ describe('config ops scripts', () => {
 
     const updatedRepo = fs.readFileSync(repoFile, 'utf8');
     expect(updatedRepo).toContain('from_runtime');
+
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
+  test('normalize_workflows removes runtime-managed n8n metadata fields', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'normalize-workflows-test-'));
+    const workflowPath = path.join(tempRoot, '10-read__example.json');
+
+    fs.writeFileSync(
+      workflowPath,
+      JSON.stringify({
+        id: 'abc',
+        versionId: 'def',
+        activeVersionId: 'ghi',
+        updatedAt: '2026-03-18T18:59:52.774Z',
+        versionCounter: 448,
+        versionMetadata: { name: null, description: null },
+        meta: { instanceId: 'x' },
+        pinData: { foo: 'bar' },
+        name: '10 Read',
+        active: true,
+      }, null, 2),
+      'utf8',
+    );
+
+    const res = runScript(normalizeWorkflowsPath, [tempRoot]);
+    expect(res.code).toBe(0);
+
+    const normalized = JSON.parse(fs.readFileSync(workflowPath, 'utf8'));
+    expect(normalized.id).toBeUndefined();
+    expect(normalized.versionId).toBeUndefined();
+    expect(normalized.activeVersionId).toBeUndefined();
+    expect(normalized.updatedAt).toBeUndefined();
+    expect(normalized.versionCounter).toBeUndefined();
+    expect(normalized.versionMetadata).toBeUndefined();
+    expect(normalized.meta).toBeUndefined();
+    expect(normalized.pinData).toBeUndefined();
+    expect(normalized.name).toBe('10 Read');
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });

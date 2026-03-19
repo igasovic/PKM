@@ -735,22 +735,20 @@ check_surface_n8n() {
     return 0
   fi
 
-  local sync_args=(
+  local validate_live_args=(
     "$py_bin"
-    "$CFG_REPO_ROOT/scripts/n8n/sync_code_nodes.py"
-    "$tmp_raw"
-    "$tmp_patched"
-    "$tmp_workflows"
-    "$tmp_nodes"
-    "$CFG_N8N_MIN_JS_LINES"
+    "$CFG_REPO_ROOT/scripts/n8n/sync_nodes.py"
+    "--workflows-dir" "$tmp_workflows"
+    "--nodes-root-dir" "$CFG_REPO_N8N_NODES_DIR"
+    "--dry-run"
   )
 
-  progress_step "externalize and sync code-node sources"
-  if ! run_capture out "${sync_args[@]}"; then
-    mark_check_blocked "n8n code-node sync failed."
+  progress_step "validate live wrapper targets against repo nodes"
+  if ! run_capture out "${validate_live_args[@]}"; then
+    mark_check_blocked "n8n live wrapper validation failed."
     add_check_detail_lines "$(preview_lines "$out" 120)" "  "
     rm -rf "$tmp_root"
-    progress_fail "code-node sync failed"
+    progress_fail "live wrapper validation failed"
     return 0
   fi
 
@@ -763,9 +761,8 @@ check_surface_n8n() {
     return 0
   fi
 
-  progress_step "compare repo workflows/nodes with live snapshot"
+  progress_step "compare repo workflows with live snapshot"
   compare_dir_for_check "$CFG_REPO_N8N_WORKFLOWS_DIR" "$tmp_workflows" "n8n workflow JSON"
-  compare_dir_for_check "$CFG_REPO_N8N_NODES_DIR" "$tmp_nodes" "n8n externalized code"
 
   rm -rf "$tmp_root"
   progress_done "comparison complete"

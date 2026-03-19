@@ -12,8 +12,12 @@ for f in "$DIR"/*.json; do
     del(
       .id,
       .versionId,
+      .activeVersionId,
       .meta,
-      .pinData
+      .pinData,
+      .updatedAt,
+      .versionCounter,
+      .versionMetadata
     )
   ' "$f" > "$tmp"
 
