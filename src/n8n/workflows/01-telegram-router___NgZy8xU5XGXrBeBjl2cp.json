@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "fa5476a7-534a-4b5f-afe8-6ad5b941d087",
   "connections": {
     "Call '30 Calendar Create'": {
       "main": [
@@ -204,7 +203,6 @@
       ]
     }
   },
-  "createdAt": "2026-01-19T03:35:03.724Z",
   "description": null,
   "isArchived": false,
   "name": "01 Telegram Router",
@@ -719,28 +717,7 @@
     "executionOrder": "v1",
     "timeSavedMode": "fixed"
   },
-  "shared": [
-    {
-      "createdAt": "2026-01-19T03:35:03.724Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-01-19T03:35:03.724Z",
-      "workflowId": "_NgZy8xU5XGXrBeBjl2cp"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 1,
-  "updatedAt": "2026-03-14T23:24:57.348Z",
-  "versionCounter": 231
+  "triggerCount": 1
 }

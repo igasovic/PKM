@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "77026b6a-6dcb-4947-a2bd-b356a7928eeb",
   "connections": {
     "Build Report Window": {
       "main": [
@@ -74,7 +73,6 @@
       ]
     }
   },
-  "createdAt": "2026-03-13T18:50:10.185Z",
   "description": null,
   "isArchived": false,
   "name": "32 Calendar Daily Report",
@@ -282,28 +280,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
-  "shared": [
-    {
-      "createdAt": "2026-03-13T18:50:10.185Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-03-13T18:50:10.185Z",
-      "workflowId": "QLTdG1wgxruxTdPr36e1I"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 1,
-  "updatedAt": "2026-03-14T23:14:41.178Z",
-  "versionCounter": 47
+  "triggerCount": 1
 }

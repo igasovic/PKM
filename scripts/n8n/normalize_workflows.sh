@@ -13,6 +13,8 @@ for f in "$DIR"/*.json; do
       .id,
       .versionId,
       .activeVersionId,
+      .createdAt,
+      .shared,
       .meta,
       .pinData,
       .updatedAt,

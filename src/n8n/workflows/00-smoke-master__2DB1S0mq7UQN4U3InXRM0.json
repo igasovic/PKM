@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "d4f9fad2-0f30-4c69-9556-8b2ec972787d",
   "connections": {
     "Build Smoke Summary": {
       "main": [
@@ -165,6 +164,11 @@
             "type": "main"
           }
         ]
+      ]
+    },
+    "Fail Smoke Run": {
+      "main": [
+        []
       ]
     },
     "Init Smoke Context": {
@@ -486,6 +490,24 @@
         ]
       ]
     },
+    "Send Smoke Summary": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Fail Smoke Run",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Fail Smoke Run",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "T01 - Infra": {
       "main": [
         [
@@ -518,32 +540,8 @@
           }
         ]
       ]
-    },
-    "Send Smoke Summary": {
-      "main": [
-        [
-          {
-            "node": "Fail Smoke Run",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Fail Smoke Run",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fail Smoke Run": {
-      "main": [
-        []
-      ]
     }
   },
-  "createdAt": "2026-03-14T23:02:45.099Z",
   "description": null,
   "isArchived": false,
   "name": "00 Smoke - Master",
@@ -642,6 +640,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "a6d9e8ce-cb24-419e-afb1-1d8c75a27833",
       "name": "Run T03 Continue Router",
       "parameters": {
@@ -669,8 +668,7 @@
         -384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "55f8683e-a7b7-49de-b44d-7d49f22d0c0d",
@@ -699,6 +697,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "21689e22-802e-4fe3-ba12-bb541514b765",
       "name": "Run T03 Calendar Router",
       "parameters": {
@@ -726,8 +725,7 @@
         -128
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "e5f4e4a6-f51e-4d70-afb0-8449ee2e99a9",
@@ -756,6 +754,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "52cd124e-998e-47bf-b525-1ed94e082dff",
       "name": "Run T03 Ambiguous Router",
       "parameters": {
@@ -783,8 +782,7 @@
         128
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "b5716384-e687-4135-a098-c01363b0613c",
@@ -813,6 +811,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "7a453e7b-cd3c-470b-b4ea-0022256c20c2",
       "name": "Run T03 Capture Router",
       "parameters": {
@@ -840,8 +839,7 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "cac1d45a-67fe-48d4-996a-14901dfcf205",
@@ -870,6 +868,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "c695d71a-a2a5-4bbc-b483-0750b65d62a2",
       "name": "Run T04 Telegram Capture",
       "parameters": {
@@ -897,8 +896,7 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "9564cc73-01be-4972-9b7f-cebde2e5e4e5",
@@ -927,6 +925,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "2f286790-5727-4f03-90a0-afe7e3eac09e",
       "name": "Run T05 Email Capture",
       "parameters": {
@@ -954,8 +953,7 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "962321d1-ba35-4b14-aa49-93d6edb34472",
@@ -984,6 +982,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "735ba36f-94a4-4b3d-b3cf-90185638a4d5",
       "name": "Run T06 Pull",
       "parameters": {
@@ -1011,8 +1010,7 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "6dcf29d3-341a-46bb-830d-589453ef4cd4",
@@ -1041,6 +1039,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "88faecc0-2c0e-4ba1-87e0-b4c1f258850f",
       "name": "Run T07 Continue",
       "parameters": {
@@ -1068,8 +1067,7 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "4b9bcd07-30e2-4edf-8674-cbfa1ca3e895",
@@ -1098,6 +1096,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "4e2c51e7-6c62-4768-bede-a157e8d3000d",
       "name": "Run T08 Distill",
       "parameters": {
@@ -1125,8 +1124,7 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "787ba787-935f-48cb-8be6-a9b8a58df28e",
@@ -1155,6 +1153,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "5e8f80e1-6c23-427c-9ad4-13c3e75c75e3",
       "name": "Run T09 Delete",
       "parameters": {
@@ -1182,8 +1181,7 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "a060c1a9-0c71-458d-91b3-ef9d82404663",
@@ -1212,6 +1210,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "29952227-efbc-4e0b-b752-620ba2eb72c4",
       "name": "Run T10 Calendar Create",
       "parameters": {
@@ -1239,8 +1238,7 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "6b60115e-31de-41d6-952e-bef5941dad0f",
@@ -1269,6 +1267,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "ab9f5822-6504-42bf-bd72-635661adf0ab",
       "name": "Run T10 Clarification",
       "parameters": {
@@ -1296,8 +1295,7 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "e6210ca8-0797-41f0-a381-ca684eafcb57",
@@ -1326,6 +1324,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "id": "27cf05d4-f6ac-457a-9565-e58fade4de8e",
       "name": "Run T11 Calendar Read",
       "parameters": {
@@ -1353,8 +1352,7 @@
         384
       ],
       "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "alwaysOutputData": true
+      "typeVersion": 1.3
     },
     {
       "id": "6768349e-d5bd-4504-8d7b-931e57f1c5c8",
@@ -1396,6 +1394,7 @@
       "typeVersion": 2
     },
     {
+      "alwaysOutputData": true,
       "credentials": {
         "telegramApi": {
           "id": "4svco1wrzYsvoLNB",
@@ -1419,51 +1418,29 @@
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "webhookId": "2e7a6d72-ce4a-4ae1-86aa-07dca8557fee",
-      "alwaysOutputData": true
+      "webhookId": "2e7a6d72-ce4a-4ae1-86aa-07dca8557fee"
     },
     {
       "id": "b7db6e4a-cdc4-44fc-a9ec-9d907f4e05be",
       "name": "Fail Smoke Run",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "'use strict';\n\nlet summary = null;\ntry {\n  const items = $items('Build Smoke Summary', 0, 0);\n  summary = Array.isArray(items) && items[0] && items[0].json ? { ...items[0].json } : null;\n} catch (_err) {\n  summary = null;\n}\n\nif (!summary) {\n  throw new Error('Smoke summary missing; cannot finalize run status');\n}\n\nif ($json && $json.error) {\n  const sendErr = String(($json.error && $json.error.message) || $json.error);\n  throw new Error('Smoke summary send failed: ' + sendErr);\n}\n\nif (summary.overall_ok !== true) {\n  const failed = Number(summary.failed_count || 0);\n  const runId = String(summary.test_run_id || 'unknown');\n  throw new Error('Smoke run failed: ' + failed + ' test(s) failed (run ' + runId + ')');\n}\n\nreturn [{ json: { ...summary, smoke_final_status: 'passed' } }];\n"
+      },
       "position": [
         2448,
         -96
       ],
-      "parameters": {
-        "jsCode": "'use strict';\n\nlet summary = null;\ntry {\n  const items = $items('Build Smoke Summary', 0, 0);\n  summary = Array.isArray(items) && items[0] && items[0].json ? { ...items[0].json } : null;\n} catch (_err) {\n  summary = null;\n}\n\nif (!summary) {\n  throw new Error('Smoke summary missing; cannot finalize run status');\n}\n\nif ($json && $json.error) {\n  const sendErr = String(($json.error && $json.error.message) || $json.error);\n  throw new Error('Smoke summary send failed: ' + sendErr);\n}\n\nif (summary.overall_ok !== true) {\n  const failed = Number(summary.failed_count || 0);\n  const runId = String(summary.test_run_id || 'unknown');\n  throw new Error('Smoke run failed: ' + failed + ' test(s) failed (run ' + runId + ')');\n}\n\nreturn [{ json: { ...summary, smoke_final_status: 'passed' } }];\n"
-      }
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
     "availableInMCP": false,
     "callerPolicy": "workflowsFromSameOwner",
-    "executionOrder": "v1",
-    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW"
+    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
+    "executionOrder": "v1"
   },
-  "shared": [
-    {
-      "createdAt": "2026-03-14T23:02:45.099Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-03-14T23:02:45.099Z",
-      "workflowId": "2DB1S0mq7UQN4U3InXRM0"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 1,
-  "updatedAt": "2026-03-15T00:05:39.057Z",
-  "versionCounter": 7
+  "triggerCount": 1
 }

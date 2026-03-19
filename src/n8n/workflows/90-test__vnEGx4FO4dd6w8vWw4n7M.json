@@ -1,8 +1,6 @@
 {
   "active": false,
-  "activeVersionId": null,
   "connections": {},
-  "createdAt": "2026-01-20T17:20:06.147Z",
   "description": null,
   "isArchived": false,
   "name": "90 Test",
@@ -12,28 +10,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
-  "shared": [
-    {
-      "createdAt": "2026-01-20T17:20:06.147Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-01-20T17:20:06.147Z",
-      "workflowId": "vnEGx4FO4dd6w8vWw4n7M"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 0,
-  "updatedAt": "2026-03-14T23:14:42.700Z",
-  "versionCounter": 24
+  "triggerCount": 0
 }

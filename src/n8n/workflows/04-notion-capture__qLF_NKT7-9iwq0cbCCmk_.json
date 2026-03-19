@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "03ad8e61-85d0-45dc-9c74-e6516752304c",
   "connections": {
     "Build Error Message": {
       "main": [
@@ -179,7 +178,6 @@
       ]
     }
   },
-  "createdAt": "2026-02-24T05:20:50.693Z",
   "description": null,
   "isArchived": false,
   "name": "04 Notion Capture",
@@ -576,28 +574,7 @@
     "executionOrder": "v1",
     "timeSavedMode": "fixed"
   },
-  "shared": [
-    {
-      "createdAt": "2026-02-24T05:20:50.693Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-02-24T05:20:50.693Z",
-      "workflowId": "qLF_NKT7-9iwq0cbCCmk_"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 2,
-  "updatedAt": "2026-03-14T23:14:37.134Z",
-  "versionCounter": 159
+  "triggerCount": 2
 }

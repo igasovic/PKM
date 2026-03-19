@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "260ba9a2-6923-4fab-aa52-684a6ac8793c",
   "connections": {
     "Compose Message": {
       "main": [
@@ -25,7 +24,6 @@
       ]
     }
   },
-  "createdAt": "2026-01-14T01:15:00.612Z",
   "description": null,
   "isArchived": false,
   "name": "99 Error Handling",
@@ -85,28 +83,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
-  "shared": [
-    {
-      "createdAt": "2026-01-14T01:15:00.612Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-01-14T01:15:00.612Z",
-      "workflowId": "R2r3jkL5Rb39zKpyutwhW"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 0,
-  "updatedAt": "2026-03-14T23:14:43.280Z",
-  "versionCounter": 207
+  "triggerCount": 0
 }

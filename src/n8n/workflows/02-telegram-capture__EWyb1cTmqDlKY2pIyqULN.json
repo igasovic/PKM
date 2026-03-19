@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "613e1bf4-74fd-42fc-b174-39d6d775a516",
   "connections": {
     "Assert Format Create Message": {
       "main": [
@@ -259,7 +258,6 @@
       ]
     }
   },
-  "createdAt": "2026-01-13T04:28:47.800Z",
   "description": null,
   "isArchived": false,
   "name": "02 Telegram Capture",
@@ -740,28 +738,7 @@
     "executionOrder": "v1",
     "timeSavedMode": "fixed"
   },
-  "shared": [
-    {
-      "createdAt": "2026-01-13T04:28:47.800Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-01-13T04:28:47.800Z",
-      "workflowId": "EWyb1cTmqDlKY2pIyqULN"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 0,
-  "updatedAt": "2026-03-14T23:25:11.689Z",
-  "versionCounter": 379
+  "triggerCount": 0
 }

@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "6df0dfac-828d-4e07-bd49-e4437c06ad96",
   "connections": {
     "Extract Title & Author": {
       "main": [
@@ -123,7 +122,6 @@
       ]
     }
   },
-  "createdAt": "2026-02-13T16:57:22.702Z",
   "description": null,
   "isArchived": false,
   "name": "22 Web Extraction",
@@ -343,28 +341,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
-  "shared": [
-    {
-      "createdAt": "2026-02-13T16:57:22.702Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-02-13T16:57:22.702Z",
-      "workflowId": "eYF7ivDiFwDYgi-pFRbpg"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 0,
-  "updatedAt": "2026-03-14T23:14:39.893Z",
-  "versionCounter": 159
+  "triggerCount": 0
 }

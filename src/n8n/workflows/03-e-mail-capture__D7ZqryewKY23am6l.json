@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "68774075-ec76-4dda-ae8a-25b725e73b12",
   "connections": {
     "Assert Format Email Duplicate": {
       "main": [
@@ -186,7 +185,6 @@
       ]
     }
   },
-  "createdAt": "2026-01-24T05:20:03.503Z",
   "description": null,
   "isArchived": false,
   "name": "03 E-Mail Capture",
@@ -536,32 +534,11 @@
     "executionOrder": "v1",
     "timeSavedMode": "fixed"
   },
-  "shared": [
-    {
-      "createdAt": "2026-01-24T05:20:03.503Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-01-24T05:20:03.503Z",
-      "workflowId": "D7ZqryewKY23am6l"
-    }
-  ],
   "staticData": {
     "node:Email Trigger (IMAP)1": {
       "lastMessageUid": 166
     }
   },
   "tags": [],
-  "triggerCount": 1,
-  "updatedAt": "2026-03-14T23:25:35.262Z",
-  "versionCounter": 406
+  "triggerCount": 1
 }

@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "7c0d4db1-399e-4a8e-95fc-be006a8ba594",
   "connections": {
     "Smoke Ingress Webhook": {
       "main": [
@@ -14,7 +13,6 @@
       ]
     }
   },
-  "createdAt": "2026-03-14T23:03:14.501Z",
   "description": null,
   "isArchived": false,
   "name": "00 Smoke - Public Ingress",
@@ -54,28 +52,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
-  "shared": [
-    {
-      "createdAt": "2026-03-14T23:03:14.501Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-03-14T23:03:14.501Z",
-      "workflowId": "XUTDLS671MB81uJfn-rzY"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 1,
-  "updatedAt": "2026-03-14T23:14:32.264Z",
-  "versionCounter": 16
+  "triggerCount": 1
 }

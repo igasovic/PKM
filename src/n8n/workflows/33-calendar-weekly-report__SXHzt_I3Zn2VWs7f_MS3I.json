@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "19fb5d56-812c-4417-928c-2fdcefd67183",
   "connections": {
     "Build Report Window": {
       "main": [
@@ -74,7 +73,6 @@
       ]
     }
   },
-  "createdAt": "2026-03-13T18:50:38.666Z",
   "description": null,
   "isArchived": false,
   "name": "33 Calendar Weekly Report",
@@ -283,28 +281,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
-  "shared": [
-    {
-      "createdAt": "2026-03-13T18:50:38.666Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-03-13T18:50:38.666Z",
-      "workflowId": "SXHzt_I3Zn2VWs7f_MS3I"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 1,
-  "updatedAt": "2026-03-14T23:14:41.553Z",
-  "versionCounter": 47
+  "triggerCount": 1
 }

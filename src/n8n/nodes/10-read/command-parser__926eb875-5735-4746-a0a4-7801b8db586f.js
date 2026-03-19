@@ -12,7 +12,18 @@
  */
 'use strict';
 
-const { mdv2Message } = require('igasovic-n8n-blocks/shared/telegram-markdown.js');
+const path = require('node:path');
+
+function loadTelegramMarkdown() {
+  const packagedPath = path.join(__dirname, '..', '..', 'shared', 'telegram-markdown.js');
+  try {
+    return require(packagedPath);
+  } catch (_err) {
+    return require('igasovic-n8n-blocks/shared/telegram-markdown.js');
+  }
+}
+
+const { mdv2Message } = loadTelegramMarkdown();
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;

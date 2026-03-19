@@ -1,6 +1,5 @@
 {
   "active": false,
-  "activeVersionId": null,
   "connections": {
     "Format Import Summary Telegram Message": {
       "main": [
@@ -68,7 +67,6 @@
       ]
     }
   },
-  "createdAt": "2026-02-13T19:08:36.657Z",
   "description": null,
   "isArchived": false,
   "name": "23 E-Mail Batch Import",
@@ -212,28 +210,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
-  "shared": [
-    {
-      "createdAt": "2026-02-13T19:08:36.657Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-02-13T19:08:36.657Z",
-      "workflowId": "M7wdUQ8CxcdbDteRLbd8e"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 0,
-  "updatedAt": "2026-03-14T23:14:40.200Z",
-  "versionCounter": 29
+  "triggerCount": 0
 }

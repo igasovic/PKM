@@ -269,9 +269,11 @@ describe('config ops scripts', () => {
         id: 'abc',
         versionId: 'def',
         activeVersionId: 'ghi',
+        createdAt: '2026-01-20T17:20:06.147Z',
         updatedAt: '2026-03-18T18:59:52.774Z',
         versionCounter: 448,
         versionMetadata: { name: null, description: null },
+        shared: [{ workflowId: 'abc', projectId: 'p1' }],
         meta: { instanceId: 'x' },
         pinData: { foo: 'bar' },
         name: '10 Read',
@@ -287,6 +289,8 @@ describe('config ops scripts', () => {
     expect(normalized.id).toBeUndefined();
     expect(normalized.versionId).toBeUndefined();
     expect(normalized.activeVersionId).toBeUndefined();
+    expect(normalized.createdAt).toBeUndefined();
+    expect(normalized.shared).toBeUndefined();
     expect(normalized.updatedAt).toBeUndefined();
     expect(normalized.versionCounter).toBeUndefined();
     expect(normalized.versionMetadata).toBeUndefined();

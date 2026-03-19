@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "1c0bc8e6-a1f1-47b6-98f9-ce08276b9d84",
   "connections": {
     "Backup GDrive Daily": {
       "main": [
@@ -149,7 +148,6 @@
       ]
     }
   },
-  "createdAt": "2026-02-17T18:56:28.049Z",
   "description": null,
   "isArchived": false,
   "name": "80 Postgres Backup",
@@ -565,28 +563,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
-  "shared": [
-    {
-      "createdAt": "2026-02-17T18:56:28.049Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-02-17T18:56:28.049Z",
-      "workflowId": "pZH_qI9CjFoJNs6x7Fh2t"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 4,
-  "updatedAt": "2026-03-14T23:14:41.964Z",
-  "versionCounter": 187
+  "triggerCount": 4
 }

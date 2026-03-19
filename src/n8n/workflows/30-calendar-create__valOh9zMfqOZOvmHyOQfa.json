@@ -1,6 +1,5 @@
 {
   "active": true,
-  "activeVersionId": "ca164456-b3f3-48a1-8bb0-2e9c238acf70",
   "connections": {
     "Assert Calendar Finalize": {
       "main": [
@@ -252,7 +251,6 @@
       ]
     }
   },
-  "createdAt": "2026-03-13T04:53:08.825Z",
   "description": null,
   "isArchived": false,
   "name": "30 Calendar Create",
@@ -736,28 +734,7 @@
     "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
     "executionOrder": "v1"
   },
-  "shared": [
-    {
-      "createdAt": "2026-03-13T04:53:08.825Z",
-      "project": {
-        "createdAt": "2026-01-12T01:58:24.486Z",
-        "creatorId": "d87e0db9-0ac0-46ea-9218-1eb181231d8f",
-        "description": null,
-        "icon": null,
-        "id": "m23P41JejIbnV7Xa",
-        "name": "Igor Gasovic <skljstore@gmail.com>",
-        "type": "personal",
-        "updatedAt": "2026-01-12T04:27:38.916Z"
-      },
-      "projectId": "m23P41JejIbnV7Xa",
-      "role": "workflow:owner",
-      "updatedAt": "2026-03-13T04:53:08.825Z",
-      "workflowId": "valOh9zMfqOZOvmHyOQfa"
-    }
-  ],
   "staticData": null,
   "tags": [],
-  "triggerCount": 0,
-  "updatedAt": "2026-03-14T23:26:20.708Z",
-  "versionCounter": 107
+  "triggerCount": 0
 }

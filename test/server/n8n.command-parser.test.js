@@ -1,7 +1,7 @@
 'use strict';
 
 const parseCommand = require('../../src/n8n/nodes/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');
-const aliasCommandParser = require('../../src/n8n/package/node_modules/igasovic-n8n-blocks/nodes/10-read/command-parser.js');
+const { readCommandParser: aliasCommandParser } = require('../../src/n8n/package/node_modules/igasovic-n8n-blocks');
 
 function unescapeMdv2(value) {
   return String(value || '').replace(/\\([_*[\]()~`>#+\-=|{}.!\\])/g, '$1');
@@ -49,7 +49,7 @@ describe('n8n command parser', () => {
     expect(text).toContain('append --help');
   });
 
-  test('unscoped compatibility alias resolves command parser for /help', async () => {
+  test('unscoped compatibility alias resolves root export for /help', async () => {
     const out = await runAliasParser('/help');
     const text = unescapeMdv2(out.telegram_message);
     expect(out._reply_now).toBe(true);
