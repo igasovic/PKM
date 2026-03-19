@@ -48,10 +48,12 @@ function writeFakeDocker(tempRoot) {
       '  "exec n8n printenv WEBHOOK_URL") echo "https://n8n-hook.gasovic.com/" ;;',
       '  "exec n8n printenv N8N_PROXY_HOPS") echo "1" ;;',
       '  "exec n8n printenv N8N_RUNNERS_MODE") echo "external" ;;',
-      '  "exec n8n printenv NODE_FUNCTION_ALLOW_EXTERNAL") echo "@igasovic/n8n-blocks" ;;',
+      '  "exec n8n printenv NODE_FUNCTION_ALLOW_EXTERNAL") echo "@igasovic/n8n-blocks,igasovic-n8n-blocks" ;;',
       '  "exec n8n-runners printenv N8N_RUNNERS_TASK_BROKER_URI") echo "http://n8n:5679" ;;',
       '  "exec n8n-runners printenv N8N_RUNNERS_AUTH_TOKEN") echo "runner-secret" ;;',
-      "  \"exec n8n-runners node -p require.resolve('@igasovic/n8n-blocks/package.json')\") echo \"/usr/local/lib/node_modules/@igasovic/n8n-blocks/package.json\" ;;",
+      '  "exec n8n-runners cat /etc/n8n-task-runners.json") printf "{\\"task-runners\\":[{\\"runner-type\\":\\"javascript\\",\\"env-overrides\\":{\\"NODE_FUNCTION_ALLOW_BUILTIN\\":\\"crypto,node:path,node:process\\",\\"NODE_FUNCTION_ALLOW_EXTERNAL\\":\\"@igasovic/n8n-blocks,igasovic-n8n-blocks\\"}}]}" ;;',
+      '  "exec n8n-runners sh -lc test -f /usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json && printf %s /usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json") echo "/usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json" ;;',
+      '  "exec n8n-runners sh -lc test -f /usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json && printf %s /usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json") echo "/usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json" ;;',
       '  "exec -u node n8n n8n --help") echo "n8n help" ;;',
       '  *)',
       '    echo "unexpected docker invocation: $args" >&2',
@@ -88,6 +90,8 @@ describe('n8n operator scripts', () => {
         '    image: docker.n8n.io/n8nio/n8n:2.10.3',
         '  task-runners:',
         '    image: pkm-n8n-runners:2.10.3',
+        '    volumes:',
+        '      - /home/igasovic/repos/n8n-workflows/ops/stack/n8n-runners/n8n-task-runners.json:/etc/n8n-task-runners.json:ro',
         '',
       ].join('\n'),
       'utf8',
@@ -102,7 +106,9 @@ describe('n8n operator scripts', () => {
     expect(res.code).toBe(0);
     expect(res.stdout).toContain('OK: n8n image = docker.n8n.io/n8nio/n8n:2.10.3');
     expect(res.stdout).toContain('OK: n8n-runners image = pkm-n8n-runners:2.10.3');
-    expect(res.stdout).toContain('OK: runners package resolution present');
+    expect(res.stdout).toContain('OK: runners launcher config includes expected JS allowlists');
+    expect(res.stdout).toContain('OK: runners scoped package path = /usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json');
+    expect(res.stdout).toContain('OK: runners alias package path = /usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json');
     expect(res.stdout).toContain('Smoke execution skipped');
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -123,6 +129,8 @@ describe('n8n operator scripts', () => {
         '    image: docker.n8n.io/n8nio/n8n:2.10.3',
         '  task-runners:',
         '    image: pkm-n8n-runners:2.10.3',
+        '    volumes:',
+        '      - /home/igasovic/repos/n8n-workflows/ops/stack/n8n-runners/n8n-task-runners.json:/etc/n8n-task-runners.json:ro',
         '',
       ].join('\n'),
       'utf8',

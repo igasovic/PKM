@@ -79,6 +79,12 @@ Use these modes depending on intent:
 ./scripts/n8n/validate_cutover.sh
 ```
 
+The runners launcher config is repo-managed at:
+- `ops/stack/n8n-runners/n8n-task-runners.json`
+
+It is mounted into the runners container at:
+- `/etc/n8n-task-runners.json`
+
 7. Validate and execute smoke in one go:
 ```bash
 ./scripts/n8n/validate_cutover.sh --with-smoke
@@ -125,7 +131,8 @@ Avoid:
    - keep short Code nodes inline in workflow JSON
    - move node JS to the correct `src/n8n/nodes/<workflow-slug>/` folder when workflow/node location changed
    - update wrappers to canonical package imports under `@igasovic/n8n-blocks/nodes/...`
-   - package-root exports under `@igasovic/n8n-blocks` are allowed only as a compatibility escape hatch when n8n disallows deep package subpath imports
+- package-root exports under `@igasovic/n8n-blocks` are allowed only as a compatibility escape hatch when n8n disallows deep package subpath imports
+  - when external task runners do not honor Code-node allowlists from container env alone, prefer the launcher config file at `ops/stack/n8n-runners/n8n-task-runners.json` over ad hoc runtime edits
    - remove orphan managed canonical files (`*__<node-id>.js`) under `src/n8n/nodes/`
 4. Push mode builds `src/n8n/package/` from `src/n8n/package.manifest.json`.
 5. Push mode builds the local `pkm-n8n-runners:2.10.3` image from `ops/stack/n8n-runners/Dockerfile`.

@@ -13,9 +13,11 @@ EXPECTED_EDITOR_BASE_URL="${EXPECTED_EDITOR_BASE_URL:-https://n8n.gasovic.com}"
 EXPECTED_WEBHOOK_URL="${EXPECTED_WEBHOOK_URL:-https://n8n-hook.gasovic.com/}"
 EXPECTED_PROXY_HOPS="${EXPECTED_PROXY_HOPS:-1}"
 EXPECTED_RUNNERS_MODE="${EXPECTED_RUNNERS_MODE:-external}"
-EXPECTED_ALLOW_EXTERNAL="${EXPECTED_ALLOW_EXTERNAL:-@igasovic/n8n-blocks}"
+EXPECTED_ALLOW_EXTERNAL="${EXPECTED_ALLOW_EXTERNAL:-@igasovic/n8n-blocks,igasovic-n8n-blocks}"
+EXPECTED_ALLOW_BUILTIN="${EXPECTED_ALLOW_BUILTIN:-crypto,node:path,node:process}"
 EXPECTED_RUNNERS_BROKER_URI="${EXPECTED_RUNNERS_BROKER_URI:-http://n8n:5679}"
 RUN_SMOKE_SCRIPT="${RUN_SMOKE_SCRIPT:-$REPO_DIR/scripts/n8n/run_smoke.sh}"
+RUNNERS_LAUNCHER_CONFIG_PATH="${RUNNERS_LAUNCHER_CONFIG_PATH:-/etc/n8n-task-runners.json}"
 
 usage() {
   cat >&2 <<'EOF'
@@ -25,7 +27,8 @@ Checks:
   - compose pin still matches expected n8n and runners images
   - n8n and n8n-runners containers are running expected images
   - n8n runtime env matches proxy/external-runner expectations
-  - runners container can resolve @igasovic/n8n-blocks
+  - runners launcher config includes expected JS allowlists
+  - runners image contains expected runtime package files
   - n8n CLI is ready
 
 Options:
@@ -116,10 +119,37 @@ wait_for_n8n_cli() {
 }
 
 validate_runner_package() {
-  local package_path
-  package_path="$(docker exec "$RUNNERS_CONTAINER_NAME" node -p "require.resolve('@igasovic/n8n-blocks/package.json')" 2>/dev/null || true)"
-  assert_nonempty "runners package resolution" "$package_path"
-  echo "OK: runners package path = $package_path"
+  local scoped_package_path
+  local alias_package_path
+
+  scoped_package_path="$(docker exec "$RUNNERS_CONTAINER_NAME" sh -lc "test -f /usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json && printf %s /usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json" 2>/dev/null || true)"
+  alias_package_path="$(docker exec "$RUNNERS_CONTAINER_NAME" sh -lc "test -f /usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json && printf %s /usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json" 2>/dev/null || true)"
+
+  assert_nonempty "runners scoped package path" "$scoped_package_path"
+  assert_nonempty "runners alias package path" "$alias_package_path"
+  echo "OK: runners scoped package path = $scoped_package_path"
+  echo "OK: runners alias package path = $alias_package_path"
+}
+
+validate_runner_launcher_config() {
+  local launcher_config
+  launcher_config="$(docker exec "$RUNNERS_CONTAINER_NAME" cat "$RUNNERS_LAUNCHER_CONFIG_PATH" 2>/dev/null || true)"
+  assert_nonempty "runners launcher config" "$launcher_config"
+  if [[ "$launcher_config" != *"NODE_FUNCTION_ALLOW_EXTERNAL"* ]]; then
+    echo "FAIL: runners launcher config missing NODE_FUNCTION_ALLOW_EXTERNAL" >&2
+    exit 1
+  fi
+  if [[ "$launcher_config" != *"$EXPECTED_ALLOW_EXTERNAL"* ]]; then
+    echo "FAIL: runners launcher config missing expected external allowlist" >&2
+    echo "  expected substring: $EXPECTED_ALLOW_EXTERNAL" >&2
+    exit 1
+  fi
+  if [[ "$launcher_config" != *"$EXPECTED_ALLOW_BUILTIN"* ]]; then
+    echo "FAIL: runners launcher config missing expected builtin allowlist" >&2
+    echo "  expected substring: $EXPECTED_ALLOW_BUILTIN" >&2
+    exit 1
+  fi
+  echo "OK: runners launcher config includes expected JS allowlists"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -146,6 +176,7 @@ require_file "$RUN_SMOKE_SCRIPT"
 log_step "validate 1/6" "Check compose pins"
 compose_must_contain "image: $EXPECTED_N8N_IMAGE"
 compose_must_contain "image: $EXPECTED_RUNNERS_IMAGE"
+compose_must_contain "/etc/n8n-task-runners.json"
 
 log_step "validate 2/6" "Check running containers"
 assert_eq "$N8N_CONTAINER_NAME status" "$(docker_status "$N8N_CONTAINER_NAME")" "running"
@@ -163,6 +194,7 @@ assert_eq "NODE_FUNCTION_ALLOW_EXTERNAL" "$(docker_env "$N8N_CONTAINER_NAME" NOD
 log_step "validate 4/6" "Check runners connectivity"
 assert_eq "N8N_RUNNERS_TASK_BROKER_URI" "$(docker_env "$RUNNERS_CONTAINER_NAME" N8N_RUNNERS_TASK_BROKER_URI)" "$EXPECTED_RUNNERS_BROKER_URI"
 assert_nonempty "N8N_RUNNERS_AUTH_TOKEN" "$(docker_env "$RUNNERS_CONTAINER_NAME" N8N_RUNNERS_AUTH_TOKEN)"
+validate_runner_launcher_config
 validate_runner_package
 
 log_step "validate 5/6" "Check n8n CLI readiness"

@@ -1,0 +1,11 @@
+{
+  "task-runners": [
+    {
+      "runner-type": "javascript",
+      "env-overrides": {
+        "NODE_FUNCTION_ALLOW_BUILTIN": "crypto,node:path,node:process",
+        "NODE_FUNCTION_ALLOW_EXTERNAL": "@igasovic/n8n-blocks,igasovic-n8n-blocks"
+      }
+    }
+  ]
+}

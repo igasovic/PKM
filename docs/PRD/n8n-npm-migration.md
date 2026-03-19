@@ -70,6 +70,7 @@ Modern n8n executes Code-node JS on Task Runners. Official docs state:
 - external mode uses a separate `n8nio/runners` sidecar
 - external modules must be sourced from `n8n/node_modules`
 - when Task Runners are used, JS module allowlist variables belong on the Task Runners
+- in external mode, the launcher inside the runners container is a separate config layer; if JS allowlists are not honored from container env alone, `/etc/n8n-task-runners.json` becomes the explicit control point
 
 ## 3. Problem statement
 
@@ -106,6 +107,7 @@ This is not a general cleanup initiative. It is specifically:
 - docs are updated to reflect the new model
 - Pi deployment can be rebuilt and validated through a documented operator flow
 - manual `n8n` recreate flow also rebuilds the local runners image before bringing up `task-runners`
+- runners launcher config explicitly carries JS Code-node allowlists for external mode
 
 ## 5. Non-goals
 

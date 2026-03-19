@@ -306,6 +306,7 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 - `N8N_RUNNERS_MODE=external`
 - `NODE_FUNCTION_ALLOW_EXTERNAL=@igasovic/n8n-blocks,igasovic-n8n-blocks`
 - `NODE_FUNCTION_ALLOW_BUILTIN=crypto,node:path,node:process`
+- external runner launcher config is mounted from `ops/stack/n8n-runners/n8n-task-runners.json` to `/etc/n8n-task-runners.json`
 
 **Externalized workflow code & GitOps**
 - Repo root: `/home/igasovic/repos/n8n-workflows`
@@ -313,6 +314,7 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 - Workflow-10 compatibility alias: `igasovic-n8n-blocks`
 - Generated package output: `src/n8n/package/` (repo build output, ignored)
 - Custom runners image source: `ops/stack/n8n-runners/Dockerfile`
+- Custom runners launcher config: `ops/stack/n8n-runners/n8n-task-runners.json`
 - Mount: repo → `/data` (read-only, kept for non-runtime reasons only)
 - Canonical docs (in this project):
   - `n8n_sync.md` (canonical n8n<->Git sync flow)
