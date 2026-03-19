@@ -94,6 +94,10 @@ Keep both launcher entries present:
 Keep both health-check ports present too:
 - `5681` for `javascript` (launcher default is `5680`)
 - `5682` for `python`
+Keep upstream launcher execution fields present for each runner too:
+- `workdir`
+- `command`
+- `args`
 
 7. Validate and execute smoke in one go:
 ```bash

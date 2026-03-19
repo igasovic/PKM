@@ -149,6 +149,18 @@ validate_runner_launcher_config() {
     echo "FAIL: runners launcher config missing python runner entry" >&2
     exit 1
   fi
+  if [[ "$launcher_config" != *'"workdir": "/home/runner"'* && "$launcher_config" != *'"workdir":"/home/runner"'* ]]; then
+    echo "FAIL: runners launcher config missing /home/runner workdir" >&2
+    exit 1
+  fi
+  if [[ "$launcher_config" != *'/opt/runners/task-runner-javascript/dist/start.js'* ]]; then
+    echo "FAIL: runners launcher config missing javascript launcher args" >&2
+    exit 1
+  fi
+  if [[ "$launcher_config" != *'/opt/runners/task-runner-python/.venv/bin/python'* ]]; then
+    echo "FAIL: runners launcher config missing python launcher command" >&2
+    exit 1
+  fi
   if [[ "$launcher_config" != *"\"health-check-server-port\": \"$EXPECTED_JS_HEALTH_PORT\""* && \
         "$launcher_config" != *"\"health-check-server-port\":\"$EXPECTED_JS_HEALTH_PORT\""* && \
         "$launcher_config" != *"\"health-check-server-port\": $EXPECTED_JS_HEALTH_PORT"* && \
