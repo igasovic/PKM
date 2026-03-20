@@ -14,7 +14,7 @@ This PRD is intentionally optimized for your actual failure mode:
 
 It is **not** optimized for output quality, model quality, or semantic correctness.
 
-## Implementation Snapshot (2026-03-14)
+## Implementation Snapshot (2026-03-20)
 
 Current repo implementation adds:
 
@@ -23,6 +23,18 @@ Current repo implementation adds:
 - fixture tree under `test/smoke/fixtures/`
 - smoke defaults under `test/smoke/config/defaults.json`
 - operator helper: `scripts/n8n/run_smoke.sh`
+- backend smoke selector API: `POST /db/read/smoke`
+
+Current smoke metadata contract implemented on capture inserts (`02` and `03`):
+
+- `metadata.smoke.suite = "T00"`
+- `metadata.smoke.run_id = <test_run_id>`
+
+Current smoke selector behavior implemented in backend:
+
+- `POST /db/read/smoke` requires `suite`
+- optional `run_id` narrows the selector
+- no time-window filtering is applied by this selector
 
 Selected public ingress path:
 
@@ -46,6 +58,7 @@ Current cleanup behavior:
 - calendar cleanup is intentionally not destructive by default and is reported as skipped unless a dedicated delete workflow is enabled
 - cleanup is step-isolated so test-mode restore still runs even when PKM delete fails
 - cleanup recursively deduplicates and deletes all smoke entry IDs recoverable from artifacts/results, including `created_entry_ids`
+- preflight selector cleanup is not yet wired in WF00 (next implementation step)
 
 Current smoke failure behavior:
 
@@ -164,9 +177,9 @@ The smoke system must answer one operator question quickly:
 Required locations:
 
 - smoke test assets and fixtures live under `test/smoke/`
-- n8n smoke workflow source files may live under `src/tn8n/workflows/` after sync for now
+- n8n smoke workflow source files may live under `src/n8n/workflows/` after sync for now
 
-This PRD treats that `src/tn8n/workflows/` location as acceptable for the current implementation.
+This PRD treats that `src/n8n/workflows/` location as acceptable for the current implementation.
 
 ---
 
@@ -375,6 +388,22 @@ Every child workflow should receive a shared object like:
 }
 ```
 
+### Metadata marker contract (locked)
+Smoke-created PKM entries must carry:
+
+```json
+{
+  "metadata": {
+    "smoke": {
+      "suite": "T00",
+      "run_id": "smoke_2026-03-20_01"
+    }
+  }
+}
+```
+
+Only these two smoke keys are required for selector-based cleanup in this PRD phase.
+
 ### Test mode contract
 The master workflow must:
 
@@ -409,6 +438,7 @@ Every child returns:
 
 ## 2. Required child workflow suite
 
+0. `T00.5 - Preflight Cleanup` (selector cleanup gate)
 1. `T01 - Infra`
 2. `T02 - Public Ingress`
 3. `T03 - Telegram Router`
@@ -428,6 +458,7 @@ Notes:
 - Telegram payload render/send assertions belong inside the workflows that already render and send Telegram messages
 - `/delete` remains an explicit test because cleanup is part of system health, not just housekeeping
 - `T99 - Cleanup` must run even on failure
+- `T00.5 - Preflight Cleanup` must run before `T04`
 
 ---
 
@@ -435,18 +466,35 @@ Notes:
 
 The suite should run in this order:
 
-1. T01 infra
-2. T02 public ingress
-3. T03 Telegram router
-4. T04 Telegram capture
-5. T05 email capture fixture
-6. T06 pull using captured Telegram `entry_id`
-7. T07 continue using known query fixture
-8. T08 distill using captured Telegram `entry_id`
-9. T09 delete created PKM test entries
-10. T10 calendar create in calendar test mode
-11. T11 calendar read in calendar test mode
-12. T99 cleanup and final reset
+1. T00.5 preflight cleanup (selector-based)
+2. T01 infra
+3. T02 public ingress
+4. T03 Telegram router
+5. T04 Telegram capture
+6. T05 email capture fixture
+7. T06 pull using captured Telegram `entry_id`
+8. T07 continue using known query fixture
+9. T08 distill using captured Telegram `entry_id`
+10. T09 delete created PKM test entries
+11. T10 calendar create in calendar test mode
+12. T11 calendar read in calendar test mode
+13. T99 cleanup and final reset
+
+### `T00.5 - Preflight Cleanup` contract
+
+Purpose:
+- eliminate dirty-state duplicates before capture tests start.
+
+Flow:
+1. call `POST /db/read/smoke` with `{ "suite": "T00" }`
+2. extract candidate `entry_id[]`
+3. call existing delete path for those IDs (test mode)
+4. re-run `POST /db/read/smoke` with `{ "suite": "T00" }`
+5. hard-fail suite if leftovers remain
+
+Assertions:
+- selector call succeeds
+- post-delete selector result is empty
 
 ### Required artifact propagation
 
