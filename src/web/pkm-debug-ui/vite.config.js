@@ -83,10 +83,10 @@ export default defineConfig(({ mode }) => {
                 allow: [path.resolve(__dirname, '../../')],
             },
             proxy: {
-                '^/debug(/|$)': {
+                '^/api/debug(/|$)': {
                     target,
                     changeOrigin: true,
-                    rewrite: (path) => path,
+                    rewrite: (proxyPath) => proxyPath.replace(/^\/api/, ''),
                     headers: adminSecret
                         ? { 'x-pkm-admin-secret': adminSecret }
                         : undefined,

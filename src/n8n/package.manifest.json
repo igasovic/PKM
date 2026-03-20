@@ -62,6 +62,7 @@
     "config.js",
     "config/index.js",
     "telegram-markdown.js",
+    "context-pack-builder-core.js",
     "context-pack-builder.js",
     "content-hash.js"
   ],

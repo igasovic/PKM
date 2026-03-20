@@ -1,21 +1,19 @@
-import '@shared/context-pack-builder.js';
+import '@shared/context-pack-builder-core.js';
 
-type ContextPackBuilderApi = {
+const builder = (globalThis as { __pkmContextPackBuilder?: unknown }).__pkmContextPackBuilder;
+
+if (!builder || typeof builder !== 'object') {
+  throw new Error('context-pack-builder-core not initialized');
+}
+
+export default builder as {
   buildContextPackMarkdown: (
     rows: Array<Record<string, unknown>>,
     meta?: Record<string, unknown>,
-    opts?: { markdownV2?: boolean; maxContentLen?: number; layout?: string },
+    opts?: { markdownV2?: boolean; maxContentLen?: number; layout?: string; whyItMattersShare?: number },
   ) => string;
   deriveExcerptFromRecord: (
     record: Record<string, unknown>,
     opts?: { maxLen?: number; includeFallbackKeys?: boolean },
   ) => string;
 };
-
-const builder = (globalThis as { __pkmContextPackBuilder?: ContextPackBuilderApi }).__pkmContextPackBuilder;
-
-if (!builder) {
-  throw new Error('context-pack-builder not initialized');
-}
-
-export default builder;

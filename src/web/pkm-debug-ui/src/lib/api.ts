@@ -44,7 +44,7 @@ async function fetchJson(path: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<
 export async function fetchRunById(runId: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<unknown> {
   const id = String(runId || '').trim();
   if (!id) throw new Error('run id is required');
-  return fetchJson(`/debug/run/${encodeURIComponent(id)}?limit=5000`, timeoutMs);
+  return fetchJson(`/api/debug/run/${encodeURIComponent(id)}?limit=5000`, timeoutMs);
 }
 
 function asString(value: unknown): string | null {
@@ -92,7 +92,7 @@ export async function fetchRecentRuns(
   if (options.has_error === true) params.set('has_error', 'true');
   if (options.has_error === false) params.set('has_error', 'false');
 
-  const payload = await fetchJson(`/debug/runs?${params.toString()}`, timeoutMs);
+  const payload = await fetchJson(`/api/debug/runs?${params.toString()}`, timeoutMs);
   const data = (payload && typeof payload === 'object') ? (payload as Record<string, unknown>) : {};
   const rowsRaw = Array.isArray(data.rows) ? data.rows : [];
 
