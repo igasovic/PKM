@@ -1,4 +1,17 @@
 # changelog
+## 2026-03-19 — WF10 root-export wrapper migration
+
+### What changed
+- Updated all Code nodes in `10 Read` to use package-root wrapper imports from `@igasovic/n8n-blocks` with stable WF10 export names (`wf10...`).
+- Externalized previously inline WF10 code nodes into canonical files under `src/n8n/nodes/10-read/`:
+  - `format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js`
+  - `build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js`
+  - `format-delete-message__3feac23b-f095-4af9-9179-3b0a1a4279a2.js`
+  - `format-move-message__344aac95-db6e-4262-9441-1072918d9d48.js`
+  - `build-read-smoke-result__93ed61ff-ed68-4a8d-bb78-047a8812675e.js`
+- Expanded `src/n8n/package.manifest.json` root exports for all WF10 wrapper targets.
+- Kept `readCommandParser` root export as compatibility alias while introducing `wf10CommandParser`.
+
 ## 2026-03-17 — n8n runtime package migration (`@igasovic/n8n-blocks`)
 
 ### What changed

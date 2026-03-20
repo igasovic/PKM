@@ -4,7 +4,17 @@
   "private": true,
   "description": "Internal runtime package for n8n Code-node blocks.",
   "rootExports": {
-    "readCommandParser": "nodes/10-read/command-parser.js"
+    "readCommandParser": "nodes/10-read/command-parser.js",
+    "wf10CommandParser": "nodes/10-read/command-parser.js",
+    "wf10FormatTelegramMessage": "nodes/10-read/format-telegram-message.js",
+    "wf10FormatHelpMessage": "nodes/10-read/format-help-message.js",
+    "wf10BuildContextPack": "nodes/10-read/build-context-pack.js",
+    "wf10FormatStatusMessage": "nodes/10-read/format-status-message.js",
+    "wf10FormatDeleteMessage": "nodes/10-read/format-delete-message.js",
+    "wf10FormatMoveMessage": "nodes/10-read/format-move-message.js",
+    "wf10FormatDistillMessage": "nodes/10-read/format-distill-message.js",
+    "wf10FormatDistillRunMessage": "nodes/10-read/format-distill-run-message.js",
+    "wf10BuildReadSmokeResult": "nodes/10-read/build-read-smoke-result.js"
   },
   "shared": [
     "config.js",

@@ -755,7 +755,7 @@
       "id": "926eb875-5735-4746-a0a4-7801b8db586f",
       "name": "Command Parser",
       "parameters": {
-        "jsCode": "try{const {readCommandParser}=require('@igasovic/n8n-blocks');return await readCommandParser({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {wf10CommandParser}=require('@igasovic/n8n-blocks');return await wf10CommandParser({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js] ${e.message}`;throw e;}"
       },
       "position": [
         672,
@@ -768,7 +768,7 @@
       "id": "f305ac84-35d3-44df-8ef5-1c0e004f37b8",
       "name": "Format Telegram Message",
       "parameters": {
-        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/10-read/format-telegram-message.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {wf10FormatTelegramMessage}=require('@igasovic/n8n-blocks');return await wf10FormatTelegramMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -781,7 +781,7 @@
       "id": "83d12448-5f97-48f1-9ece-de61a9756db3",
       "name": "Format /help Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst msg =\n`Commands:\n/help\n/pull <id> [--excerpt]\n/last \"query\" [--days N] [--limit M]\n/find \"needle\" [--days N] [--limit M]\n/continue topic [--days N] [--limit M]\n/with person topic [--days N] [--limit M]\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/debug <run_id|last>\n/distill <entry_id>\n/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n/status [t1|t2] [--limit M] [--active-only]\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\nreturn [{ json: { ...$json, telegram_message: mdv2Message(msg) } }];\n"
+        "jsCode": "try{const {wf10FormatHelpMessage}=require('@igasovic/n8n-blocks');return await wf10FormatHelpMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -794,7 +794,7 @@
       "id": "3580c243-cd64-4bc2-8b4f-ab5215ff71a1",
       "name": "Build Context Pack",
       "parameters": {
-        "jsCode": "const { buildContextPackMarkdown } = require('@igasovic/n8n-blocks/shared/context-pack-builder.js');\nconst { mdv2Render } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nconst rows = $input.all().map(i => i.json);\nconst meta = rows.find((r) => r.is_meta === true) || {};\nconst hitsRows = rows.filter((r) => r.is_meta === false && r.id);\nconst method = String(meta.cmd || 'last').toLowerCase();\nconst query = String(meta.query_text || '').trim();\n\nconst msg = buildContextPackMarkdown(\n  hitsRows,\n  {\n    method,\n    query,\n    days: meta.days,\n    limit: meta.limit,\n  },\n  {\n    markdownV2: true,\n    layout: 'ui',\n    maxContentLen: 300,\n  },\n);\n\nreturn [{ json: { telegram_message: mdv2Render(msg, { maxLen: 3500 }) } }];\n"
+        "jsCode": "try{const {wf10BuildContextPack}=require('@igasovic/n8n-blocks');return await wf10BuildContextPack({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -994,7 +994,7 @@
       "id": "075f1d02-d3af-43dc-a694-f387f757ba3d",
       "name": "Format Status Message",
       "parameters": {
-        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/10-read/format-status-message.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-status-message__075f1d02-d3af-43dc-a694-f387f757ba3d.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {wf10FormatStatusMessage}=require('@igasovic/n8n-blocks');return await wf10FormatStatusMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-status-message__075f1d02-d3af-43dc-a694-f387f757ba3d.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -1064,7 +1064,7 @@
       "id": "3feac23b-f095-4af9-9179-3b0a1a4279a2",
       "name": "Format delete message",
       "parameters": {
-        "jsCode": "const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst s = $json || {};\nconst lines = [\n  'Delete successful',\n  'Dry run: ' + String(s.dry_run),\n  'Schema: ' + String(s.schema ?? ''),\n  'Deleted: ' + String(s.deleted_count ?? 0),\n];\nreturn [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];"
+        "jsCode": "try{const {wf10FormatDeleteMessage}=require('@igasovic/n8n-blocks');return await wf10FormatDeleteMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-delete-message__3feac23b-f095-4af9-9179-3b0a1a4279a2.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -1108,7 +1108,7 @@
       "id": "344aac95-db6e-4262-9441-1072918d9d48",
       "name": "Format move message",
       "parameters": {
-        "jsCode": "const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst s = $json || {};\nconst lines = [\n  'Move successful',\n  'Dry run: ' + String(s.dry_run),\n  'Schema: ' + String(s.from_schema ?? '') + ' -> ' + String(s.to_schema ?? ''),\n  'Moved: ' + String(s.moved_count ?? 0),\n];\nreturn [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];"
+        "jsCode": "try{const {wf10FormatMoveMessage}=require('@igasovic/n8n-blocks');return await wf10FormatMoveMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-move-message__344aac95-db6e-4262-9441-1072918d9d48.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -1152,7 +1152,7 @@
       "id": "ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca",
       "name": "Format Distill Message",
       "parameters": {
-        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/10-read/format-distill-message.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {wf10FormatDistillMessage}=require('@igasovic/n8n-blocks');return await wf10FormatDistillMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -1196,7 +1196,7 @@
       "id": "b9f00fcd-a5ed-462f-a8d0-3e49c20eca11",
       "name": "Format Distill Run Message",
       "parameters": {
-        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/10-read/format-distill-run-message.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-distill-run-message__b9f00fcd-a5ed-462f-a8d0-3e49c20eca11.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {wf10FormatDistillRunMessage}=require('@igasovic/n8n-blocks');return await wf10FormatDistillRunMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-distill-run-message__b9f00fcd-a5ed-462f-a8d0-3e49c20eca11.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -1209,7 +1209,7 @@
       "id": "93ed61ff-ed68-4a8d-bb78-047a8812675e",
       "name": "Build Read Smoke Result",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst smokeMode = $json.smoke_mode === true;\nif (!smokeMode) {\n  return [{ json: { ...$json } }];\n}\n\nconst assertions = [];\nconst cmd = String($json.cmd || '').trim();\nassertions.push({ name: 'command_present', ok: !!cmd, command: cmd || null });\nconst msg = String($json.telegram_message || '');\nassertions.push({ name: 'telegram_message_non_empty', ok: msg.length > 0 });\nconst telegramMessageId = $json.message_id ?? ($json.result && $json.result.message_id) ?? null;\nif (telegramMessageId != null) assertions.push({ name: 'telegram_message_id_present', ok: true });\n\nif (cmd === 'pull') {\n  assertions.push({ name: 'pull_entry_present', ok: !!($json.entry_id || ($json.rows && $json.rows.length)) });\n}\nif (cmd === 'continue') {\n  const count = Number($json.count_hits || $json.rows_count || 0);\n  assertions.push({ name: 'continue_rows_available', ok: count >= 0, count });\n}\nif (cmd === 'distill') {\n  const status = String($json.status || '').toLowerCase();\n  assertions.push({ name: 'distill_status_present', ok: status.length > 0, status });\n}\nif (cmd === 'delete') {\n  const deleted = Number($json.deleted_count ?? 0);\n  assertions.push({ name: 'delete_response_present', ok: Number.isFinite(deleted), deleted_count: deleted });\n}\n\nconst ok = assertions.every((a) => a.ok === true);\nreturn [{\n  json: {\n    ...$json,\n    test_case: 'read_command',\n    ok,\n    run_id: $json.test_run_id || null,\n    artifacts: {\n      command: cmd,\n      telegram_message: msg || null,\n      telegram_message_id: telegramMessageId,\n      entry_id: $json.entry_id ?? null,\n      deleted_count: $json.deleted_count ?? null,\n    },\n    assertions,\n    error: ok ? null : { message: 'read command assertions failed' },\n  },\n}];"
+        "jsCode": "try{const {wf10BuildReadSmokeResult}=require('@igasovic/n8n-blocks');return await wf10BuildReadSmokeResult({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/build-read-smoke-result__93ed61ff-ed68-4a8d-bb78-047a8812675e.js] ${e.message}`;throw e;}"
       },
       "position": [
         2240,
