@@ -1388,6 +1388,23 @@ async function readPull(opts) {
   return exec(sql, { op: 'read_pull' });
 }
 
+async function readSmoke(opts) {
+  const suite = String((opts && opts.suite) ?? '').trim();
+  if (!suite) {
+    throw new Error('read_smoke requires suite');
+  }
+  const run_id = opts && Object.prototype.hasOwnProperty.call(opts, 'run_id')
+    ? String(opts.run_id ?? '').trim()
+    : '';
+  const config = await getConfigWithTestMode();
+  const sql = sb.buildReadSmoke({
+    entries_table: await getEntriesTableFromConfig(config),
+    suite,
+    run_id: run_id || null,
+  });
+  return exec(sql, { op: 'read_smoke' });
+}
+
 async function getTestMode() {
   const state = await getTestModeStateFromDb();
   return { rows: [{ is_test_mode: state }], rowCount: 1 };
@@ -2105,6 +2122,7 @@ module.exports = {
   readFind,
   readLast,
   readPull,
+  readSmoke,
   getTestMode,
   toggleTestModeState,
   getTestModeStateFromDb,

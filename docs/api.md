@@ -1403,6 +1403,25 @@ Body:
 }
 ```
 
+### `POST /db/read/smoke`
+Returns smoke-marked entries for cleanup/reporting selectors.
+
+Body:
+```json
+{
+  "suite": "T00",
+  "run_id": "smoke_20260320_010203"
+}
+```
+
+Notes:
+- `suite` is required.
+- `run_id` is optional.
+- This selector does not apply a time window.
+- Filtering keys are JSONB metadata fields:
+  - `metadata.smoke.suite`
+  - `metadata.smoke.run_id`
+
 ## Response format
 
 All `/db/*` endpoints return **only the rows** from SQL:

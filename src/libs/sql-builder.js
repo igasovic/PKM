@@ -219,6 +219,7 @@ module.exports = {
   buildReadFind,
   buildReadLast,
   buildReadPull,
+  buildReadSmoke,
   buildTier2CandidateDiscovery,
   buildTier2SelectedDetailQuery,
   buildTier2EntryByEntryId,
@@ -1576,6 +1577,38 @@ SELECT
 FROM ${entries_table}
 WHERE entry_id = ${bigIntLit(entry_id)}::bigint
 LIMIT 1;
+`.trim();
+}
+
+function buildReadSmoke(opts) {
+  const entries_table = String(opts.entries_table || '').trim();
+  if (!entries_table) {
+    throw new Error('buildReadSmoke requires entries_table');
+  }
+  const suite = String(opts.suite ?? '').trim();
+  if (!suite) {
+    throw new Error('buildReadSmoke requires suite');
+  }
+  const runIdRaw = opts.run_id;
+  const run_id = runIdRaw === null || runIdRaw === undefined ? '' : String(runIdRaw).trim();
+  const runIdFilter = run_id
+    ? `AND COALESCE(e.metadata #>> '{smoke,run_id}', '') = ${lit(run_id)}`
+    : '';
+
+  return `
+SELECT
+  e.entry_id,
+  e.id,
+  e.created_at,
+  e.source,
+  e.intent,
+  e.content_type,
+  e.metadata
+FROM ${entries_table} e
+WHERE
+  COALESCE(e.metadata #>> '{smoke,suite}', '') = ${lit(suite)}
+  ${runIdFilter}
+ORDER BY e.entry_id ASC;
 `.trim();
 }
 

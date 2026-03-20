@@ -933,6 +933,7 @@ async function handleRequest(req, res) {
           if (url.pathname === '/db/read/find') return db.readFind(body);
           if (url.pathname === '/db/read/last') return db.readLast(body);
           if (url.pathname === '/db/read/pull') return db.readPull(body);
+          if (url.pathname === '/db/read/smoke') return db.readSmoke(body);
           if (url.pathname === '/db/test-mode/toggle') {
             const state = await testModeService.toggle();
             return { rows: [{ is_test_mode: state }], rowCount: 1 };
