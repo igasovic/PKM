@@ -159,9 +159,9 @@
       "main": [
         [
           {
-            "index": 0,
-            "node": "T01 - Infra",
-            "type": "main"
+            "node": "T00.5 - Preflight Cleanup",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -537,6 +537,17 @@
             "index": 0,
             "node": "Build Smoke Summary",
             "type": "main"
+          }
+        ]
+      ]
+    },
+    "T00.5 - Preflight Cleanup": {
+      "main": [
+        [
+          {
+            "node": "T01 - Infra",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1432,6 +1443,19 @@
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
+    },
+    {
+      "id": "d8028a07-6148-4525-a55f-e031d0cc2714",
+      "name": "T00.5 - Preflight Cleanup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1648,
+        -128
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst headers = {\n  'X-PKM-Run-Id': String(base.test_run_id || ''),\n  'x-pkm-admin-secret': String(($env && $env.PKM_ADMIN_SECRET) || ''),\n};\nconst selector = { suite: 'T00' };\n\nconst before = await helpers.httpRequest({ method: 'POST', url: 'http://pkm-server:8080/db/read/smoke', headers, json: true, body: selector });\nconst ids = [...new Set((Array.isArray(before) ? before : []).map((r) => Number(r && r.entry_id)).filter((v) => Number.isFinite(v) && v > 0))];\n\nlet del = null;\nif (ids.length) {\n  del = await helpers.httpRequest({\n    method: 'POST',\n    url: 'http://pkm-server:8080/db/delete',\n    headers,\n    json: true,\n    body: { schema: 'pkm_test', entry_ids: ids, force: true },\n  });\n}\n\nconst after = await helpers.httpRequest({ method: 'POST', url: 'http://pkm-server:8080/db/read/smoke', headers, json: true, body: selector });\nconst leftovers = [...new Set((Array.isArray(after) ? after : []).map((r) => Number(r && r.entry_id)).filter((v) => Number.isFinite(v) && v > 0))];\n\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nresults.push({\n  test_case: 'T00.5-preflight-cleanup',\n  ok: leftovers.length === 0,\n  run_id: base.test_run_id || null,\n  artifacts: { preflight_deleted_ids: ids, preflight_leftover_ids: leftovers, preflight_delete_response: del || null },\n  assertions: [\n    { name: 'selector_query_ok', ok: true },\n    { name: 'leftovers_empty', ok: leftovers.length === 0, leftovers },\n  ],\n  error: leftovers.length ? { message: 'preflight cleanup left smoke rows: ' + leftovers.join(',') } : null,\n});\n\nif (leftovers.length) {\n  throw new Error('T00.5 preflight cleanup failed: leftover smoke entry_ids ' + leftovers.join(','));\n}\n\nreturn [{ json: { ...base, results, artifacts: { ...(base.artifacts || {}), preflight_deleted_ids: ids, preflight_leftover_ids: leftovers } } }];"
+      }
     }
   ],
   "settings": {
