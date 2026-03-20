@@ -289,7 +289,7 @@
       "id": "f8467a91-6e7f-4d6e-b5ae-96ee674c8d97",
       "name": "Format",
       "parameters": {
-        "jsCode": "const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst raw = $json.stdout ?? '{}';\nlet s = {};\ntry { s = JSON.parse(raw); } catch (e) { s = {}; }\n\nconst get = (k) => s[k] ?? { status: 'missing', ts: '-', rc: '-' };\nconst daily = get('pkm_backup_daily');\nconst weekly = get('pkm_backup_weekly');\nconst monthly = get('pkm_backup_monthly');\nconst rotate = get('pkm_backup_rotate');\nconst today = new Date().toISOString().slice(0, 10);\n\nconst lines = [\n  'PKM Cron Summary latest',\n  'date: ' + today + ' America/Chicago',\n  '',\n  'Daily: ' + daily.status + ' rc=' + daily.rc + ' ts=' + daily.ts,\n  'Weekly: ' + weekly.status + ' rc=' + weekly.rc + ' ts=' + weekly.ts,\n  'Monthly: ' + monthly.status + ' rc=' + monthly.rc + ' ts=' + monthly.ts,\n  'Rotate: ' + rotate.status + ' rc=' + rotate.rc + ' ts=' + rotate.ts,\n];\n\nreturn [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];"
+        "jsCode": "try{const {wf80Format}=require('@igasovic/n8n-blocks');return await wf80Format({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:80-postgres-backup/format__f8467a91-6e7f-4d6e-b5ae-96ee674c8d97.js] ${e.message}`;throw e;}"
       },
       "position": [
         96,
@@ -302,7 +302,7 @@
       "id": "020b27e4-71d9-4989-848b-793b0fb8bf1b",
       "name": "Parse",
       "parameters": {
-        "jsCode": "const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst b = $json.body || $json;\n\nconst job = String(b.job ?? '');\nconst host = String(b.host ?? '');\nconst ts = String(b.ts ?? '');\nconst rc = String(b.rc ?? '');\nconst cmd = String(b.cmd ?? '');\nconst status = String(b.status ?? (Number(b.rc ?? 0) === 0 ? 'ok' : 'fail'));\nconst icon = status === 'ok' ? '✅' : '❌';\n\nconst lines = [\n  icon + ' CRON ' + status,\n  'job: ' + job,\n  'host: ' + host,\n  'ts: ' + ts,\n  'rc: ' + rc,\n  'cmd: ' + cmd,\n];\n\nreturn [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];"
+        "jsCode": "try{const {wf80Parse}=require('@igasovic/n8n-blocks');return await wf80Parse({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:80-postgres-backup/parse__020b27e4-71d9-4989-848b-793b0fb8bf1b.js] ${e.message}`;throw e;}"
       },
       "position": [
         96,

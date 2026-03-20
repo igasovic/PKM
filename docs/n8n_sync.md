@@ -144,8 +144,8 @@ Avoid:
    - externalize only Code nodes with `>= MIN_JS_LINES`
    - keep short Code nodes inline in workflow JSON
    - move node JS to the correct `src/n8n/nodes/<workflow-slug>/` folder when workflow/node location changed
-   - update wrappers to canonical package imports under `@igasovic/n8n-blocks/nodes/...`
-- package-root exports under `@igasovic/n8n-blocks` are allowed only as a compatibility escape hatch when n8n disallows deep package subpath imports
+   - update wrappers to canonical package-root imports under `@igasovic/n8n-blocks`
+   - map each wrapper to a stable root export in `src/n8n/package.manifest.json` using `wf<NN><NodeName>` naming (for example `wf10CommandParser`)
   - when external task runners do not honor Code-node allowlists from container env alone, prefer the launcher config file at `ops/stack/n8n-runners/n8n-task-runners.json` over ad hoc runtime edits
    - remove orphan managed canonical files (`*__<node-id>.js`) under `src/n8n/nodes/`
 4. Push mode builds `src/n8n/package/` from `src/n8n/package.manifest.json`.
@@ -159,9 +159,9 @@ Avoid:
 - No automatic workflow deletion in n8n.
 - Node relocation is move/copy-first to avoid losing existing code.
 - Non-canonical wrapper paths are forbidden in canonical repo workflows.
-- Canonical runtime imports should use `@igasovic/n8n-blocks/nodes/...` or `@igasovic/n8n-blocks/shared/...` by default.
-- Package-root imports from `@igasovic/n8n-blocks` are allowed only as a compatibility escape hatch for n8n allowlist/runtime issues.
-- A targeted unscoped alias, `igasovic-n8n-blocks`, is currently allowed only for workflow-10 compatibility testing against stricter n8n external-module gating.
+- Canonical workflow wrapper imports should use package-root exports from `@igasovic/n8n-blocks`.
+- Export naming convention is `wf<NN><NodeName>` (for example `wf30BuildGoogleEventPayload`).
+- A targeted unscoped alias, `igasovic-n8n-blocks`, remains allowlisted for compatibility fallback only.
 - `/data/...` runtime imports are forbidden after the package migration. The repo mount may remain for non-runtime purposes, but it is not part of the code import contract.
 
 ## Change logs emitted by sync
@@ -174,6 +174,7 @@ During node sync, script prints:
 - `Nodes updated`
 - `Nodes moved`
 - `Nodes deleted`
+- Node-id segments in printed node filenames are obfuscated (`__ab****cdef.js`) for readability.
 
 ## Scripts location
 

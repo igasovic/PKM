@@ -180,7 +180,7 @@ PY
 validate_repo_workflows() {
   validate_no_legacy_runtime_imports "$WORKFLOWS_DIR" "repo"
 
-  "$PYTHON_BIN" - "$WORKFLOWS_DIR" "$NODES_ROOT_DIR" <<'PY'
+  "$PYTHON_BIN" - "$WORKFLOWS_DIR" "$NODES_ROOT_DIR" "$PACKAGE_MANIFEST" <<'PY'
 import json
 import pathlib
 import re
@@ -188,7 +188,10 @@ import sys
 
 workflows_dir = pathlib.Path(sys.argv[1])
 nodes_root_dir = pathlib.Path(sys.argv[2])
+manifest_path = pathlib.Path(sys.argv[3])
 missing = []
+manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+root_exports = manifest.get("rootExports", {}) if isinstance(manifest, dict) else {}
 
 for wf in sorted(workflows_dir.glob("*.json")):
     data = json.loads(wf.read_text(encoding="utf-8"))
@@ -196,6 +199,25 @@ for wf in sorted(workflows_dir.glob("*.json")):
         js = (node.get("parameters") or {}).get("jsCode", "")
         m = re.search(r"@igasovic/n8n-blocks/nodes/([^'\"`]+\.js)", js)
         if not m:
+            root_match = re.search(
+                r"""const\s*\{\s*([A-Za-z_$][\w$]*)\s*\}\s*=\s*require\(\s*['"]@igasovic/n8n-blocks['"]\s*\)""",
+                js,
+            )
+            if not root_match:
+                continue
+            export_name = root_match.group(1)
+            target = root_exports.get(export_name)
+            if not target:
+                missing.append((wf.name, node.get("name"), f"missing root export '{export_name}'"))
+                continue
+            rel_path = pathlib.Path(str(target).replace("\\", "/"))
+            target_file = pathlib.Path(nodes_root_dir.parent, rel_path)
+            if target_file.exists():
+                continue
+            workflow_dir = nodes_root_dir / rel_path.parent.name
+            matches = list(workflow_dir.glob(f"{rel_path.stem}__*.js")) if workflow_dir.exists() else []
+            if not matches:
+                missing.append((wf.name, node.get("name"), f"missing root export target '{target}'"))
             continue
         rel_path = pathlib.Path(m.group(1))
         target = nodes_root_dir / rel_path
@@ -248,6 +270,7 @@ run_pull() {
     "$PATCHED_RAW_DIR"
     "$WORKFLOWS_DIR"
     "$NODES_ROOT_DIR"
+    "$PACKAGE_MANIFEST"
     "$MIN_JS_LINES"
   )
   "${args[@]}"

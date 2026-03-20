@@ -168,7 +168,7 @@ Target runtime model:
 - workflows stay in `src/n8n/workflows/**`
 - source JS stays in canonical source trees (`src/n8n/nodes/**` and selected `src/libs/**`)
 - package runtime output is generated into `src/n8n/package/`
-- Code nodes import by package name / package subpath only
+- workflow wrappers import from package root (`@igasovic/n8n-blocks`) via named root exports
 - external Task Runners execute Code-node JS
 - custom runners image contains the internal package and required third-party dependencies
 - `n8n` and `n8n-runners` are pinned to `2.10.3`
@@ -217,6 +217,7 @@ One package is preferred over many packages.
 ### 8.5 API/export rule
 The package must expose stable logical paths.
 Runtime imports must not depend on UUID-suffixed filenames.
+Canonical wrapper export naming is `wf<NN><NodeName>` (for example `wf10CommandParser`).
 
 ### 8.6 Versioning policy
 Internal package versioning convention:
@@ -603,7 +604,7 @@ Recommended work packages:
 
 Open items that should remain explicit rather than guessed:
 
-1. resolved with one documented exception: package exports use stable subpaths under `@igasovic/n8n-blocks/nodes/...` and `@igasovic/n8n-blocks/shared/...`; package-root exports are also allowed as a compatibility escape hatch when stricter n8n allowlist behavior rejects deep subpath imports
+1. resolved with a root-wrapper standard: workflow wrappers call stable package-root exports from `@igasovic/n8n-blocks`; shared helper subpaths remain internal to externalized node files, and the unscoped alias is fallback-only
 2. resolved: custom runners Dockerfile lives at `ops/stack/n8n-runners/Dockerfile`
 3. resolved for current scope: `src/libs/config.js` and `src/libs/config/index.js` are reused as staged shared modules without a special wrapper
 4. resolved for current scope: main `n8n` image does not install the internal package; runners own runtime execution dependencies

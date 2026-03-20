@@ -311,11 +311,12 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 **Externalized workflow code & GitOps**
 - Repo root: `/home/igasovic/repos/n8n-workflows`
 - Canonical runtime package: `@igasovic/n8n-blocks`
-- Workflow-10 compatibility alias: `igasovic-n8n-blocks`
+- Compatibility alias (fallback only): `igasovic-n8n-blocks`
 - Generated package output: `src/n8n/package/` (repo build output, ignored)
 - Custom runners image source: `ops/stack/n8n-runners/Dockerfile`
 - Custom runners launcher config: `ops/stack/n8n-runners/n8n-task-runners.json`
 - Mount: repo → `/data` (read-only, kept for non-runtime reasons only)
+- Wrapper import convention: package-root exports with `wf<NN><NodeName>` naming (for example `wf10CommandParser`)
 - Canonical docs (in this project):
   - `n8n_sync.md` (canonical n8n<->Git sync flow)
 - Local shell env for n8n API automation (recommended in `~/.zshrc`):

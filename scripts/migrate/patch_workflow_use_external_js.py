@@ -5,6 +5,19 @@ def die(msg):
     print(msg, file=sys.stderr)
     sys.exit(1)
 
+
+def mask_node_filename(name: str) -> str:
+    m = re.search(r"__([A-Za-z0-9_-]+)\.js$", name)
+    if not m:
+        return name
+    node_id = m.group(1)
+    if len(node_id) <= 6:
+        masked = node_id
+    else:
+        masked = f"{node_id[:2]}****{node_id[-4:]}"
+    return name.replace(f"__{node_id}.js", f"__{masked}.js")
+
+
 if len(sys.argv) != 4:
     die("Usage: patch_workflow_use_external_js.py <workflow_json> <nodes_dir> <workflow_slug>")
 
@@ -51,10 +64,11 @@ for wf in workflows:
             total_skipped += 1
             continue
 
+        masked_fn = mask_node_filename(fn)
         wrapper = (
             f"try{{const fn=require('/data/src/n8n/nodes/{workflow_slug}/{fn}');"
             f"return await fn({{$input,$json,$items,$node,$env,helpers}});}}"
-            f"catch(e){{e.message=`[extjs:{workflow_slug}/{fn}] ${{e.message}}`;throw e;}}"
+            f"catch(e){{e.message=`[extjs:{workflow_slug}/{masked_fn}] ${{e.message}}`;throw e;}}"
         )
         n.setdefault("parameters", {})["jsCode"] = wrapper
         total_patched += 1

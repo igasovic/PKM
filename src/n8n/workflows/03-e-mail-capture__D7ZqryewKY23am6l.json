@@ -215,7 +215,7 @@
       "id": "0ae5a1f1-fc06-445c-b460-7447a1632dba",
       "name": "Compose Reply Text",
       "parameters": {
-        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/03-e-mail-capture/compose-reply-text.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:03-e-mail-capture/compose-reply-text__0ae5a1f1-fc06-445c-b460-7447a1632dba.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {wf03ComposeReplyText}=require('@igasovic/n8n-blocks');return await wf03ComposeReplyText({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:03-e-mail-capture/compose-reply-text__0ae5a1f1-fc06-445c-b460-7447a1632dba.js] ${e.message}`;throw e;}"
       },
       "position": [
         912,
@@ -426,7 +426,7 @@
       "id": "7ab7a2b4-4a8e-4ad8-9c58-b2c63c0a3d26",
       "name": "Format Duplicate Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nreturn [{ json: { ...$json, telegram_message: mdv2Message('Duplicate entry ' + entryId + ' processing stopped') } }];\n"
+        "jsCode": "try{const {wf03FormatDuplicateMessage}=require('@igasovic/n8n-blocks');return await wf03FormatDuplicateMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:03-e-mail-capture/format-duplicate-message__7ab7a2b4-4a8e-4ad8-9c58-b2c63c0a3d26.js] ${e.message}`;throw e;}"
       },
       "position": [
         912,

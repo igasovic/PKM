@@ -48,13 +48,15 @@ return rows.map(r => ({ json: r }));
 - Return explicit n8n item arrays.
 
 ### 3.3 Runtime import rules
-- Canonical runtime imports must use package subpaths under `@igasovic/n8n-blocks/...`.
+- Canonical workflow wrappers must import from package root `@igasovic/n8n-blocks` and call named root exports.
+- Root-export naming convention: `wf<NN><NodeName>` (for example `wf10CommandParser`, `wf30PrepareFinalizeRequest`).
+- Externalized node files may import shared helpers via package subpaths (`@igasovic/n8n-blocks/shared/...`).
 - Do not use `/data/...` runtime imports.
 - Do not use fragile relative repo imports like `../../../src/...`.
 - Shared helpers from `src/libs/**` are available to n8n only when they are explicitly staged through `src/n8n/package.manifest.json`.
 - Example:
 ```js
-const { getConfig } = require('@igasovic/n8n-blocks/shared/config.js');
+const { wf10CommandParser } = require('@igasovic/n8n-blocks');
 ```
 
 ### 3.4 Fail-fast error handling
@@ -146,8 +148,8 @@ Template:
 Workflow wrapper:
 ```js
 try {
-  const fn = require('@igasovic/n8n-blocks/nodes/10-read/format-telegram-message.js');
-  return await fn({ $input, $json, $items, $node, $env, helpers });
+  const { wf10FormatTelegramMessage } = require('@igasovic/n8n-blocks');
+  return await wf10FormatTelegramMessage({ $input, $json, $items, $node, $env, helpers });
 } catch (e) {
   e.message = `[extjs:10-read/format-telegram-message__f305ac84-35d3-44df-8ef5-1c0e004f37b8.js] ${e.message}`;
   throw e;
@@ -155,8 +157,7 @@ try {
 ```
 
 Compatibility exception:
-- If upgraded n8n/task-runner allowlist behavior rejects deep subpath imports as disallowed, a Code node may temporarily require the package root (`@igasovic/n8n-blocks`) and call a named root export.
-- Use this only for targeted compatibility fixes; keep the default pattern on stable `nodes/...` or `shared/...` package subpaths.
+- The unscoped alias package `igasovic-n8n-blocks` may be used only as an explicit compatibility fallback when scoped-package allowlists are not honored.
 
 Externalized file:
 ```js
@@ -203,7 +204,7 @@ return [{ json: { ...$json, telegram_message } }];
 
 - `Cannot find module ...`
   - Cause: wrong path/import style.
-  - Fix: use `@igasovic/n8n-blocks/...` package imports and verify the generated runtime package/runners image were rebuilt.
+  - Fix: use `@igasovic/n8n-blocks` root-wrapper imports and verify the generated runtime package/runners image were rebuilt.
 
 - `"[object Object]"` in HTTP payload
   - Cause: object embedded as quoted interpolation.

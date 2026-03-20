@@ -300,7 +300,7 @@
       "id": "e7474a77-f17b-4f8f-bbe1-632804bd2e69",
       "name": "Create Message",
       "parameters": {
-        "jsCode": "try{const fn=require('@igasovic/n8n-blocks/nodes/02-telegram-capture/create-message.js');return await fn({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:02-telegram-capture/create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {wf02CreateMessage}=require('@igasovic/n8n-blocks');return await wf02CreateMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:02-telegram-capture/create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js] ${e.message}`;throw e;}"
       },
       "position": [
         1584,
@@ -604,7 +604,7 @@
       "id": "c3f2f6d4-4e0a-4d9d-9d3d-51d0e9c77a21",
       "name": "Format Duplicate Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nreturn [{ json: { ...$json, telegram_message: mdv2Message('Duplicate entry ' + entryId + ' processing stopped') } }];\n"
+        "jsCode": "try{const {wf02FormatDuplicateMessage}=require('@igasovic/n8n-blocks');return await wf02FormatDuplicateMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:02-telegram-capture/format-duplicate-message__c3f2f6d4-4e0a-4d9d-9d3d-51d0e9c77a21.js] ${e.message}`;throw e;}"
       },
       "position": [
         1584,
@@ -617,7 +617,7 @@
       "id": "42a2c7f4-b0fb-4b18-8f1e-8b9f1d3bcb6a",
       "name": "Format Thought Saved Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nconst action = String($json.action ?? 'inserted').trim() || 'inserted';\nconst text = 'Thought saved as entry ' + entryId + ' operation ' + action;\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\n"
+        "jsCode": "try{const {wf02FormatThoughtSavedMessage}=require('@igasovic/n8n-blocks');return await wf02FormatThoughtSavedMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:02-telegram-capture/format-thought-saved-message__42a2c7f4-b0fb-4b18-8f1e-8b9f1d3bcb6a.js] ${e.message}`;throw e;}"
       },
       "position": [
         1584,

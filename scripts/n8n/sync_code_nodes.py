@@ -144,6 +144,74 @@ def stable_wrapper_relative_path(source_rel: str) -> str:
     return to_posix_path(source_path.with_name(file_name))
 
 
+def manifest_target_to_nodes_rel(target: str) -> Path:
+    rel_path = Path(str(target).replace("\\", "/"))
+    if rel_path.parts and rel_path.parts[0] == "nodes":
+        rel_path = Path(*rel_path.parts[1:])
+    return rel_path
+
+
+def to_pascal_case(value: str) -> str:
+    parts = re.findall(r"[A-Za-z0-9]+", str(value or ""))
+    return "".join(part[:1].upper() + part[1:] for part in parts if part)
+
+
+def workflow_number_from_slug(workflow_slug: str) -> str:
+    match = re.match(r"^(\d{2})-", str(workflow_slug or ""))
+    return match.group(1) if match else "00"
+
+
+def extract_root_export_name(js_code: str):
+    normalized = normalize_newlines(js_code)
+    match = re.search(
+        r"""const\s*\{\s*([A-Za-z_$][\w$]*)\s*\}\s*=\s*require\(\s*['"]@igasovic/n8n-blocks['"]\s*\)""",
+        normalized,
+    )
+    return match.group(1) if match else None
+
+
+def build_root_export_base(workflow_slug: str, node) -> str:
+    workflow_number = workflow_number_from_slug(workflow_slug)
+    node_name = to_pascal_case(str(node.get("name", "CodeNode")))
+    if not node_name:
+        node_name = "CodeNode"
+    return f"wf{workflow_number}{node_name}"
+
+
+def compact_identifier(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]", "", str(value or ""))
+
+
+def resolve_root_export_name(
+    workflow_slug: str,
+    node,
+    node_id: str,
+    target_export_rel: str,
+    root_exports: dict,
+    existing_export_name: str = "",
+) -> str:
+    candidate_names = []
+    if existing_export_name:
+        candidate_names.append(existing_export_name)
+
+    base_name = build_root_export_base(workflow_slug, node)
+    candidate_names.append(base_name)
+
+    compact_id = compact_identifier(node_id)
+    if compact_id:
+        candidate_names.append(f"{base_name}{compact_id[:6]}")
+
+    for idx in range(2, 100):
+        candidate_names.append(f"{base_name}{idx}")
+
+    for candidate in candidate_names:
+        existing = root_exports.get(candidate)
+        if existing in (None, target_export_rel):
+            return candidate
+
+    return f"{base_name}Node"
+
+
 def extract_wrapper_relative_path(js_code: str):
     normalized = normalize_newlines(js_code)
     legacy_match = re.search(
@@ -161,11 +229,10 @@ def extract_wrapper_relative_path(js_code: str):
     return None, None
 
 
-def build_wrapper(wrapper_rel: str) -> str:
-    runtime_rel = stable_wrapper_relative_path(wrapper_rel)
+def build_wrapper(root_export_name: str, wrapper_rel: str) -> str:
     return (
-        f"try{{const fn=require('{PACKAGE_WRAPPER_PREFIX}{runtime_rel}');"
-        "return await fn({$input,$json,$items,$node,$env,helpers});}"
+        f"try{{const {{{root_export_name}}}=require('{PACKAGE_NAME}');"
+        f"return await {root_export_name}({{$input,$json,$items,$node,$env,helpers}});}}"
         f"catch(e){{e.message=`[extjs:{wrapper_rel}] ${{e.message}}`;throw e;}}"
     )
 
@@ -257,6 +324,22 @@ def sanitize_node_id(raw_id: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_-]", "-", value)
 
 
+def obfuscate_node_filename(value: str) -> str:
+    def _mask(match):
+        node_id = match.group(1)
+        if len(node_id) <= 6:
+            masked = node_id
+        else:
+            masked = f"{node_id[:2]}****{node_id[-4:]}"
+        return f"__{masked}.js"
+
+    return re.sub(r"__([A-Za-z0-9_-]+)\.js", _mask, value)
+
+
+def display_node_path(value: str) -> str:
+    return obfuscate_node_filename(to_posix_path(Path(value)))
+
+
 def workflow_slug_from_object(workflow) -> str:
     return slugify(workflow.get("name", "")) or "workflow"
 
@@ -276,7 +359,23 @@ def resolve_source_for_wrapper(
     node_id: str,
     nodes_root_dir: Path,
     node_file_index,
+    root_exports: dict,
 ):
+    root_export_name = extract_root_export_name(js_code)
+    if root_export_name:
+        target_rel = root_exports.get(root_export_name)
+        if isinstance(target_rel, str) and target_rel.strip():
+            nodes_rel = manifest_target_to_nodes_rel(target_rel)
+            workflow_dir = nodes_root_dir / nodes_rel.parent
+            node_name = nodes_rel.stem
+            candidates = []
+            if workflow_dir.exists():
+                candidates.extend(sorted(workflow_dir.glob(f"{node_name}__*.js")))
+            candidates.append(nodes_root_dir / nodes_rel)
+            by_id_candidates = node_file_index.get(str(node_id or ""), [])
+            source_path = first_existing([*candidates, *by_id_candidates])
+            return nodes_rel.as_posix(), source_path
+
     wrapper_prefix, wrapper_rel = extract_wrapper_relative_path(js_code)
     if not wrapper_rel:
         return None, None
@@ -299,27 +398,30 @@ def resolve_source_for_wrapper(
 
 
 def parse_args(argv):
-    if len(argv) != 5:
+    if len(argv) != 6:
         die(
             "Usage: sync_code_nodes.py "
-            "<raw_dir> <patched_raw_dir> <repo_workflows_dir> <nodes_root_dir> <min_lines>"
+            "<raw_dir> <patched_raw_dir> <repo_workflows_dir> <nodes_root_dir> <package_manifest_path> <min_lines>"
         )
 
     raw_dir = Path(argv[0]).resolve()
     patched_raw_dir = Path(argv[1]).resolve()
     repo_workflows_dir = Path(argv[2]).resolve()
     nodes_root_dir = Path(argv[3]).resolve()
+    package_manifest_path = Path(argv[4]).resolve()
     try:
-        min_lines = int(argv[4])
+        min_lines = int(argv[5])
     except Exception:
-        die(f"Invalid min_lines: {argv[4]}")
+        die(f"Invalid min_lines: {argv[5]}")
     if min_lines < 1:
-        die(f"Invalid min_lines: {argv[4]}")
+        die(f"Invalid min_lines: {argv[5]}")
 
     if not raw_dir.exists() or not raw_dir.is_dir():
         die(f"Missing raw workflows dir: {raw_dir}")
     if not repo_workflows_dir.exists() or not repo_workflows_dir.is_dir():
         die(f"Missing repo workflows dir: {repo_workflows_dir}")
+    if not package_manifest_path.exists() or not package_manifest_path.is_file():
+        die(f"Missing package manifest: {package_manifest_path}")
 
     ensure_dir(nodes_root_dir)
     ensure_dir(patched_raw_dir)
@@ -329,6 +431,7 @@ def parse_args(argv):
         patched_raw_dir,
         repo_workflows_dir,
         nodes_root_dir,
+        package_manifest_path,
         min_lines,
     )
 
@@ -339,6 +442,7 @@ def main():
         patched_raw_dir,
         repo_workflows_dir,
         nodes_root_dir,
+        package_manifest_path,
         min_lines,
     ) = parse_args(sys.argv[1:])
 
@@ -346,6 +450,14 @@ def main():
     raw_files = list_json_files(raw_dir)
     node_file_index = build_node_file_index([nodes_root_dir])
     expected_node_files = set()
+    package_manifest = read_json(package_manifest_path)
+    if not isinstance(package_manifest, dict):
+        die(f"Invalid package manifest shape: {package_manifest_path}")
+    root_exports_changed = 0
+    root_exports = package_manifest.get("rootExports")
+    if not isinstance(root_exports, dict):
+        root_exports = {}
+        root_exports_changed += 1
 
     patched_nodes = 0
     moved_files = 0
@@ -382,6 +494,7 @@ def main():
                 node_id,
                 nodes_root_dir,
                 node_file_index,
+                root_exports,
             )
 
             effective_code = js_code
@@ -410,7 +523,8 @@ def main():
                     node["parameters"]["jsCode"]
                 ):
                     node_updated.append(
-                        f"{workflow_slug}/{node_file_name(node)} (inlined: under {min_lines} lines)"
+                        f"{display_node_path(f'{workflow_slug}/{node_file_name(node)}')} "
+                        f"(inlined: under {min_lines} lines)"
                     )
                 inlined_nodes += 1
                 patched_nodes += 1
@@ -428,39 +542,61 @@ def main():
                     if desired_existed:
                         desired_abs.write_text(normalized_code, encoding="utf-8")
                         source_abs.unlink(missing_ok=True)
-                        node_updated.append(to_posix_path(desired_abs.relative_to(nodes_root_dir)))
+                        node_updated.append(
+                            display_node_path(to_posix_path(desired_abs.relative_to(nodes_root_dir)))
+                        )
                     else:
                         source_abs.rename(desired_abs)
                         node_moved.append(
-                            f"{to_posix_path(source_abs.relative_to(nodes_root_dir))} -> "
-                            f"{to_posix_path(desired_abs.relative_to(nodes_root_dir))}"
+                            f"{display_node_path(to_posix_path(source_abs.relative_to(nodes_root_dir)))} -> "
+                            f"{display_node_path(to_posix_path(desired_abs.relative_to(nodes_root_dir)))}"
                         )
                     moved_files += 1
                 else:
                     desired_abs.write_text(normalized_code, encoding="utf-8")
                     if desired_existed:
                         node_updated.append(
-                            f"{to_posix_path(desired_abs.relative_to(nodes_root_dir))} (copied)"
+                            f"{display_node_path(to_posix_path(desired_abs.relative_to(nodes_root_dir)))} "
+                            "(copied)"
                         )
                     else:
-                        node_added.append(to_posix_path(desired_abs.relative_to(nodes_root_dir)))
+                        node_added.append(
+                            display_node_path(to_posix_path(desired_abs.relative_to(nodes_root_dir)))
+                        )
                         created_files += 1
             elif not desired_existed:
                 desired_abs.write_text(normalized_code, encoding="utf-8")
-                node_added.append(to_posix_path(desired_abs.relative_to(nodes_root_dir)))
+                node_added.append(display_node_path(to_posix_path(desired_abs.relative_to(nodes_root_dir))))
                 created_files += 1
             else:
                 existing = desired_abs.read_text(encoding="utf-8")
                 if normalize_newlines(existing) != normalize_newlines(normalized_code):
                     desired_abs.write_text(normalized_code, encoding="utf-8")
-                    node_updated.append(to_posix_path(desired_abs.relative_to(nodes_root_dir)))
+                    node_updated.append(
+                        display_node_path(to_posix_path(desired_abs.relative_to(nodes_root_dir)))
+                    )
 
             prev_js_code = str((node.get("parameters") or {}).get("jsCode", ""))
             node.setdefault("parameters", {})
             desired_rel_posix = desired_rel.as_posix()
-            node["parameters"]["jsCode"] = build_wrapper(desired_rel_posix)
+            stable_rel_posix = stable_wrapper_relative_path(desired_rel_posix)
+            export_target_rel = f"nodes/{stable_rel_posix}"
+            existing_export_name = extract_root_export_name(prev_js_code) or ""
+            root_export_name = resolve_root_export_name(
+                workflow_slug,
+                node,
+                node_id,
+                export_target_rel,
+                root_exports,
+                existing_export_name=existing_export_name,
+            )
+            if root_exports.get(root_export_name) != export_target_rel:
+                root_exports[root_export_name] = export_target_rel
+                root_exports_changed += 1
+
+            node["parameters"]["jsCode"] = build_wrapper(root_export_name, desired_rel_posix)
             if normalize_newlines(prev_js_code) != normalize_newlines(node["parameters"]["jsCode"]):
-                node_updated.append(f"{desired_rel_posix} (wrapper)")
+                node_updated.append(f"{display_node_path(desired_rel_posix)} (wrapper)")
             expected_node_files.add(desired_abs)
             patched_nodes += 1
 
@@ -488,9 +624,13 @@ def main():
         if abs_path in expected_node_files:
             continue
         node_file.unlink(missing_ok=True)
-        node_deleted.append(to_posix_path(abs_path.relative_to(nodes_root_dir)))
+        node_deleted.append(display_node_path(to_posix_path(abs_path.relative_to(nodes_root_dir))))
         delete_empty_parents(abs_path, nodes_root_dir)
         removed_orphans += 1
+
+    if root_exports_changed > 0:
+        package_manifest["rootExports"] = dict(sorted(root_exports.items()))
+        write_json(package_manifest_path, package_manifest)
 
     print("Workflows created:")
     if not workflow_created:
@@ -543,6 +683,7 @@ def main():
         f"removed_orphans={removed_orphans} "
         f"missing_js_code={missing_js_code} "
         f"skipped_missing_source={skipped_missing_source} "
+        f"root_exports_changed={root_exports_changed} "
         f"min_lines={min_lines}"
     )
 

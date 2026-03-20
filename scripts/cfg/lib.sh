@@ -138,11 +138,16 @@ format_n8n_output_line() {
     return 0
   fi
 
-  # Shorten absolute n8n repo paths in output while keeping signal.
+  line="${line//$CFG_REPO_N8N_WORKFLOWS_DIR/workflows}"
+  line="${line//$CFG_REPO_N8N_NODES_DIR/nodes}"
+
+  # Keep n8n output focused on repo-relative signal.
   line="$(printf '%s' "$line" | sed -E \
-    -e 's#([^[:space:]]*/src/n8n/nodes/)#[...]/nodes/#g' \
-    -e 's#([^[:space:]]*/src/n8n/workflows/)#[...]/workflows/#g' \
-    -e 's#__([0-9a-f]{8})[0-9a-f-]*\.js#__\1….js#g')"
+    -e 's#([^[:space:]]*/src/n8n/workflows/)#workflows/#g' \
+    -e 's#([^[:space:]]*/src/n8n/nodes/)#nodes/#g' \
+    -e 's#/tmp/checkcfg-n8n\.[^/]+/workflows/#live/workflows/#g' \
+    -e 's#/tmp/checkcfg-n8n\.[^/]+/nodes/#live/nodes/#g' \
+    -e 's#__([A-Za-z0-9]{2})[A-Za-z0-9_-]*([A-Za-z0-9]{4})\.js#__\1****\2.js#g')"
 
   printf '%s' "$line"
 }
@@ -345,7 +350,11 @@ add_check_runtime_target() {
 }
 
 add_check_detail() {
-  CHECK_DETAILS+=("$1")
+  local line="$1"
+  if [[ "$CHECK_SURFACE" == "n8n" ]]; then
+    line="$(format_n8n_output_line "$line")"
+  fi
+  CHECK_DETAILS+=("$line")
 }
 
 mark_check_drift() {
@@ -383,10 +392,16 @@ print_check_report() {
   echo "Status: $CHECK_STATE"
   echo "Repo sources:"
   for s in "${CHECK_REPO_SOURCES[@]}"; do
+    if [[ "$CHECK_SURFACE" == "n8n" ]]; then
+      s="$(format_n8n_output_line "$s")"
+    fi
     echo "- $s"
   done
   echo "Runtime targets:"
   for s in "${CHECK_RUNTIME_TARGETS[@]}"; do
+    if [[ "$CHECK_SURFACE" == "n8n" ]]; then
+      s="$(format_n8n_output_line "$s")"
+    fi
     echo "- $s"
   done
   echo "Details:"
@@ -490,7 +505,11 @@ reset_update_state() {
 }
 
 add_update_detail() {
-  UPDATE_DETAILS+=("$1")
+  local line="$1"
+  if [[ "$UPDATE_SURFACE" == "n8n" ]]; then
+    line="$(format_n8n_output_line "$line")"
+  fi
+  UPDATE_DETAILS+=("$line")
 }
 
 mark_update_blocked() {
@@ -530,6 +549,9 @@ print_update_report() {
     echo "- none"
   else
     for s in "${UPDATE_CHANGED[@]}"; do
+      if [[ "$UPDATE_SURFACE" == "n8n" ]]; then
+        s="$(format_n8n_output_line "$s")"
+      fi
       echo "- $s"
     done
   fi
@@ -1053,7 +1075,11 @@ restart_service() {
 
 update_surface_n8n() {
   local mode="$1"
-  progress_start "updatecfg:n8n:$mode" 2
+  local total_steps=4
+  if [[ "$mode" == "push" ]]; then
+    total_steps=5
+  fi
+  progress_start "updatecfg:n8n:$mode" "$total_steps"
   progress_step "validate n8n sync script"
   if [[ ! -x "$CFG_N8N_SYNC_SCRIPT" ]]; then
     mark_update_blocked "n8n sync script missing or not executable ($CFG_N8N_SYNC_SCRIPT)."
@@ -1061,9 +1087,57 @@ update_surface_n8n() {
     return 0
   fi
 
-  local out
-  progress_step "run n8n sync in $mode mode"
-  if run_capture out "$CFG_N8N_SYNC_SCRIPT" --mode "$mode"; then
+  local out=""
+  local sync_status=0
+  local tmp_out tmp_pipe
+  tmp_out="$(mktemp "${TMPDIR:-/tmp}/updatecfg-n8n.out.XXXXXX")"
+  tmp_pipe="$(mktemp -u "${TMPDIR:-/tmp}/updatecfg-n8n.pipe.XXXXXX")"
+  mkfifo "$tmp_pipe"
+
+  local step_a=0
+  local step_b=0
+  local step_c=0
+  local step_d=0
+
+  ("$CFG_N8N_SYNC_SCRIPT" --mode "$mode" >"$tmp_pipe" 2>&1) &
+  local sync_pid=$!
+
+  while IFS= read -r line; do
+    printf '%s\n' "$line" >>"$tmp_out"
+    if [[ "$mode" == "push" ]]; then
+      if [[ $step_a -eq 0 && "$line" == "[push 1/4]"* ]]; then
+        progress_step "build runtime package"
+        step_a=1
+      elif [[ $step_b -eq 0 && "$line" == "[push 2/4]"* ]]; then
+        progress_step "recreate n8n + runners stack"
+        step_b=1
+      elif [[ $step_c -eq 0 && "$line" == "[push 3/4]"* ]]; then
+        progress_step "patch repo workflows to n8n API"
+        step_c=1
+      elif [[ $step_d -eq 0 && "$line" == "[push 4/4]"* ]]; then
+        progress_step "validate live workflows"
+        step_d=1
+      fi
+    else
+      if [[ $step_a -eq 0 && "$line" == "[pull 1/3]"* ]]; then
+        progress_step "export + normalize workflows"
+        step_a=1
+      elif [[ $step_b -eq 0 && "$line" == "[pull 2/3]"* ]]; then
+        progress_step "export raw workflows"
+        step_b=1
+      elif [[ $step_c -eq 0 && "$line" == "[pull 3/3]"* ]]; then
+        progress_step "sync code nodes to repo"
+        step_c=1
+      fi
+    fi
+  done <"$tmp_pipe"
+
+  wait "$sync_pid" || sync_status=$?
+  rm -f "$tmp_pipe"
+  out="$(cat "$tmp_out")"
+  rm -f "$tmp_out"
+
+  if [[ "$sync_status" -eq 0 ]]; then
     if [[ "$mode" == "push" ]]; then
       record_restarted_service "n8n API sync"
       add_update_detail "n8n push sync completed"
@@ -1072,7 +1146,7 @@ update_surface_n8n() {
       record_changed_path "$CFG_REPO_N8N_NODES_DIR"
       add_update_detail "n8n pull sync completed"
     fi
-    add_update_detail_lines "$(preview_lines "$out" 40)" "  "
+    add_update_detail_lines "$(preview_lines "$out" 80)" "  "
     progress_done "sync complete"
     return 0
   fi

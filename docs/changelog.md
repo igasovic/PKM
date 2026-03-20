@@ -1,4 +1,15 @@
 # changelog
+## 2026-03-19 — Global root-wrapper migration + n8n ops output readability
+
+### What changed
+- Migrated remaining workflow Code-node wrappers from package subpath imports to package-root exports:
+  - wrappers now consistently call `require('@igasovic/n8n-blocks')` with `wf<NN><NodeName>` exports.
+- Externalized remaining inline n8n Code nodes that depended on package shared helpers into canonical files under `src/n8n/nodes/**`.
+- Expanded `src/n8n/package.manifest.json` root exports to cover all migrated wrapper targets.
+- `updatecfg n8n --push` progress now reports push substeps (build package, recreate stack, patch workflows, validate live) instead of a single opaque sync step.
+- n8n config-op output now shortens n8n paths to repo-relative forms (for example `workflows/...`, `nodes/...`) and masks node ids in filenames as `__ab****cdef.js`.
+- n8n sync/migration scripts now mask node-id segments in script-emitted node filename lists for readability.
+
 ## 2026-03-19 — WF10 root-export wrapper migration
 
 ### What changed
