@@ -1,7 +1,7 @@
 'use strict';
 
 const parseCommand = require('../../src/n8n/nodes/10-read/command-parser__926eb875-5735-4746-a0a4-7801b8db586f.js');
-const { readCommandParser: aliasCommandParser } = require('../../src/n8n/package/node_modules/igasovic-n8n-blocks');
+const { readCommandParser: aliasCommandParser } = require('../../src/n8n/package/node_modules/@igasovic/n8n-blocks');
 
 function unescapeMdv2(value) {
   return String(value || '').replace(/\\([_*[\]()~`>#+\-=|{}.!\\])/g, '$1');

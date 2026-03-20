@@ -12,8 +12,8 @@
  */
 'use strict';
 
-const { getConfig } = require('igasovic-n8n-blocks/shared/config.js');
-const { mdv2, bold, kv, arrow, joinLines, finalizeMarkdownV2 } = require('igasovic-n8n-blocks/shared/telegram-markdown.js');
+const { getConfig } = require('@igasovic/n8n-blocks/shared/config.js');
+const { mdv2, bold, kv, arrow, joinLines, finalizeMarkdownV2 } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
