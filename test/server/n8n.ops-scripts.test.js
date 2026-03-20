@@ -54,6 +54,7 @@ function writeFakeDocker(tempRoot) {
       '  "exec n8n-runners cat /etc/n8n-task-runners.json") printf "{\\"task-runners\\":[{\\"runner-type\\":\\"javascript\\",\\"workdir\\":\\"/home/runner\\",\\"command\\":\\"/usr/local/bin/node\\",\\"args\\":[\\"--disallow-code-generation-from-strings\\",\\"--disable-proto=delete\\",\\"/opt/runners/task-runner-javascript/dist/start.js\\"],\\"health-check-server-port\\":\\"5681\\",\\"env-overrides\\":{\\"NODE_FUNCTION_ALLOW_BUILTIN\\":\\"crypto,node:path,node:process\\",\\"NODE_FUNCTION_ALLOW_EXTERNAL\\":\\"@igasovic/n8n-blocks,igasovic-n8n-blocks\\"}},{\\"runner-type\\":\\"python\\",\\"workdir\\":\\"/home/runner\\",\\"command\\":\\"/opt/runners/task-runner-python/.venv/bin/python\\",\\"args\\":[\\"-I\\",\\"-B\\",\\"-X\\",\\"disable_remote_debug\\",\\"-m\\",\\"src.main\\"],\\"health-check-server-port\\":\\"5682\\",\\"env-overrides\\":{\\"N8N_RUNNERS_STDLIB_ALLOW\\":\\"\\",\\"N8N_RUNNERS_EXTERNAL_ALLOW\\":\\"\\"}}]}" ;;',
       '  "exec n8n-runners sh -lc test -f /usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json && printf %s /usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json") echo "/usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json" ;;',
       '  "exec n8n-runners sh -lc test -f /usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json && printf %s /usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json") echo "/usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json" ;;',
+      '  "exec n8n-runners sh -lc test -f /opt/runners/task-runner-javascript/node_modules/@igasovic/n8n-blocks/package.json && printf %s /opt/runners/task-runner-javascript/node_modules/@igasovic/n8n-blocks/package.json") echo "/opt/runners/task-runner-javascript/node_modules/@igasovic/n8n-blocks/package.json" ;;',
       '  "exec -u node n8n n8n --help") echo "n8n help" ;;',
       '  *)',
       '    echo "unexpected docker invocation: $args" >&2',
@@ -109,6 +110,7 @@ describe('n8n operator scripts', () => {
     expect(res.stdout).toContain('OK: runners launcher config includes expected JS allowlists');
     expect(res.stdout).toContain('OK: runners scoped package path = /usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json');
     expect(res.stdout).toContain('OK: runners alias package path = /usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json');
+    expect(res.stdout).toContain('OK: runners js-task-runner scoped package path = /opt/runners/task-runner-javascript/node_modules/@igasovic/n8n-blocks/package.json');
     expect(res.stdout).toContain('Smoke execution skipped');
 
     fs.rmSync(tempRoot, { recursive: true, force: true });

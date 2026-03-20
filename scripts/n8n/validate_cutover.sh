@@ -123,14 +123,18 @@ wait_for_n8n_cli() {
 validate_runner_package() {
   local scoped_package_path
   local alias_package_path
+  local scoped_js_runner_path
 
   scoped_package_path="$(docker exec "$RUNNERS_CONTAINER_NAME" sh -lc "test -f /usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json && printf %s /usr/local/lib/node_modules/n8n/node_modules/@igasovic/n8n-blocks/package.json" 2>/dev/null || true)"
   alias_package_path="$(docker exec "$RUNNERS_CONTAINER_NAME" sh -lc "test -f /usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json && printf %s /usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/package.json" 2>/dev/null || true)"
+  scoped_js_runner_path="$(docker exec "$RUNNERS_CONTAINER_NAME" sh -lc "test -f /opt/runners/task-runner-javascript/node_modules/@igasovic/n8n-blocks/package.json && printf %s /opt/runners/task-runner-javascript/node_modules/@igasovic/n8n-blocks/package.json" 2>/dev/null || true)"
 
   assert_nonempty "runners scoped package path" "$scoped_package_path"
   assert_nonempty "runners alias package path" "$alias_package_path"
+  assert_nonempty "runners js-task-runner scoped package path" "$scoped_js_runner_path"
   echo "OK: runners scoped package path = $scoped_package_path"
   echo "OK: runners alias package path = $alias_package_path"
+  echo "OK: runners js-task-runner scoped package path = $scoped_js_runner_path"
 }
 
 validate_runner_launcher_config() {

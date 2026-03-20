@@ -1344,3 +1344,4 @@ Final verification commands (passed):
 - n8n-runners: fixed launcher config typing so `health-check-server-port` values are strings (`\"5680\"`, `\"5681\"`), matching runner config parsing on the Pi image.
 - n8n-runners: moved runner health-check ports to `\"5681\"` (javascript) and `\"5682\"` (python) to avoid conflicting with launcher default port `5680`.
 - n8n-runners: expanded `ops/stack/n8n-runners/n8n-task-runners.json` to include upstream-required launcher fields (`workdir`, `command`, `args`, `allowed-env`) for both JS and Python runners; this fixes restart loops caused by empty launch config (chdir into empty dir).
+- n8n-runners: copied runtime package dependencies into `/opt/runners/task-runner-javascript/node_modules` in addition to `/usr/local/lib/node_modules/n8n/node_modules`, fixing `Cannot find module '@igasovic/n8n-blocks'` from JS task-runner resolution.

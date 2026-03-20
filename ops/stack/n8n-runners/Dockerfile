@@ -13,4 +13,6 @@ RUN mkdir -p ./loader \
 
 FROM ${RUNNERS_BASE_IMAGE}
 COPY --from=package-install /opt/n8n-blocks/loader/node_modules/ /usr/local/lib/node_modules/n8n/node_modules/
+COPY --from=package-install /opt/n8n-blocks/loader/node_modules/ /opt/runners/task-runner-javascript/node_modules/
 COPY src/n8n/package/ /usr/local/lib/node_modules/n8n/node_modules/igasovic-n8n-blocks/
+COPY src/n8n/package/ /opt/runners/task-runner-javascript/node_modules/igasovic-n8n-blocks/
