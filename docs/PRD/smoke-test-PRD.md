@@ -58,7 +58,7 @@ Current cleanup behavior:
 - calendar cleanup is intentionally not destructive by default and is reported as skipped unless a dedicated delete workflow is enabled
 - cleanup is step-isolated so test-mode restore still runs even when PKM delete fails
 - cleanup recursively deduplicates and deletes all smoke entry IDs recoverable from artifacts/results, including `created_entry_ids`
-- preflight selector cleanup is not yet wired in WF00 (next implementation step)
+- preflight selector cleanup is wired in WF00 as `T00.5 - Preflight Cleanup` (selector read -> delete -> verify -> fail-fast on leftovers)
 
 Current smoke failure behavior:
 

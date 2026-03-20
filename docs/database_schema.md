@@ -270,6 +270,7 @@ Same intent as prod, but names differ slightly:
 - Partial “quality good” index is `entries_created_at_idx1`
 - Full-text index name is `entries_tsv_idx`
 - Keywords GIN index name is `entries_keywords_idx`
+- Smoke selector index: `entries_smoke_suite_idx` partial expression index on `((metadata #>> '{smoke,suite}')) WHERE metadata ? 'smoke'`
 
 ---
 
