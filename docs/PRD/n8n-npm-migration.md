@@ -1,6 +1,6 @@
 # n8n Internal JS Package Migration PRD
 
-- Status: Repo-side implementation complete on 2026-03-18; live Pi validation still required to close cutover
+- Status: Completed on 2026-03-20 (repo migration + Pi cutover validation complete)
 - Owner: Igor Gasovic
 - Executor: Coding agent with full repo access
 - Primary runtime target: Raspberry Pi stack deployment
@@ -10,8 +10,8 @@
 
 Implementation status snapshot:
 - `WP1` through `WP8`: repo-side complete
-- `WP9`: operator helpers and validation paths are implemented in repo
-- remaining closeout: execute cutover validation and smoke on the Pi, then confirm representative live flows
+- `WP9`: complete (operator helpers implemented and validated on Pi)
+- closeout: complete (cutover validation + smoke + representative flow checks passed on Pi)
 
 This PRD covers migration of reusable n8n Code-node JavaScript from the current path-based `/data/...` import model to a package-based runtime model compatible with n8n Task Runners.
 
@@ -408,6 +408,13 @@ Operator helper for this phase:
 - `./scripts/n8n/validate_cutover.sh`
 - `./scripts/n8n/validate_cutover.sh --with-smoke`
 
+Completion evidence (2026-03-20):
+- `checkcfg docker` and `updatecfg docker --push` reached clean state for managed docker surfaces, including runners launcher config.
+- `checkcfg n8n` and `updatecfg n8n --push` succeeded with runtime package build, custom runners image rebuild, stack recreate, and workflow patch/validation.
+- `./scripts/n8n/validate_cutover.sh` passed with pinned images and running `n8n` + `n8n-runners`.
+- runtime execution validated with package-root wrappers (`require('@igasovic/n8n-blocks')`) across canonical workflows.
+- smoke flow resumed after migration and representative runtime paths executed successfully.
+
 ## 13. Config surface and documentation impact
 
 ### 13.1 Changed config surfaces
@@ -594,7 +601,7 @@ Recommended work packages:
 - update `docs/config_operations.md`
 - update `docs/requirements.md`
 
-### WP9 â Pi cutover validation
+### WP9 â Pi cutover validation (complete)
 - validate runtime pin `2.10.3`
 - validate runners sidecar
 - validate proxy settings
@@ -609,7 +616,7 @@ Open items that should remain explicit rather than guessed:
 3. resolved for current scope: `src/libs/config.js` and `src/libs/config/index.js` are reused as staged shared modules without a special wrapper
 4. resolved for current scope: main `n8n` image does not install the internal package; runners own runtime execution dependencies
 5. resolved: the repo mount `/data` may remain for non-runtime purposes only and is not part of the code import contract
-6. TBD: whether `src/n8n/nodes/**` remains the canonical source tree permanently or is later reorganized
+6. resolved for current program boundary: `src/n8n/nodes/**` remains canonical; any reorganization is out of scope for this migration and requires a separate PRD
 
 ## Validation basis
 
