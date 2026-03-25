@@ -1,6 +1,6 @@
 # MCP-PRD.md
 
-Status: Draft v0.2  
+Status: Implemented baseline v1 (2026-03-24)  
 Owner: Igor / ChatGPT  
 Date: 2026-03-24
 
@@ -720,14 +720,20 @@ The MCP/backend layer should emit structured events that make the above measurab
 - error code
 - error message summary
 
-## 18. Open items before PRD finalization
+## 18. Implementation notes and remaining follow-up
 
-1. Final signoff on session summary note format.
-2. Exact canonical title conventions for:
-   - session summary note
-   - working-memory entry
-3. Confirmation of runtime session identifier availability in real ChatGPT MCP execution.
-4. Final payload minimization pass before implementation.
+Implemented baseline decisions:
+1. Session summary note canonical title:
+   - `Session: <chat_title>` when `chat_title` is present
+   - fallback: `Session: <resolved_topic_primary> (<YYYY-MM-DD>)`
+2. Working-memory canonical title:
+   - `Working Memory: <resolved_topic_primary>`
+3. MCP write contract enforces explicit `session_id` and `resolved_topic_primary`.
+4. MCP write flow maps structured payload directly into capture text + mapped PKM fields and writes both artifacts via one MCP tool call (`pkm.wrap_commit`).
+
+Follow-up still required in live runtime validation:
+1. Confirm real ChatGPT MCP runtime always supplies stable `session_id` value expected by the write contract.
+2. Perform payload minimization pass after observing real usage and failure telemetry.
 
 ## 19. Acceptance criteria for v1
 

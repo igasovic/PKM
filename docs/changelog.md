@@ -1,4 +1,27 @@
 # changelog
+## 2026-03-24 — MCP surface on pkm-server (`POST /mcp`) + wrap commit capture flow
+
+### What changed
+- Added ChatGPT-facing MCP transport endpoint:
+  - `POST /mcp` in `src/server/index.js`
+  - MCP protocol dispatcher in `src/server/mcp/protocol.js`
+  - MCP tool registry/handlers in `src/server/mcp/registry.js` and `src/server/mcp/service.js`
+- Implemented approved MCP toolset only:
+  - `pkm.last`, `pkm.find`, `pkm.continue`, `pkm.pull`, `pkm.pull_working_memory`, `pkm.wrap_commit`
+- Added dedicated topic-keyed working-memory read path in approved DB layers:
+  - `buildReadWorkingMemory` in `src/libs/sql-builder.js`
+  - `readWorkingMemory` in `src/server/db.js`
+- Added wrap-commit artifact renderers:
+  - `src/server/mcp/renderers.js`
+  - session note and working memory markdown are rendered server-side and written via one MCP write flow
+- Added MCP contract test coverage:
+  - `test/server/mcp.api-contract.test.js`
+- Added idempotency policy migration for ChatGPT MCP artifacts:
+  - `scripts/db/migrations/2026-03-24_mcp_chatgpt_policies.sql`
+- Added MCP docs and updated contract docs:
+  - `docs/mcp_api.md` (new)
+  - `docs/api.md`, `docs/requirements.md`, `docs/database_schema.md`
+
 ## 2026-03-19 — Global root-wrapper migration + n8n ops output readability
 
 ### What changed

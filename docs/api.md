@@ -38,6 +38,22 @@ Response:
 { "name": "pkm-backend", "version": "0.1.0" }
 ```
 
+## MCP
+
+### `POST /mcp`
+ChatGPT-facing MCP transport endpoint.
+
+Boundary rules:
+- `/mcp` is intentionally separate from generic `/db/*` API routes.
+- MCP tools are namespaced under `pkm.*` and restricted to the approved MCP toolset.
+- Generic backend CRUD/admin routes are not exposed through MCP.
+
+Auth:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Contract location:
+- MCP request/response/tool contracts are documented in `docs/mcp_api.md`.
+
 ## Config
 
 ### `GET /config`

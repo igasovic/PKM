@@ -44,6 +44,7 @@ const {
   createBatchStatusService,
 } = require('./batch-status-service.js');
 const { importEmailMbox } = require('./email-importer.js');
+const { processMcpRequest } = require('./mcp/protocol.js');
 const {
   getBraintrustLogger,
   logError,
@@ -180,6 +181,68 @@ async function handleRequest(req, res) {
   if (method === 'GET' && url.pathname === '/config') {
     const config = getConfig();
     return json(res, 200, config);
+  }
+
+  if (method === 'POST' && url.pathname === '/mcp') {
+    try {
+      requireAdminSecret(req);
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      const methodName = body && typeof body.method === 'string'
+        ? body.method
+        : (body && typeof body.action === 'string' ? body.action : (body && body.tool ? 'tools/call' : null));
+      const callName = body && typeof body.tool === 'string'
+        ? body.tool
+        : (body && body.params && typeof body.params === 'object' ? body.params.name : null);
+      const args = body && body.params && typeof body.params === 'object'
+        ? (body.params.arguments || {})
+        : (body && body.input && typeof body.input === 'object' ? body.input : {});
+      const runIdHint = (body && body.run_id) || (args && args.run_id) || null;
+      if (runIdHint) {
+        setRunIdFromBody(runIdHint);
+      } else if (body && Object.prototype.hasOwnProperty.call(body, 'id')) {
+        setRunIdFromBody(`mcp-${String(body.id).slice(0, 48)}`);
+      }
+
+      const result = await logger.step(
+        'api.mcp',
+        async () => processMcpRequest(body, {
+          request_id: body && Object.prototype.hasOwnProperty.call(body, 'id')
+            ? String(body.id)
+            : null,
+          run_id: runIdHint || null,
+          logger: logger.child({ pipeline: 'mcp' }),
+        }),
+        {
+          input: {
+            method: methodName,
+            tool: callName,
+            has_args: !!(args && typeof args === 'object' && Object.keys(args).length),
+          },
+          output: (out) => ({
+            has_error: !!(out && out.error),
+            type: out && out.result && out.result.type ? out.result.type : (out && out.type ? out.type : null),
+          }),
+          meta: { route: url.pathname },
+        }
+      );
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      const errorCode = status === 403
+        ? 'forbidden'
+        : status === 404
+          ? 'not_found'
+          : status >= 500
+            ? 'internal_error'
+            : 'bad_request';
+      const payload = { error: errorCode, message: err.message };
+      if (err && err.code) payload.error_code = err.code;
+      if (err && err.field) payload.field = err.field;
+      return json(res, status, payload);
+    }
   }
 
   if (method === 'POST' && url.pathname === '/normalize/telegram') {

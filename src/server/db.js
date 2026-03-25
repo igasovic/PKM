@@ -1388,6 +1388,19 @@ async function readPull(opts) {
   return exec(sql, { op: 'read_pull' });
 }
 
+async function readWorkingMemory(opts) {
+  const topicKey = String((opts && opts.topic_key) || '').trim();
+  if (!topicKey) {
+    throw new Error('read_working_memory requires topic_key');
+  }
+  const config = await getConfigWithTestMode();
+  const sql = sb.buildReadWorkingMemory({
+    entries_table: await getEntriesTableFromConfig(config),
+    topic_key: topicKey,
+  });
+  return exec(sql, { op: 'read_working_memory' });
+}
+
 async function readSmoke(opts) {
   const suite = String((opts && opts.suite) ?? '').trim();
   if (!suite) {
@@ -2122,6 +2135,7 @@ module.exports = {
   readFind,
   readLast,
   readPull,
+  readWorkingMemory,
   readSmoke,
   getTestMode,
   toggleTestModeState,

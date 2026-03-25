@@ -219,6 +219,7 @@ module.exports = {
   buildReadFind,
   buildReadLast,
   buildReadPull,
+  buildReadWorkingMemory,
   buildReadSmoke,
   buildTier2CandidateDiscovery,
   buildTier2SelectedDetailQuery,
@@ -1576,6 +1577,49 @@ SELECT
   left(regexp_replace(COALESCE(clean_text, capture_text), '\\s+', ' ', 'g'), ${longN}) AS excerpt_long
 FROM ${entries_table}
 WHERE entry_id = ${bigIntLit(entry_id)}::bigint
+LIMIT 1;
+`.trim();
+}
+
+function buildReadWorkingMemory(opts) {
+  const entries_table = String(opts && opts.entries_table ? opts.entries_table : '').trim();
+  if (!entries_table) {
+    throw new Error('buildReadWorkingMemory requires entries_table');
+  }
+  const topicKey = String(opts && opts.topic_key ? opts.topic_key : '').trim();
+  if (!topicKey) {
+    throw new Error('buildReadWorkingMemory requires topic_key');
+  }
+  const keyPrimary = `wm:${topicKey}`;
+
+  return `
+SELECT
+  entry_id,
+  id,
+  created_at,
+  source,
+  intent,
+  content_type,
+  COALESCE(title, '') AS title,
+  COALESCE(author, '') AS author,
+  COALESCE(topic_primary, '') AS topic_primary,
+  COALESCE(topic_secondary, '') AS topic_secondary,
+  topic_secondary_confidence,
+  COALESCE(gist, '') AS gist,
+  COALESCE(distill_summary, '') AS distill_summary,
+  COALESCE(distill_why_it_matters, '') AS distill_why_it_matters,
+  COALESCE(retrieval_excerpt, '') AS excerpt,
+  COALESCE(capture_text, '') AS capture_text,
+  COALESCE(clean_text, '') AS clean_text,
+  content_hash,
+  metadata
+FROM ${entries_table}
+WHERE
+  source = 'chatgpt'
+  AND content_type = 'working_memory'
+  AND idempotency_policy_key = 'chatgpt_working_memory_v1'
+  AND idempotency_key_primary = ${lit(keyPrimary)}::text
+ORDER BY created_at DESC
 LIMIT 1;
 `.trim();
 }

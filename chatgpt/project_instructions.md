@@ -17,12 +17,12 @@ When a topic is clear:
 3. Continue using PKM reads during the conversation when helpful.
 
 Default retrieval intent:
-- `pull_working_memory(topic)` first
+- `pkm.pull_working_memory(topic)` first
 - then one of:
-  - `continue` for active thinking threads
-  - `last` for vague remembered ideas
-  - `find` for specific details or phrases
-  - `pull` for deterministic source retrieval
+  - `pkm.continue` for active thinking threads
+  - `pkm.last` for vague remembered ideas
+  - `pkm.find` for specific details or phrases
+  - `pkm.pull` for deterministic source retrieval
 
 ## Working memory
 Legacy file:
@@ -93,7 +93,7 @@ Persist only when I explicitly say:
 - `/commit`
 
 On commit:
-1. Send one structured write request.
+1. Send one structured write request via `pkm.wrap_commit`.
 2. Update the session note for this conversation.
 3. Update the working-memory entry for the active topic.
 4. If the MCP call fails, stop and report the failure.

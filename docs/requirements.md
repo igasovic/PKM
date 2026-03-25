@@ -452,6 +452,30 @@ Primary objective:
 - Finalize path must be idempotent by `request_id`.
 - All-day Telegram event creation is out of scope for v1 and must return rejection/clarification rather than implicit all-day create.
 
+## MCP requirements (v1)
+- Public ChatGPT MCP transport is `POST /mcp`.
+- MCP tool discovery must expose only:
+  - `pkm.last`
+  - `pkm.find`
+  - `pkm.continue`
+  - `pkm.pull`
+  - `pkm.pull_working_memory`
+  - `pkm.wrap_commit`
+- MCP must not proxy generic `/db/*` API endpoints.
+- `pkm.pull_working_memory(topic)` is topic-keyed and must return canonical working-memory text without summarization.
+- `pkm.wrap_commit` validates:
+  - required `session_id`
+  - required `resolved_topic_primary`
+- `pkm.wrap_commit` writes exactly two artifacts in one backend flow:
+  - ChatGPT session note (`source=chatgpt`, `content_type=note`, `intent=thought`)
+  - topic working memory (`source=chatgpt`, `content_type=working_memory`, `intent=thought`)
+- `pkm.wrap_commit` idempotency policies:
+  - `chatgpt_session_note_v1` primary key `chatgpt:<session_id>`
+  - `chatgpt_working_memory_v1` primary key `wm:<normalized_topic_primary>`
+  - both may use `sha256(clean_text)` as secondary key
+- ChatGPT-authored session notes and working-memory rows from MCP capture flow must not trigger Tier-1 or Tier-2 enrichment pipelines.
+- MCP calls must emit structured observability events including tool name, request id, outcome, and compact error code/message summary.
+
 ## Non-goals
 - No duplicate side-table tracking in place of uniqueness constraints.
 - No client-side duplicate suppression as primary mechanism.

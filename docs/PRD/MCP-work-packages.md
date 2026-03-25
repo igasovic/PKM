@@ -1,6 +1,6 @@
 # MCP-work-packages.md
 
-Status: Draft v0.1  
+Status: Implemented baseline v1 (2026-03-24)  
 Owner: Igor / ChatGPT  
 Date: 2026-03-24
 

@@ -307,6 +307,8 @@ Defines idempotency/deduplication behavior per `(source, content_type)` and stab
 - `notion_newsletter_v1` (notion / newsletter / update)
 - `notion_correspondence_v1` (notion / correspondence / update)
 - `notion_other_v1` (notion / other / update)
+- `chatgpt_session_note_v1` (chatgpt / note / update)
+- `chatgpt_working_memory_v1` (chatgpt / working_memory / update)
 
 ---
 
