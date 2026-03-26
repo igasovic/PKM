@@ -1,5 +1,8 @@
 'use strict';
 
+const BOLD_OPEN = 'PKMCTXBOLDOPEN';
+const BOLD_CLOSE = 'PKMCTXBOLDCLOSE';
+
 function defaultMdv2Message(value) {
   return String(value === undefined || value === null ? '' : value).replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
@@ -238,5 +241,3 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof globalThis !== 'undefined') {
   globalThis.__pkmContextPackBuilder = defaultApi;
 }
-    const BOLD_OPEN = 'PKMCTXBOLDOPEN';
-    const BOLD_CLOSE = 'PKMCTXBOLDCLOSE';
