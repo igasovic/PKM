@@ -49,7 +49,7 @@ Boundary rules:
 - Generic backend CRUD/admin routes are not exposed through MCP.
 
 Auth:
-- `x-pkm-admin-secret: <secret>` (required)
+- v1 testing mode: no auth required on `/mcp`.
 
 Contract location:
 - MCP request/response/tool contracts are documented in `docs/mcp_api.md`.

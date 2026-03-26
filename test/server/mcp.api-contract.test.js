@@ -91,7 +91,6 @@ describe('mcp API contract', () => {
       JSON.stringify({ action: 'tools/list' }),
       {
         'Content-Type': 'application/json',
-        'x-pkm-admin-secret': 'test-admin-secret',
       },
     );
 
@@ -149,7 +148,6 @@ describe('mcp API contract', () => {
       }),
       {
         'Content-Type': 'application/json',
-        'x-pkm-admin-secret': 'test-admin-secret',
       },
     );
 
@@ -188,7 +186,6 @@ describe('mcp API contract', () => {
       }),
       {
         'Content-Type': 'application/json',
-        'x-pkm-admin-secret': 'test-admin-secret',
       },
     );
 
@@ -221,7 +218,6 @@ describe('mcp API contract', () => {
       }),
       {
         'Content-Type': 'application/json',
-        'x-pkm-admin-secret': 'test-admin-secret',
       },
     );
 
@@ -255,7 +251,6 @@ describe('mcp API contract', () => {
       }),
       {
         'Content-Type': 'application/json',
-        'x-pkm-admin-secret': 'test-admin-secret',
       },
     );
 
@@ -341,7 +336,6 @@ describe('mcp API contract', () => {
       }),
       {
         'Content-Type': 'application/json',
-        'x-pkm-admin-secret': 'test-admin-secret',
       },
     );
 
@@ -364,5 +358,28 @@ describe('mcp API contract', () => {
     expect(insertCalls[1].input.idempotency_policy_key).toBe('chatgpt_working_memory_v1');
     expect(insertCalls[1].input.enrichment_status).toBe('completed');
     expect(insertCalls[1].input.distill_status).toBe('completed');
+  });
+
+  test('POST /mcp streams SSE when requested', async () => {
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/mcp',
+      JSON.stringify({ action: 'tools/list' }),
+      {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/event-stream');
+    expect(res.body).toContain('event: meta');
+    expect(res.body).toContain('event: result');
+    expect(res.body).toContain('event: done');
+    expect(res.body).toContain('"type":"tools/list"');
   });
 });

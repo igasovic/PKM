@@ -82,6 +82,20 @@ function notFound(res) {
   json(res, 404, { error: 'not_found' });
 }
 
+function openSse(res) {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+  });
+}
+
+function writeSseEvent(res, eventName, payload) {
+  const body = JSON.stringify(payload === undefined ? {} : payload);
+  res.write(`event: ${eventName}\n`);
+  res.write(`data: ${body}\n\n`);
+}
+
 function readAdminSecret(req) {
   const fromHeader = req.headers['x-pkm-admin-secret'] || req.headers['x-admin-secret'];
   if (typeof fromHeader === 'string' && fromHeader.trim()) {
@@ -185,9 +199,11 @@ async function handleRequest(req, res) {
 
   if (method === 'POST' && url.pathname === '/mcp') {
     try {
-      requireAdminSecret(req);
       const raw = await readBody(req);
       const body = parseJsonBody(raw);
+      const accept = String(req.headers.accept || '').toLowerCase();
+      const transport = String((body && body.transport) || '').toLowerCase();
+      const wantsSse = accept.includes('text/event-stream') || transport === 'sse';
       const methodName = body && typeof body.method === 'string'
         ? body.method
         : (body && typeof body.action === 'string' ? body.action : (body && body.tool ? 'tools/call' : null));
@@ -226,9 +242,21 @@ async function handleRequest(req, res) {
           meta: { route: url.pathname },
         }
       );
+      if (wantsSse) {
+        openSse(res);
+        writeSseEvent(res, 'meta', {
+          route: '/mcp',
+          method: methodName,
+        });
+        writeSseEvent(res, 'result', result);
+        writeSseEvent(res, 'done', { ok: true });
+        return res.end();
+      }
       return json(res, 200, result);
     } catch (err) {
       logError(err, req);
+      const accept = String(req.headers.accept || '').toLowerCase();
+      const wantsSse = accept.includes('text/event-stream');
       const statusCode = Number(err && err.statusCode);
       const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
       const errorCode = status === 403
@@ -241,6 +269,12 @@ async function handleRequest(req, res) {
       const payload = { error: errorCode, message: err.message };
       if (err && err.code) payload.error_code = err.code;
       if (err && err.field) payload.field = err.field;
+      if (wantsSse) {
+        openSse(res);
+        writeSseEvent(res, 'error', payload);
+        writeSseEvent(res, 'done', { ok: false });
+        return res.end();
+      }
       return json(res, status, payload);
     }
   }

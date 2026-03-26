@@ -454,6 +454,8 @@ Primary objective:
 
 ## MCP requirements (v1)
 - Public ChatGPT MCP transport is `POST /mcp`.
+- v1 testing auth mode: `/mcp` is no-auth.
+- `/mcp` must support streaming transport via SSE (`text/event-stream`) in addition to non-streaming JSON envelopes.
 - MCP tool discovery must expose only:
   - `pkm.last`
   - `pkm.find`

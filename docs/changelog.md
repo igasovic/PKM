@@ -2,6 +2,9 @@
 ## 2026-03-24 — MCP surface on pkm-server (`POST /mcp`) + wrap commit capture flow
 
 ### What changed
+- Updated MCP transport for v1 testing:
+  - `/mcp` auth switched to no-auth mode (removed `x-pkm-admin-secret` requirement for this route)
+  - `/mcp` now supports SSE streaming (`Accept: text/event-stream` or `transport: "sse"`) with `meta -> result|error -> done` events
 - Added ChatGPT-facing MCP transport endpoint:
   - `POST /mcp` in `src/server/index.js`
   - MCP protocol dispatcher in `src/server/mcp/protocol.js`

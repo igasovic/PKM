@@ -13,13 +13,21 @@ Base URL: `http://<host>:<port>`
 - `POST /mcp`
 
 ### Auth
-- Header `x-pkm-admin-secret: <secret>` (same secret currently used for admin-protected backend routes).
+- v1 testing mode: no auth required on `/mcp`.
 
 ### Request modes
 
 `/mcp` supports:
 - plain MCP envelope (`action` + `params`)
 - JSON-RPC 2.0 envelope (`jsonrpc`, `id`, `method`, `params`)
+- SSE streaming transport when requested with:
+  - `Accept: text/event-stream`, or
+  - request body `{"transport":"sse", ...}`
+
+SSE event sequence:
+- `meta`
+- `result` (or `error`)
+- `done`
 
 ### Discovery request
 
