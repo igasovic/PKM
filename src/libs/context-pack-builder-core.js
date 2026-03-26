@@ -156,11 +156,22 @@ function createContextPackBuilder(deps) {
       normalizedItems.forEach((item, index) => {
         const keywords = item.keywords.length ? item.keywords.join(', ') : '-';
         const includeWhyItMatters = index < whyItMattersCount && item.why_it_matters !== '-';
+        const contentText = String(item.content || '-');
+        const contentLines = contentText.split('\n').map((part) => normWS(part)).filter(Boolean);
+        const firstContentLine = contentLines[0] || '-';
+        const restContentLine = contentLines.slice(1).join(' ');
         lines.push(`Entry ${item.entry_id} | ${item.content_type} | ${item.author} | ${item.title} | ${item.date}`);
         lines.push(`topic: ${item.topic_primary} -> ${item.topic_secondary}`);
         lines.push(`keywords: ${keywords}`);
         lines.push(`url: ${item.url || '-'}`);
-        lines.push(`content: ${item.content}`);
+        if (markdownV2) {
+          const rendered = restContentLine
+            ? `*${firstContentLine}* ${restContentLine}`
+            : `*${firstContentLine}*`;
+          lines.push(`content: ${rendered}`);
+        } else {
+          lines.push(`content: ${firstContentLine}${restContentLine ? ` ${restContentLine}` : ''}`);
+        }
         if (includeWhyItMatters) {
           lines.push(`why_it_matters: ${item.why_it_matters}`);
         }
@@ -176,10 +187,21 @@ function createContextPackBuilder(deps) {
       normalizedItems.forEach((item, index) => {
         const keywords = item.keywords.length ? item.keywords.join(', ') : '-';
         const includeWhyItMatters = index < whyItMattersCount && item.why_it_matters !== '-';
+        const contentText = String(item.content || '-');
+        const contentLines = contentText.split('\n').map((part) => normWS(part)).filter(Boolean);
+        const firstContentLine = contentLines[0] || '-';
+        const restContentLine = contentLines.slice(1).join(' ');
         lines.push(`- ${item.entry_id} | ${item.content_type} | ${item.author} | ${item.title} | ${item.date}`);
         lines.push(`  - Topic: ${item.topic_primary} -> ${item.topic_secondary}`);
         lines.push(`  - Keywords: ${keywords}`);
-        lines.push(`  - Content: ${item.content}`);
+        if (markdownV2) {
+          const rendered = restContentLine
+            ? `*${firstContentLine}* ${restContentLine}`
+            : `*${firstContentLine}*`;
+          lines.push(`  - Content: ${rendered}`);
+        } else {
+          lines.push(`  - Content: ${firstContentLine}${restContentLine ? ` ${restContentLine}` : ''}`);
+        }
         if (includeWhyItMatters) {
           lines.push(`  - Why it matters: ${item.why_it_matters}`);
         }
@@ -191,7 +213,10 @@ function createContextPackBuilder(deps) {
     }
 
     const out = lines.join('\n').trim();
-    return markdownV2 ? mdv2Message(out) : out;
+    if (!markdownV2) return out;
+    return mdv2Message(out)
+      .replace(/(content: )\\\*([^\n]*)\\\*/g, '$1*$2*')
+      .replace(/(  - Content: )\\\*([^\n]*)\\\*/g, '$1*$2*');
   }
 
   return {

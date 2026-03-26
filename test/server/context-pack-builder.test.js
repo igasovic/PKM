@@ -99,4 +99,23 @@ describe('context-pack builder', () => {
     expect(md).toContain('  - Why it matters: Why 1');
     expect(md).not.toContain('  - Why it matters: Why 2');
   });
+
+  test('markdownV2 context pack bolds first content line', () => {
+    const md = buildContextPackMarkdown(
+      [{
+        entry_id: 42,
+        content_type: 'note',
+        author: 'Igor',
+        title: 'Sample',
+        created_at: '2026-03-09T00:00:00.000Z',
+        topic_primary: 'ops',
+        topic_secondary: 'n8n',
+        distill_summary: 'Important first line',
+      }],
+      { method: 'continue', query: 'ops', days: 7, limit: 5 },
+      { layout: 'ui', markdownV2: true, maxContentLen: 300 },
+    );
+
+    expect(md).toContain('content: *Important first line*');
+  });
 });

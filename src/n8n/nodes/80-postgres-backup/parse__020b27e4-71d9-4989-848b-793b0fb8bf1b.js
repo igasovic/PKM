@@ -12,6 +12,10 @@ module.exports = async function run(ctx) {
   const cmd = String(b.cmd ?? '');
   const status = String(b.status ?? (Number(b.rc ?? 0) === 0 ? 'ok' : 'fail'));
   const icon = status === 'ok' ? '✅' : '❌';
+
+  if (status === 'ok') {
+    return [];
+  }
   
   const lines = [
     icon + ' CRON ' + status,

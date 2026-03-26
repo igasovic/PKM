@@ -19,10 +19,11 @@ const entryId = s($json.entry_id);
 const author = s($json.author);
 const title = s($json.title);
 
-// your current logic
-const textLen = Number.isFinite(Number($json.clean_text?.length))
-  ? Number($json.clean_text.length)
-  : 0;
+const cleanText = s($json.clean_text);
+const wordCountRaw = Number($json.clean_word_count);
+const textWordCount = Number.isFinite(wordCountRaw) && wordCountRaw >= 0
+  ? Math.trunc(wordCountRaw)
+  : (cleanText ? cleanText.split(/\s+/).filter(Boolean).length : 0);
 
 const topicPrimary = s($json.topic_primary);
 const topicSecondary = s($json.topic_secondary);
@@ -47,7 +48,7 @@ lines.push(`🗣️ ${author || 'unknown'}${entryId ? ` (#${entryId})` : ''}`);
 if (title) lines.push(`📰 ${title}`);
 
 // Length
-lines.push(`📏 ${textLen.toLocaleString()} chars`);
+lines.push(`📏 ${textWordCount.toLocaleString()} words`);
 
 // Topics
 if (topicPrimary && topicSecondary) lines.push(`🏷️ ${topicPrimary} → ${topicSecondary}`);

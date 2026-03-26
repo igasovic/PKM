@@ -75,7 +75,8 @@ describe('n8n calendar report helpers', () => {
     });
 
     const row = out[0].json;
-    expect(row.telegram_message).toContain('Today \\(Fri Mar 13\\): no events');
+    expect(row.telegram_message).toContain('📅 Daily Report \\- Fri Mar 13');
+    expect(row.telegram_message).toContain('*Today* \\(Fri Mar 13\\): no events');
     expect(row.telegram_message).toContain('Sat Mar 14');
     expect(row.telegram_message).toContain('🟣 3:00p \\[M\\]\\[MED\\] 3:00p Mila dentist');
     expect(row.telegram_message).not.toMatch(/^Sun Mar 15$/m);
@@ -107,9 +108,9 @@ describe('n8n calendar report helpers', () => {
     });
 
     const row = out[0].json;
-    expect(row.telegram_message).toContain('Family calendar weekly report');
+    expect(row.telegram_message).toContain('📅 Weekly Report \\- Mon Mar 16');
+    expect(row.telegram_message).toContain('*Today* \\(Mon Mar 16\\): no events');
     expect(row.telegram_message).toContain('Tue Mar 17');
-    expect(row.telegram_message).not.toContain('Mon Mar 16\n');
     expect(row.observe_items).toHaveLength(1);
     expect(row.observe_items[0]).toEqual(expect.objectContaining({
       observation_kind: 'weekly_report_seen',

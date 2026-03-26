@@ -13,44 +13,52 @@
 'use strict';
 
 const { getConfig } = require('@igasovic/n8n-blocks/shared/config.js');
-const { mdv2, bold, kv, arrow, joinLines, finalizeMarkdownV2 } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
+const { mdv2, bold, joinLines, finalizeMarkdownV2 } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
-function s(v){ return (v ?? '').toString().trim(); }
+function s(v) { return (v ?? '').toString().trim(); }
 
-const entryId = s($json.entry_id);
+const entryId = s($json.entry_id) || '?';
+const author = s($json.author) || 'unknown';
+const contentType = s($json.content_type) || 'unknown';
 const title = s($json.title);
-const author = s($json.author);
-const url = s($json.url);
-const tp = s($json.topic_primary);
-const ts = s($json.topic_secondary);
-const gist = s($json.gist);
-
-const wantExcerpt = $json.want_excerpt === true;
-
-// From SQL builder
-const excerptShort = s($json.excerpt);
+const url = s($json.url_canonical) || s($json.url);
+const topicPrimary = s($json.topic_primary);
+const topicSecondary = s($json.topic_secondary);
+const summary = s($json.distill_summary) || s($json.gist);
+const whyItMatters = s($json.distill_why_it_matters);
 const excerptLong = s($json.excerpt_long);
-const clean = s($json.clean_text);
+const excerptShort = s($json.excerpt);
+const cleanText = s($json.clean_text);
 
-// Body selection:
-// - default: clean_text if present else short excerpt
-// - with --excerpt: prefer excerpt_long; fallback clean_text; fallback short excerpt
+const cleanWordCount = Number($json.clean_word_count);
+const computedWordCount = cleanText ? cleanText.split(/\s+/).filter(Boolean).length : 0;
+const wordCount = Number.isFinite(cleanWordCount) && cleanWordCount >= 0
+  ? Math.trunc(cleanWordCount)
+  : computedWordCount;
+
 let body = '';
-if (wantExcerpt) body = excerptLong || clean || excerptShort || '(no text)';
-else body = clean || excerptShort || '(no text)';
+if (summary && whyItMatters && excerptLong) {
+  body = `${summary}\n\nWhy it matters: ${whyItMatters}\n\n${excerptLong}`;
+} else if (summary && whyItMatters && excerptShort) {
+  body = `${summary}\n\nWhy it matters: ${whyItMatters}\n\n${excerptShort}`;
+} else {
+  body = cleanText || excerptLong || excerptShort || summary || '(no text)';
+}
 
 const lines = [];
-lines.push(kv('Entry', `#${entryId || '?'}`));
-if (title) lines.push(kv('Title', title));
-if (author) lines.push(kv('Author', author));
-if (tp && ts) lines.push(`${bold('Topic')} ${arrow(tp, ts)}`);
-else if (tp) lines.push(kv('Topic', tp));
-if (url) lines.push(kv('URL', url));
-if (gist) lines.push('', bold('Gist'), mdv2(gist));
-lines.push('', bold('Text'), mdv2(body));
+lines.push(`🗣️ \\[${mdv2(author)}\\] \\(#${mdv2(entryId)}\\) \\- ${mdv2(contentType)}`);
+if (title) lines.push(`📰 ${mdv2(title)}`);
+if (url) lines.push(`🔗 ${mdv2(url)}`);
+lines.push(`📏 ${mdv2(String(wordCount))} words`);
+if (topicPrimary && topicSecondary) {
+  lines.push(`🏷️ ${mdv2(topicPrimary)} → ${mdv2(topicSecondary)}`);
+} else if (topicPrimary) {
+  lines.push(`🏷️ ${mdv2(topicPrimary)}`);
+}
+lines.push(mdv2(body));
 
 let msg = joinLines(lines, { trimTrailing: true });
 

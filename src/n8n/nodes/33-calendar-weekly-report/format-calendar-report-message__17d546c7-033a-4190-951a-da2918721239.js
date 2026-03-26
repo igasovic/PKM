@@ -1,6 +1,6 @@
 'use strict';
 
-const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
+const { mdv2, finalizeMarkdownV2 } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
 
 const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -155,17 +155,14 @@ module.exports = async function run(ctx) {
   });
 
   const lines = [];
+  const todayLabel = dayList.length > 0 ? dateLabel(dayList[0]) : dateLabel(asText(base.report_start_date_local));
   if (reportKind === 'daily') {
-    lines.push('Family calendar daily report');
-    if (dayList.length > 0) {
-      lines.push(`Window: ${dateLabel(dayList[0])} -> ${dateLabel(dayList[dayList.length - 1])}`);
-    }
-    lines.push('');
+    lines.push(`📅 Daily Report - ${todayLabel}`);
 
     let anyEvents = false;
     dayList.forEach((day, index) => {
       const dayEvents = byDay.get(day) || [];
-      const heading = index === 0 ? `Today (${dateLabel(day)})` : dateLabel(day);
+      const heading = index === 0 ? `PKM_TODAY_BOLD (${dateLabel(day)})` : dateLabel(day);
 
       if (!dayEvents.length) {
         if (index === 0) {
@@ -185,19 +182,21 @@ module.exports = async function run(ctx) {
       lines.push('No events found for the daily window.');
     }
   } else {
-    lines.push('Family calendar weekly report');
-    if (dayList.length > 0) {
-      lines.push(`Window: ${dateLabel(dayList[0])} -> ${dateLabel(dayList[dayList.length - 1])}`);
-    }
-    lines.push('');
+    lines.push(`📅 Weekly Report - ${todayLabel}`);
 
     let emittedDays = 0;
     dayList.forEach((day) => {
       const dayEvents = byDay.get(day) || [];
-      if (!dayEvents.length) return;
+      if (!dayEvents.length) {
+        if (emittedDays === 0 && day === dayList[0]) {
+          lines.push(`PKM_TODAY_BOLD (${dateLabel(day)}): no events`);
+          lines.push('');
+        }
+        return;
+      }
 
       emittedDays += 1;
-      lines.push(dateLabel(day));
+      lines.push(day === dayList[0] ? `PKM_TODAY_BOLD (${dateLabel(day)})` : dateLabel(day));
       pushEventLines(lines, dayEvents);
       lines.push('');
     });
@@ -233,7 +232,10 @@ module.exports = async function run(ctx) {
     json: {
       ...base,
       telegram_chat_id: chatId,
-      telegram_message: mdv2Message(cleanLines.join('\n'), { maxLen: 4000 }),
+      telegram_message: finalizeMarkdownV2(
+        mdv2(cleanLines.join('\n')).replaceAll('PKM\\_TODAY\\_BOLD', '*Today*'),
+        { maxLen: 4000 },
+      ),
       observe_items: observeItems,
       events_count: events.length,
       report_kind: reportKind,
