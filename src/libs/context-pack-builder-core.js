@@ -166,8 +166,8 @@ function createContextPackBuilder(deps) {
         lines.push(`url: ${item.url || '-'}`);
         if (markdownV2) {
           const rendered = restContentLine
-            ? `*${firstContentLine}* ${restContentLine}`
-            : `*${firstContentLine}*`;
+            ? `${BOLD_OPEN}${firstContentLine}${BOLD_CLOSE} ${restContentLine}`
+            : `${BOLD_OPEN}${firstContentLine}${BOLD_CLOSE}`;
           lines.push(`content: ${rendered}`);
         } else {
           lines.push(`content: ${firstContentLine}${restContentLine ? ` ${restContentLine}` : ''}`);
@@ -196,8 +196,8 @@ function createContextPackBuilder(deps) {
         lines.push(`  - Keywords: ${keywords}`);
         if (markdownV2) {
           const rendered = restContentLine
-            ? `*${firstContentLine}* ${restContentLine}`
-            : `*${firstContentLine}*`;
+            ? `${BOLD_OPEN}${firstContentLine}${BOLD_CLOSE} ${restContentLine}`
+            : `${BOLD_OPEN}${firstContentLine}${BOLD_CLOSE}`;
           lines.push(`  - Content: ${rendered}`);
         } else {
           lines.push(`  - Content: ${firstContentLine}${restContentLine ? ` ${restContentLine}` : ''}`);
@@ -215,8 +215,8 @@ function createContextPackBuilder(deps) {
     const out = lines.join('\n').trim();
     if (!markdownV2) return out;
     return mdv2Message(out)
-      .replace(/(content: )\\\*([^\n]*)\\\*/g, '$1*$2*')
-      .replace(/(  - Content: )\\\*([^\n]*)\\\*/g, '$1*$2*');
+      .replaceAll(BOLD_OPEN, '*')
+      .replaceAll(BOLD_CLOSE, '*');
   }
 
   return {
@@ -238,3 +238,5 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof globalThis !== 'undefined') {
   globalThis.__pkmContextPackBuilder = defaultApi;
 }
+    const BOLD_OPEN = 'PKMCTXBOLDOPEN';
+    const BOLD_CLOSE = 'PKMCTXBOLDCLOSE';

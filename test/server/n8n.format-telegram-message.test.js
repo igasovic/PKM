@@ -23,7 +23,7 @@ describe('n8n format-telegram-message', () => {
     expect(Array.isArray(out)).toBe(true);
     expect(out).toHaveLength(1);
     const message = out[0].json.telegram_message;
-    expect(message).toContain('🗣️ \\[Igor\\] \\(#797\\) \\- article');
+    expect(message).toContain('🗣️ \\[Igor\\] \\(\\#797\\) \\- article');
     expect(message).toContain('📏 4 words');
     expect(message).toContain('🏷️ Health → Dentist');
     expect(message).not.toContain('📰');

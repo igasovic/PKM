@@ -49,7 +49,7 @@ if (summary && whyItMatters && excerptLong) {
 }
 
 const lines = [];
-lines.push(`🗣️ \\[${mdv2(author)}\\] \\(#${mdv2(entryId)}\\) \\- ${mdv2(contentType)}`);
+lines.push(`🗣️ \\[${mdv2(author)}\\] \\(\\#${mdv2(entryId)}\\) \\- ${mdv2(contentType)}`);
 if (title) lines.push(`📰 ${mdv2(title)}`);
 if (url) lines.push(`🔗 ${mdv2(url)}`);
 lines.push(`📏 ${mdv2(String(wordCount))} words`);
