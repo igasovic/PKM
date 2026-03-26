@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+RED=$'\033[31m'
+RESET=$'\033[0m'
+
+err() {
+  if [[ -t 2 ]]; then
+    printf '%s%s%s\n' "$RED" "$*" "$RESET" >&2
+  else
+    printf '%s\n' "$*" >&2
+  fi
+}
+
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 COMPOSE_FILE="${COMPOSE_FILE:-/home/igasovic/stack/docker-compose.yml}"
 STACK_ROOT="$(cd "$(dirname "$COMPOSE_FILE")" && pwd)"
@@ -9,7 +20,7 @@ BUILD_RUNNERS_IMAGE_SCRIPT="${BUILD_RUNNERS_IMAGE_SCRIPT:-$REPO_DIR/scripts/n8n/
 require_cmd() {
   local cmd="$1"
   if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "Missing required command: $cmd" >&2
+    err "Missing required command: $cmd"
     exit 1
   fi
 }
@@ -17,7 +28,7 @@ require_cmd() {
 require_file() {
   local file="$1"
   if [[ ! -f "$file" ]]; then
-    echo "Missing required file: $file" >&2
+    err "Missing required file: $file"
     exit 1
   fi
 }
@@ -31,7 +42,7 @@ wait_for_n8n_cli() {
     fi
     sleep 2
   done
-  echo "n8n did not become ready in time after restart." >&2
+  err "n8n did not become ready in time after restart."
   exit 1
 }
 

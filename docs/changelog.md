@@ -1,4 +1,26 @@
 # changelog
+## 2026-03-26 — n8n-first ChatGPT integration transition (MCP legacy-disabled)
+
+### What changed
+- Moved active ChatGPT integration path to n8n orchestration:
+  - GPT action -> n8n webhook -> internal backend action routes.
+- Marked MCP endpoint as legacy-disabled:
+  - `POST /mcp` now returns HTTP `410` with `legacy_disabled`.
+- Added internal backend action routes for n8n:
+  - `POST /chatgpt/read`
+  - `POST /chatgpt/wrap-commit`
+  - both require `x-pkm-admin-secret`.
+- Added exactly two new n8n workflows for ChatGPT integration:
+  - `05 ChatGPT Wrap Commit`
+  - `11 ChatGPT Read Router`
+- Added externalized n8n code nodes and package root exports for these workflows.
+- Updated canonical PRD/instruction surfaces to v3 transition docs:
+  - `docs/PRD/MCP-PRD.md`
+  - `docs/PRD/MCP-work-packages.md`
+  - `chatgpt/project_instructions.md`
+- Marked `docs/mcp_api.md` as legacy reference.
+- Updated API and requirements docs to the n8n-first contract.
+
 ## 2026-03-24 — MCP surface on pkm-server (`POST /mcp`) + wrap commit capture flow
 
 ### What changed

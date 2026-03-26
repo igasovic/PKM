@@ -1,0 +1,124 @@
+{
+  "active": true,
+  "connections": {
+    "ChatGPT Wrap Commit Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Validate Commit Payload",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Validate Commit Payload": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM ChatGPT Wrap Commit",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM ChatGPT Wrap Commit": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Compose Commit Response",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "description": null,
+  "isArchived": false,
+  "name": "05 ChatGPT Wrap Commit",
+  "nodes": [
+    {
+      "id": "ea9968d6-e9d6-47c6-a3b3-243b4e216293",
+      "name": "ChatGPT Wrap Commit Webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {},
+        "path": "pkm/chatgpt/wrap-commit"
+      },
+      "position": [
+        -640,
+        -128
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "webhookId": "6b415cd0-0815-494d-a34c-6c09e456444c"
+    },
+    {
+      "id": "18baa58d-2d38-40ed-98aa-6faa721cba76",
+      "name": "Validate Commit Payload",
+      "parameters": {
+        "jsCode": "try{const {wf05ValidateCommitPayload}=require('@igasovic/n8n-blocks');return await wf05ValidateCommitPayload({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:05-chatgpt-wrap-commit/validate-commit-payload__e9d892ff-1e5d-42b7-8940-4d613a2cb3e2.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        -384,
+        -128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "0aca8e99-9dd4-458a-8729-d7a8ab553d0f",
+      "name": "PKM ChatGPT Wrap Commit",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => { const payload = $json.request_payload || {}; return payload; })()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/chatgpt/wrap-commit"
+      },
+      "position": [
+        -128,
+        -128
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "ba2b7e51-23da-4d6e-8998-09d4a344d374",
+      "name": "Compose Commit Response",
+      "parameters": {
+        "jsCode": "try{const {wf05ComposeCommitResponse}=require('@igasovic/n8n-blocks');return await wf05ComposeCommitResponse({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:05-chatgpt-wrap-commit/compose-commit-response__9d5705be-cfee-45fb-9d96-9121079459cf.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        128,
+        -128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}

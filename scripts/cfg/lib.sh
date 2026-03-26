@@ -50,6 +50,17 @@ SUPPORTED_UPDATE_MODES=(
   pull
 )
 
+CFG_RED=$'\033[31m'
+CFG_RESET=$'\033[0m'
+
+cfg_err() {
+  if [[ -t 2 ]]; then
+    printf '%s%s%s\n' "$CFG_RED" "$*" "$CFG_RESET" >&2
+  else
+    printf '%s\n' "$*" >&2
+  fi
+}
+
 print_supported_surfaces() {
   local s
   for s in "${SUPPORTED_SURFACES[@]}"; do
@@ -80,16 +91,16 @@ require_single_surface_arg() {
   shift
 
   if [[ $# -ne 1 ]]; then
-    echo "Usage: $cmd_name <surface>" >&2
-    echo "Supported surfaces:" >&2
+    cfg_err "Usage: $cmd_name <surface>"
+    cfg_err "Supported surfaces:"
     print_supported_surfaces >&2
     return 2
   fi
 
   local surface="$1"
   if ! is_supported_surface "$surface"; then
-    echo "Unknown surface: $surface" >&2
-    echo "Supported surfaces:" >&2
+    cfg_err "Unknown surface: $surface"
+    cfg_err "Supported surfaces:"
     print_supported_surfaces >&2
     return 2
   fi
@@ -728,6 +739,14 @@ check_surface_n8n() {
   if ! py_bin="$(resolve_python_bin)"; then
     mark_check_blocked "n8n check requires python3 or python in PATH."
     progress_fail "python missing"
+    return 0
+  fi
+
+  if [[ -z "${N8N_API_KEY:-}" ]]; then
+    cfg_err "N8N_API_KEY is required for sync_nodes."
+    cfg_err "^ export N8N_API_KEY='<your n8n api key>'"
+    mark_check_blocked "N8N_API_KEY is required for sync_nodes."
+    progress_fail "missing N8N_API_KEY"
     return 0
   fi
 

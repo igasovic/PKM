@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+RED=$'\033[31m'
+RESET=$'\033[0m'
+
+err() {
+  if [[ -t 2 ]]; then
+    printf '%s%s%s\n' "$RED" "$*" "$RESET" >&2
+  else
+    printf '%s\n' "$*" >&2
+  fi
+}
+
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORKFLOWS_DIR="$REPO_DIR/src/n8n/workflows"
 NODES_ROOT_DIR="$REPO_DIR/src/n8n/nodes"
@@ -67,7 +78,7 @@ done
 require_cmd() {
   local cmd="$1"
   if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "Missing required command: $cmd" >&2
+    err "Missing required command: $cmd"
     exit 1
   fi
 }
@@ -75,23 +86,23 @@ require_cmd() {
 require_file() {
   local file="$1"
   if [[ ! -f "$file" ]]; then
-    echo "Missing required file: $file" >&2
+    err "Missing required file: $file"
     exit 1
   fi
 }
 
 if [[ "$MODE" != "pull" && "$MODE" != "push" && "$MODE" != "full" ]]; then
-  echo "Invalid mode: $MODE" >&2
+  err "Invalid mode: $MODE"
   usage
 fi
 
 if [[ "${#WORKFLOW_NAMES[@]}" -gt 0 && "$MODE" == "pull" ]]; then
-  echo "--workflow-name is only valid with --mode push|full" >&2
+  err "--workflow-name is only valid with --mode push|full"
   exit 1
 fi
 
 if [[ "$DRY_RUN" -eq 1 && "$MODE" == "pull" ]]; then
-  echo "--dry-run is only valid with --mode push|full" >&2
+  err "--dry-run is only valid with --mode push|full"
   exit 1
 fi
 
@@ -101,7 +112,7 @@ if [[ -z "$PYTHON_BIN" ]]; then
   elif command -v python >/dev/null 2>&1; then
     PYTHON_BIN="python"
   else
-    echo "Neither 'python3' nor 'python' is available in PATH." >&2
+    err "Neither 'python3' nor 'python' is available in PATH."
     exit 1
   fi
 fi
@@ -124,7 +135,7 @@ require_file "$PACKAGE_MANIFEST"
 require_file "$COMPOSE_FILE"
 
 if ! docker ps --format '{{.Names}}' | grep -qx 'n8n'; then
-  echo "Container 'n8n' is not running." >&2
+  err "Container 'n8n' is not running."
   exit 1
 fi
 
@@ -280,6 +291,12 @@ run_pull() {
 
 run_push() {
   validate_repo_workflows
+
+  if [[ -z "${N8N_API_KEY:-}" ]]; then
+    err "N8N_API_KEY is required for sync_nodes."
+    err "^ export N8N_API_KEY='<your n8n api key>'"
+    exit 1
+  fi
 
   local args=(
     "$PYTHON_BIN" "$REPO_DIR/scripts/n8n/sync_nodes.py"

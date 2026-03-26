@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+RED=$'\033[31m'
+RESET=$'\033[0m'
+
+err() {
+  if [[ -t 2 ]]; then
+    printf '%s%s%s\n' "$RED" "$*" "$RESET" >&2
+  else
+    printf '%s\n' "$*" >&2
+  fi
+}
+
 SMOKE_WORKFLOW_ID="${SMOKE_WORKFLOW_ID:-2DB1S0mq7UQN4U3InXRM0}"
 N8N_CONTAINER_NAME="${N8N_CONTAINER_NAME:-n8n}"
 DOCKER_USER="${DOCKER_USER:-node}"
@@ -23,7 +34,7 @@ EOF
 require_cmd() {
   local bin="$1"
   if ! command -v "$bin" >/dev/null 2>&1; then
-    echo "Missing required command: $bin" >&2
+    err "Missing required command: $bin"
     exit 1
   fi
 }
@@ -42,7 +53,7 @@ run_git_pull() {
       git -C "$REPO_DIR" pull --rebase
       ;;
     *)
-      echo "Unsupported GIT_PULL_MODE: $GIT_PULL_MODE (expected: none|ff-only|rebase)" >&2
+      err "Unsupported GIT_PULL_MODE: $GIT_PULL_MODE (expected: none|ff-only|rebase)"
       exit 1
       ;;
   esac
@@ -57,7 +68,7 @@ wait_for_n8n_cli() {
     fi
     sleep 2
   done
-  echo "n8n CLI did not become ready in time." >&2
+  err "n8n CLI did not become ready in time."
   exit 1
 }
 

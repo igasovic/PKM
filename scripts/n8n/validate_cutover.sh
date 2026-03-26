@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+RED=$'\033[31m'
+RESET=$'\033[0m'
+
+err() {
+  if [[ -t 2 ]]; then
+    printf '%s%s%s\n' "$RED" "$*" "$RESET" >&2
+  else
+    printf '%s\n' "$*" >&2
+  fi
+}
+
 REPO_DIR="${REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 COMPOSE_FILE="${COMPOSE_FILE:-/home/igasovic/stack/docker-compose.yml}"
 N8N_CONTAINER_NAME="${N8N_CONTAINER_NAME:-n8n}"
@@ -47,7 +58,7 @@ log_step() {
 require_cmd() {
   local cmd="$1"
   if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "Missing required command: $cmd" >&2
+    err "Missing required command: $cmd"
     exit 1
   fi
 }
@@ -55,7 +66,7 @@ require_cmd() {
 require_file() {
   local file="$1"
   if [[ ! -f "$file" ]]; then
-    echo "Missing required file: $file" >&2
+    err "Missing required file: $file"
     exit 1
   fi
 }
@@ -65,9 +76,9 @@ assert_eq() {
   local actual="$2"
   local expected="$3"
   if [[ "$actual" != "$expected" ]]; then
-    echo "FAIL: $label" >&2
-    echo "  expected: $expected" >&2
-    echo "  actual:   $actual" >&2
+    err "FAIL: $label"
+    err "  expected: $expected"
+    err "  actual:   $actual"
     exit 1
   fi
   echo "OK: $label = $actual"
@@ -77,7 +88,7 @@ assert_nonempty() {
   local label="$1"
   local actual="$2"
   if [[ -z "$actual" ]]; then
-    echo "FAIL: $label is empty" >&2
+    err "FAIL: $label is empty"
     exit 1
   fi
   echo "OK: $label present"
@@ -86,7 +97,7 @@ assert_nonempty() {
 compose_must_contain() {
   local needle="$1"
   if ! grep -Fq "$needle" "$COMPOSE_FILE"; then
-    echo "FAIL: compose file missing expected line: $needle" >&2
+    err "FAIL: compose file missing expected line: $needle"
     exit 1
   fi
   echo "OK: compose contains $needle"
@@ -116,7 +127,7 @@ wait_for_n8n_cli() {
     fi
     sleep 2
   done
-  echo "FAIL: n8n CLI did not become ready in time" >&2
+  err "FAIL: n8n CLI did not become ready in time"
   exit 1
 }
 
@@ -142,52 +153,52 @@ validate_runner_launcher_config() {
   launcher_config="$(docker exec "$RUNNERS_CONTAINER_NAME" cat "$RUNNERS_LAUNCHER_CONFIG_PATH" 2>/dev/null || true)"
   assert_nonempty "runners launcher config" "$launcher_config"
   if [[ "$launcher_config" != *"NODE_FUNCTION_ALLOW_EXTERNAL"* ]]; then
-    echo "FAIL: runners launcher config missing NODE_FUNCTION_ALLOW_EXTERNAL" >&2
+    err "FAIL: runners launcher config missing NODE_FUNCTION_ALLOW_EXTERNAL"
     exit 1
   fi
   if [[ "$launcher_config" != *'"runner-type": "javascript"'* && "$launcher_config" != *'"runner-type":"javascript"'* ]]; then
-    echo "FAIL: runners launcher config missing javascript runner entry" >&2
+    err "FAIL: runners launcher config missing javascript runner entry"
     exit 1
   fi
   if [[ "$launcher_config" != *'"runner-type": "python"'* && "$launcher_config" != *'"runner-type":"python"'* ]]; then
-    echo "FAIL: runners launcher config missing python runner entry" >&2
+    err "FAIL: runners launcher config missing python runner entry"
     exit 1
   fi
   if [[ "$launcher_config" != *'"workdir": "/home/runner"'* && "$launcher_config" != *'"workdir":"/home/runner"'* && \
         "$launcher_config" != *'"working-directory": "/home/runner"'* && "$launcher_config" != *'"working-directory":"/home/runner"'* ]]; then
-    echo "FAIL: runners launcher config missing /home/runner working directory" >&2
+    err "FAIL: runners launcher config missing /home/runner working directory"
     exit 1
   fi
   if [[ "$launcher_config" != *'/opt/runners/task-runner-javascript/dist/start.js'* ]]; then
-    echo "FAIL: runners launcher config missing javascript launcher args" >&2
+    err "FAIL: runners launcher config missing javascript launcher args"
     exit 1
   fi
   if [[ "$launcher_config" != *'/opt/runners/task-runner-python/.venv/bin/python'* ]]; then
-    echo "FAIL: runners launcher config missing python launcher command" >&2
+    err "FAIL: runners launcher config missing python launcher command"
     exit 1
   fi
   if [[ "$launcher_config" != *"\"health-check-server-port\": \"$EXPECTED_JS_HEALTH_PORT\""* && \
         "$launcher_config" != *"\"health-check-server-port\":\"$EXPECTED_JS_HEALTH_PORT\""* && \
         "$launcher_config" != *"\"health-check-server-port\": $EXPECTED_JS_HEALTH_PORT"* && \
         "$launcher_config" != *"\"health-check-server-port\":$EXPECTED_JS_HEALTH_PORT"* ]]; then
-    echo "FAIL: runners launcher config missing javascript health-check-server-port $EXPECTED_JS_HEALTH_PORT" >&2
+    err "FAIL: runners launcher config missing javascript health-check-server-port $EXPECTED_JS_HEALTH_PORT"
     exit 1
   fi
   if [[ "$launcher_config" != *"\"health-check-server-port\": \"$EXPECTED_PY_HEALTH_PORT\""* && \
         "$launcher_config" != *"\"health-check-server-port\":\"$EXPECTED_PY_HEALTH_PORT\""* && \
         "$launcher_config" != *"\"health-check-server-port\": $EXPECTED_PY_HEALTH_PORT"* && \
         "$launcher_config" != *"\"health-check-server-port\":$EXPECTED_PY_HEALTH_PORT"* ]]; then
-    echo "FAIL: runners launcher config missing python health-check-server-port $EXPECTED_PY_HEALTH_PORT" >&2
+    err "FAIL: runners launcher config missing python health-check-server-port $EXPECTED_PY_HEALTH_PORT"
     exit 1
   fi
   if [[ "$launcher_config" != *"$EXPECTED_ALLOW_EXTERNAL"* ]]; then
-    echo "FAIL: runners launcher config missing expected external allowlist" >&2
-    echo "  expected substring: $EXPECTED_ALLOW_EXTERNAL" >&2
+    err "FAIL: runners launcher config missing expected external allowlist"
+    err "  expected substring: $EXPECTED_ALLOW_EXTERNAL"
     exit 1
   fi
   if [[ "$launcher_config" != *"$EXPECTED_ALLOW_BUILTIN"* ]]; then
-    echo "FAIL: runners launcher config missing expected builtin allowlist" >&2
-    echo "  expected substring: $EXPECTED_ALLOW_BUILTIN" >&2
+    err "FAIL: runners launcher config missing expected builtin allowlist"
+    err "  expected substring: $EXPECTED_ALLOW_BUILTIN"
     exit 1
   fi
   echo "OK: runners launcher config includes expected JS allowlists"
@@ -203,7 +214,7 @@ while [[ $# -gt 0 ]]; do
       usage 0
       ;;
     *)
-      echo "Unknown argument: $1" >&2
+      err "Unknown argument: $1"
       usage 1
       ;;
   esac

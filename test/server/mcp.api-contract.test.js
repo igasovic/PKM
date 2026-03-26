@@ -24,7 +24,7 @@ function request(port, method, path, body, headers = {}) {
   });
 }
 
-describe('mcp API contract', () => {
+describe('chatgpt action API contract', () => {
   let server = null;
   let port = null;
   let envBackup;
@@ -80,7 +80,7 @@ describe('mcp API contract', () => {
     return { dbMock };
   }
 
-  test('POST /mcp tools/list exposes only approved tools', async () => {
+  test('POST /mcp returns legacy disabled response', async () => {
     await startServerWithMocks();
     if (listenDenied) return;
 
@@ -94,113 +94,33 @@ describe('mcp API contract', () => {
       },
     );
 
-    expect(res.status).toBe(200);
-    const parsed = JSON.parse(res.body);
-    expect(parsed.type).toBe('tools/list');
-    expect(parsed.tools.map((tool) => tool.name)).toEqual([
-      'pkm.last',
-      'pkm.find',
-      'pkm.continue',
-      'pkm.pull',
-      'pkm.pull_working_memory',
-      'pkm.wrap_commit',
-    ]);
-  });
-
-  test('POST /mcp supports JSON-RPC tools/call', async () => {
-    const readLast = jest.fn(async () => ({
-      rows: [
-        { is_meta: true, query_text: 'ai', days: 90, limit: 10, hits: 1 },
-        {
-          is_meta: false,
-          entry_id: 90,
-          content_type: 'newsletter',
-          author: 'Author',
-          title: 'Title',
-          created_at: '2026-03-24T00:00:00.000Z',
-          topic_primary: 'ai',
-          topic_secondary: 'coding',
-          keywords: ['ai', 'codex'],
-          gist: 'G',
-          distill_summary: 'S',
-          distill_why_it_matters: 'W',
-          excerpt: 'E',
-          url: 'https://example.com',
-          snippet: 'SN',
-        },
-      ],
-    }));
-    await startServerWithMocks({ readLast });
-    if (listenDenied) return;
-
-    const res = await request(
-      port,
-      'POST',
-      '/mcp',
-      JSON.stringify({
-        jsonrpc: '2.0',
-        id: 'r1',
-        method: 'tools/call',
-        params: {
-          name: 'pkm.last',
-          arguments: { q: 'ai' },
-        },
-      }),
-      {
-        'Content-Type': 'application/json',
-      },
-    );
-
-    expect(res.status).toBe(200);
-    const parsed = JSON.parse(res.body);
-    expect(parsed.jsonrpc).toBe('2.0');
-    expect(parsed.id).toBe('r1');
-    expect(parsed.result.type).toBe('tools/call');
-    expect(parsed.result.name).toBe('pkm.last');
-    expect(parsed.result.outcome).toBe('success');
-    expect(parsed.result.result.meta.method).toBe('last');
-    expect(parsed.result.result.rows).toHaveLength(1);
-    expect(readLast).toHaveBeenCalledWith({
-      q: 'ai',
-      days: undefined,
-      limit: undefined,
+    expect(res.status).toBe(410);
+    expect(JSON.parse(res.body)).toEqual({
+      error: 'legacy_disabled',
+      message: '/mcp is legacy and disabled for ChatGPT integration; use GPT actions routed through n8n webhooks',
     });
   });
 
-  test('POST /mcp tools/call unknown tool fails visibly', async () => {
+  test('POST /chatgpt/read requires admin secret', async () => {
     await startServerWithMocks();
     if (listenDenied) return;
-    const mcpService = require('../../src/server/mcp/service.js');
-    mcpService.resetMetrics();
 
     const res = await request(
       port,
       'POST',
-      '/mcp',
-      JSON.stringify({
-        action: 'tools/call',
-        params: {
-          name: 'pkm.delete',
-          arguments: {},
-        },
-      }),
-      {
-        'Content-Type': 'application/json',
-      },
+      '/chatgpt/read',
+      JSON.stringify({ method: 'pull_working_memory', topic: 'parenting' }),
+      { 'Content-Type': 'application/json' },
     );
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(403);
     expect(JSON.parse(res.body)).toEqual({
-      error: 'not_found',
-      message: 'unknown MCP tool: pkm.delete',
-      error_code: 'tool_not_found',
+      error: 'forbidden',
+      message: 'forbidden',
     });
-    const metrics = mcpService.getMetrics();
-    expect(metrics.visible_failure_count).toBe(1);
-    expect(metrics.silent_failure_count).toBe(0);
   });
 
-  test('POST /mcp pull_working_memory returns no_result on topic miss', async () => {
+  test('POST /chatgpt/read pull_working_memory returns no_result on topic miss', async () => {
     const readWorkingMemory = jest.fn(async () => ({ rows: [] }));
     await startServerWithMocks({ readWorkingMemory });
     if (listenDenied) return;
@@ -208,49 +128,94 @@ describe('mcp API contract', () => {
     const res = await request(
       port,
       'POST',
-      '/mcp',
+      '/chatgpt/read',
       JSON.stringify({
-        action: 'tools/call',
-        params: {
-          name: 'pkm.pull_working_memory',
-          arguments: { topic: 'Parenting overload' },
-        },
+        method: 'pull_working_memory',
+        topic: 'Parenting overload',
       }),
       {
         'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
       },
     );
 
     expect(res.status).toBe(200);
     const parsed = JSON.parse(res.body);
+    expect(parsed.action).toBe('chatgpt_read');
+    expect(parsed.method).toBe('pull_working_memory');
     expect(parsed.outcome).toBe('no_result');
     expect(parsed.result.meta.method).toBe('pull_working_memory');
     expect(parsed.result.meta.found).toBe(false);
     expect(parsed.result.row).toBeNull();
-    expect(readWorkingMemory).toHaveBeenCalledWith({
-      topic_key: 'parenting-overload',
-    });
+    expect(readWorkingMemory).toHaveBeenCalledWith({ topic_key: 'parenting-overload' });
   });
 
-  test('POST /mcp wrap_commit validates required session_id', async () => {
+  test('POST /chatgpt/read routes semantic detail_lookup intent to find', async () => {
+    const readFind = jest.fn(async () => ({
+      rows: [
+        { is_meta: true, query_text: 'burnout', days: 30, limit: 5, hits: 1 },
+        {
+          is_meta: false,
+          entry_id: 90,
+          content_type: 'note',
+          author: 'ChatGPT',
+          title: 'Burnout note',
+          created_at: '2026-03-24T00:00:00.000Z',
+          topic_primary: 'parenting',
+          topic_secondary: 'overload',
+          keywords: ['burnout'],
+          gist: 'G',
+          distill_summary: 'S',
+          distill_why_it_matters: 'W',
+          excerpt: 'E',
+          url: null,
+          snippet: 'SN',
+        },
+      ],
+    }));
+    await startServerWithMocks({ readFind });
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/chatgpt/read',
+      JSON.stringify({
+        read_intent: 'detail_lookup',
+        query_text: 'burnout',
+        days: 30,
+        limit: 5,
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.action).toBe('chatgpt_read');
+    expect(parsed.method).toBe('find');
+    expect(parsed.outcome).toBe('success');
+    expect(parsed.result.meta.method).toBe('find');
+    expect(parsed.result.rows).toHaveLength(1);
+    expect(readFind).toHaveBeenCalledWith({ q: 'burnout', days: 30, limit: 5 });
+  });
+
+  test('POST /chatgpt/wrap-commit validates required session_id', async () => {
     await startServerWithMocks();
     if (listenDenied) return;
 
     const res = await request(
       port,
       'POST',
-      '/mcp',
+      '/chatgpt/wrap-commit',
       JSON.stringify({
-        action: 'tools/call',
-        params: {
-          name: 'pkm.wrap_commit',
-          arguments: {
-            resolved_topic_primary: 'parenting',
-          },
-        },
+        resolved_topic_primary: 'parenting',
       }),
       {
         'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
       },
     );
 
@@ -263,7 +228,7 @@ describe('mcp API contract', () => {
     });
   });
 
-  test('POST /mcp wrap_commit writes session note and working memory in one call', async () => {
+  test('POST /chatgpt/wrap-commit writes session note and working memory in one call', async () => {
     const insertCalls = [];
     const insert = jest.fn(async (payload) => {
       insertCalls.push(payload);
@@ -309,40 +274,34 @@ describe('mcp API contract', () => {
     const res = await request(
       port,
       'POST',
-      '/mcp',
+      '/chatgpt/wrap-commit',
       JSON.stringify({
-        action: 'tools/call',
-        params: {
-          name: 'pkm.wrap_commit',
-          arguments: {
-            session_id: 'sess-123',
-            resolved_topic_primary: 'parenting',
-            resolved_topic_secondary: 'overload management',
-            topic_secondary_confidence: 0.92,
-            chat_title: 'Parenting reset',
-            session_summary: 'We aligned on evening routines and limits.',
-            context_used: ['Entry 90'],
-            key_insights: ['Consistency beats intensity.'],
-            decisions: ['Use one bedtime sequence.'],
-            tensions: ['Travel disrupts schedule.'],
-            open_questions: ['How strict should weekends be?'],
-            next_steps: ['Try for 2 weeks'],
-            working_memory_updates: ['Evening routine is anchor habit.'],
-            why_it_matters: ['Reduces decision fatigue.'],
-            gist: 'Parenting routine reset plan.',
-            source_entry_refs: [90, 85],
-          },
-        },
+        session_id: 'sess-123',
+        resolved_topic_primary: 'parenting',
+        resolved_topic_secondary: 'overload management',
+        topic_secondary_confidence: 0.92,
+        chat_title: 'Parenting reset',
+        session_summary: 'We aligned on evening routines and limits.',
+        context_used: ['Entry 90'],
+        key_insights: ['Consistency beats intensity.'],
+        decisions: ['Use one bedtime sequence.'],
+        tensions: ['Travel disrupts schedule.'],
+        open_questions: ['How strict should weekends be?'],
+        next_steps: ['Try for 2 weeks'],
+        working_memory_updates: ['Evening routine is anchor habit.'],
+        why_it_matters: ['Reduces decision fatigue.'],
+        gist: 'Parenting routine reset plan.',
+        source_entry_refs: [90, 85],
       }),
       {
         'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
       },
     );
 
     expect(res.status).toBe(200);
     const parsed = JSON.parse(res.body);
-    expect(parsed.type).toBe('tools/call');
-    expect(parsed.name).toBe('pkm.wrap_commit');
+    expect(parsed.action).toBe('chatgpt_wrap_commit');
     expect(parsed.outcome).toBe('success');
     expect(parsed.result.session_note.action).toBe('inserted');
     expect(parsed.result.working_memory.action).toBe('updated');
@@ -358,28 +317,5 @@ describe('mcp API contract', () => {
     expect(insertCalls[1].input.idempotency_policy_key).toBe('chatgpt_working_memory_v1');
     expect(insertCalls[1].input.enrichment_status).toBe('completed');
     expect(insertCalls[1].input.distill_status).toBe('completed');
-  });
-
-  test('POST /mcp streams SSE when requested', async () => {
-    await startServerWithMocks();
-    if (listenDenied) return;
-
-    const res = await request(
-      port,
-      'POST',
-      '/mcp',
-      JSON.stringify({ action: 'tools/list' }),
-      {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-      },
-    );
-
-    expect(res.status).toBe(200);
-    expect(res.headers['content-type']).toContain('text/event-stream');
-    expect(res.body).toContain('event: meta');
-    expect(res.body).toContain('event: result');
-    expect(res.body).toContain('event: done');
-    expect(res.body).toContain('"type":"tools/list"');
   });
 });

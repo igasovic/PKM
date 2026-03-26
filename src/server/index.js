@@ -44,7 +44,10 @@ const {
   createBatchStatusService,
 } = require('./batch-status-service.js');
 const { importEmailMbox } = require('./email-importer.js');
-const { processMcpRequest } = require('./mcp/protocol.js');
+const {
+  runChatgptReadAction,
+  runChatgptWrapCommitAction,
+} = require('./chatgpt-actions.js');
 const {
   getBraintrustLogger,
   logError,
@@ -80,20 +83,6 @@ function json(res, status, payload) {
 
 function notFound(res) {
   json(res, 404, { error: 'not_found' });
-}
-
-function openSse(res) {
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream; charset=utf-8',
-    'Cache-Control': 'no-cache, no-transform',
-    Connection: 'keep-alive',
-  });
-}
-
-function writeSseEvent(res, eventName, payload) {
-  const body = JSON.stringify(payload === undefined ? {} : payload);
-  res.write(`event: ${eventName}\n`);
-  res.write(`data: ${body}\n\n`);
 }
 
 function readAdminSecret(req) {
@@ -198,65 +187,46 @@ async function handleRequest(req, res) {
   }
 
   if (method === 'POST' && url.pathname === '/mcp') {
+    return json(res, 410, {
+      error: 'legacy_disabled',
+      message: '/mcp is legacy and disabled for ChatGPT integration; use GPT actions routed through n8n webhooks',
+    });
+  }
+
+  if (method === 'POST' && url.pathname === '/chatgpt/read') {
     try {
+      requireAdminSecret(req);
       const raw = await readBody(req);
       const body = parseJsonBody(raw);
-      const accept = String(req.headers.accept || '').toLowerCase();
-      const transport = String((body && body.transport) || '').toLowerCase();
-      const wantsSse = accept.includes('text/event-stream') || transport === 'sse';
-      const methodName = body && typeof body.method === 'string'
-        ? body.method
-        : (body && typeof body.action === 'string' ? body.action : (body && body.tool ? 'tools/call' : null));
-      const callName = body && typeof body.tool === 'string'
-        ? body.tool
-        : (body && body.params && typeof body.params === 'object' ? body.params.name : null);
-      const args = body && body.params && typeof body.params === 'object'
-        ? (body.params.arguments || {})
-        : (body && body.input && typeof body.input === 'object' ? body.input : {});
-      const runIdHint = (body && body.run_id) || (args && args.run_id) || null;
-      if (runIdHint) {
-        setRunIdFromBody(runIdHint);
-      } else if (body && Object.prototype.hasOwnProperty.call(body, 'id')) {
-        setRunIdFromBody(`mcp-${String(body.id).slice(0, 48)}`);
-      }
-
+      bindRunIdFromBody(body);
+      const requestId = asText(body.request_id) || null;
+      const runId = asText(body.run_id) || null;
       const result = await logger.step(
-        'api.mcp',
-        async () => processMcpRequest(body, {
-          request_id: body && Object.prototype.hasOwnProperty.call(body, 'id')
-            ? String(body.id)
-            : null,
-          run_id: runIdHint || null,
-          logger: logger.child({ pipeline: 'mcp' }),
+        'api.chatgpt.read',
+        async () => runChatgptReadAction(body, {
+          request_id: requestId,
+          run_id: runId,
+          logger: logger.child({ pipeline: 'chatgpt_actions' }),
         }),
         {
           input: {
-            method: methodName,
-            tool: callName,
-            has_args: !!(args && typeof args === 'object' && Object.keys(args).length),
+            method: asText(body.method || body.read_method) || null,
+            intent: asText(body.intent || body.read_intent) || null,
+            has_topic: !!asText(body.topic || body.topic_primary || body.resolved_topic_primary),
+            has_q: !!asText(body.q || body.query || body.query_text),
+            has_entry_id: body.entry_id !== undefined && body.entry_id !== null && body.entry_id !== '',
           },
           output: (out) => ({
-            has_error: !!(out && out.error),
-            type: out && out.result && out.result.type ? out.result.type : (out && out.type ? out.type : null),
+            action: out && out.action ? out.action : null,
+            method: out && out.method ? out.method : null,
+            outcome: out && out.outcome ? out.outcome : null,
           }),
           meta: { route: url.pathname },
-        }
+        },
       );
-      if (wantsSse) {
-        openSse(res);
-        writeSseEvent(res, 'meta', {
-          route: '/mcp',
-          method: methodName,
-        });
-        writeSseEvent(res, 'result', result);
-        writeSseEvent(res, 'done', { ok: true });
-        return res.end();
-      }
       return json(res, 200, result);
     } catch (err) {
       logError(err, req);
-      const accept = String(req.headers.accept || '').toLowerCase();
-      const wantsSse = accept.includes('text/event-stream');
       const statusCode = Number(err && err.statusCode);
       const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
       const errorCode = status === 403
@@ -269,12 +239,54 @@ async function handleRequest(req, res) {
       const payload = { error: errorCode, message: err.message };
       if (err && err.code) payload.error_code = err.code;
       if (err && err.field) payload.field = err.field;
-      if (wantsSse) {
-        openSse(res);
-        writeSseEvent(res, 'error', payload);
-        writeSseEvent(res, 'done', { ok: false });
-        return res.end();
-      }
+      return json(res, status, payload);
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/chatgpt/wrap-commit') {
+    try {
+      requireAdminSecret(req);
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const requestId = asText(body.request_id) || null;
+      const runId = asText(body.run_id) || null;
+      const result = await logger.step(
+        'api.chatgpt.wrap_commit',
+        async () => runChatgptWrapCommitAction(body, {
+          request_id: requestId,
+          run_id: runId,
+          logger: logger.child({ pipeline: 'chatgpt_actions' }),
+        }),
+        {
+          input: {
+            has_session_id: !!asText(body.session_id),
+            topic_primary: asText(body.resolved_topic_primary) || null,
+          },
+          output: (out) => ({
+            action: out && out.action ? out.action : null,
+            outcome: out && out.outcome ? out.outcome : null,
+            has_session_note: !!(out && out.result && out.result.session_note),
+            has_working_memory: !!(out && out.result && out.result.working_memory),
+          }),
+          meta: { route: url.pathname },
+        },
+      );
+      return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      const errorCode = status === 403
+        ? 'forbidden'
+        : status === 404
+          ? 'not_found'
+          : status >= 500
+            ? 'internal_error'
+            : 'bad_request';
+      const payload = { error: errorCode, message: err.message };
+      if (err && err.code) payload.error_code = err.code;
+      if (err && err.field) payload.field = err.field;
       return json(res, status, payload);
     }
   }

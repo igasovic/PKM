@@ -38,21 +38,94 @@ Response:
 { "name": "pkm-backend", "version": "0.1.0" }
 ```
 
-## MCP
+## ChatGPT Integration
 
 ### `POST /mcp`
-ChatGPT-facing MCP transport endpoint.
+Legacy MCP endpoint.
 
 Boundary rules:
-- `/mcp` is intentionally separate from generic `/db/*` API routes.
-- MCP tools are namespaced under `pkm.*` and restricted to the approved MCP toolset.
-- Generic backend CRUD/admin routes are not exposed through MCP.
+- `/mcp` is no longer the supported ChatGPT integration path.
+- ChatGPT integration now runs through GPT actions routed to n8n webhooks.
 
-Auth:
-- v1 testing mode: no auth required on `/mcp`.
+Current response:
+- HTTP `410`
+- payload:
+```json
+{
+  "error": "legacy_disabled",
+  "message": "/mcp is legacy and disabled for ChatGPT integration; use GPT actions routed through n8n webhooks"
+}
+```
 
-Contract location:
-- MCP request/response/tool contracts are documented in `docs/mcp_api.md`.
+### `POST /chatgpt/read`
+Internal backend action route used by n8n `11 ChatGPT Read Router`.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Body:
+```json
+{
+  "method": "pull_working_memory",
+  "topic": "parenting"
+}
+```
+
+Supported methods:
+- `continue`
+- `last`
+- `find`
+- `pull`
+- `pull_working_memory`
+
+Response:
+```json
+{
+  "action": "chatgpt_read",
+  "method": "pull_working_memory",
+  "outcome": "success",
+  "result": {
+    "meta": {
+      "method": "pull_working_memory",
+      "topic": "parenting",
+      "topic_key": "parenting",
+      "found": true
+    },
+    "row": {}
+  }
+}
+```
+
+### `POST /chatgpt/wrap-commit`
+Internal backend action route used by n8n `05 ChatGPT Wrap Commit`.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Body:
+- same structured wrap payload contract previously used by `pkm.wrap_commit`.
+- required:
+  - `session_id`
+  - `resolved_topic_primary`
+
+Response:
+```json
+{
+  "action": "chatgpt_wrap_commit",
+  "outcome": "success",
+  "result": {
+    "meta": {
+      "method": "wrap_commit",
+      "session_id": "sess-123",
+      "topic_primary": "parenting",
+      "topic_key": "parenting"
+    },
+    "session_note": {},
+    "working_memory": {},
+    "artifacts": {}
+  }
+}
+```
 
 ## Config
 

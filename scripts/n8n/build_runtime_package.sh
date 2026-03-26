@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+RED=$'\033[31m'
+RESET=$'\033[0m'
+
+err() {
+  if [[ -t 2 ]]; then
+    printf '%s%s%s\n' "$RED" "$*" "$RESET" >&2
+  else
+    printf '%s\n' "$*" >&2
+  fi
+}
+
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BUILD_PACKAGE_SCRIPT="${BUILD_PACKAGE_SCRIPT:-$REPO_DIR/scripts/n8n/build_runtime_package.js}"
 NODE_BIN="${NODE_BIN:-}"
@@ -12,7 +23,7 @@ resolve_node_bin() {
       printf '%s\n' "$NODE_BIN"
       return 0
     fi
-    echo "Missing required command: $NODE_BIN" >&2
+    err "Missing required command: $NODE_BIN"
     exit 1
   fi
 
@@ -32,7 +43,7 @@ resolve_node_bin() {
 require_file() {
   local file="$1"
   if [[ ! -f "$file" ]]; then
-    echo "Missing required file: $file" >&2
+    err "Missing required file: $file"
     exit 1
   fi
 }
@@ -44,7 +55,7 @@ if node_bin="$(resolve_node_bin)"; then
 fi
 
 if ! command -v docker >/dev/null 2>&1; then
-  echo "Missing required command: node, nodejs, or docker" >&2
+  err "Missing required command: node, nodejs, or docker"
   exit 1
 fi
 

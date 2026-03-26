@@ -1,0 +1,124 @@
+{
+  "active": true,
+  "connections": {
+    "ChatGPT Read Router Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Route Read Request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Route Read Request": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM ChatGPT Read",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM ChatGPT Read": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Compose Read Response",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "description": null,
+  "isArchived": false,
+  "name": "11 ChatGPT Read Router",
+  "nodes": [
+    {
+      "id": "c13a3b08-020b-4995-9c32-aab5deb9c24f",
+      "name": "ChatGPT Read Router Webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {},
+        "path": "pkm/chatgpt/read"
+      },
+      "position": [
+        -640,
+        128
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "webhookId": "66210dba-8c80-476d-ad12-83dc2d87323e"
+    },
+    {
+      "id": "283ed177-aa90-4c34-b432-31b7d3048a49",
+      "name": "Route Read Request",
+      "parameters": {
+        "jsCode": "try{const {wf11RouteReadRequest}=require('@igasovic/n8n-blocks');return await wf11RouteReadRequest({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/route-read-request__4d433aea-a923-4b5e-8d34-a33c70d6d6bd.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        -384,
+        128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "8ad4a739-f8b3-4ecb-9c84-096e5318f56b",
+      "name": "PKM ChatGPT Read",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => { const payload = $json.backend_payload || {}; return payload; })()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/chatgpt/read"
+      },
+      "position": [
+        -128,
+        128
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "793f72b2-4263-4bb1-970d-5aa4ad6daaf6",
+      "name": "Compose Read Response",
+      "parameters": {
+        "jsCode": "try{const {wf11ComposeReadResponse}=require('@igasovic/n8n-blocks');return await wf11ComposeReadResponse({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/compose-read-response__fc1a839b-3ad3-4bcd-a057-34a2ce79a9f7.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        128,
+        128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}

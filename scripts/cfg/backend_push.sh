@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+RED=$'\033[31m'
+RESET=$'\033[0m'
+
+err() {
+  if [[ -t 2 ]]; then
+    printf '%s%s%s\n' "$RED" "$*" "$RESET" >&2
+  else
+    printf '%s\n' "$*" >&2
+  fi
+}
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${CFG_REPO_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 STACK_ROOT="${CFG_STACK_ROOT:-/home/igasovic/stack}"
@@ -18,7 +29,7 @@ log() {
 require_cmd() {
   local bin="$1"
   if ! command -v "$bin" >/dev/null 2>&1; then
-    echo "Missing required command: $bin" >&2
+    err "Missing required command: $bin"
     exit 1
   fi
 }
@@ -37,7 +48,7 @@ run_git_pull() {
       git -C "$REPO_ROOT" pull --rebase
       ;;
     *)
-      echo "Unsupported CFG_BACKEND_GIT_PULL_MODE: $GIT_PULL_MODE (expected: ff-only|rebase|none)" >&2
+      err "Unsupported CFG_BACKEND_GIT_PULL_MODE: $GIT_PULL_MODE (expected: ff-only|rebase|none)"
       exit 1
       ;;
   esac
@@ -55,7 +66,7 @@ wait_ready() {
   fi
 
   if ! [[ "$READY_ATTEMPTS" =~ ^[0-9]+$ ]] || ! [[ "$READY_SLEEP_SECONDS" =~ ^[0-9]+$ ]]; then
-    echo "CFG_BACKEND_READY_ATTEMPTS and CFG_BACKEND_READY_SLEEP_SECONDS must be integers." >&2
+    err "CFG_BACKEND_READY_ATTEMPTS and CFG_BACKEND_READY_SLEEP_SECONDS must be integers."
     exit 1
   fi
 
@@ -71,7 +82,7 @@ wait_ready() {
     sleep "$READY_SLEEP_SECONDS"
   done
 
-  echo "Backend readiness check failed after $READY_ATTEMPTS attempts: $READY_URL" >&2
+  err "Backend readiness check failed after $READY_ATTEMPTS attempts: $READY_URL"
   return 1
 }
 
