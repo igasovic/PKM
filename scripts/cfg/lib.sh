@@ -185,6 +185,25 @@ add_check_detail_lines() {
   done <<<"$text"
 }
 
+lookup_repo_workflow_file_by_name() {
+  local workflow_name="${1:-}"
+  [[ -n "$workflow_name" ]] || return 1
+  [[ -d "$CFG_REPO_N8N_WORKFLOWS_DIR" ]] || return 1
+
+  local wf_file wf_name
+  shopt -s nullglob
+  for wf_file in "$CFG_REPO_N8N_WORKFLOWS_DIR"/*.json; do
+    wf_name="$(jq -r '.name // empty' "$wf_file" 2>/dev/null || true)"
+    if [[ "$wf_name" == "$workflow_name" ]]; then
+      printf '%s\n' "$wf_file"
+      shopt -u nullglob
+      return 0
+    fi
+  done
+  shopt -u nullglob
+  return 1
+}
+
 array_contains() {
   local needle="$1"
   shift
@@ -1172,6 +1191,32 @@ update_surface_n8n() {
 
   mark_update_blocked "n8n $mode sync failed"
   add_update_detail_lines "$(preview_lines "$out" 200)" "  "
+  if [[ "$mode" == "push" ]]; then
+    local missing_names
+    missing_names="$(
+      printf '%s\n' "$out" | awk '
+        /^Workflows missing in n8n:/ { in_block=1; next }
+        /^Workflows failed:/ { in_block=0 }
+        in_block && /^- / {
+          item=$0
+          sub(/^- /, "", item)
+          if (item != "none") print item
+        }
+      '
+    )"
+    if [[ -n "$missing_names" ]]; then
+      add_update_detail "manual action required: import missing workflows via n8n UI (Workflows -> Import from File)"
+      local wf_name wf_file
+      while IFS= read -r wf_name; do
+        [[ -n "$wf_name" ]] || continue
+        if wf_file="$(lookup_repo_workflow_file_by_name "$wf_name")"; then
+          add_update_detail "  - import '$wf_name' from $wf_file"
+        else
+          add_update_detail "  - import '$wf_name' (repo file not found by name; check src/n8n/workflows)"
+        fi
+      done <<<"$missing_names"
+    fi
+  fi
   progress_fail "sync failed"
 }
 
