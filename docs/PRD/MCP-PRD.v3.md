@@ -70,7 +70,8 @@ Target user loop after the transition:
    - n8n exposes only purpose-built read/write action contracts.
 
 3. **Routing lives in n8n.**
-   - If ChatGPT asks for a read, n8n decides whether to call `last`, `find`, `continue`, `pull`, or `pull_working_memory` backend logic.
+   - If ChatGPT asks for a read, n8n decides whether to call `last`, `find`, `continue`, or `pull` backend logic.
+   - `pull_working_memory` remains a future extension and is not part of current WF11 v1 testing scope.
    - ChatGPT should not be responsible for low-level routing once the action contract exists.
 
 4. **DB layer owns schema routing.**
@@ -261,8 +262,7 @@ Only two user-facing workflows are defined here.
 1. User starts or shifts to a topic.
 2. ChatGPT calls the read action.
 3. n8n workflow `11 ChatGPT Read Router` routes to:
-   - `pull_working_memory` first when appropriate,
-   - then `continue`, `last`, `find`, or `pull` based on request semantics.
+   - `continue`, `last`, `find`, or `pull` based on request semantics.
 4. n8n returns normalized JSON.
 5. ChatGPT uses the returned PKM context in the conversation.
 6. If read fails, ChatGPT stops and reports the failure.
@@ -278,25 +278,22 @@ ChatGPT should be best at:
 
 ### 10.2 Read methods supported internally
 
-The read router must be able to reach these backend methods:
+The read router must be able to reach these backend methods in v1:
 - `last`
 - `find`
 - `continue`
 - `pull`
-- `pull_working_memory`
 
 ### 10.3 Routing behavior
 
-Default topic-first behavior:
-- prefer `pull_working_memory(topic)` first when topic is clear,
-- then choose among `continue`, `last`, `find`, `pull`.
+Default v1 behavior:
+- choose among `continue`, `last`, `find`, `pull`.
 
 Routing heuristics:
 - `continue`: continue an active thinking thread on a topic with the most relevant prior context,
 - `last`: find the last/best relevant instances of a vaguely remembered idea when keywords are unclear,
 - `find`: locate a specific detail or phrase,
-- `pull`: deterministic give-me-the-source path,
-- `pull_working_memory`: retrieve topic working memory without summarization.
+- `pull`: deterministic give-me-the-source path.
 
 ### 10.4 Read response contract
 
@@ -320,8 +317,7 @@ Default behavior should aim for:
 
 Implications:
 - browse/search methods return compact rows,
-- `pull` is the long-context method,
-- `pull_working_memory` returns canonical working-memory text without summarization.
+- `pull` is the long-context method.
 
 ## 11. Working memory artifact
 
@@ -650,10 +646,8 @@ At minimum, run scripted evals for:
 6. same conversation second wrap after additional discussion,
 7. new conversation on same topic,
 8. topic shift in same conversation,
-9. `pull_working_memory` success on valid topic,
-10. `pull_working_memory` miss / no-result path,
-11. routed `last` / `find` / `continue` success,
-12. routed `pull` success with long-context result,
+9. routed `last` / `find` / `continue` success,
+10. routed `pull` success with long-context result,
 13. backend transport/tool failure on read,
 14. backend transport/tool failure on write.
 

@@ -57,8 +57,17 @@ Current response:
 }
 ```
 
-### `POST /chatgpt/read`
-Internal backend action route used by n8n `11 ChatGPT Read Router`.
+### Read Path Used By ChatGPT n8n Workflow
+n8n `11 ChatGPT Read Router` performs semantic routing and calls existing read endpoints directly:
+- `POST /db/read/pull`
+- `POST /db/read/continue`
+- `POST /db/read/last`
+- `POST /db/read/find`
+
+The workflow then builds the context pack in n8n and returns that response to ChatGPT.
+
+### `POST /chatgpt/working_memory`
+Internal backend action route for topic-keyed working-memory retrieval.
 
 Headers:
 - `x-pkm-admin-secret: <secret>` (required)
@@ -66,17 +75,9 @@ Headers:
 Body:
 ```json
 {
-  "method": "pull_working_memory",
   "topic": "parenting"
 }
 ```
-
-Supported methods:
-- `continue`
-- `last`
-- `find`
-- `pull`
-- `pull_working_memory`
 
 Response:
 ```json

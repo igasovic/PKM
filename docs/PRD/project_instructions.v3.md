@@ -18,8 +18,7 @@ When a topic is clear:
 3. Continue using PKM reads during the conversation when helpful.
 
 Default retrieval intent:
-- `pull_working_memory(topic)` first
-- then one of:
+- one of:
   - `continue` for active thinking threads
   - `last` for vague remembered ideas
   - `find` for specific details or phrases

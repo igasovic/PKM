@@ -109,7 +109,6 @@ Automate PKM retrieval through one n8n workflow that routes to the correct inter
 ### Tasks
 - define one public read action schema that supports topic-first retrieval
 - implement routing in n8n for:
-  - `pull_working_memory`
   - `continue`
   - `last`
   - `find`
@@ -121,8 +120,6 @@ Automate PKM retrieval through one n8n workflow that routes to the correct inter
 - log routed method, success, no-result, and failure outcomes
 
 ### Required tests
-- `pull_working_memory` success
-- `pull_working_memory` no-result
 - `continue` success
 - `last` success
 - `find` success

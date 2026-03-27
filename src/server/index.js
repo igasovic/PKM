@@ -45,7 +45,7 @@ const {
 } = require('./batch-status-service.js');
 const { importEmailMbox } = require('./email-importer.js');
 const {
-  runChatgptReadAction,
+  runChatgptWorkingMemoryAction,
   runChatgptWrapCommitAction,
 } = require('./chatgpt-actions.js');
 const {
@@ -193,7 +193,10 @@ async function handleRequest(req, res) {
     });
   }
 
-  if (method === 'POST' && url.pathname === '/chatgpt/read') {
+  if (
+    method === 'POST'
+    && (url.pathname === '/chatgpt/working_memory' || url.pathname === '/chatgpt/working_memory/')
+  ) {
     try {
       requireAdminSecret(req);
       const raw = await readBody(req);
@@ -202,19 +205,15 @@ async function handleRequest(req, res) {
       const requestId = asText(body.request_id) || null;
       const runId = asText(body.run_id) || null;
       const result = await logger.step(
-        'api.chatgpt.read',
-        async () => runChatgptReadAction(body, {
+        'api.chatgpt.working_memory',
+        async () => runChatgptWorkingMemoryAction(body, {
           request_id: requestId,
           run_id: runId,
           logger: logger.child({ pipeline: 'chatgpt_actions' }),
         }),
         {
           input: {
-            method: asText(body.method || body.read_method) || null,
-            intent: asText(body.intent || body.read_intent) || null,
             has_topic: !!asText(body.topic || body.topic_primary || body.resolved_topic_primary),
-            has_q: !!asText(body.q || body.query || body.query_text),
-            has_entry_id: body.entry_id !== undefined && body.entry_id !== null && body.entry_id !== '',
           },
           output: (out) => ({
             action: out && out.action ? out.action : null,

@@ -17,18 +17,101 @@
         [
           {
             "index": 0,
-            "node": "PKM ChatGPT Read",
+            "node": "Switch Read Command",
             "type": "main"
           }
         ]
       ]
     },
-    "PKM ChatGPT Read": {
+    "Switch Read Command": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Compose Read Response",
+            "node": "PKM Pull",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Last",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Continue",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Find",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Working Memory",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Last": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Search Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Continue": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Search Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Find": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Search Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Pull": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Detail Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Working Memory": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Detail Context Pack",
             "type": "main"
           }
         ]
@@ -48,7 +131,7 @@
         "path": "pkm/chatgpt/read"
       },
       "position": [
-        -640,
+        -736,
         128
       ],
       "type": "n8n-nodes-base.webhook",
@@ -62,15 +145,264 @@
         "jsCode": "try{const {wf11RouteReadRequest}=require('@igasovic/n8n-blocks');return await wf11RouteReadRequest({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/route-read-request__4d433aea-a923-4b5e-8d34-a33c70d6d6bd.js] ${e.message}`;throw e;}"
       },
       "position": [
-        -384,
+        -496,
         128
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
     },
     {
-      "id": "8ad4a739-f8b3-4ecb-9c84-096e5318f56b",
-      "name": "PKM ChatGPT Read",
+      "id": "9a6e5d23-7e1f-48f5-a329-cb8f8b3f4952",
+      "name": "Switch Read Command",
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "7ab3d35c-d343-46ed-bf15-783a5c4bb11a",
+                    "leftValue": "={{ $json.read_method }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "pull"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "pull",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "ac2e5ba1-bf16-4898-a2f8-a01995c8b7bb",
+                    "leftValue": "={{ $json.read_method }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "last"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "last",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "4fcf5fdf-5105-4c02-8fd0-65850033b5dd",
+                    "leftValue": "={{ $json.read_method }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "continue"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "continue",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "fd9f2fbd-7952-4ef8-a8d8-b36aa1716f8b",
+                    "leftValue": "={{ $json.read_method }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "find"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "find",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "ac36a4b5-cf56-4ab5-9e1f-bf7f6ad532af",
+                    "leftValue": "={{ $json.read_method }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "working_memory"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "working_memory",
+              "renameOutput": true
+            }
+          ]
+        }
+      },
+      "position": [
+        -240,
+        128
+      ],
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4
+    },
+    {
+      "id": "30ec6f8b-a0e2-4344-a3c0-f92cb72f3192",
+      "name": "PKM Pull",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $json.run_id || $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => { const p = $json.backend_payload || {}; const out = { entry_id: p.entry_id }; if (p.shortN != null) out.shortN = p.shortN; if (p.longN != null) out.longN = p.longN; return out; })()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/read/pull"
+      },
+      "position": [
+        32,
+        -128
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "077b2efd-4f5d-4dcf-a43e-abef7df0c759",
+      "name": "PKM Last",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $json.run_id || $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => { const p = $json.backend_payload || {}; const out = { q: p.q }; if (p.days != null) out.days = p.days; if (p.limit != null) out.limit = p.limit; return out; })()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/read/last"
+      },
+      "position": [
+        32,
+        0
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "0ea58ded-b113-4dba-91ce-c57ad4f4a556",
+      "name": "PKM Continue",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $json.run_id || $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => { const p = $json.backend_payload || {}; const out = { q: p.q }; if (p.days != null) out.days = p.days; if (p.limit != null) out.limit = p.limit; return out; })()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/read/continue"
+      },
+      "position": [
+        32,
+        128
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "83eaa2bd-9a35-498d-8eca-cf1134d4459c",
+      "name": "PKM Find",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $json.run_id || $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => { const p = $json.backend_payload || {}; const out = { q: p.q }; if (p.days != null) out.days = p.days; if (p.limit != null) out.limit = p.limit; return out; })()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/db/read/find"
+      },
+      "position": [
+        32,
+        256
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "8a1b9f43-4212-40d0-8127-8f030469f287",
+      "name": "PKM Working Memory",
       "parameters": {
         "headerParameters": {
           "parameters": [
@@ -80,34 +412,47 @@
             },
             {
               "name": "X-PKM-Run-Id",
-              "value": "={{ $execution.id }}"
+              "value": "={{ $json.run_id || $execution.id }}"
             }
           ]
         },
-        "jsonBody": "={{ JSON.stringify((() => { const payload = $json.backend_payload || {}; return payload; })()) }}",
+        "jsonBody": "={{ JSON.stringify((() => { const p = $json.backend_payload || {}; return { topic: p.topic }; })()) }}",
         "method": "POST",
         "options": {},
         "sendBody": true,
         "sendHeaders": true,
         "specifyBody": "json",
-        "url": "http://pkm-server:8080/chatgpt/read"
+        "url": "http://pkm-server:8080/chatgpt/working_memory"
       },
       "position": [
-        -128,
-        128
+        32,
+        384
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
     },
     {
-      "id": "793f72b2-4263-4bb1-970d-5aa4ad6daaf6",
-      "name": "Compose Read Response",
+      "id": "de43f4fe-84ab-43f5-b9b3-f3669e45b7ec",
+      "name": "Build Search Context Pack",
       "parameters": {
-        "jsCode": "try{const {wf11ComposeReadResponse}=require('@igasovic/n8n-blocks');return await wf11ComposeReadResponse({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/compose-read-response__fc1a839b-3ad3-4bcd-a057-34a2ce79a9f7.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {wf11BuildSearchContextPack}=require('@igasovic/n8n-blocks');return await wf11BuildSearchContextPack({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/build-search-context-pack__de43f4fe-84ab-43f5-b9b3-f3669e45b7ec.js] ${e.message}`;throw e;}"
       },
       "position": [
-        128,
+        320,
         128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "9d5c9ec9-87cd-4b76-9ba9-d1510d218740",
+      "name": "Build Detail Context Pack",
+      "parameters": {
+        "jsCode": "try{const {wf11BuildDetailContextPack}=require('@igasovic/n8n-blocks');return await wf11BuildDetailContextPack({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/build-detail-context-pack__9d5c9ec9-87cd-4b76-9ba9-d1510d218740.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        320,
+        -128
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2

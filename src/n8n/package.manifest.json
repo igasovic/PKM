@@ -42,6 +42,8 @@
     "wf05ComposeCommitResponse": "nodes/05-chatgpt-wrap-commit/compose-commit-response.js",
     "wf11RouteReadRequest": "nodes/11-chatgpt-read-router/route-read-request.js",
     "wf11ComposeReadResponse": "nodes/11-chatgpt-read-router/compose-read-response.js",
+    "wf11BuildSearchContextPack": "nodes/11-chatgpt-read-router/build-search-context-pack.js",
+    "wf11BuildDetailContextPack": "nodes/11-chatgpt-read-router/build-detail-context-pack.js",
     "wf22ExtractTitleAuthor": "nodes/22-web-extraction/extract-title-author.js",
     "wf22RecomputeRetrievalExcerptQualitySignalsFromCleanText": "nodes/22-web-extraction/recompute-retrieval-excerpt-quality-signals-from-clean-text.js",
     "wf22TextClean": "nodes/22-web-extraction/text-clean.js",

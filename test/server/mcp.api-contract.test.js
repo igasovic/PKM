@@ -101,7 +101,7 @@ describe('chatgpt action API contract', () => {
     });
   });
 
-  test('POST /chatgpt/read requires admin secret', async () => {
+  test('POST /chatgpt/read is removed', async () => {
     await startServerWithMocks();
     if (listenDenied) return;
 
@@ -109,7 +109,23 @@ describe('chatgpt action API contract', () => {
       port,
       'POST',
       '/chatgpt/read',
-      JSON.stringify({ method: 'pull_working_memory', topic: 'parenting' }),
+      JSON.stringify({ topic: 'parenting' }),
+      { 'Content-Type': 'application/json' },
+    );
+
+    expect(res.status).toBe(404);
+    expect(JSON.parse(res.body)).toEqual({ error: 'not_found' });
+  });
+
+  test('POST /chatgpt/working_memory requires admin secret', async () => {
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/chatgpt/working_memory',
+      JSON.stringify({ topic: 'parenting' }),
       { 'Content-Type': 'application/json' },
     );
 
@@ -120,7 +136,7 @@ describe('chatgpt action API contract', () => {
     });
   });
 
-  test('POST /chatgpt/read pull_working_memory returns no_result on topic miss', async () => {
+  test('POST /chatgpt/working_memory returns no_result on topic miss', async () => {
     const readWorkingMemory = jest.fn(async () => ({ rows: [] }));
     await startServerWithMocks({ readWorkingMemory });
     if (listenDenied) return;
@@ -128,9 +144,8 @@ describe('chatgpt action API contract', () => {
     const res = await request(
       port,
       'POST',
-      '/chatgpt/read',
+      '/chatgpt/working_memory',
       JSON.stringify({
-        method: 'pull_working_memory',
         topic: 'Parenting overload',
       }),
       {
@@ -150,56 +165,28 @@ describe('chatgpt action API contract', () => {
     expect(readWorkingMemory).toHaveBeenCalledWith({ topic_key: 'parenting-overload' });
   });
 
-  test('POST /chatgpt/read routes semantic detail_lookup intent to find', async () => {
-    const readFind = jest.fn(async () => ({
-      rows: [
-        { is_meta: true, query_text: 'burnout', days: 30, limit: 5, hits: 1 },
-        {
-          is_meta: false,
-          entry_id: 90,
-          content_type: 'note',
-          author: 'ChatGPT',
-          title: 'Burnout note',
-          created_at: '2026-03-24T00:00:00.000Z',
-          topic_primary: 'parenting',
-          topic_secondary: 'overload',
-          keywords: ['burnout'],
-          gist: 'G',
-          distill_summary: 'S',
-          distill_why_it_matters: 'W',
-          excerpt: 'E',
-          url: null,
-          snippet: 'SN',
-        },
-      ],
-    }));
-    await startServerWithMocks({ readFind });
+  test('POST /chatgpt/working_memory validates required topic', async () => {
+    await startServerWithMocks();
     if (listenDenied) return;
 
     const res = await request(
       port,
       'POST',
-      '/chatgpt/read',
-      JSON.stringify({
-        read_intent: 'detail_lookup',
-        query_text: 'burnout',
-        days: 30,
-        limit: 5,
-      }),
+      '/chatgpt/working_memory',
+      JSON.stringify({}),
       {
         'Content-Type': 'application/json',
         'x-pkm-admin-secret': 'test-admin-secret',
       },
     );
 
-    expect(res.status).toBe(200);
-    const parsed = JSON.parse(res.body);
-    expect(parsed.action).toBe('chatgpt_read');
-    expect(parsed.method).toBe('find');
-    expect(parsed.outcome).toBe('success');
-    expect(parsed.result.meta.method).toBe('find');
-    expect(parsed.result.rows).toHaveLength(1);
-    expect(readFind).toHaveBeenCalledWith({ q: 'burnout', days: 30, limit: 5 });
+    expect(res.status).toBe(400);
+    expect(JSON.parse(res.body)).toEqual({
+      error: 'bad_request',
+      message: 'topic is required for pull_working_memory',
+      error_code: 'missing_topic',
+      field: 'topic',
+    });
   });
 
   test('POST /chatgpt/wrap-commit validates required session_id', async () => {

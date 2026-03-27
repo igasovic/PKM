@@ -1,4 +1,18 @@
 # changelog
+## 2026-03-27 — WF11 read routing moved fully into n8n
+
+### What changed
+- Updated `11 ChatGPT Read Router` so n8n now:
+  - parses semantic read command/intent (`pull|continue|last|find`)
+  - routes to existing backend read endpoints (`/db/read/*`)
+  - builds context-pack markdown in n8n before responding
+- Removed backend `POST /chatgpt/read` route.
+- Added backend `POST /chatgpt/working_memory` route for direct topic-keyed working-memory retrieval.
+- Added externalized WF11 execute node:
+  - `execute-routed-read__48f7c595-f134-4a6a-8b0c-6756511ad76d.js`
+- Updated WF11 runtime package root exports with `wf11ExecuteRoutedRead`.
+- Updated docs to reflect that ChatGPT read path is n8n routing + direct `/db/read/*` calls.
+
 ## 2026-03-26 — n8n-first ChatGPT integration transition (MCP legacy-disabled)
 
 ### What changed

@@ -9,6 +9,6 @@ Current behavior:
 - Supported ChatGPT path is GPT action -> n8n webhook -> internal backend action routes.
 
 Active contracts now live in:
-- `docs/api.md` (`/chatgpt/read`, `/chatgpt/wrap-commit`)
+- `docs/api.md` (`/chatgpt/working_memory`, `/chatgpt/wrap-commit`)
 - `docs/PRD/MCP-PRD.md`
 - `chatgpt/project_instructions.md`

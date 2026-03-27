@@ -456,18 +456,21 @@ Primary objective:
 - Supported public ChatGPT path is GPT action -> n8n webhook orchestration.
 - `POST /mcp` is legacy-disabled and must return explicit `legacy_disabled`.
 - n8n is the only public ChatGPT integration boundary.
-- Backend action routes used by n8n are:
-  - `POST /chatgpt/read`
-  - `POST /chatgpt/wrap-commit`
-- Both backend action routes must require `x-pkm-admin-secret`.
-- `/chatgpt/read` supports only:
+- n8n `11 ChatGPT Read Router` must route read commands and call existing backend read APIs directly:
+  - `POST /db/read/continue`
+  - `POST /db/read/last`
+  - `POST /db/read/find`
+  - `POST /db/read/pull`
+- Topic working-memory retrieval endpoint:
+  - `POST /chatgpt/working_memory` (requires `x-pkm-admin-secret`)
+- n8n `05 ChatGPT Wrap Commit` uses:
+  - `POST /chatgpt/wrap-commit` (requires `x-pkm-admin-secret`)
+- Routed read methods for v1 are:
   - `continue`
   - `last`
   - `find`
   - `pull`
-  - `pull_working_memory`
 - n8n owns semantic routing for read actions; ChatGPT should not call low-level methods directly.
-- `pull_working_memory(topic)` is topic-keyed and must return canonical working-memory text without summarization.
 - `/chatgpt/wrap-commit` validates:
   - required `session_id`
   - required `resolved_topic_primary`
