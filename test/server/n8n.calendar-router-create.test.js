@@ -31,6 +31,39 @@ describe('n8n calendar router/create helpers', () => {
     expect(row.telegram_message_id).toBe('777');
   });
 
+  test('prepare route input defaults plain text to pkm capture', async () => {
+    const out = await prepareRouteInput({
+      $json: {
+        message: {
+          text: 'my random thought',
+          message_id: 778,
+          chat: { id: 1509032341 },
+          from: { username: 'igor_g' },
+        },
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.route_hint).toBe('pkm_capture');
+    expect(row.is_command).toBe(false);
+  });
+
+  test('prepare route input defaults link-only text to pkm capture', async () => {
+    const out = await prepareRouteInput({
+      $json: {
+        message: {
+          text: 'https://example.com/article',
+          message_id: 779,
+          chat: { id: 1509032341 },
+          from: { username: 'igor_g' },
+        },
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.route_hint).toBe('pkm_capture');
+  });
+
   test('build normalize request strips cal prefix and keeps source ids', async () => {
     const out = await buildNormalizeRequest({
       $json: {

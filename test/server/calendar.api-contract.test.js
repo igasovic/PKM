@@ -198,7 +198,7 @@ describe('calendar API contract', () => {
     expect(dbMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
   });
 
-  test('POST /telegram/route does not treat structured prefixes as continuation', async () => {
+  test('POST /telegram/route does not override explicit pkm prefix with continuation route', async () => {
     routeMock.mockReturnValue({
       route: 'pkm_capture',
       confidence: 1,
@@ -232,7 +232,45 @@ describe('calendar API contract', () => {
       confidence: 1,
       request_id: null,
     });
-    expect(dbMock.getLatestOpenCalendarRequestByChat).not.toHaveBeenCalled();
+    expect(dbMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
+  });
+
+  test('POST /telegram/route reuses open request for explicit cal prefix to avoid unique-chat conflicts', async () => {
+    routeMock.mockReturnValue({
+      route: 'calendar_create',
+      confidence: 1,
+    });
+    dbMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
+      request_id: 'cal-open-123',
+      status: 'needs_clarification',
+    });
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/telegram/route',
+      JSON.stringify({
+        text: 'cal:tomorrow',
+        actor_code: 'igor',
+        source: { chat_id: '1509032341', message_id: '900' },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      }
+    );
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({
+      route: 'calendar_create',
+      confidence: 1,
+      request_id: 'cal-open-123',
+    });
+    expect(dbMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
+    expect(dbMock.upsertCalendarRequest).not.toHaveBeenCalled();
   });
 
   test('POST /telegram/route downgrades PKM route for calendar-only sender when allowlist is enforced', async () => {

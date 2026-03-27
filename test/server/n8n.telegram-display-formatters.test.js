@@ -3,11 +3,13 @@
 const { requireExternalizedNode } = require('./n8n-node-loader');
 
 const emailComposeReply = requireExternalizedNode('03-e-mail-capture', 'compose-reply-text');
+const telegramCreateMessage = requireExternalizedNode('02-telegram-capture', 'create-message');
 const telegramDuplicate = requireExternalizedNode('02-telegram-capture', 'format-duplicate-message');
 const emailDuplicate = requireExternalizedNode('03-e-mail-capture', 'format-duplicate-message');
 const backupParse = requireExternalizedNode('80-postgres-backup', 'parse');
 const backupFormat = requireExternalizedNode('80-postgres-backup', 'format');
 const calendarCreateFormat = requireExternalizedNode('30-calendar-create', 'format-create-result-message');
+const buildContextPack = requireExternalizedNode('10-read', 'build-context-pack');
 
 describe('n8n telegram display formatters', () => {
   test('email compose uses word count', async () => {
@@ -23,6 +25,21 @@ describe('n8n telegram display formatters', () => {
 
     const msg = out[0].json.telegram_message;
     expect(msg).toContain('📏 5 words');
+    expect(msg).not.toContain('chars');
+  });
+
+  test('telegram capture create-message uses word count in confirmation line', async () => {
+    const out = await telegramCreateMessage({
+      $json: {
+        entry_id: 901,
+        clean_text: 'one two three four five six',
+        clean_word_count: 6,
+        title: 'A link title',
+      },
+    });
+
+    const msg = out[0].json.telegram_message;
+    expect(msg).toContain('6 words');
     expect(msg).not.toContain('chars');
   });
 
@@ -91,5 +108,37 @@ describe('n8n telegram display formatters', () => {
     expect(msg).toContain('📅 Event created');
     expect(msg).toContain('\\[Ig\\]\\[OTH\\] 3:00p test Igor');
     expect(msg).toContain('Sun Mar 22 2:30p \\-\\> 3:30p');
+  });
+
+  test('build context pack keeps Markdown bold markers balanced after truncation', async () => {
+    const long = 'x '.repeat(600);
+    const rows = Array.from({ length: 12 }, (_, idx) => ({
+      json: {
+        id: `id-${idx + 1}`,
+        entry_id: idx + 1,
+        content_type: 'note',
+        author: 'A',
+        title: `T${idx + 1}`,
+        created_at: '2026-03-09T00:00:00.000Z',
+        topic_primary: 'ai',
+        topic_secondary: 'ops',
+        distill_summary: long,
+      },
+    }));
+    rows.unshift({ json: { is_meta: true, cmd: 'continue', query_text: 'ai', days: 90, limit: 10 } });
+
+    const out = await buildContextPack({
+      $input: { all: () => rows },
+    });
+    const msg = out[0].json.telegram_message;
+
+    let starCount = 0;
+    for (let i = 0; i < msg.length; i += 1) {
+      if (msg[i] !== '*') continue;
+      let slashCount = 0;
+      for (let j = i - 1; j >= 0 && msg[j] === '\\'; j -= 1) slashCount += 1;
+      if (slashCount % 2 === 0) starCount += 1;
+    }
+    expect(starCount % 2).toBe(0);
   });
 });

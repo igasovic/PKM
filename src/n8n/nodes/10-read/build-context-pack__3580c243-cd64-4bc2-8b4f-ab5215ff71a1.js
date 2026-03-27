@@ -26,6 +26,26 @@ module.exports = async function run(ctx) {
     },
   );
 
-  return [{ json: { telegram_message: mdv2Render(msg, { maxLen: 3500 }) } }];
-};
+  const truncated = mdv2Render(msg, { maxLen: 3500 });
+  const chars = Array.from(truncated);
+  let unescapedStarCount = 0;
+  for (let i = 0; i < chars.length; i += 1) {
+    if (chars[i] !== '*') continue;
+    let slashCount = 0;
+    for (let j = i - 1; j >= 0 && chars[j] === '\\'; j -= 1) slashCount += 1;
+    if (slashCount % 2 === 0) unescapedStarCount += 1;
+  }
+  if (unescapedStarCount % 2 === 0) {
+    return [{ json: { telegram_message: truncated } }];
+  }
+  for (let i = chars.length - 1; i >= 0; i -= 1) {
+    if (chars[i] !== '*') continue;
+    let slashCount = 0;
+    for (let j = i - 1; j >= 0 && chars[j] === '\\'; j -= 1) slashCount += 1;
+    if (slashCount % 2 !== 0) continue;
+    chars.splice(i, 1);
+    break;
+  }
 
+  return [{ json: { telegram_message: chars.join('') } }];
+};

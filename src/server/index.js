@@ -447,10 +447,12 @@ async function handleRequest(req, res) {
         { input: body, output: (out) => out, meta: { route: url.pathname } }
       );
 
-      let continuationRequest = null;
-      if (!structuredInput && chatId) {
-        continuationRequest = await db.getLatestOpenCalendarRequestByChat(chatId);
-      }
+      const openRequestForChat = chatId
+        ? await db.getLatestOpenCalendarRequestByChat(chatId)
+        : null;
+      const continuationRequest = (!structuredInput && openRequestForChat)
+        ? openRequestForChat
+        : null;
       const continuationRoute = continuationRequest
         ? {
           route: 'calendar_create',
@@ -467,6 +469,9 @@ async function handleRequest(req, res) {
       let requestRow = null;
       if (continuationRequest) {
         requestRow = continuationRequest;
+      } else if (openRequestForChat && effectiveRoute.route === 'calendar_create') {
+        // Reuse the active chat request to avoid one-open-per-chat uniqueness collisions.
+        requestRow = openRequestForChat;
       } else if (chatId && messageId && ['calendar_create', 'calendar_query', 'ambiguous'].includes(effectiveRoute.route)) {
         requestRow = await db.upsertCalendarRequest({
           run_id: body.run_id || (getRunContext() && getRunContext().run_id) || `tg-route-${Date.now()}`,

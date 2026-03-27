@@ -25,9 +25,13 @@ module.exports = async function run(ctx) {
   const title = s($json.title);
   const author = s($json.author);
 
-  // IMPORTANT: length should be based on clean_text (fallback to capture_text)
+  // IMPORTANT: quality and display length should be based on clean_text (fallback to capture_text)
   const cleanText = s($json.clean_text || $json.clear_text || $json.capture_text);
   const cleanLen = cleanText.length;
+  const cleanWordCountRaw = Number($json.clean_word_count);
+  const cleanWordCount = Number.isFinite(cleanWordCountRaw) && cleanWordCountRaw >= 0
+    ? Math.trunc(cleanWordCountRaw)
+    : (cleanText ? cleanText.split(/\s+/).filter(Boolean).length : 0);
 
   const topicPrimary = s($json.topic_primary);
   const topicSecondary = s($json.topic_secondary);
@@ -47,9 +51,9 @@ module.exports = async function run(ctx) {
   const lines = [];
 
   if (status === 'ok') {
-    lines.push(`✅ Saved${idLine}: ${label} (${cleanLen.toLocaleString()} chars)`);
+    lines.push(`✅ Saved${idLine}: ${label} (${cleanWordCount.toLocaleString()} words)`);
   } else if (status === 'low_quality') {
-    lines.push(`⚠️ Saved (low quality)${idLine}: ${label} (${cleanLen.toLocaleString()} chars)`);
+    lines.push(`⚠️ Saved (low quality)${idLine}: ${label} (${cleanWordCount.toLocaleString()} words)`);
   } else {
     lines.push(`❌ Saved (extraction failed)${idLine}: ${labelBase}`);
   }
@@ -90,6 +94,7 @@ module.exports = async function run(ctx) {
       // updated length derived from clean_text (your requirement)
       text_len: cleanLen,
       clean_len: cleanLen,
+      clean_word_count: cleanWordCount,
       smoke_telegram_dry_run: smokeDryRun,
     }
   }];

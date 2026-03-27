@@ -163,14 +163,22 @@ function createContextPackBuilder(deps) {
         const contentLines = contentText.split('\n').map((part) => normWS(part)).filter(Boolean);
         const firstContentLine = contentLines[0] || '-';
         const restContentLine = contentLines.slice(1).join(' ');
+        const boldSegmentMax = 96;
+        const boldSegment = firstContentLine.length > boldSegmentMax
+          ? `${firstContentLine.slice(0, boldSegmentMax - 1)}…`
+          : firstContentLine;
+        const tailSegment = firstContentLine.length > boldSegmentMax
+          ? firstContentLine.slice(boldSegmentMax)
+          : '';
         lines.push(`Entry ${item.entry_id} | ${item.content_type} | ${item.author} | ${item.title} | ${item.date}`);
         lines.push(`topic: ${item.topic_primary} -> ${item.topic_secondary}`);
         lines.push(`keywords: ${keywords}`);
         lines.push(`url: ${item.url || '-'}`);
         if (markdownV2) {
-          const rendered = restContentLine
-            ? `${BOLD_OPEN}${firstContentLine}${BOLD_CLOSE} ${restContentLine}`
-            : `${BOLD_OPEN}${firstContentLine}${BOLD_CLOSE}`;
+          const trailing = [tailSegment, restContentLine].filter(Boolean).join(' ').trim();
+          const rendered = trailing
+            ? `${BOLD_OPEN}${boldSegment}${BOLD_CLOSE} ${trailing}`
+            : `${BOLD_OPEN}${boldSegment}${BOLD_CLOSE}`;
           lines.push(`content: ${rendered}`);
         } else {
           lines.push(`content: ${firstContentLine}${restContentLine ? ` ${restContentLine}` : ''}`);
@@ -194,13 +202,21 @@ function createContextPackBuilder(deps) {
         const contentLines = contentText.split('\n').map((part) => normWS(part)).filter(Boolean);
         const firstContentLine = contentLines[0] || '-';
         const restContentLine = contentLines.slice(1).join(' ');
+        const boldSegmentMax = 96;
+        const boldSegment = firstContentLine.length > boldSegmentMax
+          ? `${firstContentLine.slice(0, boldSegmentMax - 1)}…`
+          : firstContentLine;
+        const tailSegment = firstContentLine.length > boldSegmentMax
+          ? firstContentLine.slice(boldSegmentMax)
+          : '';
         lines.push(`- ${item.entry_id} | ${item.content_type} | ${item.author} | ${item.title} | ${item.date}`);
         lines.push(`  - Topic: ${item.topic_primary} -> ${item.topic_secondary}`);
         lines.push(`  - Keywords: ${keywords}`);
         if (markdownV2) {
-          const rendered = restContentLine
-            ? `${BOLD_OPEN}${firstContentLine}${BOLD_CLOSE} ${restContentLine}`
-            : `${BOLD_OPEN}${firstContentLine}${BOLD_CLOSE}`;
+          const trailing = [tailSegment, restContentLine].filter(Boolean).join(' ').trim();
+          const rendered = trailing
+            ? `${BOLD_OPEN}${boldSegment}${BOLD_CLOSE} ${trailing}`
+            : `${BOLD_OPEN}${boldSegment}${BOLD_CLOSE}`;
           lines.push(`  - Content: ${rendered}`);
         } else {
           lines.push(`  - Content: ${firstContentLine}${restContentLine ? ` ${restContentLine}` : ''}`);
