@@ -51,6 +51,7 @@ SUPPORTED_UPDATE_MODES=(
 )
 
 CFG_RED=$'\033[31m'
+CFG_GREEN=$'\033[32m'
 CFG_RESET=$'\033[0m'
 
 cfg_err() {
@@ -59,6 +60,49 @@ cfg_err() {
   else
     printf '%s\n' "$*" >&2
   fi
+}
+
+cfg_color_text() {
+  local color="$1"
+  local text="$2"
+  if [[ -t 1 ]]; then
+    printf '%s%s%s' "$color" "$text" "$CFG_RESET"
+  else
+    printf '%s' "$text"
+  fi
+}
+
+cfg_is_breaking_detail_line() {
+  local line="$1"
+  local lowered
+  lowered="$(printf '%s' "$line" | tr '[:upper:]' '[:lower:]')"
+  [[ "$lowered" == *" failed"* ]] && return 0
+  [[ "$lowered" == *"error"* ]] && return 0
+  [[ "$lowered" == *"blocked"* ]] && return 0
+  [[ "$lowered" == *"required"* ]] && return 0
+  [[ "$lowered" == *"missing"* ]] && return 0
+  [[ "$lowered" == *"forbidden"* ]] && return 0
+  [[ "$lowered" == *"cannot "* ]] && return 0
+  [[ "$lowered" == *"manual action required"* ]] && return 0
+  return 1
+}
+
+cfg_colorize_detail_line() {
+  local line="$1"
+  if [[ "$line" == *"n8n push sync completed"* ]]; then
+    cfg_color_text "$CFG_GREEN" "$line"
+    return 0
+  fi
+  if [[ "$line" == *"n8n push sync failed"* ]]; then
+    cfg_color_text "$CFG_RED" "$line"
+    return 0
+  fi
+  if cfg_is_breaking_detail_line "$line"; then
+    cfg_color_text "$CFG_RED" "$line"
+    return 0
+  fi
+  printf '%s' "$line"
+  return 0
 }
 
 print_supported_surfaces() {
@@ -419,7 +463,17 @@ check_exit_code() {
 print_check_report() {
   local s
   echo "Surface: $CHECK_SURFACE"
-  echo "Status: $CHECK_STATE"
+  case "$CHECK_STATE" in
+    clean)
+      echo "Status: $(cfg_color_text "$CFG_GREEN" "$CHECK_STATE")"
+      ;;
+    blocked)
+      echo "Status: $(cfg_color_text "$CFG_RED" "$CHECK_STATE")"
+      ;;
+    *)
+      echo "Status: $CHECK_STATE"
+      ;;
+  esac
   echo "Repo sources:"
   for s in "${CHECK_REPO_SOURCES[@]}"; do
     if [[ "$CHECK_SURFACE" == "n8n" ]]; then
@@ -436,7 +490,9 @@ print_check_report() {
   done
   echo "Details:"
   for s in "${CHECK_DETAILS[@]}"; do
-    echo "- $s"
+    local colored_line
+    colored_line="$(cfg_colorize_detail_line "$s")"
+    echo "- $colored_line"
   done
 
   if [[ -n "$CHECK_NEXT_COMMAND" ]]; then
@@ -573,7 +629,17 @@ print_update_report() {
   local s
   echo "Surface: $UPDATE_SURFACE"
   echo "Mode: $UPDATE_MODE"
-  echo "Status: $UPDATE_STATE"
+  case "$UPDATE_STATE" in
+    ok)
+      echo "Status: $(cfg_color_text "$CFG_GREEN" "$UPDATE_STATE")"
+      ;;
+    blocked)
+      echo "Status: $(cfg_color_text "$CFG_RED" "$UPDATE_STATE")"
+      ;;
+    *)
+      echo "Status: $UPDATE_STATE"
+      ;;
+  esac
   echo "Changed paths:"
   if [[ ${#UPDATE_CHANGED[@]} -eq 0 ]]; then
     echo "- none"
@@ -597,7 +663,9 @@ print_update_report() {
 
   echo "Details:"
   for s in "${UPDATE_DETAILS[@]}"; do
-    echo "- $s"
+    local colored_line
+    colored_line="$(cfg_colorize_detail_line "$s")"
+    echo "- $colored_line"
   done
 
   if [[ -n "$UPDATE_NEXT_COMMAND" ]]; then
