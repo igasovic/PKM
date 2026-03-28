@@ -6,7 +6,7 @@ info:
     External webhook contract used by Custom GPT actions.
     Public boundary is n8n webhooks only.
 servers:
-  - url: https://n8n-hook.gasovic.com
+  - url: https://n8n-hook.gasovic.com/webhook
     description: Public n8n webhook base URL
 paths:
   /pkm/chatgpt/read:

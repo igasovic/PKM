@@ -31,7 +31,7 @@ Custom GPT -> pkm-server /db/*
 
 ## Base URL
 
-- `https://n8n-hook.gasovic.com`
+- `https://n8n-hook.gasovic.com/webhook`
 
 ## Authentication
 
@@ -44,7 +44,7 @@ Custom GPT -> pkm-server /db/*
 
 ## Endpoints
 
-### `POST /pkm/chatgpt/read`
+### `POST /webhook/pkm/chatgpt/read`
 
 Semantic read endpoint. n8n parses the command, routes to one backend read method, builds a context pack, and returns a normalized response.
 
@@ -97,7 +97,7 @@ Success/no-result/failure all return a normalized envelope from WF11:
 
 Invalid input returns `ok=false`, `outcome=failure`, and an `error` object.
 
-### `POST /pkm/chatgpt/wrap-commit`
+### `POST /webhook/pkm/chatgpt/wrap-commit`
 
 Commit endpoint for wrap artifacts. n8n validates payload and forwards to internal backend capture flow.
 

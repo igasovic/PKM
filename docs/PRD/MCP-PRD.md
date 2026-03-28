@@ -50,7 +50,7 @@ Write path:
 ```text
 wrap (preview only)
 commit (explicit)
--> POST /pkm/chatgpt/wrap-commit (n8n)
+-> POST /webhook/pkm/chatgpt/wrap-commit (n8n)
 -> POST /chatgpt/wrap-commit (internal backend)
 -> upsert session note + working memory
 ```
@@ -58,7 +58,7 @@ commit (explicit)
 Read path:
 
 ```text
-POST /pkm/chatgpt/read (n8n)
+POST /webhook/pkm/chatgpt/read (n8n)
 -> parse command
 -> switch by method
 -> one backend call
@@ -69,8 +69,8 @@ POST /pkm/chatgpt/read (n8n)
 ## 5) External API surface (public)
 
 Public webhook endpoints (Custom GPT-facing):
-- `POST /pkm/chatgpt/read`
-- `POST /pkm/chatgpt/wrap-commit`
+- `POST /webhook/pkm/chatgpt/read`
+- `POST /webhook/pkm/chatgpt/wrap-commit`
 
 Canonical contract location:
 - `docs/external_api.md`

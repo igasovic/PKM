@@ -301,8 +301,8 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 - Public access is through Cloudflare (`n8n.gasovic.com`, `n8n-hook.gasovic.com`)
 
 **Public webhook surface for Custom GPT (via `n8n-hook.gasovic.com`):**
-- `POST /pkm/chatgpt/read`
-- `POST /pkm/chatgpt/wrap-commit`
+- `POST /webhook/pkm/chatgpt/read`
+- `POST /webhook/pkm/chatgpt/wrap-commit`
 - Full external contract: `docs/external_api.md`
 
 **Key runtime env (observed):**
