@@ -4,6 +4,7 @@
 Before proposing changes or writing code, read:
 - `docs/env.md`
 - `docs/api.md`
+- `docs/external_api.md`
 - `docs/database_schema.md`
 - `docs/n8n_sync.md`
 - `docs/n8n_node_style_guide.md`
@@ -13,6 +14,7 @@ Before proposing changes or writing code, read:
 - `docs/config_operations.md`
 
 For any n8n-related change, reading `docs/n8n_sync.md` and `docs/n8n_node_style_guide.md` is mandatory.
+For any ChatGPT Custom GPT/action or webhook contract change, reading `docs/external_api.md` is mandatory.
 
 For any config, infra, Docker, cloudflared, LiteLLM, Postgres init or backend-loader change, reading `docs/config_operations.md` is mandatory.
 
@@ -51,6 +53,7 @@ For any config, infra, Docker, cloudflared, LiteLLM, Postgres init or backend-lo
 ### Integration boundary
 - UI and n8n must call backend only through endpoints documented in `docs/api.md`.
 - Do not create new endpoints or change request or response shapes without updating `docs/api.md` in the same change.
+- Public Custom GPT webhook contracts must be documented in `docs/external_api.md`.
 
 ### Database safety
 - No raw SQL outside:

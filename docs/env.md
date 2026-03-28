@@ -7,6 +7,10 @@
 **OS:** Debian GNU/Linux 13 (trixie) aarch64 • kernel `6.12.62+rpt-rpi-v8`  
 **Docker:** 29.1.4 • **Docker Compose:** v5.0.1
 
+**Related API docs:**
+- Internal backend contracts: `docs/api.md`
+- Public Custom GPT webhook contracts: `docs/external_api.md`
+
 ---
 
 ## 0) Quick start (most common ops)
@@ -295,6 +299,11 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 - Basic Auth is enabled (`N8N_BASIC_AUTH_ACTIVE=true`)
 - n8n UI is loopback-only on the Pi host (`127.0.0.1:5678`)
 - Public access is through Cloudflare (`n8n.gasovic.com`, `n8n-hook.gasovic.com`)
+
+**Public webhook surface for Custom GPT (via `n8n-hook.gasovic.com`):**
+- `POST /pkm/chatgpt/read`
+- `POST /pkm/chatgpt/wrap-commit`
+- Full external contract: `docs/external_api.md`
 
 **Key runtime env (observed):**
 - `N8N_HOST=n8n.gasovic.com`

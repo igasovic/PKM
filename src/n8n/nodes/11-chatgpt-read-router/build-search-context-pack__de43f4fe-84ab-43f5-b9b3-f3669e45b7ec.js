@@ -33,24 +33,27 @@ module.exports = async function run(ctx) {
 
   return [{
     json: {
-      ok: true,
-      action: 'chatgpt_read',
-      method,
-      outcome: hits.length > 0 ? 'success' : 'no_result',
-      no_result: hits.length === 0,
-      context_pack_markdown: contextPackMarkdown,
-      result: {
-        meta: {
-          method,
-          query_text: queryText || null,
-          days: meta.days ?? null,
-          limit: meta.limit ?? null,
-          found: hits.length > 0,
-          row_count: hits.length,
+      response_payload: {
+        ok: true,
+        action: 'chatgpt_read',
+        method,
+        outcome: hits.length > 0 ? 'success' : 'no_result',
+        no_result: hits.length === 0,
+        context_pack_markdown: contextPackMarkdown,
+        result: {
+          meta: {
+            method,
+            query_text: queryText || null,
+            days: meta.days ?? null,
+            limit: meta.limit ?? null,
+            found: hits.length > 0,
+            row_count: hits.length,
+          },
+          rows: hits,
         },
-        rows: hits,
+        error: null,
       },
-      error: null,
+      http_status: 200,
     },
   }];
 };

@@ -59,6 +59,13 @@
             "node": "PKM Working Memory",
             "type": "main"
           }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Build Error Response",
+            "type": "main"
+          }
         ]
       ]
     },
@@ -116,6 +123,50 @@
           }
         ]
       ]
+    },
+    "Build Search Context Pack": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Compose Final Response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build Detail Context Pack": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Compose Final Response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build Error Response": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Compose Final Response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Compose Final Response": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Respond to Webhook",
+            "type": "main"
+          }
+        ]
+      ]
     }
   },
   "description": null,
@@ -128,7 +179,8 @@
       "parameters": {
         "httpMethod": "POST",
         "options": {},
-        "path": "pkm/chatgpt/read"
+        "path": "pkm/chatgpt/read",
+        "responseMode": "responseNode"
       },
       "position": [
         -736,
@@ -280,6 +332,31 @@
                 }
               },
               "outputKey": "working_memory",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "1e95ac3c-fc3d-4f57-8d85-4cf07e90efa1",
+                    "leftValue": "={{ $json.read_method }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "invalid"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "invalid",
               "renameOutput": true
             }
           ]
@@ -456,6 +533,49 @@
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
+    },
+    {
+      "id": "4bb5d57d-5de8-4f84-9b2d-f8d453874f1a",
+      "name": "Build Error Response",
+      "parameters": {
+        "jsCode": "try{const {wf11BuildErrorResponse}=require('@igasovic/n8n-blocks');return await wf11BuildErrorResponse({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/build-error-response__4bb5d57d-5de8-4f84-9b2d-f8d453874f1a.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        320,
+        480
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "793f72b2-4263-4bb1-970d-5aa4ad6daaf6",
+      "name": "Compose Final Response",
+      "parameters": {
+        "jsCode": "try{const {wf11ComposeReadResponse}=require('@igasovic/n8n-blocks');return await wf11ComposeReadResponse({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/compose-read-response__fc1a839b-3ad3-4bcd-a057-34a2ce79a9f7.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        608,
+        128
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "68b6c41b-4d5b-4a85-ba89-95e227e4b6cb",
+      "name": "Respond to Webhook",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": "={{ $json.http_status || 200 }}"
+        }
+      },
+      "position": [
+        864,
+        128
+      ],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1
     }
   ],
   "settings": {

@@ -1,0 +1,333 @@
+openapi: 3.1.0
+info:
+  title: PKM ChatGPT Actions (n8n webhook surface)
+  version: 1.0.0
+  description: |
+    External webhook contract used by Custom GPT actions.
+    Public boundary is n8n webhooks only.
+servers:
+  - url: https://n8n-hook.gasovic.com
+    description: Public n8n webhook base URL
+paths:
+  /pkm/chatgpt/read:
+    post:
+      operationId: pkmChatgptRead
+      summary: Read PKM context
+      description: |
+        Semantic read action routed by n8n to one backend method.
+        Supported commands: pull, continue, last, find, working_memory.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatgptReadRequest'
+            examples:
+              working_memory:
+                summary: Topic working memory
+                value:
+                  cmd: working_memory
+                  topic: parenting
+              continue:
+                summary: Continue thread by topic/query
+                value:
+                  cmd: continue
+                  query_text: parenting bedtime resistance
+                  days: 30
+                  limit: 8
+              pull:
+                summary: Deterministic entry pull
+                value:
+                  cmd: pull
+                  entry_id: 1234
+                  shortN: 3
+                  longN: 2
+      responses:
+        '200':
+          description: Action completed (success, no_result, or failure envelope)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatgptReadResponse'
+        default:
+          description: Webhook-level error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /pkm/chatgpt/wrap-commit:
+    post:
+      operationId: pkmChatgptWrapCommit
+      summary: Persist wrap artifacts
+      description: |
+        Persists both artifacts in one flow:
+        - session summary note
+        - topic working memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WrapCommitRequest'
+      responses:
+        '200':
+          description: Wrap commit response envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WrapCommitResponse'
+        default:
+          description: Webhook-level error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+components:
+  schemas:
+    ChatgptReadRequest:
+      type: object
+      description: |
+        Preferred shape uses explicit `cmd` plus command-specific fields.
+        Command-text fallback (`command`) is also accepted by WF11 parser.
+      properties:
+        cmd:
+          type: string
+          enum: [pull, continue, last, find, working_memory]
+          description: Semantic read command.
+        command:
+          type: string
+          description: Optional command text, e.g. "continue parenting --days 30 --limit 8".
+        query_text:
+          type: string
+          description: Query/topic text for continue/last/find.
+        q:
+          type: string
+          description: Alias of query_text.
+        query:
+          type: string
+          description: Alias of query_text.
+        topic:
+          type: string
+          description: Topic for working_memory.
+        topic_primary:
+          type: string
+          description: Alias for topic.
+        resolved_topic_primary:
+          type: string
+          description: Alias for topic.
+        entry_id:
+          type: integer
+          minimum: 1
+          description: Required for pull.
+        days:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+        shortN:
+          type: integer
+          minimum: 1
+        longN:
+          type: integer
+          minimum: 1
+        run_id:
+          type: string
+      additionalProperties: true
+      oneOf:
+        - required: [command]
+        - required: [cmd]
+      allOf:
+        - if:
+            properties:
+              cmd:
+                const: pull
+            required: [cmd]
+          then:
+            required: [entry_id]
+        - if:
+            properties:
+              cmd:
+                const: working_memory
+            required: [cmd]
+          then:
+            anyOf:
+              - required: [topic]
+              - required: [topic_primary]
+              - required: [resolved_topic_primary]
+        - if:
+            properties:
+              cmd:
+                enum: [continue, last, find]
+            required: [cmd]
+          then:
+            anyOf:
+              - required: [query_text]
+              - required: [q]
+              - required: [query]
+              - required: [topic]
+              - required: [topic_primary]
+              - required: [resolved_topic_primary]
+
+    ChatgptReadResponse:
+      type: object
+      properties:
+        http_status:
+          type: integer
+        ok:
+          type: boolean
+        action:
+          type: string
+          enum: [chatgpt_read]
+        method:
+          type: [string, 'null']
+          enum: [pull, continue, last, find, working_memory, 'null']
+        outcome:
+          type: [string, 'null']
+          enum: [success, no_result, failure, 'null']
+        no_result:
+          type: boolean
+        context_pack_markdown:
+          type: [string, 'null']
+        result:
+          type: [object, 'null']
+          properties:
+            meta:
+              type: object
+              properties:
+                method:
+                  type: [string, 'null']
+                query_text:
+                  type: [string, 'null']
+                days:
+                  type: [integer, 'null']
+                limit:
+                  type: [integer, 'null']
+                found:
+                  type: boolean
+                row_count:
+                  type: integer
+              additionalProperties: true
+            rows:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+          additionalProperties: true
+        error:
+          type: [object, 'null']
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          additionalProperties: true
+      required:
+        - ok
+        - action
+        - no_result
+
+    WrapCommitRequest:
+      type: object
+      properties:
+        session_id:
+          type: string
+          minLength: 1
+        resolved_topic_primary:
+          type: string
+          minLength: 1
+        resolved_topic_secondary:
+          type: [string, 'null']
+        chat_title:
+          type: [string, 'null']
+        session_summary:
+          type: [string, 'null']
+        context_used:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+        key_insights:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+        decisions:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+        tensions:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+        open_questions:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+        next_steps:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+        working_memory_updates:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+        why_it_matters:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+        gist:
+          type: [string, 'null']
+        excerpt:
+          type: [string, 'null']
+        source_entry_refs:
+          type: array
+          items:
+            type: integer
+      required:
+        - session_id
+        - resolved_topic_primary
+      additionalProperties: true
+
+    WrapCommitResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        action:
+          type: string
+          enum: [chatgpt_wrap_commit]
+        outcome:
+          type: [string, 'null']
+        result:
+          type: [object, 'null']
+          additionalProperties: true
+      required:
+        - ok
+        - action
+
+    ErrorEnvelope:
+      type: object
+      properties:
+        error:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+        message:
+          type: string
+      additionalProperties: true

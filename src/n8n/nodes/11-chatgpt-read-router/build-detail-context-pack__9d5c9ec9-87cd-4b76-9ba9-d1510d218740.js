@@ -50,22 +50,25 @@ module.exports = async function run(ctx) {
 
   return [{
     json: {
-      ok: outcome !== 'failure',
-      action: 'chatgpt_read',
-      method,
-      outcome,
-      no_result: outcome === 'no_result',
-      context_pack_markdown: contextPackMarkdown,
-      result: {
-        meta: {
-          method,
-          query_text: queryText || null,
-          found: rows.length > 0,
-          row_count: rows.length,
+      response_payload: {
+        ok: outcome !== 'failure',
+        action: 'chatgpt_read',
+        method,
+        outcome,
+        no_result: outcome === 'no_result',
+        context_pack_markdown: contextPackMarkdown,
+        result: {
+          meta: {
+            method,
+            query_text: queryText || null,
+            found: rows.length > 0,
+            row_count: rows.length,
+          },
+          rows,
         },
-        rows,
+        error,
       },
-      error,
+      http_status: outcome === 'failure' ? 400 : 200,
     },
   }];
 };

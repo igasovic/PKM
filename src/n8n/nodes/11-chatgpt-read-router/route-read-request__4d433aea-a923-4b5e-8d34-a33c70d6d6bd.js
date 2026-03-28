@@ -75,79 +75,89 @@ function resolveMethod(body) {
 
 module.exports = async function run(ctx) {
   const { $json } = ctx;
-  const body = ($json && typeof $json.body === 'object' && !Array.isArray($json.body))
-    ? $json.body
-    : (($json && typeof $json === 'object' && !Array.isArray($json)) ? $json : null);
+  try {
+    const body = ($json && typeof $json.body === 'object' && !Array.isArray($json.body))
+      ? $json.body
+      : (($json && typeof $json === 'object' && !Array.isArray($json)) ? $json : null);
 
-  if (!body) {
-    throw new Error('read payload must be a JSON object');
-  }
+    if (!body) throw new Error('read payload must be a JSON object');
 
-  const method = resolveMethod(body);
-  if (!['pull', 'continue', 'last', 'find', 'working_memory'].includes(method)) {
-    throw new Error(`unsupported read command: ${method}`);
-  }
-
-  const parsedCommand = parseCommandText(body) || {};
-  const runId = asText(body.run_id) || `chatgpt-read-${Date.now()}`;
-
-  const payload = {};
-  let backendRoute = '';
-  let queryText = '';
-  let entryId = null;
-
-  if (method === 'pull') {
-    entryId = asPositiveInt(body.entry_id, 'entry_id') || asPositiveInt(parsedCommand.query_text, 'entry_id');
-    if (!entryId) {
-      throw new Error('entry_id is required for pull');
+    const method = resolveMethod(body);
+    if (!['pull', 'continue', 'last', 'find', 'working_memory'].includes(method)) {
+      throw new Error(`unsupported read command: ${method}`);
     }
-    payload.entry_id = entryId;
-    const shortN = asPositiveInt(body.shortN, 'shortN');
-    const longN = asPositiveInt(body.longN, 'longN');
-    if (shortN) payload.shortN = shortN;
-    if (longN) payload.longN = longN;
-    backendRoute = '/db/read/pull';
-  } else if (method === 'working_memory') {
-    queryText = asText(body.topic || body.topic_primary || body.resolved_topic_primary || parsedCommand.query_text);
-    if (!queryText) {
-      throw new Error('topic is required for working_memory');
-    }
-    payload.topic = queryText;
-    backendRoute = '/chatgpt/working_memory';
-  } else {
-    queryText = asText(
-      body.q
-      || body.query
-      || body.query_text
-      || body.topic
-      || body.topic_primary
-      || body.resolved_topic_primary
-      || parsedCommand.query_text,
-    );
-    if (!queryText) {
-      throw new Error('query text is required for continue/find/last');
-    }
-    payload.q = queryText;
-    const days = asPositiveInt(body.days, 'days') || parsedCommand.days;
-    const limit = asPositiveInt(body.limit, 'limit') || parsedCommand.limit;
-    if (days) payload.days = days;
-    if (limit) payload.limit = limit;
-    backendRoute = `/db/read/${method}`;
-  }
 
-  return [{
-    json: {
-      ...$json,
-      action: 'chatgpt_read',
-      cmd: method,
-      read_method: method,
-      backend_route: backendRoute,
-      backend_payload: payload,
-      run_id: runId,
-      query_text: queryText || null,
-      entry_id: entryId,
-      days: payload.days || null,
-      limit: payload.limit || null,
-    },
-  }];
+    const parsedCommand = parseCommandText(body) || {};
+    const runId = asText(body.run_id) || `chatgpt-read-${Date.now()}`;
+
+    const payload = {};
+    let backendRoute = '';
+    let queryText = '';
+    let entryId = null;
+
+    if (method === 'pull') {
+      entryId = asPositiveInt(body.entry_id, 'entry_id') || asPositiveInt(parsedCommand.query_text, 'entry_id');
+      if (!entryId) throw new Error('entry_id is required for pull');
+      payload.entry_id = entryId;
+      const shortN = asPositiveInt(body.shortN, 'shortN');
+      const longN = asPositiveInt(body.longN, 'longN');
+      if (shortN) payload.shortN = shortN;
+      if (longN) payload.longN = longN;
+      backendRoute = '/db/read/pull';
+    } else if (method === 'working_memory') {
+      queryText = asText(body.topic || body.topic_primary || body.resolved_topic_primary || parsedCommand.query_text);
+      if (!queryText) throw new Error('topic is required for working_memory');
+      payload.topic = queryText;
+      backendRoute = '/chatgpt/working_memory';
+    } else {
+      queryText = asText(
+        body.q
+        || body.query
+        || body.query_text
+        || body.topic
+        || body.topic_primary
+        || body.resolved_topic_primary
+        || parsedCommand.query_text,
+      );
+      if (!queryText) throw new Error('query text is required for continue/find/last');
+      payload.q = queryText;
+      const days = asPositiveInt(body.days, 'days') || parsedCommand.days;
+      const limit = asPositiveInt(body.limit, 'limit') || parsedCommand.limit;
+      if (days) payload.days = days;
+      if (limit) payload.limit = limit;
+      backendRoute = `/db/read/${method}`;
+    }
+
+    return [{
+      json: {
+        ...$json,
+        action: 'chatgpt_read',
+        cmd: method,
+        read_method: method,
+        backend_route: backendRoute,
+        backend_payload: payload,
+        run_id: runId,
+        query_text: queryText || null,
+        entry_id: entryId,
+        days: payload.days || null,
+        limit: payload.limit || null,
+        parse_ok: true,
+      },
+    }];
+  } catch (err) {
+    return [{
+      json: {
+        ...$json,
+        action: 'chatgpt_read',
+        cmd: 'invalid',
+        read_method: 'invalid',
+        parse_ok: false,
+        http_status: 400,
+        error: {
+          code: 'bad_request',
+          message: String(err && err.message ? err.message : err),
+        },
+      },
+    }];
+  }
 };

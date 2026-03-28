@@ -58,11 +58,12 @@ Current response:
 ```
 
 ### Read Path Used By ChatGPT n8n Workflow
-n8n `11 ChatGPT Read Router` performs semantic routing and calls existing read endpoints directly:
+n8n `11 ChatGPT Read Router` performs semantic routing and calls existing internal routes directly:
 - `POST /db/read/pull`
 - `POST /db/read/continue`
 - `POST /db/read/last`
 - `POST /db/read/find`
+- `POST /chatgpt/working_memory`
 
 The workflow then builds the context pack in n8n and returns that response to ChatGPT.
 
