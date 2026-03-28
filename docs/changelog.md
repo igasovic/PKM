@@ -29,7 +29,7 @@
   - `11 ChatGPT Read Router`
 - Added externalized n8n code nodes and package root exports for these workflows.
 - Updated canonical PRD/instruction surfaces to v3 transition docs:
-  - `docs/PRD/MCP-PRD.md`
+  - `docs/PRD/GPT-Actions-Integration-PRD.md`
   - `docs/PRD/MCP-work-packages.md`
   - `chatgpt/project_instructions.md`
 - Marked `docs/mcp_api.md` as legacy reference.

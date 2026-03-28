@@ -1,4 +1,4 @@
-# MCP / Custom GPT Integration PRD (Canonical)
+# GPT Actions Integration PRD (Canonical)
 
 Status: Active canonical PRD (consolidated)  
 Owner: Igor / ChatGPT  
@@ -224,3 +224,27 @@ This PRD is satisfied when:
 - Exact long-term minimal write payload (after stable usage data).
 - Whether to simplify read aliases and keep only canonical request fields in v2.
 - Additional automated contract tests for public webhook envelopes.
+
+## 15) TODO / Future (Remaining From Work Packages)
+
+Derived from `docs/PRD/MCP-work-packages-v2.md`, these items are still not fully implemented or not yet evidenced as versioned repo artifacts:
+
+1. WP2 test matrix closure (wrap-commit):
+   - required scenarios are not yet fully covered as explicit contract/integration tests in one place:
+   - backend validation error
+   - repeated commit with same canonical text (unchanged/no-op outcome)
+   - repeated commit after additional discussion
+   - same topic across new conversation
+   - topic shift in same conversation
+2. WP3 test matrix closure (read router):
+   - required malformed-input and backend transport failure scenarios are only partially covered and not published as a consolidated read-eval artifact.
+3. WP2/WP3 instrumentation evidence:
+   - no versioned ops artifact yet proving outcome counters by action/method (`success|no_result|failure|validation_error`) from production-like runs.
+4. WP4 eval deliverable not yet published:
+   - a versioned read+write eval report file with measured rates by method/outcome.
+5. WP4 scripted-eval evidence not yet captured in-repo:
+   - explicit pass/fail results for required scripted failure scenarios.
+6. WP4 visible-failure verification in real Custom GPT runs:
+   - runbook/output proving assistant always reports tool failures and does not silently continue.
+7. WP4 silent-failure KPI gate:
+   - explicit documented assertion/report that silent failure rate is `0` for scripted evals.
