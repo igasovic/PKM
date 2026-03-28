@@ -13,6 +13,15 @@ function asPositiveInt(value, fieldName) {
   return Math.trunc(n);
 }
 
+function asNonNegativeInt(value, fieldName) {
+  if (value === undefined || value === null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) {
+    throw new Error(`${fieldName} must be a non-negative integer`);
+  }
+  return Math.trunc(n);
+}
+
 function stripFlagSegment(text, flagName) {
   const re = new RegExp(`(^|\\s)--${flagName}\\s+\\d+(?=\\s|$)`, 'ig');
   return String(text).replace(re, ' ').replace(/\s+/g, ' ').trim();
@@ -35,8 +44,8 @@ function parseCommandText(body) {
   return {
     method,
     query_text: queryText,
-    days: daysMatch ? asPositiveInt(daysMatch[1], 'days') : null,
-    limit: limitMatch ? asPositiveInt(limitMatch[1], 'limit') : null,
+    days: daysMatch ? asNonNegativeInt(daysMatch[1], 'days') : null,
+    limit: limitMatch ? asNonNegativeInt(limitMatch[1], 'limit') : null,
   };
 }
 
@@ -121,10 +130,12 @@ module.exports = async function run(ctx) {
       );
       if (!queryText) throw new Error('query text is required for continue/find/last');
       payload.q = queryText;
-      const days = asPositiveInt(body.days, 'days') || parsedCommand.days;
-      const limit = asPositiveInt(body.limit, 'limit') || parsedCommand.limit;
-      if (days) payload.days = days;
-      if (limit) payload.limit = limit;
+      const daysFromBody = asNonNegativeInt(body.days, 'days');
+      const limitFromBody = asNonNegativeInt(body.limit, 'limit');
+      const days = daysFromBody !== null ? daysFromBody : parsedCommand.days;
+      const limit = limitFromBody !== null ? limitFromBody : parsedCommand.limit;
+      if (days !== null) payload.days = days;
+      if (limit !== null) payload.limit = limit;
       backendRoute = `/db/read/${method}`;
     }
 
@@ -139,8 +150,8 @@ module.exports = async function run(ctx) {
         run_id: runId,
         query_text: queryText || null,
         entry_id: entryId,
-        days: payload.days || null,
-        limit: payload.limit || null,
+        days: payload.days ?? null,
+        limit: payload.limit ?? null,
         parse_ok: true,
       },
     }];

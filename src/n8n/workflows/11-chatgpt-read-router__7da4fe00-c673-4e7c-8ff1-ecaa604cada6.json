@@ -394,7 +394,9 @@
         -128
       ],
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3
+      "typeVersion": 4.3,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "id": "077b2efd-4f5d-4dcf-a43e-abef7df0c759",
@@ -421,7 +423,9 @@
         0
       ],
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3
+      "typeVersion": 4.3,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "id": "0ea58ded-b113-4dba-91ce-c57ad4f4a556",
@@ -448,7 +452,9 @@
         128
       ],
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3
+      "typeVersion": 4.3,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "id": "83eaa2bd-9a35-498d-8eca-cf1134d4459c",
@@ -475,7 +481,9 @@
         256
       ],
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3
+      "typeVersion": 4.3,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "id": "8a1b9f43-4212-40d0-8127-8f030469f287",
@@ -506,7 +514,9 @@
         384
       ],
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3
+      "typeVersion": 4.3,
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "id": "de43f4fe-84ab-43f5-b9b3-f3669e45b7ec",

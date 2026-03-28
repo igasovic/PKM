@@ -1450,6 +1450,7 @@ Body:
 Notes:
 - `q` is required.
 - If `days` or `limit` are `0`/null/omitted, defaults are taken from config.
+- Response always includes one meta row (`is_meta=true`, `cmd='last'`) followed by hit rows (`is_meta=false`).
 
 ### `POST /db/read/find`
 Builds and executes the `/find` query.
@@ -1466,6 +1467,7 @@ Notes:
 - `q` is required.
 - The backend derives the needle from `q` using safe escaping.
 - If `days` or `limit` are `0`/null/omitted, defaults are taken from config.
+- Response always includes one meta row (`is_meta=true`, `cmd='find'`) followed by hit rows (`is_meta=false`).
 
 ### `POST /db/read/continue`
 Builds and executes the `/continue` query.
@@ -1481,6 +1483,7 @@ Body:
 Notes:
 - `q` is required.
 - If `days` or `limit` are `0`/null/omitted, defaults are taken from config.
+- Response always includes one meta row (`is_meta=true`, `cmd='continue'`) followed by hit rows (`is_meta=false`).
 
 ### `POST /db/read/pull`
 Builds and executes the `/pull` query.
@@ -1493,6 +1496,9 @@ Body:
   "longN": 1800
 }
 ```
+
+Notes:
+- Returns only hit row(s); no `is_meta=true` meta row is emitted for `/pull`.
 
 ### `POST /db/read/smoke`
 Returns smoke-marked entries for cleanup/reporting selectors.

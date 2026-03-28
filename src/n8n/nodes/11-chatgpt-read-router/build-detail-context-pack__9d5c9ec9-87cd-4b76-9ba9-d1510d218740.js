@@ -2,15 +2,71 @@
 
 const { buildContextPackMarkdown } = require('@igasovic/n8n-blocks/shared/context-pack-builder.js');
 
+function resolvePayload(ctx) {
+  const inputAll = ctx && ctx.$input && typeof ctx.$input.all === 'function'
+    ? ctx.$input.all()
+    : null;
+  if (Array.isArray(inputAll) && inputAll.length > 0) {
+    if (inputAll.length === 1) {
+      const one = inputAll[0];
+      return (one && typeof one === 'object' && Object.prototype.hasOwnProperty.call(one, 'json'))
+        ? one.json
+        : one;
+    }
+    return inputAll.map((item) => (
+      item && typeof item === 'object' && Object.prototype.hasOwnProperty.call(item, 'json')
+        ? item.json
+        : item
+    ));
+  }
+  return ctx && Object.prototype.hasOwnProperty.call(ctx, '$json') ? ctx.$json : null;
+}
+
 function normalizePullRows(payload) {
   if (Array.isArray(payload)) return payload;
   if (payload && typeof payload === 'object' && Array.isArray(payload.rows)) return payload.rows;
+  if (payload && typeof payload === 'object') {
+    // /db/read/pull can return a single row object as one item.
+    if (payload.entry_id !== undefined || payload.id !== undefined) return [payload];
+  }
   return [];
 }
 
+function extractHttpError(payload) {
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const found = extractHttpError(item);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (!payload || typeof payload !== 'object') return null;
+
+  const statusRaw = payload.statusCode ?? payload.status ?? payload.http_status;
+  const status = Number(statusRaw);
+  const safeStatus = Number.isFinite(status) && status >= 400 ? Math.trunc(status) : 502;
+  const errorObj = payload.error && typeof payload.error === 'object' ? payload.error : {};
+  const message = String(
+    payload.message
+    || errorObj.message
+    || payload.reason
+    || payload.description
+    || payload.response?.body?.message
+    || payload.body?.message
+    || '',
+  ).trim();
+  const hasSignal = Boolean(payload.error || payload.stack || (Number.isFinite(status) && status >= 400));
+  if (!hasSignal || !message) return null;
+
+  return {
+    http_status: safeStatus,
+    code: String(errorObj.code || payload.code || 'backend_error'),
+    message,
+  };
+}
+
 module.exports = async function run(ctx) {
-  const { $json } = ctx;
-  const payload = ($json && typeof $json === 'object' && !Array.isArray($json)) ? $json : $json;
+  const payload = resolvePayload(ctx);
 
   let method = 'pull';
   let outcome = 'no_result';
@@ -28,7 +84,29 @@ module.exports = async function run(ctx) {
       error = payload.error || { message: 'working_memory_failed' };
     }
   } else {
-    rows = normalizePullRows(payload);
+    const httpErr = extractHttpError(payload);
+    if (httpErr) {
+      return [{
+        json: {
+          response_payload: {
+            ok: false,
+            action: 'chatgpt_read',
+            method: null,
+            outcome: 'failure',
+            no_result: false,
+            context_pack_markdown: null,
+            result: null,
+            error: {
+              code: httpErr.code,
+              message: httpErr.message,
+            },
+          },
+          http_status: httpErr.http_status,
+        },
+      }];
+    }
+
+    rows = normalizePullRows(payload).filter((row) => !(row && typeof row === 'object' && row.is_meta === true));
     outcome = rows.length > 0 ? 'success' : 'no_result';
     queryText = rows.length > 0 && rows[0] && rows[0].entry_id !== undefined ? String(rows[0].entry_id) : '';
   }

@@ -34,4 +34,19 @@ describe('wf11 route-read-request', () => {
     expect(out.backend_payload).toEqual({ q: 'sleep routine', days: 14 });
     expect(out.query_text).toBe('sleep routine');
   });
+
+  test('accepts days/limit as zero for continue and forwards zeros', async () => {
+    const out = await runRoute({
+      method: 'continue',
+      q: 'ai',
+      days: 0,
+      limit: 0,
+    });
+
+    expect(out.read_method).toBe('continue');
+    expect(out.backend_route).toBe('/db/read/continue');
+    expect(out.backend_payload).toEqual({ q: 'ai', days: 0, limit: 0 });
+    expect(out.days).toBe(0);
+    expect(out.limit).toBe(0);
+  });
 });
