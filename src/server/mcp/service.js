@@ -377,15 +377,17 @@ async function runPull(args) {
     longN: longN || undefined,
   });
   const row = Array.isArray(result && result.rows) && result.rows.length > 0 ? result.rows[0] : null;
+  const found = row && Object.prototype.hasOwnProperty.call(row, 'found') ? !!row.found : !!row;
   return {
     meta: {
       method: 'pull',
       entry_id: entryId,
       shortN: shortN || null,
       longN: longN || null,
-      found: !!row,
+      found,
     },
     row: row ? {
+      found,
       entry_id: row.entry_id || null,
       content_type: row.content_type || '',
       author: row.author || '',
@@ -416,15 +418,17 @@ async function runPullWorkingMemory(args) {
 
   const result = await db.readWorkingMemory({ topic_key: topicKey });
   const row = Array.isArray(result && result.rows) && result.rows.length > 0 ? result.rows[0] : null;
+  const found = row && Object.prototype.hasOwnProperty.call(row, 'found') ? !!row.found : !!row;
 
   return {
     meta: {
       method: 'pull_working_memory',
       topic: topicLabel,
       topic_key: topicKey,
-      found: !!row,
+      found,
     },
     row: row ? {
+      found,
       entry_id: row.entry_id || null,
       created_at: row.created_at || null,
       topic_primary: row.topic_primary || topicLabel,

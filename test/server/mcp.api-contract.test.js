@@ -165,6 +165,43 @@ describe('chatgpt action API contract', () => {
     expect(readWorkingMemory).toHaveBeenCalledWith({ topic_key: 'parenting-overload' });
   });
 
+  test('POST /chatgpt/working_memory treats found=false synthetic row as no_result', async () => {
+    const readWorkingMemory = jest.fn(async () => ({
+      rows: [{
+        found: false,
+        entry_id: null,
+        title: '',
+        topic_primary: '',
+        capture_text: '',
+        clean_text: '',
+      }],
+    }));
+    await startServerWithMocks({ readWorkingMemory });
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/chatgpt/working_memory',
+      JSON.stringify({
+        topic: 'Parenting overload',
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.action).toBe('chatgpt_read');
+    expect(parsed.method).toBe('pull_working_memory');
+    expect(parsed.outcome).toBe('no_result');
+    expect(parsed.result.meta.found).toBe(false);
+    expect(parsed.result.row).toEqual(expect.objectContaining({ found: false }));
+    expect(readWorkingMemory).toHaveBeenCalledWith({ topic_key: 'parenting-overload' });
+  });
+
   test('POST /chatgpt/working_memory validates required topic', async () => {
     await startServerWithMocks();
     if (listenDenied) return;

@@ -78,10 +78,15 @@ module.exports = async function run(ctx) {
     method = 'working_memory';
     outcome = String(payload.outcome || '').trim().toLowerCase() || 'no_result';
     const row = payload.result && payload.result.row ? payload.result.row : null;
-    rows = row ? [row] : [];
+    const found = payload.result && payload.result.meta && Object.prototype.hasOwnProperty.call(payload.result.meta, 'found')
+      ? !!payload.result.meta.found
+      : !!row;
+    rows = row && found ? [row] : [];
     queryText = String((payload.result && payload.result.meta && payload.result.meta.topic) || '').trim();
     if (outcome === 'failure') {
       error = payload.error || { message: 'working_memory_failed' };
+    } else if (!found) {
+      outcome = 'no_result';
     }
   } else {
     const httpErr = extractHttpError(payload);
@@ -106,9 +111,14 @@ module.exports = async function run(ctx) {
       }];
     }
 
-    rows = normalizePullRows(payload).filter((row) => !(row && typeof row === 'object' && row.is_meta === true));
-    outcome = rows.length > 0 ? 'success' : 'no_result';
-    queryText = rows.length > 0 && rows[0] && rows[0].entry_id !== undefined ? String(rows[0].entry_id) : '';
+    const allRows = normalizePullRows(payload).filter((row) => !(row && typeof row === 'object' && row.is_meta === true));
+    const hasFoundFlag = allRows.length > 0 && allRows[0] && Object.prototype.hasOwnProperty.call(allRows[0], 'found');
+    const found = hasFoundFlag
+      ? !!allRows[0].found
+      : allRows.length > 0;
+    rows = found ? allRows : [];
+    outcome = found ? 'success' : 'no_result';
+    queryText = allRows.length > 0 && allRows[0] && allRows[0].entry_id !== undefined ? String(allRows[0].entry_id) : '';
   }
 
   const contextPackMarkdown = buildContextPackMarkdown(

@@ -104,6 +104,32 @@ describe('wf11 context-pack builders', () => {
     expect(body.result.rows[0].entry_id).toBe('45');
   });
 
+  test('build-detail-context-pack treats pull found=false row as no_result', async () => {
+    const payload = {
+      found: false,
+      entry_id: '9999',
+      id: null,
+      title: '',
+    };
+
+    const out = await buildDetailContextPack({
+      $json: payload,
+      $input: {
+        all() {
+          return [{ json: payload }];
+        },
+      },
+    });
+    const body = out[0].json.response_payload;
+
+    expect(body.ok).toBe(true);
+    expect(body.method).toBe('pull');
+    expect(body.outcome).toBe('no_result');
+    expect(body.no_result).toBe(true);
+    expect(body.result.meta.row_count).toBe(0);
+    expect(body.result.rows).toHaveLength(0);
+  });
+
   test('build-search-context-pack returns failure envelope for HTTP error payload', async () => {
     const payload = {
       statusCode: 502,

@@ -1552,31 +1552,65 @@ function buildReadPull(opts) {
   const longN = Number(opts.longN ?? 1800);
 
   return `
-SELECT
-  entry_id,
-  id,
-  created_at,
-  source,
-  intent,
-  content_type,
-  COALESCE(title,'') AS title,
-  COALESCE(author,'') AS author,
-  COALESCE(url_canonical, url, '') AS url,
-  COALESCE(topic_primary,'') AS topic_primary,
-  COALESCE(topic_secondary,'') AS topic_secondary,
-  COALESCE(distill_summary,'') AS distill_summary,
-  COALESCE(distill_why_it_matters,'') AS distill_why_it_matters,
-  COALESCE(gist,'') AS gist,
-  COALESCE(clean_text, '') AS clean_text,
-  keywords,
+WITH req AS (
+  SELECT ${bigIntLit(entry_id)}::bigint AS requested_entry_id
+),
+hit AS (
+  SELECT
+    TRUE AS found,
+    e.entry_id,
+    e.id,
+    e.created_at,
+    e.source,
+    e.intent,
+    e.content_type,
+    COALESCE(e.title,'') AS title,
+    COALESCE(e.author,'') AS author,
+    COALESCE(e.url_canonical, e.url, '') AS url,
+    COALESCE(e.topic_primary,'') AS topic_primary,
+    COALESCE(e.topic_secondary,'') AS topic_secondary,
+    COALESCE(e.distill_summary,'') AS distill_summary,
+    COALESCE(e.distill_why_it_matters,'') AS distill_why_it_matters,
+    COALESCE(e.gist,'') AS gist,
+    COALESCE(e.clean_text, '') AS clean_text,
+    e.keywords,
 
-  -- legacy name expected by current telegram message builder
-  left(COALESCE(retrieval_excerpt, metadata #>> '{retrieval,excerpt}', ''), ${shortN}) AS excerpt,
+    -- legacy name expected by current telegram message builder
+    left(COALESCE(e.retrieval_excerpt, e.metadata #>> '{retrieval,excerpt}', ''), ${shortN}) AS excerpt,
 
-  -- optional long body for later /pull --excerpt
-  left(regexp_replace(COALESCE(clean_text, capture_text), '\\s+', ' ', 'g'), ${longN}) AS excerpt_long
-FROM ${entries_table}
-WHERE entry_id = ${bigIntLit(entry_id)}::bigint
+    -- optional long body for later /pull --excerpt
+    left(regexp_replace(COALESCE(e.clean_text, e.capture_text), '\\s+', ' ', 'g'), ${longN}) AS excerpt_long
+  FROM ${entries_table} e
+  JOIN req r ON e.entry_id = r.requested_entry_id
+  LIMIT 1
+),
+miss AS (
+  SELECT
+    FALSE AS found,
+    r.requested_entry_id AS entry_id,
+    NULL::uuid AS id,
+    NULL::timestamptz AS created_at,
+    NULL::text AS source,
+    NULL::text AS intent,
+    NULL::text AS content_type,
+    ''::text AS title,
+    ''::text AS author,
+    ''::text AS url,
+    ''::text AS topic_primary,
+    ''::text AS topic_secondary,
+    ''::text AS distill_summary,
+    ''::text AS distill_why_it_matters,
+    ''::text AS gist,
+    ''::text AS clean_text,
+    NULL::text[] AS keywords,
+    ''::text AS excerpt,
+    ''::text AS excerpt_long
+  FROM req r
+  WHERE NOT EXISTS (SELECT 1 FROM hit)
+)
+SELECT * FROM hit
+UNION ALL
+SELECT * FROM miss
 LIMIT 1;
 `.trim();
 }
@@ -1593,33 +1627,68 @@ function buildReadWorkingMemory(opts) {
   const keyPrimary = `wm:${topicKey}`;
 
   return `
-SELECT
-  entry_id,
-  id,
-  created_at,
-  source,
-  intent,
-  content_type,
-  COALESCE(title, '') AS title,
-  COALESCE(author, '') AS author,
-  COALESCE(topic_primary, '') AS topic_primary,
-  COALESCE(topic_secondary, '') AS topic_secondary,
-  topic_secondary_confidence,
-  COALESCE(gist, '') AS gist,
-  COALESCE(distill_summary, '') AS distill_summary,
-  COALESCE(distill_why_it_matters, '') AS distill_why_it_matters,
-  COALESCE(retrieval_excerpt, '') AS excerpt,
-  COALESCE(capture_text, '') AS capture_text,
-  COALESCE(clean_text, '') AS clean_text,
-  content_hash,
-  metadata
-FROM ${entries_table}
-WHERE
-  source = 'chatgpt'
-  AND content_type = 'working_memory'
-  AND idempotency_policy_key = 'chatgpt_working_memory_v1'
-  AND idempotency_key_primary = ${lit(keyPrimary)}::text
-ORDER BY created_at DESC
+WITH req AS (
+  SELECT ${lit(topicKey)}::text AS topic_key
+),
+hit AS (
+  SELECT
+    TRUE AS found,
+    e.entry_id,
+    e.id,
+    e.created_at,
+    e.source,
+    e.intent,
+    e.content_type,
+    COALESCE(e.title, '') AS title,
+    COALESCE(e.author, '') AS author,
+    COALESCE(e.topic_primary, '') AS topic_primary,
+    COALESCE(e.topic_secondary, '') AS topic_secondary,
+    e.topic_secondary_confidence,
+    COALESCE(e.gist, '') AS gist,
+    COALESCE(e.distill_summary, '') AS distill_summary,
+    COALESCE(e.distill_why_it_matters, '') AS distill_why_it_matters,
+    COALESCE(e.retrieval_excerpt, '') AS excerpt,
+    COALESCE(e.capture_text, '') AS capture_text,
+    COALESCE(e.clean_text, '') AS clean_text,
+    e.content_hash,
+    e.metadata
+  FROM ${entries_table} e
+  JOIN req r ON e.idempotency_key_primary = ('wm:' || r.topic_key)
+  WHERE
+    e.source = 'chatgpt'
+    AND e.content_type = 'working_memory'
+    AND e.idempotency_policy_key = 'chatgpt_working_memory_v1'
+  ORDER BY e.created_at DESC
+  LIMIT 1
+),
+miss AS (
+  SELECT
+    FALSE AS found,
+    NULL::bigint AS entry_id,
+    NULL::uuid AS id,
+    NULL::timestamptz AS created_at,
+    'chatgpt'::text AS source,
+    'thought'::text AS intent,
+    'working_memory'::text AS content_type,
+    ''::text AS title,
+    ''::text AS author,
+    ''::text AS topic_primary,
+    ''::text AS topic_secondary,
+    NULL::double precision AS topic_secondary_confidence,
+    ''::text AS gist,
+    ''::text AS distill_summary,
+    ''::text AS distill_why_it_matters,
+    ''::text AS excerpt,
+    ''::text AS capture_text,
+    ''::text AS clean_text,
+    NULL::text AS content_hash,
+    NULL::jsonb AS metadata
+  FROM req
+  WHERE NOT EXISTS (SELECT 1 FROM hit)
+)
+SELECT * FROM hit
+UNION ALL
+SELECT * FROM miss
 LIMIT 1;
 `.trim();
 }

@@ -57,7 +57,9 @@ describe('read SQL distill field projections', () => {
       longN: 1800,
     });
 
-    expect(sql).toContain('COALESCE(distill_summary,\'\') AS distill_summary');
-    expect(sql).toContain('COALESCE(distill_why_it_matters,\'\') AS distill_why_it_matters');
+    expect(sql).toContain('COALESCE(e.distill_summary,\'\') AS distill_summary');
+    expect(sql).toContain('COALESCE(e.distill_why_it_matters,\'\') AS distill_why_it_matters');
+    expect(sql).toContain('TRUE AS found');
+    expect(sql).toContain('FALSE AS found');
   });
 });

@@ -93,10 +93,16 @@ Response:
       "topic_key": "parenting",
       "found": true
     },
-    "row": {}
+    "row": {
+      "found": true
+    }
   }
 }
 ```
+Notes:
+- The backend query returns exactly one row.
+- `result.meta.found` and `result.row.found` indicate hit/miss.
+- On topic miss, `found=false` and the row contains empty/null content fields.
 
 ### `POST /chatgpt/wrap-commit`
 Internal backend action route used by n8n `05 ChatGPT Wrap Commit`.
@@ -1498,7 +1504,10 @@ Body:
 ```
 
 Notes:
-- Returns only hit row(s); no `is_meta=true` meta row is emitted for `/pull`.
+- Returns exactly one row.
+- Row includes `found` boolean:
+  - `found=true` when the entry exists (row contains entry data).
+  - `found=false` when the entry does not exist (row contains the requested `entry_id` plus null/empty content fields).
 
 ### `POST /db/read/smoke`
 Returns smoke-marked entries for cleanup/reporting selectors.
@@ -1527,6 +1536,7 @@ All `/db/*` endpoints return **only the rows** from SQL:
   {
     "id": "...",
     "entry_id": 123,
+    "found": true,
     "keywords": ["k1", "k2"],
     "distill_summary": "Primary Tier-2 summary when present.",
     "distill_why_it_matters": "Why this should matter later.",
