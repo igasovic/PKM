@@ -272,8 +272,10 @@ Instead:
 
 **Connecting (host → container):**
 ```bash
-docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d postgres
-docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
+PGUSER="${POSTGRES_ADMIN_USER:-$(grep -E '^POSTGRES_ADMIN_USER=' /home/igasovic/stack/.env | tail -n1 | cut -d= -f2-)}"
+PGUSER="${PGUSER:-postgres}"
+docker exec -it postgres psql -U "$PGUSER" -d postgres
+docker exec -it postgres psql -U "$PGUSER" -d pkm
 ```
 
 ### Prod vs test

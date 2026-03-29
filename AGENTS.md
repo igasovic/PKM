@@ -153,6 +153,8 @@ Before coding non-trivial changes, provide a short plan covering:
 - Do not silently edit runtime stack files as the primary authored surface.
 - Keep apply logic explicit and reviewable.
 - For any non-secret config change, agent should perform all repo/doc updates and provide only the required `checkcfg`/`updatecfg` operator command(s) for apply.
+- Before proposing any apply/migration command, explicitly state what will be applied and where (target host, container/service, database/schema/file path).
+- For Postgres apply commands, never rely on an already-exported shell variable for admin user. Resolve DB user explicitly from `/home/igasovic/stack/.env` (fallback `postgres`) and pass it via `psql -U`.
 
 ### Config-change handoff block (mandatory)
 When your change affects config, your final response must include:
