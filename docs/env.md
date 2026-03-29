@@ -278,6 +278,14 @@ docker exec -it postgres psql -U "$PGUSER" -d postgres
 docker exec -it postgres psql -U "$PGUSER" -d pkm
 ```
 
+**Applying a repo migration file from host path:**
+```bash
+PGUSER="${POSTGRES_ADMIN_USER:-$(grep -E '^POSTGRES_ADMIN_USER=' /home/igasovic/stack/.env | tail -n1 | cut -d= -f2-)}"
+PGUSER="${PGUSER:-postgres}"
+MIGRATION="/home/igasovic/repos/n8n-workflows/scripts/db/migrations/2026-03-28_failure_packs.sql"
+cat "$MIGRATION" | docker exec -i postgres psql -U "$PGUSER" -d pkm -v ON_ERROR_STOP=1
+```
+
 ### Prod vs test
 - Production schema: `pkm`
 - Test schema: `pkm_test`
