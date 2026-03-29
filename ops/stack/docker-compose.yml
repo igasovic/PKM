@@ -102,6 +102,7 @@ services:
     volumes:
       - ./n8n:/home/node/.n8n
       - /home/igasovic/repos/n8n-workflows:/data:ro
+      - /home/igasovic/pkm-import:/files:rw
       - /home/igasovic/backup/postgres:/home/node/.n8n-files/backup-postgres:ro
     networks:
       - internal

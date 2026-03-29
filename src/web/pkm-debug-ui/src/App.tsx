@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { DebugPage } from './pages/DebugPage';
+import { FailuresPage } from './pages/FailuresPage';
 import { ReadPage } from './pages/ReadPage';
 
 type MenuItem = {
@@ -13,6 +14,7 @@ type MenuItem = {
 const MENU_ITEMS: MenuItem[] = [
   { id: 'read', label: 'Read', to: '/read' },
   { id: 'debug', label: 'Debug', to: '/debug' },
+  { id: 'failures', label: 'Failures', to: '/failures' },
 ];
 
 function SidebarLink({ to, label }: { to: string; label: string }) {
@@ -167,6 +169,7 @@ export default function App() {
               <Route path="/read" element={<ReadPage />} />
               <Route path="/debug" element={<DebugPage />} />
               <Route path="/debug/run/:runId" element={<DebugPage />} />
+              <Route path="/failures" element={<FailuresPage />} />
               <Route path="*" element={<Navigate to="/read" replace />} />
             </Routes>
           </main>

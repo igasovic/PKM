@@ -68,6 +68,7 @@
   "shared": [
     "config.js",
     "config/index.js",
+    "failure-pack.js",
     "telegram-markdown.js",
     "context-pack-builder-core.js",
     "context-pack-builder.js",

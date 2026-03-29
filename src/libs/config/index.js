@@ -36,6 +36,14 @@ const CONFIG_V1 = {
     schema_prod: 'pkm',
     schema_test: 'pkm_test',
   },
+  failure_pack: {
+    schema_version: 'failure-pack.v1',
+    redaction_ruleset_version: 'v1',
+    sidecar_root_relative: 'debug/failures',
+    sidecar_write_dir: '/files/debug/failures',
+    sidecar_read_dir: '/data/debug/failures',
+    inline_max_bytes: 65536,
+  },
   t1: {
     batch: {
       verbose_logging: true,

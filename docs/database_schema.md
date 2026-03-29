@@ -1,4 +1,4 @@
-# PKM Database Schema v2.5 (Observed + Required Runtime Tables)
+# PKM Database Schema v2.6 (Observed + Required Runtime Tables)
 
 **Observed on:** 2026-02-17 (from `psql` introspection against database `pkm`).
 
@@ -59,6 +59,7 @@ Schema grants (current):
 - `entries` (~1232 kB)
 - `idempotency_policies` (~16 kB)
 - `pipeline_events` (size varies by retention)
+- `failure_packs` (size varies by failure volume)
 - `runtime_config` (~16 kB)
 - `calendar_requests` (size varies by family-calendar usage)
 - `calendar_event_observations` (size varies by read/report volume)
@@ -89,6 +90,7 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 |---|---|---|---|---|
 | `pkm.entries` | RIUD + TRUNCATE/REF/… | RIUD | R | — |
 | `pkm.pipeline_events` | full | RIUD | — | — |
+| `pkm.failure_packs` | full | RIUD | — | — |
 | `pkm.runtime_config` | full | RIUD | R | R |
 | `pkm.calendar_requests` | full | RIUD | — | — |
 | `pkm.calendar_event_observations` | full | RIUD | — | — |
@@ -170,6 +172,8 @@ Mirrored between `pkm` and `pkm_test`:
 
 - `pkm.runtime_config` exists **only in prod**.
   - It currently contains `is_test_mode = false` (jsonb boolean).
+- `pkm.failure_packs` exists **only in prod**.
+  - one table stores both test-mode and production-mode capture rows via projected `mode` + envelope JSON.
 - `pkm.calendar_requests` exists **only in prod** (calendar business-request log).
 - `pkm.calendar_event_observations` exists **only in prod** (external visibility/report observation log).
 
@@ -369,6 +373,45 @@ Always-on lightweight transition logs for backend pipelines (step order, summari
 **Deployment note**
 - This table must exist in the backend-configured schema (`PKM_DB_SCHEMA`, default `pkm`).
 - Required app grants for backend role `pkm_ingest`: `SELECT, INSERT, UPDATE, DELETE`.
+
+---
+
+### `pkm.failure_packs`
+
+**Purpose**
+Durable diagnostics store for n8n-orchestrated workflow failures captured by WF99.
+
+**Columns**
+- `failure_id` uuid PK default `gen_random_uuid()`
+- `created_at` timestamptz NOT NULL default `now()`
+- `updated_at` timestamptz NOT NULL default `now()`
+- `run_id` text NOT NULL UNIQUE
+- `execution_id` text
+- `workflow_id` text
+- `workflow_name` text NOT NULL
+- `mode` text
+- `failed_at` timestamptz
+- `node_name` text NOT NULL
+- `node_type` text
+- `error_name` text
+- `error_message` text
+- `status` text NOT NULL default `captured` CHECK in `('captured','partial','failed')`
+- `has_sidecars` boolean NOT NULL default `false`
+- `sidecar_root` text
+- `pack` jsonb NOT NULL
+
+**Indexes**
+- unique `(run_id)`
+- `(failed_at DESC)`
+- `(workflow_name, failed_at DESC)`
+- `(node_name, failed_at DESC)`
+- `(mode, failed_at DESC)`
+- partial `(failed_at DESC)` where `status = 'captured'`
+
+**Notes**
+- This table is prod-only (`pkm`) by design.
+- Test-mode and production captures share this table; the captured mode is projected in both `mode` and `pack`.
+- Sidecar files are persisted on shared disk under `debug/failures/...` and referenced by relative paths inside `pack.artifacts`.
 
 ---
 

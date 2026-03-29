@@ -1,4 +1,41 @@
 # changelog
+## 2026-03-28 — Failure-pack diagnostics path (WF99 + PKM + Debug UI)
+
+### What changed
+- Added failure-pack shared utility module:
+  - `src/libs/failure-pack.js`
+  - schema normalization (`failure-pack.v1`)
+  - secret redaction helpers
+  - sidecar relative-path validation
+- Added backend failure-pack persistence/read surface:
+  - `POST /debug/failures`
+  - `GET /debug/failures/:failure_id`
+  - `GET /debug/failures/by-run/:run_id`
+  - `GET /debug/failures`
+  - `GET /debug/failure-bundle/:run_id`
+- Added DB migration for prod-only failure store:
+  - `scripts/db/migrations/2026-03-28_failure_packs.sql`
+  - table `pkm.failure_packs` keyed by `run_id`
+- Extended WF99 error handler to:
+  - build normalized failure-pack envelope
+  - redact payloads
+  - write sidecar artifacts under shared storage
+  - post to PKM and report pack-status in Telegram alert text
+- Added Debug UI Failures page:
+  - route/menu: `/failures`
+  - recent list + filters + run-id lookup
+  - detail view with stored pack and bundle trace
+- Updated docs/contracts:
+  - `docs/api.md`
+  - `docs/database_schema.md`
+  - `docs/env.md`
+  - `docs/config_operations.md`
+  - `docs/requirements.md`
+  - `src/web/pkm-debug-ui/README.md`
+- Added tests:
+  - `test/server/failure-pack.api-contract.test.js`
+  - `test/server/failure-pack.utils.test.js`
+
 ## 2026-03-27 — WF11 read routing moved fully into n8n
 
 ### What changed

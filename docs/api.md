@@ -145,6 +145,12 @@ Response:
 {
   "version": "v1",
   "db": { "is_test_mode": false, "schema_prod": "pkm", "schema_test": "pkm_test" },
+  "failure_pack": {
+    "schema_version": "failure-pack.v1",
+    "redaction_ruleset_version": "v1",
+    "sidecar_root_relative": "debug/failures",
+    "inline_max_bytes": 65536
+  },
   "distill": {
     "max_entries_per_run": 25,
     "direct_chunk_threshold_words": 5000
@@ -239,6 +245,109 @@ Response:
   "limit": 50,
   "before_ts": null,
   "has_error": null
+}
+```
+
+### `POST /debug/failures`
+Upserts one failure pack by `run_id` (admin-only write path used by WF99).
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+- `X-PKM-Run-Id: <run_id>` (recommended)
+
+Body:
+- full `failure-pack.v1` envelope
+
+Response:
+```json
+{
+  "failure_id": "11111111-1111-4111-8111-111111111111",
+  "run_id": "run-abc",
+  "status": "captured",
+  "upsert_action": "inserted"
+}
+```
+
+### `GET /debug/failures/:failure_id`
+Returns one persisted failure-pack row by `failure_id` (summary fields + `pack`).
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+### `GET /debug/failures/by-run/:run_id`
+Returns one persisted failure-pack row by `run_id` (summary fields + `pack`).
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+### `GET /debug/failures`
+Returns recent failure-pack summary rows.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Query params:
+- `limit` (optional, default `20`, max `100`)
+- `before_ts` (optional ISO datetime)
+- `workflow_name` (optional contains filter)
+- `node_name` (optional contains filter)
+- `mode` (optional exact match)
+
+Response:
+```json
+{
+  "rows": [
+    {
+      "failure_id": "11111111-1111-4111-8111-111111111111",
+      "run_id": "run-abc",
+      "workflow_name": "WF 99 Error Handling",
+      "node_name": "Normalize article",
+      "error_message": "Request failed with status 500",
+      "failed_at": "2026-03-28T20:00:00.000Z",
+      "mode": "production",
+      "status": "captured",
+      "has_sidecars": true,
+      "sidecar_root": "debug/failures/2026/03/28/run-abc/pack-sidecars"
+    }
+  ],
+  "limit": 20,
+  "before_ts": null,
+  "workflow_name": null,
+  "node_name": null,
+  "mode": null
+}
+```
+
+### `GET /debug/failure-bundle/:run_id`
+Returns one merged diagnostic payload by `run_id`:
+- failure summary
+- stored failure pack
+- pipeline trace rows from `/debug/run/:run_id` source data
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Query params:
+- `trace_limit` (optional, default `5000`)
+
+Response:
+```json
+{
+  "run_id": "run-abc",
+  "failure": {
+    "failure_id": "11111111-1111-4111-8111-111111111111",
+    "workflow_name": "WF 99 Error Handling",
+    "node_name": "Normalize article",
+    "error_message": "Request failed with status 500",
+    "failed_at": "2026-03-28T20:00:00.000Z",
+    "mode": "production",
+    "status": "captured"
+  },
+  "pack": {},
+  "run_trace": {
+    "run_id": "run-abc",
+    "rows": []
+  }
 }
 ```
 

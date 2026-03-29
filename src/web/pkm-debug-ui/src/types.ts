@@ -45,6 +45,44 @@ export interface RecentRunSummary {
   missing_end_count: number;
 }
 
+export interface FailurePackSummary {
+  failure_id: string;
+  created_at: string | null;
+  updated_at: string | null;
+  run_id: string;
+  execution_id: string | null;
+  workflow_id: string | null;
+  workflow_name: string | null;
+  mode: string | null;
+  failed_at: string | null;
+  node_name: string | null;
+  node_type: string | null;
+  error_name: string | null;
+  error_message: string | null;
+  status: string | null;
+  has_sidecars: boolean;
+  sidecar_root: string | null;
+}
+
+export interface FailurePackDetail extends FailurePackSummary {
+  pack: unknown;
+}
+
+export interface FailureBundle {
+  run_id: string;
+  failure: {
+    failure_id: string | null;
+    workflow_name: string | null;
+    node_name: string | null;
+    error_message: string | null;
+    failed_at: string | null;
+    mode: string | null;
+    status: string | null;
+  } | null;
+  pack: unknown;
+  run_trace: RunBundle | null;
+}
+
 export type ReadOperation = 'continue' | 'find' | 'last';
 
 export interface ReadItem {

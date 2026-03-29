@@ -61,6 +61,10 @@ const {
   getRunContext,
   setContextPatch,
 } = require('./logger/context.js');
+const {
+  normalizeFailurePackEnvelope,
+  summarizeForLog,
+} = require('../libs/failure-pack.js');
 
 const testModeService = new TestModeService();
 const batchStatusService = createBatchStatusService();
@@ -157,6 +161,35 @@ function isStructuredTelegramRouteInput(rawText, prefixes) {
   const calendarPrefix = lower(p.calendar || 'cal:') || 'cal:';
   const pkmPrefix = lower(p.pkm || 'pkm:') || 'pkm:';
   return s.startsWith(calendarPrefix) || s.startsWith(pkmPrefix);
+}
+
+function failurePackResponseRow(row) {
+  if (!row || typeof row !== 'object') return null;
+  return {
+    failure_id: row.failure_id || null,
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+    run_id: row.run_id || null,
+    execution_id: row.execution_id || null,
+    workflow_id: row.workflow_id || null,
+    workflow_name: row.workflow_name || null,
+    mode: row.mode || null,
+    failed_at: row.failed_at || null,
+    node_name: row.node_name || null,
+    node_type: row.node_type || null,
+    error_name: row.error_name || null,
+    error_message: row.error_message || null,
+    status: row.status || null,
+    has_sidecars: !!row.has_sidecars,
+    sidecar_root: row.sidecar_root || null,
+    pack: row.pack || null,
+  };
+}
+
+function failurePackSummaryRow(row) {
+  const base = failurePackResponseRow(row) || {};
+  delete base.pack;
+  return base;
 }
 
 async function handleRequest(req, res) {
@@ -306,7 +339,9 @@ async function handleRequest(req, res) {
       return json(res, 200, normalized);
     } catch (err) {
       logError(err, req);
-      return json(res, 400, { error: 'bad_request', message: err.message });
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      return json(res, status, { error: status === 403 ? 'forbidden' : 'bad_request', message: err.message });
     }
   }
 
@@ -323,7 +358,9 @@ async function handleRequest(req, res) {
       return json(res, 200, { content_type: intent.content_type });
     } catch (err) {
       logError(err, req);
-      return json(res, 400, { error: 'bad_request', message: err.message });
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      return json(res, status, { error: status === 403 ? 'forbidden' : 'bad_request', message: err.message });
     }
   }
 
@@ -347,7 +384,9 @@ async function handleRequest(req, res) {
       return json(res, 200, normalized);
     } catch (err) {
       logError(err, req);
-      return json(res, 400, { error: 'bad_request', message: err.message });
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      return json(res, status, { error: status === 403 ? 'forbidden' : 'bad_request', message: err.message });
     }
   }
 
@@ -373,7 +412,9 @@ async function handleRequest(req, res) {
       return json(res, 200, normalized);
     } catch (err) {
       logError(err, req);
-      return json(res, 400, { error: 'bad_request', message: err.message });
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      return json(res, status, { error: status === 403 ? 'forbidden' : 'bad_request', message: err.message });
     }
   }
 
@@ -398,7 +439,9 @@ async function handleRequest(req, res) {
       return json(res, 200, normalized);
     } catch (err) {
       logError(err, req);
-      return json(res, 400, { error: 'bad_request', message: err.message });
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      return json(res, status, { error: status === 403 ? 'forbidden' : 'bad_request', message: err.message });
     }
   }
 
@@ -419,7 +462,9 @@ async function handleRequest(req, res) {
       return json(res, 200, result);
     } catch (err) {
       logError(err, req);
-      return json(res, 400, { error: 'bad_request', message: err.message });
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      return json(res, status, { error: status === 403 ? 'forbidden' : 'bad_request', message: err.message });
     }
   }
 
@@ -861,7 +906,9 @@ async function handleRequest(req, res) {
       return json(res, 200, result);
     } catch (err) {
       logError(err, req);
-      return json(res, 400, { error: 'bad_request', message: err.message });
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      return json(res, status, { error: status === 403 ? 'forbidden' : 'bad_request', message: err.message });
     }
   }
 
@@ -880,7 +927,9 @@ async function handleRequest(req, res) {
       return json(res, 200, result);
     } catch (err) {
       logError(err, req);
-      return json(res, 400, { error: 'bad_request', message: err.message });
+      const statusCode = Number(err && err.statusCode);
+      const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      return json(res, status, { error: status === 403 ? 'forbidden' : 'bad_request', message: err.message });
     }
   }
 
@@ -926,6 +975,159 @@ async function handleRequest(req, res) {
         { input: body, output: (out) => out, meta: { route: url.pathname } }
       );
       return json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'POST' && url.pathname === '/debug/failures') {
+    try {
+      requireAdminSecret(req);
+      const raw = await readBody(req, 5 * 1024 * 1024);
+      const body = parseJsonBody(raw);
+      if (!body.run_id) {
+        body.run_id = asText(req.headers['x-pkm-run-id']);
+      }
+      bindRunIdFromBody(body);
+      const envelope = normalizeFailurePackEnvelope(body);
+      const result = await logger.step(
+        'api.debug.failures.write',
+        async () => db.upsertFailurePack(envelope),
+        {
+          input: summarizeForLog(envelope),
+          output: (out) => ({
+            failure_id: out && out.failure_id ? out.failure_id : null,
+            run_id: out && out.run_id ? out.run_id : null,
+            status: out && out.status ? out.status : null,
+            upsert_action: out && out.upsert_action ? out.upsert_action : null,
+          }),
+          meta: { route: url.pathname },
+        }
+      );
+      return json(res, 200, {
+        failure_id: result.failure_id || null,
+        run_id: result.run_id || envelope.run_id,
+        status: result.status || envelope.status || 'captured',
+        upsert_action: result.upsert_action || 'updated',
+      });
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  const debugFailureByRunMatch = (method === 'GET')
+    ? url.pathname.match(/^\/debug\/failures\/by-run\/([^/]+)$/)
+    : null;
+  if (debugFailureByRunMatch) {
+    try {
+      requireAdminSecret(req);
+      const run_id = decodeURIComponent(debugFailureByRunMatch[1]);
+      const row = await logger.step(
+        'api.debug.failures.get_by_run',
+        async () => db.getFailurePackByRunId(run_id),
+        {
+          input: { run_id },
+          output: (out) => out ? { run_id: out.run_id, failure_id: out.failure_id } : { run_id, found: false },
+          meta: { route: url.pathname },
+        }
+      );
+      if (!row) return notFound(res);
+      return json(res, 200, failurePackResponseRow(row));
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  if (method === 'GET' && url.pathname === '/debug/failures') {
+    try {
+      requireAdminSecret(req);
+      const limit = Number(url.searchParams.get('limit') || 20);
+      const before_ts = url.searchParams.get('before_ts') || null;
+      const workflow_name = url.searchParams.get('workflow_name') || null;
+      const node_name = url.searchParams.get('node_name') || null;
+      const mode = url.searchParams.get('mode') || null;
+      const result = await logger.step(
+        'api.debug.failures.list',
+        async () => db.listFailurePacks({ limit, before_ts, workflow_name, node_name, mode }),
+        {
+          input: { limit, before_ts, workflow_name, node_name, mode },
+          output: (out) => ({
+            count: out && Array.isArray(out.rows) ? out.rows.length : 0,
+            limit: out && out.limit ? out.limit : limit,
+          }),
+          meta: { route: url.pathname },
+        }
+      );
+      return json(res, 200, {
+        ...result,
+        rows: Array.isArray(result.rows) ? result.rows.map((row) => failurePackSummaryRow(row)) : [],
+      });
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  const debugFailureByIdMatch = (method === 'GET')
+    ? url.pathname.match(/^\/debug\/failures\/([^/]+)$/)
+    : null;
+  if (debugFailureByIdMatch) {
+    try {
+      requireAdminSecret(req);
+      const failure_id = decodeURIComponent(debugFailureByIdMatch[1]);
+      const row = await logger.step(
+        'api.debug.failures.get_by_id',
+        async () => db.getFailurePackById(failure_id),
+        {
+          input: { failure_id },
+          output: (out) => out ? { failure_id: out.failure_id, run_id: out.run_id } : { failure_id, found: false },
+          meta: { route: url.pathname },
+        }
+      );
+      if (!row) return notFound(res);
+      return json(res, 200, failurePackResponseRow(row));
+    } catch (err) {
+      logError(err, req);
+      return json(res, 400, { error: 'bad_request', message: err.message });
+    }
+  }
+
+  const debugFailureBundleMatch = (method === 'GET')
+    ? url.pathname.match(/^\/debug\/failure-bundle\/([^/]+)$/)
+    : null;
+  if (debugFailureBundleMatch) {
+    try {
+      requireAdminSecret(req);
+      const run_id = decodeURIComponent(debugFailureBundleMatch[1]);
+      const traceLimit = Number(url.searchParams.get('trace_limit') || 5000);
+      const failureRow = await logger.step(
+        'api.debug.failure_bundle',
+        async () => db.getFailurePackByRunId(run_id),
+        {
+          input: { run_id, trace_limit: traceLimit },
+          output: (out) => out ? { found: true, run_id: out.run_id, failure_id: out.failure_id } : { found: false, run_id },
+          meta: { route: url.pathname },
+        }
+      );
+      if (!failureRow) return notFound(res);
+      const runTrace = await db.getPipelineRun(run_id, { limit: traceLimit });
+      return json(res, 200, {
+        run_id,
+        failure: {
+          failure_id: failureRow.failure_id,
+          workflow_name: failureRow.workflow_name,
+          node_name: failureRow.node_name,
+          error_message: failureRow.error_message,
+          failed_at: failureRow.failed_at,
+          mode: failureRow.mode || null,
+          status: failureRow.status || null,
+        },
+        pack: failureRow.pack || null,
+        run_trace: runTrace,
+      });
     } catch (err) {
       logError(err, req);
       return json(res, 400, { error: 'bad_request', message: err.message });

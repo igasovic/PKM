@@ -103,6 +103,9 @@ Notes:
 - Non-secret service config must be authored in repo-managed `ops/stack/env/<service>.env` files (for example `ops/stack/env/pkm-server.env`), not by ad hoc host `.env` edits.
   - Example calendar policy vars owned in repo: `CALENDAR_TELEGRAM_ENFORCE_ALLOWLIST`, `CALENDAR_TELEGRAM_ALLOWED_USER_IDS`, `CALENDAR_TELEGRAM_PKM_ALLOWED_USER_IDS`.
   - Example Telegram/n8n runtime vars owned in repo: `TELEGRAM_ADMIN_CHAT_ID`, `N8N_EDITOR_BASE_URL`, `WEBHOOK_URL`, `N8N_PROXY_HOPS`, `NODE_FUNCTION_ALLOW_EXTERNAL`, `NODE_FUNCTION_ALLOW_BUILTIN` (in `ops/stack/env/n8n.env`).
+  - Failure-pack sidecar support depends on repo-managed n8n settings:
+    - compose mount: `/home/igasovic/pkm-import` -> `/files` (in `ops/stack/docker-compose.yml`)
+    - builtin allowlist includes `node:fs` and `node:fs/promises` (in `ops/stack/env/n8n.env`)
   - The `n8n-runners` launcher is additionally configured by repo-managed `ops/stack/n8n-runners/n8n-task-runners.json`, copied to `/home/igasovic/stack/n8n-task-runners.json`, and mounted into the container as `/etc/n8n-task-runners.json`.
   - Current JS allowlist includes both the canonical scoped runtime package and an unscoped compatibility fallback alias: `@igasovic/n8n-blocks,igasovic-n8n-blocks`.
 

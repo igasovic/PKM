@@ -2,7 +2,7 @@
 
 **Purpose:** quick human review + enough context for agents to safely operate / extend the stack (what runs where, how to connect, what can break, and what not to touch).
 
-**Last verified:** 2026-03-13  
+**Last verified:** 2026-03-28  
 **Host:** `pi` (LAN: `192.168.5.4`)  
 **OS:** Debian GNU/Linux 13 (trixie) aarch64 • kernel `6.12.62+rpt-rpi-v8`  
 **Docker:** 29.1.4 • **Docker Compose:** v5.0.1
@@ -248,6 +248,7 @@ Instead:
 - n8n:
   - `/home/igasovic/stack/n8n` → `/home/node/.n8n`
   - `/home/igasovic/repos/n8n-workflows` → `/data` (read-only; not part of the runtime import contract)
+  - `/home/igasovic/pkm-import` → `/files` (read-write; shared failure-pack sidecar path)
   - `/home/igasovic/backup/postgres` → `/home/node/.n8n-files/backup-postgres` (read-only)
 - LiteLLM:
   - `/home/igasovic/stack/litellm/config.yaml` → `/app/config.yaml` (read-only)
@@ -314,7 +315,7 @@ docker exec -it postgres psql -U "${POSTGRES_ADMIN_USER}" -d pkm
 - `TZ=America/Chicago`
 - `N8N_RUNNERS_MODE=external`
 - `NODE_FUNCTION_ALLOW_EXTERNAL=@igasovic/n8n-blocks,igasovic-n8n-blocks`
-- `NODE_FUNCTION_ALLOW_BUILTIN=crypto,node:path,node:process`
+- `NODE_FUNCTION_ALLOW_BUILTIN=crypto,node:path,node:process,node:fs,node:fs/promises`
 - external runner launcher config is copied to `/home/igasovic/stack/n8n-task-runners.json` and mounted to `/etc/n8n-task-runners.json`
 
 **Externalized workflow code & GitOps**

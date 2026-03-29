@@ -246,6 +246,10 @@ module.exports = {
   buildGetRecentPipelineRuns,
   buildGetLastPipelineRunId,
   buildPrunePipelineEvents,
+  buildUpsertFailurePack,
+  buildGetFailurePackById,
+  buildGetFailurePackByRunId,
+  buildListFailurePacks,
   buildTier2MarkStale,
 };
 
@@ -838,6 +842,175 @@ function buildPrunePipelineEvents(opts) {
   }
   return `DELETE FROM ${eventsTable}
 WHERE ts < now() - ($1::int * interval '1 day')`;
+}
+
+/**
+ * Build SQL for upserting one failure-pack row by run_id.
+ * @param {{ failurePacksTable: string }} opts
+ * @returns {string}
+ */
+function buildUpsertFailurePack(opts) {
+  const failurePacksTable = opts && opts.failurePacksTable;
+  if (!failurePacksTable || typeof failurePacksTable !== 'string') {
+    throw new Error('buildUpsertFailurePack: failurePacksTable must be a non-empty string');
+  }
+  return `INSERT INTO ${failurePacksTable} AS fp (
+  run_id,
+  execution_id,
+  workflow_id,
+  workflow_name,
+  mode,
+  failed_at,
+  node_name,
+  node_type,
+  error_name,
+  error_message,
+  status,
+  has_sidecars,
+  sidecar_root,
+  pack,
+  updated_at
+)
+VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  $6::timestamptz,
+  $7,
+  $8,
+  $9,
+  $10,
+  $11,
+  $12::boolean,
+  $13,
+  $14::jsonb,
+  now()
+)
+ON CONFLICT (run_id) DO UPDATE SET
+  execution_id = EXCLUDED.execution_id,
+  workflow_id = EXCLUDED.workflow_id,
+  workflow_name = EXCLUDED.workflow_name,
+  mode = EXCLUDED.mode,
+  failed_at = EXCLUDED.failed_at,
+  node_name = EXCLUDED.node_name,
+  node_type = EXCLUDED.node_type,
+  error_name = EXCLUDED.error_name,
+  error_message = EXCLUDED.error_message,
+  status = EXCLUDED.status,
+  has_sidecars = EXCLUDED.has_sidecars,
+  sidecar_root = EXCLUDED.sidecar_root,
+  pack = EXCLUDED.pack,
+  updated_at = now()
+RETURNING
+  failure_id,
+  run_id,
+  status,
+  CASE WHEN xmax = 0 THEN 'inserted' ELSE 'updated' END AS upsert_action`;
+}
+
+/**
+ * Build SQL for loading one failure-pack row by failure_id.
+ * @param {{ failurePacksTable: string }} opts
+ * @returns {string}
+ */
+function buildGetFailurePackById(opts) {
+  const failurePacksTable = opts && opts.failurePacksTable;
+  if (!failurePacksTable || typeof failurePacksTable !== 'string') {
+    throw new Error('buildGetFailurePackById: failurePacksTable must be a non-empty string');
+  }
+  return `SELECT
+  failure_id,
+  created_at,
+  updated_at,
+  run_id,
+  execution_id,
+  workflow_id,
+  workflow_name,
+  mode,
+  failed_at,
+  node_name,
+  node_type,
+  error_name,
+  error_message,
+  status,
+  has_sidecars,
+  sidecar_root,
+  pack
+FROM ${failurePacksTable}
+WHERE failure_id = $1::uuid
+LIMIT 1`;
+}
+
+/**
+ * Build SQL for loading one failure-pack row by run_id.
+ * @param {{ failurePacksTable: string }} opts
+ * @returns {string}
+ */
+function buildGetFailurePackByRunId(opts) {
+  const failurePacksTable = opts && opts.failurePacksTable;
+  if (!failurePacksTable || typeof failurePacksTable !== 'string') {
+    throw new Error('buildGetFailurePackByRunId: failurePacksTable must be a non-empty string');
+  }
+  return `SELECT
+  failure_id,
+  created_at,
+  updated_at,
+  run_id,
+  execution_id,
+  workflow_id,
+  workflow_name,
+  mode,
+  failed_at,
+  node_name,
+  node_type,
+  error_name,
+  error_message,
+  status,
+  has_sidecars,
+  sidecar_root,
+  pack
+FROM ${failurePacksTable}
+WHERE run_id = $1
+LIMIT 1`;
+}
+
+/**
+ * Build SQL for listing recent failure-pack summaries.
+ * @param {{ failurePacksTable: string }} opts
+ * @returns {string}
+ */
+function buildListFailurePacks(opts) {
+  const failurePacksTable = opts && opts.failurePacksTable;
+  if (!failurePacksTable || typeof failurePacksTable !== 'string') {
+    throw new Error('buildListFailurePacks: failurePacksTable must be a non-empty string');
+  }
+  return `SELECT
+  failure_id,
+  created_at,
+  updated_at,
+  run_id,
+  execution_id,
+  workflow_id,
+  workflow_name,
+  mode,
+  failed_at,
+  node_name,
+  node_type,
+  error_name,
+  error_message,
+  status,
+  has_sidecars,
+  sidecar_root
+FROM ${failurePacksTable}
+WHERE
+  ($1::timestamptz IS NULL OR failed_at < $1::timestamptz)
+  AND ($2::text IS NULL OR workflow_name ILIKE ('%' || $2 || '%'))
+  AND ($3::text IS NULL OR node_name ILIKE ('%' || $3 || '%'))
+  AND ($4::text IS NULL OR mode = $4::text)
+ORDER BY failed_at DESC NULLS LAST, created_at DESC
+LIMIT $5::int`;
 }
 
 function buildTier2MarkStale(opts) {

@@ -375,6 +375,12 @@ Primary objective:
   - `GET /debug/run/:run_id` (admin-protected)
   - `GET /debug/run/last` (admin-protected)
   - `GET /debug/runs` (admin-protected, recent run summaries)
+- Backend must expose failure-pack diagnostics APIs (admin-protected):
+  - `POST /debug/failures` (WF99 write/upsert by `run_id`)
+  - `GET /debug/failures/:failure_id`
+  - `GET /debug/failures/by-run/:run_id`
+  - `GET /debug/failures`
+  - `GET /debug/failure-bundle/:run_id` (stored pack + run trace)
 - Backend must prune old pipeline events daily with retention default `30` days (`PKM_PIPELINE_EVENTS_RETENTION_DAYS`).
 
 ## Debug UI requirements (Mac React + Tailwind)
@@ -390,6 +396,9 @@ Primary objective:
   - timeline inspection in table view and call-stack tree view
   - paired span health states (`ok`, `error`, `missing_end`, `orphan_end`, `orphan_error`)
   - detail drawer for event/span with JSON copy actions
+  - Failures page backed by `GET /debug/failures*` + `GET /debug/failure-bundle/:run_id`
+  - failure filters for `workflow_name`, `node_name`, and `mode`
+  - failure detail view showing summary, stored pack, sidecar refs, and run trace
 
 ## Read context pack requirements
 - Context pack generation must be centralized in `src/libs/context-pack-builder.js`.

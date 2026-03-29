@@ -3,6 +3,7 @@
 Local React + Tailwind GUI for:
 - **Read** workflows via `/db/read/*`
 - **Debug** pipeline inspection via `/debug/*`
+- **Failures** diagnostics via `/debug/failures*`
 
 ## Scope
 - Dark-mode only UI.
@@ -14,6 +15,11 @@ Local React + Tailwind GUI for:
 - Debug page depends on:
   - `GET /debug/run/:run_id`
   - `GET /debug/runs`
+- Failures page depends on:
+  - `GET /debug/failures`
+  - `GET /debug/failures/:failure_id`
+  - `GET /debug/failures/by-run/:run_id`
+  - `GET /debug/failure-bundle/:run_id`
 - Handles payload variants:
   - `[{ run_id, rows: [...] }]`
   - `{ run_id, rows: [...] }`
@@ -63,6 +69,13 @@ This keeps frontend requests relative and avoids backend CORS changes.
 - Side drawer for event/span/node details.
 - Copy buttons for JSON sections.
 - Deterministic **Copy Investigation Bundle** output with stable key ordering.
+
+### Failures
+- Side-menu route at `/failures`.
+- Recent failure list with filters (`workflow_name`, `node_name`, `mode`).
+- Run-id lookup for direct detail open.
+- Detail panel with summary + stored pack + merged bundle trace.
+- Quick jump to `/debug/run/:run_id`.
 
 ## Optional SSH tunnel (if LAN is blocked)
 From Mac:
