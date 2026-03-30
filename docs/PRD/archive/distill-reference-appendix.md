@@ -14,6 +14,12 @@ Preserve detailed distill reference material that is useful for deep review or i
 - the active PRD points here for deep reference
 - you are validating an edge case that is too detailed for the active contract summary
 
+## Section map
+- telemetry and observability: `Observability / Braintrust Plan`
+- exact deterministic scoring: `Priority Scoring Formula`
+- migration and rollout safety: `Schema Migration Plan Guidelines`
+- candidate query shape: `Candidate Discovery SQL Guidelines`
+
 ## Notes
 - This appendix was split out during the PRD usability pass.
 - The active contract remains in `docs/PRD/distill-prd.md`.
@@ -441,4 +447,3 @@ Preserve detailed distill reference material that is useful for deep review or i
 
 - Main principle:
   - candidate discovery should return a lightweight, deterministic working set — not the full entry payload
-

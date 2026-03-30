@@ -2,6 +2,8 @@
 
 Status: legacy/disabled for ChatGPT integration as of 2026-03-26.
 
+Do not read this unless you are debugging legacy MCP references or historical ChatGPT integration decisions.
+
 This document is kept only as historical reference during the n8n-first transition.
 
 Current behavior:

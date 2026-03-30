@@ -6,6 +6,13 @@
 - Primary runtime target: Raspberry Pi stack deployment
 - PRD location in repo: `docs/PRD/archive/n8n-npm-migration.md`
 
+## Final outcome summary
+- path-based `/data/...` runtime imports were retired from the active model
+- n8n runtime JS moved to the internal package `@igasovic/n8n-blocks`
+- repo-side migration and Pi cutover validation were completed
+
+Read this only when you need migration history or rationale behind the current package-based runtime model.
+
 ## 1. Title, status, owners, scope
 
 Implementation status snapshot:

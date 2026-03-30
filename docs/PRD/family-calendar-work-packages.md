@@ -4,6 +4,21 @@ Status: proposed companion
 Companion to: `docs/PRD/family-calendar-prd.md`  
 Last verified: 2026-03-30
 
+## Use this companion when
+- turning the family-calendar PRD into an implementation sequence
+- estimating delivery order, touched files, or acceptance criteria by slice
+- reviewing whether the proposed rollout still makes sense
+
+## Status summary
+
+| Area | Status |
+|---|---|
+| canonical family-calendar feature | proposed in `docs/PRD/family-calendar-prd.md` |
+| this companion | proposed execution plan |
+| implementation status | do not assume complete; verify against code before reusing a package unchanged |
+
+For feature boundaries, start with `docs/PRD/family-calendar-prd.md`. Use this file only when the question is about execution order or delivery slices.
+
 ## Delivery order
 
 Recommended implementation order:

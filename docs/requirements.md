@@ -1,5 +1,19 @@
 # Legacy Requirements Inventory
 
+## Historical Only
+
+Do not use this file as the active owner of feature requirements.
+
+Use it only when:
+- tracing how requirements moved into PRDs
+- checking whether a surface was already migrated
+- recovering a historical requirement that may have been missed
+
+Use instead:
+- `docs/PRD/README.md` for active surface ownership
+- the owning PRD for current feature intent
+- authoritative contract docs for API, schema, env, and config facts
+
 Implementation note (2026-03-17):
 - `docs/PRD/archive/n8n-npm-migration.md` is repo-side implemented.
 - Live Pi validation remains the final cutover step.

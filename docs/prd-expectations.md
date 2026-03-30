@@ -6,6 +6,14 @@
 - make it explicit how to recover PRDs from `docs/changelog.md`, `docs/requirements.md`, and code
 - help coding, planning, reviewing, and architect agents work from the same PRD assumptions
 
+## PRD Quick Rules
+- PRDs own surface intent, boundaries, rollout, and unresolved decisions.
+- Code and authoritative docs still win for current implementation facts.
+- Use `docs/PRD/README.md` to find the active owner before writing or updating a PRD.
+- Update the owning PRD in the same change when the surface meaning changes.
+- Use `REVIEW_REQUIRED:` when the current state cannot be stated confidently.
+- Use changelog as an inbox, not as the long-term owner of surface intent.
+
 ## Current Reality
 
 The repo has three historical layers of product intent:

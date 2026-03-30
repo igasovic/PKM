@@ -3,6 +3,8 @@
 Status: archived completed companion (implemented-v1 on 2026-03-28)  
 Related PRD: `docs/PRD/failure-pack-prd.md`
 
+Read this only for implementation history. Current surface ownership lives in `docs/PRD/failure-pack-prd.md`.
+
 ---
 
 ## WP1 — Contracts, schema, and doc updates

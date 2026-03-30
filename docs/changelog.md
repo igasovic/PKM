@@ -1,4 +1,47 @@
 # changelog
+
+## 2026-03-30 — Low-score doc usability cleanup
+
+### What changed
+- Added stronger `read this / skip this` guidance to the lowest-utility docs in the current corpus.
+- Clarified which docs are:
+  - active contract/process docs
+  - historical ledgers
+  - archive-only references
+  - execution companions
+- Updated:
+  - `docs/database_operations.md`
+  - `docs/prd-expectations.md`
+  - `docs/requirements.md`
+  - `docs/changelog.md`
+  - `docs/PRD/family-calendar-prd.md`
+  - `docs/PRD/config-work-packages.md`
+  - `docs/PRD/distill-work-packages.md`
+  - `docs/PRD/family-calendar-work-packages.md`
+  - `docs/archive/mcp_api.md`
+  - `docs/PRD/archive/README.md`
+  - `docs/PRD/archive/MCP-transition-work-packages-v2.md`
+  - `docs/PRD/archive/distill-reference-appendix.md`
+  - `docs/PRD/archive/failure-pack-work-packages.md`
+  - `docs/PRD/archive/n8n-npm-migration.md`
+
+### Cutoff note
+- After this entry, low-signal docs should be made explicit about whether they are active, historical, archive-only, or execution companions.
+
+## How To Use This File
+- Use this file as a change inbox and historical timeline, not as the long-term owner of surface intent.
+- For current behavior, prefer the owning PRD and the authoritative contract docs.
+- When adding a new entry, list the affected surfaces and impacted PRDs explicitly.
+
+## Entry Template
+
+Use this lightweight shape for new entries:
+- `What changed`
+- `Surfaces changed`
+- `PRDs impacted`
+- `Contract docs impacted`
+- `Cutoff note` when the entry changes how later readers should interpret the docs
+
 ## 2026-03-30 — PRD split and filename normalization pass
 
 ### What changed

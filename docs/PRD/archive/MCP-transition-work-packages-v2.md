@@ -4,6 +4,12 @@ Status: archived historical transition plan for n8n-first ChatGPT integration
 Owner: Igor / ChatGPT  
 Date: 2026-03-26
 
+Superseded by:
+- `docs/PRD/gpt-actions-integration-prd.md`
+- `docs/external_api.md`
+
+Read this only for transition history, not for the active public ChatGPT contract.
+
 ## Goal
 
 Replace the public MCP integration path with an n8n-first ChatGPT integration that preserves the PKM workflow, automates write first, adds read second, and then removes obsolete MCP documentation.

@@ -1,8 +1,23 @@
 # Work Packages — Distill
 
 Status: active companion  
-Companion to: docs/PRD/distill-prd.md`  
+Companion to: `docs/PRD/distill-prd.md`  
 Last verified: 2026-03-30
+
+## Use this companion when
+- implementing or re-sequencing Tier-2 work in bounded slices
+- turning the canonical distill PRD into an execution plan
+- checking rollout order, test scope, and doc-update scope for a Tier-2 change
+
+## Status summary
+
+| Area | Status |
+|---|---|
+| canonical Tier-2 surface | active in `docs/PRD/distill-prd.md` |
+| reference-heavy appendix material | split to `docs/PRD/archive/distill-reference-appendix.md` |
+| this companion | active as execution sequencing support |
+
+Read this only if you are implementing or planning Tier-2 work. For normal boundary or review questions, start with `docs/PRD/distill-prd.md`.
 
 ## Purpose
 This file breaks the Tier-2 distillation implementation into ordered, testable work packages.

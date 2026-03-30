@@ -24,6 +24,17 @@
 ## Update When
 - backup cadence, retention, storage layout, or restore semantics change
 
+## Quick Use Guide
+
+| If you are doing... | Read this doc? | Read instead / also |
+|---|---|---|
+| changing schema, tables, indexes, or grants | usually no | `docs/database_schema.md` |
+| changing config apply flow | usually no | `docs/config_operations.md` |
+| changing host paths, mounts, or runtime access | maybe | `docs/env.md` |
+| changing backup, restore, retention, or restore safety policy | yes | this doc |
+
+Most day-to-day backend, schema, and API work does **not** require this doc. Use it when the change touches backup/restore operations or restore safety expectations.
+
 ## Backups (Operational Reference)
 
 This project uses **logical Postgres backups** (`pg_dump` custom format) because the DB is still small and we want **fast, low-risk** operations with easy restore.
@@ -99,4 +110,3 @@ Off-site copies are pushed by n8n to Google Drive and intentionally kept to **on
   - `--target scratch` (default): restores into `pkm_restore_YYYYmmdd_HHMMSS` and `n8n_restore_YYYYmmdd_HHMMSS`
   - `--target prod`: requires `CONFIRM_PROD=YES` to prevent accidents
 - Integrity: bundles include `SHA256SUMS`; restore verifies checksums when present.
-

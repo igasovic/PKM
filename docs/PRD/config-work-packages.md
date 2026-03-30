@@ -4,6 +4,21 @@ Status: active companion
 Companion to: `docs/PRD/config-prd.md`  
 Last verified: 2026-03-30
 
+## Use this companion when
+- sequencing remaining config-sync implementation or cleanup work
+- checking which config-sync slices were intentionally separated into work packages
+- validating whether a config-sync change still needs a work-package refresh
+
+## Status summary
+
+| Area | Status |
+|---|---|
+| command interface and active surfaces | implemented baseline |
+| this companion | active only as sequencing/reference support |
+| cloudflared repo-managed surface | explicitly out of scope / not active |
+
+If the canonical PRD is enough for the change you are making, read `docs/PRD/config-prd.md` first and skip this file.
+
 ## Current implementation snapshot
 Implemented today:
 - command interface:

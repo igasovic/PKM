@@ -10,6 +10,23 @@ Related work-package doc: `docs/PRD/family-calendar-work-packages.md`
 ## Purpose
 Define the family-calendar feature surface centered on Telegram creation, Google Calendar writes/reads, and scheduled family reports.
 
+## V1 minimum contract
+- Telegram can create family-calendar intents without breaking normal PKM capture.
+- Calendar requests are normalized and finalized through backend-owned contracts.
+- Google Calendar writes/reads stay in n8n; backend owns routing, clarification, normalization, and business logging.
+- Daily and weekly reporting are part of v1.
+- Calendar business logs live in prod-only tables and do not follow generic PKM test-mode routing.
+
+## Current vs proposed
+
+| Area | Current today | Proposed in this PRD |
+|---|---|---|
+| Telegram router | routes commands to read, everything else to note capture | adds a calendar intent family without breaking note capture |
+| Calendar write path | no family-calendar feature path | backend route/normalize/finalize + n8n Google Calendar orchestration |
+| Calendar read/report | no family-calendar feature path | dedicated read/report workflows and Telegram output |
+| Data model | no family-calendar business-log tables | `calendar_requests` and `calendar_event_observations` |
+| Status | baseline constraints are real | feature remains proposed, not fully implemented baseline |
+
 ## Use this PRD when
 - planning or reviewing the family-calendar feature surface
 - changing Telegram-to-calendar intent handling, Google Calendar interaction, reporting, or family-calendar schemas
