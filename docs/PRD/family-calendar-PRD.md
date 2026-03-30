@@ -811,6 +811,7 @@ High-level output:
 - original start time
 - warning flags
 - `request_id`
+- malformed normalize inputs should be surfaced as `status="rejected"` payloads (HTTP 200) rather than transport-level 4xx, so workflow branching can return user-facing fallback text without failing the run
 
 High-level input also includes admin header (`x-pkm-admin-secret`).
 

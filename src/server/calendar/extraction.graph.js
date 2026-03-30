@@ -14,7 +14,7 @@ const {
 } = require('./extraction.prompt.js');
 const { parseExtractionLlmResult } = require('./extraction.schema.js');
 
-const DEFAULT_EXTRACTION_MODEL = 'gpt-5-nano';
+const DEFAULT_EXTRACTION_MODEL = 'pkm-default';
 
 let langGraphModulePromise = null;
 let compiledGraphPromise = null;

@@ -545,10 +545,11 @@ async function handleRequest(req, res) {
   }
 
   if (method === 'POST' && url.pathname === '/calendar/normalize') {
+    let body = null;
     try {
       requireAdminSecret(req);
       const raw = await readBody(req);
-      const body = parseJsonBody(raw);
+      body = parseJsonBody(raw);
       bindRunIdFromBody(body);
 
       const source = body && body.source && typeof body.source === 'object' ? body.source : {};
@@ -698,6 +699,18 @@ async function handleRequest(req, res) {
       logError(err, req);
       const statusCode = Number(err && err.statusCode);
       const status = Number.isFinite(statusCode) && statusCode >= 400 && statusCode < 600 ? statusCode : 400;
+      if (status === 400 || status === 404) {
+        return json(res, 200, {
+          request_id: body && body.request_id ? String(body.request_id) : null,
+          status: 'rejected',
+          missing_fields: [],
+          clarification_question: null,
+          normalized_event: null,
+          warning_codes: ['normalize_bad_request'],
+          message: err && err.message ? String(err.message) : 'calendar normalize rejected',
+          request_status: null,
+        });
+      }
       const errorCode = status === 403
         ? 'forbidden'
         : status === 404

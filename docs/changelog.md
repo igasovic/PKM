@@ -1,4 +1,21 @@
 # changelog
+## 2026-03-29 — Calendar normalize resilience + calendar model alias
+
+### What changed
+- Calendar extraction graph now defaults to LiteLLM alias `pkm-default`:
+  - `src/server/calendar/extraction.graph.js`
+- LiteLLM routing config now includes `pkm-default` alias:
+  - `ops/stack/litellm/config.yaml`
+- `POST /calendar/normalize` now maps malformed request errors (`400`/`404`) to structured business response:
+  - HTTP `200`
+  - `status: "rejected"`
+  - `warning_codes: ["normalize_bad_request"]`
+  - preserves human-readable `message`
+- Added API-contract test coverage for malformed normalize requests returning rejected payload instead of transport error:
+  - `test/server/calendar.api-contract.test.js`
+- Updated API docs:
+  - `docs/api.md`
+
 ## 2026-03-28 — Failure-pack diagnostics path (WF99 + PKM + Debug UI)
 
 ### What changed

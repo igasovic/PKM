@@ -626,6 +626,7 @@ Behavior:
 - uses `request_id` when supplied
 - otherwise creates/uses request row keyed by Telegram idempotency key (`tgcal:<chat_id>:<message_id>`)
 - continuation without `request_id` is intentionally not inferred here; router endpoint owns continuation selection
+- malformed normalize inputs return HTTP `200` with `status: "rejected"` and warning code `normalize_bad_request` so workflow branching can handle user-facing fallback without transport-level failure
 
 Body:
 ```json

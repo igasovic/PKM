@@ -504,6 +504,37 @@ describe('calendar API contract', () => {
     });
   });
 
+  test('POST /calendar/normalize returns rejected payload for malformed request instead of HTTP 400', async () => {
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/calendar/normalize',
+      JSON.stringify({
+        raw_text: 'Mila dentist tomorrow at 3:00p',
+        actor_code: 'igor',
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      }
+    );
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({
+      request_id: null,
+      status: 'rejected',
+      missing_fields: [],
+      clarification_question: null,
+      normalized_event: null,
+      warning_codes: ['normalize_bad_request'],
+      message: 'telegram source chat_id and message_id are required for new calendar requests',
+      request_status: null,
+    });
+  });
+
   test('POST /calendar/finalize maps success to calendar_created', async () => {
     dbMock.finalizeCalendarRequestById.mockResolvedValue({
       request_id: '3243fcdd-e81c-4c94-aa79-d8d8f99bb9dd',

@@ -1,4 +1,10 @@
 model_list:
+  - model_name: pkm-default
+    litellm_params:
+      model:  openai/gpt-5-nano
+      api_key: os.environ/OPENAI_API_KEY
+      allowed_openai_params: ["reasoning_effort"]
+      reasoning_effort: minimal
   - model_name: t1-default
     litellm_params:
       model:  openai/gpt-5-nano

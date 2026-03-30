@@ -418,8 +418,8 @@ Recommended wiring (so **pkm-server never calls OpenAI directly**):
 **Config**
 - File: `/home/igasovic/stack/litellm/config.yaml`
 - Observed routing:
+  - `pkm-default` → `gpt-5-nano` with `reasoning_effort: minimal` and `allowed_openai_params: ["reasoning_effort"]`
   - `t1-default` → `gpt-5-nano` with `reasoning_effort: minimal` and `allowed_openai_params: ["reasoning_effort"]`
-  - `t1-cheap` → `gpt-5-nano`
   - `t1-batch` → `gpt-5-nano`
 
 ---
