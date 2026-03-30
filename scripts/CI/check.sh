@@ -128,7 +128,16 @@ else
 fi
 
 # --------
-# 4) Tests: run backend Jest from src/server
+# 4) Docs parity: backend routes and env vars must stay reflected in docs
+# --------
+echo "==> Checking backend route/doc parity..."
+python3 "$ROOT/scripts/CI/check_backend_route_docs.py"
+
+echo "==> Checking backend env/doc parity..."
+python3 "$ROOT/scripts/CI/check_backend_env_docs.py"
+
+# --------
+# 5) Tests: run backend Jest from src/server
 # --------
 echo "==> Running backend tests (Jest) from src/server..."
 BACKEND_DIR="$ROOT/src/server"

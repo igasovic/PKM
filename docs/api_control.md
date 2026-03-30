@@ -211,6 +211,27 @@ Response:
 ]
 ```
 
+### `POST /echo`
+Internal utility/test route that echoes request content back to the caller.
+
+Purpose:
+- low-level request/JSON round-trip verification
+- test helper for local backend smoke checks
+
+Request:
+- any body
+- if `Content-Type: application/json`, backend parses JSON and returns structured payload
+
+JSON response example:
+```json
+{
+  "ok": true,
+  "data": {
+    "ping": true
+  }
+}
+```
+
 ### `GET /debug/run/:run_id`
 Returns pipeline transition events for one run id.
 

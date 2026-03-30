@@ -12,12 +12,14 @@ This file is the entrypoint for agents working in this repo.
 ### Coding agent
 Start with:
 - `docs/repo-map.md`
+- `docs/backend_architecture.md` when changing backend structure or ownership
 - then the surface docs for the change type you are touching
 - then `docs/changelog.md` only if recent behavior on that surface matters
 
 ### Planning agent
 Start with:
 - `docs/repo-map.md`
+- `docs/backend_architecture.md` when backend structure or caller boundaries are changing
 - `docs/service_dependancy_graph.md`
 - `docs/env.md`
 - then the relevant contract and config docs for the touched surfaces
@@ -26,6 +28,7 @@ Start with:
 ### Reviewing agent
 Start with:
 - `docs/repo-map.md`
+- `docs/backend_architecture.md` when reviewing backend refactors or ownership changes
 - the contract docs for the changed surfaces
 - any relevant style guide or workflow guide
 - the owning PRD when the change touches boundaries, config, schema, or public contracts
@@ -35,6 +38,7 @@ Start with:
 - `docs/service_dependancy_graph.md`
 - `docs/env.md`
 - `docs/repo-map.md`
+- `docs/backend_architecture.md` for backend implementation topology
 - `docs/config_operations.md`
 - then the relevant contract docs (`api`, `external_api`, `database_schema`)
 - then `docs/PRD/README.md` for active surface ownership
@@ -48,6 +52,7 @@ Start with:
 | Database / schema / migrations | `docs/database_schema.md`, `docs/api.md`, relevant `docs/api_*.md`, `docs/config_operations.md` | `docs/database_schema.md`, related API/config docs |
 | n8n workflows / nodes | `docs/n8n_sync.md`, `docs/n8n_node_style_guide.md`, `docs/api.md`, relevant `docs/api_*.md` | n8n docs plus any touched contract docs |
 | Config / infra / runtime | `docs/config_operations.md`, `docs/env.md`, `docs/service_dependancy_graph.md` | `docs/config_operations.md`, `docs/env.md`, service graph if topology changed |
+| Backend implementation architecture | `docs/backend_architecture.md`, `docs/repo-map.md`, relevant `docs/api*.md` files | `docs/backend_architecture.md` plus any touched contract/config docs |
 | Backend runtime knobs | `docs/backend_runtime_env.md`, `docs/config_operations.md`, `docs/env.md` | `docs/backend_runtime_env.md`, related env/config docs |
 | DB backup / restore workflow | `docs/database_operations.md`, `docs/env.md`, `docs/config_operations.md` | `docs/database_operations.md`, related env/config docs |
 | Repo placement / ownership | `docs/repo-map.md` | `docs/repo-map.md` |
@@ -59,6 +64,7 @@ Start with:
 |---|---|---|
 | `docs/service_dependancy_graph.md` | dependency topology, trust boundaries, service edges | exact runtime mounts, ports, host paths |
 | `docs/env.md` | runtime access paths, ports, mounts, stack root, operator-facing environment notes | high-level dependency topology |
+| `docs/backend_architecture.md` | backend implementation topology, consumer priority, module ownership | public/internal contract schemas, runtime ports, DB schema facts |
 | `docs/api.md` | internal backend API index and shared conventions | public ChatGPT webhook contracts |
 | `docs/api_control.md`, `docs/api_ingest.md`, `docs/api_calendar.md`, `docs/api_distill.md`, `docs/api_read_write.md` | detailed internal endpoint contracts by family | public webhook contracts |
 | `docs/backend_runtime_env.md` | backend env vars and runtime knobs | operator apply workflow |

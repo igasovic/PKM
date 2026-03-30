@@ -14,6 +14,7 @@
 - runtime topology and service edges; use `docs/service_dependancy_graph.md`
 - exact runtime paths and mounts; use `docs/env.md`
 - API or schema contracts; use `docs/api.md` and `docs/database_schema.md`
+- backend implementation topology; use `docs/backend_architecture.md`
 
 ## Read When
 - deciding where code belongs
@@ -66,6 +67,7 @@
 - `docs/README.md`: doc entrypoint and read routing
 - `docs/service_dependancy_graph.md`: dependency topology and trust boundaries
 - `docs/env.md`: runtime access paths, ports, mounts, stack root
+- `docs/backend_architecture.md`: backend implementation topology and consumer hierarchy
 - `docs/api.md`: internal backend API index and shared conventions
 - `docs/api_*.md`: detailed backend endpoint contracts by domain
 - `docs/backend_runtime_env.md`: backend env vars and runtime knobs
