@@ -1,6 +1,7 @@
 'use strict';
 
 const { createBraintrustSink } = require('./logger/sinks/braintrust.js');
+const { getLiteLLMSettings, getFallbackLlmCostEnv } = require('./runtime-env.js');
 
 const DEFAULT_SYSTEM_PROMPT =
   '\
@@ -10,7 +11,7 @@ Do not include markdown, comments, or any extra text.\
 Be conservative: if unsure, lower confidence and use "other" for primary topic.';
 
 function requireApiKey() {
-  const key = process.env.LITELLM_MASTER_KEY;
+  const key = getLiteLLMSettings().apiKey;
   if (!key || !String(key).trim()) {
     throw new Error('LITELLM_MASTER_KEY is required');
   }
@@ -122,8 +123,9 @@ function readEstimatedCostUsd(response, usage) {
   const completionTokens = Number(usage && usage.completion_tokens);
   if (!Number.isFinite(promptTokens) && !Number.isFinite(completionTokens)) return undefined;
 
-  const inputPerM = Number(process.env.LLM_INPUT_COST_PER_1M_USD);
-  const outputPerM = Number(process.env.LLM_OUTPUT_COST_PER_1M_USD);
+  const fallbackCosts = getFallbackLlmCostEnv();
+  const inputPerM = Number(fallbackCosts.inputPerM);
+  const outputPerM = Number(fallbackCosts.outputPerM);
   if (!Number.isFinite(inputPerM) || !Number.isFinite(outputPerM)) return undefined;
 
   const inCost = Number.isFinite(promptTokens) ? (promptTokens / 1_000_000) * inputPerM : 0;
@@ -163,7 +165,7 @@ function formatFetchError(err, url, method) {
 }
 
 function requestTimeoutMs() {
-  const raw = Number(process.env.LITELLM_TIMEOUT_MS || 60_000);
+  const raw = Number(getLiteLLMSettings().timeoutMs);
   if (!Number.isFinite(raw) || raw < 1000) return 60_000;
   return raw;
 }
@@ -175,7 +177,7 @@ function normalizeReasoningEffort(value) {
 }
 
 function getReasoningEffort() {
-  return normalizeReasoningEffort(process.env.T1_REASONING_EFFORT) || 'minimal';
+  return getLiteLLMSettings().reasoningEffort;
 }
 
 function isReasoningEffortValidationError(msg) {
@@ -216,19 +218,13 @@ function withBatchFilesHint(msg, baseUrl) {
 }
 
 function getDefaultBatchModel() {
-  return (
-    process.env.T1_BATCH_MODEL ||
-    process.env.T1_BATCH_DEFAULT_MODEL ||
-    't1-batch'
-  );
+  const settings = getLiteLLMSettings();
+  return settings.batchModel || settings.batchDefaultModel || 't1-batch';
 }
 
 function getDefaultBatchRequestModel(fallback) {
-  return (
-    process.env.T1_BATCH_REQUEST_MODEL ||
-    process.env.T1_BATCH_PROVIDER_MODEL ||
-    null
-  );
+  const settings = getLiteLLMSettings();
+  return settings.batchRequestModel || settings.batchProviderModel || fallback || null;
 }
 
 function isBatchModelUnsupportedMessage(msg) {
@@ -257,9 +253,10 @@ function errorDetails(err) {
 class LiteLLMClient {
   constructor(opts) {
     const options = opts || {};
+    const settings = getLiteLLMSettings();
     this.apiKey = requireApiKey();
-    this.baseUrl = options.baseUrl || process.env.OPENAI_BASE_URL || 'http://litellm:4000/v1';
-    this.model = options.model || process.env.T1_DEFAULT_MODEL || 't1-default';
+    this.baseUrl = options.baseUrl || settings.baseUrl;
+    this.model = options.model || settings.defaultModel;
     this.systemPrompt = options.systemPrompt || DEFAULT_SYSTEM_PROMPT;
     this.braintrustSink = createBraintrustSink();
   }
@@ -728,9 +725,9 @@ class LiteLLMClient {
             endpoint: 'batches',
             requested_batch_model: model,
             requested_provider_model: requestModel,
-            t1_batch_model: process.env.T1_BATCH_MODEL || null,
-            t1_batch_default_model: process.env.T1_BATCH_DEFAULT_MODEL || null,
-            t1_batch_request_model: process.env.T1_BATCH_REQUEST_MODEL || null,
+            t1_batch_model: getLiteLLMSettings().batchModel,
+            t1_batch_default_model: getLiteLLMSettings().batchDefaultModel,
+            t1_batch_request_model: getLiteLLMSettings().batchRequestModel,
           }
         );
       }

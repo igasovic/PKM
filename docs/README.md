@@ -65,6 +65,7 @@ Start with:
 | `docs/service_dependancy_graph.md` | dependency topology, trust boundaries, service edges | exact runtime mounts, ports, host paths |
 | `docs/env.md` | runtime access paths, ports, mounts, stack root, operator-facing environment notes | high-level dependency topology |
 | `docs/backend_architecture.md` | backend implementation topology, consumer priority, module ownership | public/internal contract schemas, runtime ports, DB schema facts |
+| `docs/n8n_backend_contract_map.md` | active n8n workflow to backend route ownership | detailed HTTP schemas or runtime topology |
 | `docs/api.md` | internal backend API index and shared conventions | public ChatGPT webhook contracts |
 | `docs/api_control.md`, `docs/api_ingest.md`, `docs/api_calendar.md`, `docs/api_distill.md`, `docs/api_read_write.md` | detailed internal endpoint contracts by family | public webhook contracts |
 | `docs/backend_runtime_env.md` | backend env vars and runtime knobs | operator apply workflow |

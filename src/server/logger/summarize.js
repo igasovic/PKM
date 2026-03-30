@@ -1,16 +1,11 @@
 'use strict';
 
 const crypto = require('crypto');
+const { getLogSettings } = require('../runtime-env.js');
 
 const BIG_TEXT_FIELDS = new Set(['capture_text', 'extracted_text', 'clean_text']);
-const DEFAULT_SUMMARY_MAX_BYTES = (() => {
-  const raw = Number(process.env.PKM_LOG_SUMMARY_MAX_BYTES || 12 * 1024);
-  return Number.isFinite(raw) && raw >= 2048 ? Math.trunc(raw) : 12 * 1024;
-})();
-const DEFAULT_STRING_HASH_THRESHOLD = (() => {
-  const raw = Number(process.env.PKM_LOG_STRING_HASH_THRESHOLD || 500);
-  return Number.isFinite(raw) && raw >= 50 ? Math.trunc(raw) : 500;
-})();
+const DEFAULT_SUMMARY_MAX_BYTES = getLogSettings().summaryMaxBytes;
+const DEFAULT_STRING_HASH_THRESHOLD = getLogSettings().stringHashThreshold;
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value || ''), 'utf8').digest('hex');

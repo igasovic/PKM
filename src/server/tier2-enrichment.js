@@ -6,6 +6,7 @@ const { LiteLLMClient } = require('./litellm-client.js');
 const { braintrustSink } = require('./logger/braintrust.js');
 const { getLogger } = require('./logger/index.js');
 const { createBatchWorkerRuntime } = require('./batch-worker-runtime.js');
+const { getT2ModelEnv, getT2BatchSettings, hasLiteLLMKey } = require('./runtime-env.js');
 const { runTier2ControlPlanePlan } = require('./tier2/planner.js');
 const { distillTier2SingleEntrySync } = require('./tier2/service.js');
 const { DISTILL_VALIDATION_ERROR_CODES } = require('./tier2/constants.js');
@@ -190,22 +191,24 @@ function getDistillConfig(config) {
 function resolveTier2BatchModel(config) {
   const distill = getDistillConfig(config);
   const models = distill && distill.models ? distill.models : {};
+  const modelEnv = getT2ModelEnv();
   return (
     models.batch_direct ||
     models.sync_direct ||
     models.direct ||
-    process.env.T2_MODEL_BATCH_DIRECT ||
-    process.env.T2_MODEL_SYNC_DIRECT ||
-    process.env.T2_MODEL_DIRECT ||
+    modelEnv.batchDirect ||
+    modelEnv.syncDirect ||
+    modelEnv.direct ||
     't2-direct'
   );
 }
 
 function resolveTier2BatchRequestModel() {
+  const modelEnv = getT2ModelEnv();
   return (
-    process.env.T2_BATCH_REQUEST_MODEL ||
-    process.env.T1_BATCH_REQUEST_MODEL ||
-    process.env.T1_BATCH_PROVIDER_MODEL ||
+    modelEnv.batchRequestModel ||
+    modelEnv.t1BatchRequestModel ||
+    modelEnv.t1BatchProviderModel ||
     null
   );
 }
@@ -253,7 +256,11 @@ const T2_STATUS_HISTORY_DEFAULT = 200;
 let tier2BatchHistory = [];
 
 function resolveTier2StatusHistoryLimit() {
-  return parseLimit(process.env.T2_BATCH_STATUS_HISTORY_LIMIT, T2_STATUS_HISTORY_DEFAULT, T2_STATUS_HISTORY_MAX);
+  return parseLimit(
+    getT2BatchSettings(T2_STATUS_HISTORY_DEFAULT).statusHistoryLimitRaw,
+    T2_STATUS_HISTORY_DEFAULT,
+    T2_STATUS_HISTORY_MAX
+  );
 }
 
 function buildTier2BatchId() {
@@ -1003,8 +1010,7 @@ function createTier2BatchRunner(deps) {
     return client.getFileContent(fileId);
   });
 
-  const hasLiteLLMKey = !!String(process.env.LITELLM_MASTER_KEY || '').trim();
-  const canUseProviderBatch = hasLiteLLMKey && (
+  const canUseProviderBatch = hasLiteLLMKey() && (
     dependencies.useProviderBatch === true
       || (typeof dependencies.createBatch === 'function')
       || (!dependencies.distillOne && store && typeof store.upsertBatchItems === 'function')
@@ -1470,24 +1476,24 @@ function logTier2WorkerError(err) {
 }
 
 function resolveTier2WorkerIntervalMs() {
-  const intervalRaw = Number(process.env.T2_BATCH_SYNC_INTERVAL_MS || 10 * 60_000);
+  const intervalRaw = getT2BatchSettings(resolveDefaultRunLimit()).syncIntervalMs;
   return Number.isFinite(intervalRaw) && intervalRaw >= 5_000 ? intervalRaw : 60_000;
 }
 
 function resolveTier2WorkerSyncLimitFromEnv() {
-  const syncLimitRaw = Number(process.env.T2_BATCH_SYNC_LIMIT || resolveDefaultRunLimit());
+  const syncLimitRaw = getT2BatchSettings(resolveDefaultRunLimit()).syncLimit;
   return Number.isFinite(syncLimitRaw) && syncLimitRaw > 0
     ? Math.trunc(syncLimitRaw)
     : resolveDefaultRunLimit();
 }
 
 function resolveTier2WorkerCollectLimitFromEnv() {
-  const raw = Number(process.env.T2_BATCH_COLLECT_LIMIT || 20);
+  const raw = getT2BatchSettings(resolveDefaultRunLimit()).collectLimit;
   return Number.isFinite(raw) && raw > 0 ? Math.min(Math.trunc(raw), 100) : 20;
 }
 
 function isTier2WorkerEnabled() {
-  return String(process.env.T2_BATCH_WORKER_ENABLED || 'false').toLowerCase() === 'true';
+  return getT2BatchSettings(resolveDefaultRunLimit()).workerEnabled;
 }
 
 const tier2WorkerRuntime = createBatchWorkerRuntime({

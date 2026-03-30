@@ -80,27 +80,6 @@ describe('chatgpt action API contract', () => {
     return { dbMock };
   }
 
-  test('POST /mcp returns legacy disabled response', async () => {
-    await startServerWithMocks();
-    if (listenDenied) return;
-
-    const res = await request(
-      port,
-      'POST',
-      '/mcp',
-      JSON.stringify({ action: 'tools/list' }),
-      {
-        'Content-Type': 'application/json',
-      },
-    );
-
-    expect(res.status).toBe(410);
-    expect(JSON.parse(res.body)).toEqual({
-      error: 'legacy_disabled',
-      message: '/mcp is legacy and disabled for ChatGPT integration; use GPT actions routed through n8n webhooks',
-    });
-  });
-
   test('POST /chatgpt/read is removed', async () => {
     await startServerWithMocks();
     if (listenDenied) return;

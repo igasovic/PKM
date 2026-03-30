@@ -31,6 +31,7 @@
 - `docs/api_calendar.md`
 - `docs/api_distill.md`
 - `docs/api_read_write.md`
+- `docs/n8n_backend_contract_map.md`
 - `docs/backend_runtime_env.md`
 - `docs/external_api.md`
 - `docs/database_schema.md`
@@ -39,6 +40,7 @@
 Base URL: `http://<host>:<port>`
 
 This service exposes a JSON API intended for internal systems such as n8n and operator-facing tooling.
+The machine-readable route ownership registry lives in `docs/backend_route_registry.json`.
 
 ## Endpoint Families At A Glance
 

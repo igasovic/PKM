@@ -12,6 +12,7 @@ const {
 } = require('./context.js');
 const { createPostgresSink } = require('./sinks/postgres.js');
 const { createBraintrustSink } = require('./sinks/braintrust.js');
+const { getLogSettings } = require('../runtime-env.js');
 
 const LEVELS = ['error', 'warn', 'info', 'debug', 'trace'];
 const BIG_TEXT_FIELDS = new Set(['capture_text', 'extracted_text', 'clean_text']);
@@ -22,7 +23,7 @@ function levelValue(level) {
 }
 
 function getLogLevel() {
-  const raw = String(process.env.PKM_LOG_LEVEL || 'info').toLowerCase();
+  const raw = getLogSettings().level;
   return LEVELS.includes(raw) ? raw : 'info';
 }
 
@@ -49,12 +50,11 @@ function errorSummary(err) {
 }
 
 function debugCaptureEnabled() {
-  return String(process.env.PKM_DEBUG_CAPTURE || '').trim() === '1';
+  return getLogSettings().debugCaptureEnabled;
 }
 
 function debugCaptureDir() {
-  const fromEnv = String(process.env.PKM_DEBUG_CAPTURE_DIR || '').trim();
-  return fromEnv || '/data/pipeline-debug';
+  return getLogSettings().debugCaptureDir;
 }
 
 async function writeDebugBundle(runId, label, payload) {
@@ -70,7 +70,7 @@ function buildSummary(value, opts) {
   const includeSamples = shouldLog('trace') && !!(opts && opts.allow_text_samples);
   return summarize(value, {
     include_text_samples: includeSamples,
-    max_bytes: Number(process.env.PKM_LOG_SUMMARY_MAX_BYTES || 12 * 1024),
+    max_bytes: getLogSettings().summaryMaxBytes,
     max_depth: 2,
     max_array_items: 5,
     max_object_keys: 20,

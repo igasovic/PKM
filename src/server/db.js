@@ -1,25 +1,47 @@
 'use strict';
 
+const { getConfig } = require('../libs/config.js');
 const sb = require('../../src/libs/sql-builder.js');
 const { getPool } = require('./db-pool.js');
-const { getConfig } = require('../libs/config.js');
 const { traceDb, braintrustSink } = require('./logger/braintrust.js');
+const { createDistillStore } = require('./db/distill-store.js');
+const { createDebugStore } = require('./db/debug-store.js');
+const { createCalendarStore } = require('./db/calendar-store.js');
 const {
   parseFailurePackSummary,
 } = require('../libs/failure-pack.js');
+const {
+  getTestModeStateFromDb,
+  setTestModeStateInDb,
+  toggleTestModeStateInDb,
+  getEntriesTableFromConfig,
+  getConfigWithTestMode,
+  exec,
+  getTestMode,
+  toggleTestModeState,
+} = require('./db/runtime-store.js');
+const {
+  readContinue,
+  readFind,
+  readLast,
+  readPull,
+  readWorkingMemory,
+  readSmoke,
+} = require('./db/read-store.js');
+const {
+  getRuntimeDbSchema,
+  getDeleteMoveMaxBatch,
+  getDbAdminRole,
+} = require('./runtime-env.js');
 
-const CONFIG_TABLE = sb.qualifiedTable(process.env.PKM_DB_SCHEMA || 'pkm', 'runtime_config');
 const IMMUTABLE_UPDATE_COLUMNS = new Set(['id', 'entry_id', 'created_at', 'tsv']);
 // For these ingest sources we fail closed unless idempotency keys are present.
 const IDEMPOTENCY_REQUIRED_SOURCES = new Set(['email', 'email-batch', 'telegram', 'notion']);
 const ADMIN_SCHEMAS = new Set(['pkm', 'pkm_test']);
-const DELETE_MOVE_MAX_BATCH = (() => {
-  const raw = Number(process.env.DB_DELETE_MOVE_MAX_BATCH || 200);
-  return Number.isFinite(raw) && raw > 0 ? Math.trunc(raw) : 200;
-})();
+const DELETE_MOVE_MAX_BATCH = getDeleteMoveMaxBatch();
 const PREVIEW_LIMIT = 20;
 const PIPELINE_EVENTS_SCHEMA = (() => {
-  const raw = String(process.env.PKM_DB_SCHEMA || 'pkm').trim();
+  const raw = getRuntimeDbSchema();
   return sb.isValidIdent(raw) ? raw : 'pkm';
 })();
 const PIPELINE_EVENTS_TABLE = sb.qualifiedTable(PIPELINE_EVENTS_SCHEMA, 'pipeline_events');
@@ -45,16 +67,6 @@ const CALENDAR_TERMINAL_STATUSES = new Set([
   'ignored',
 ]);
 
-function wrapConfigTableError(err) {
-  if (!err) return err;
-  if (err.code === '42P01' || err.code === '3F000') {
-    const wrapped = new Error(`runtime_config table missing: create ${CONFIG_TABLE} before using test mode`);
-    wrapped.cause = err;
-    return wrapped;
-  }
-  return err;
-}
-
 function wrapTier2EntriesError(err, tableName) {
   if (!err) return err;
   if (err.code === '42703' || err.code === '42P01' || err.code === '3F000') {
@@ -77,51 +89,6 @@ function wrapFailurePacksError(err) {
     return wrapped;
   }
   return err;
-}
-
-async function getTestModeStateFromDb() {
-  const p = getPool();
-  try {
-    const res = await p.query(`SELECT value FROM ${CONFIG_TABLE} WHERE key = $1`, ['is_test_mode']);
-    return !!(res.rows && res.rows[0] && res.rows[0].value === true);
-  } catch (err) {
-    throw wrapConfigTableError(err);
-  }
-}
-
-async function setTestModeStateInDb(nextState) {
-  const p = getPool();
-  try {
-    await p.query(
-      `INSERT INTO ${CONFIG_TABLE} (key, value, updated_at)\n     VALUES ($1, $2::jsonb, now())\n     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
-      ['is_test_mode', JSON.stringify(!!nextState)]
-    );
-  } catch (err) {
-    throw wrapConfigTableError(err);
-  }
-}
-
-async function toggleTestModeStateInDb() {
-  const current = await getTestModeStateFromDb();
-  const next = !current;
-  await setTestModeStateInDb(next);
-  return next;
-}
-
-async function getEntriesTableFromConfig(config) {
-  const cfg = config || getConfig();
-  return sb.resolveEntriesTable(cfg.db);
-}
-
-async function getConfigWithTestMode() {
-  const config = getConfig();
-  config.db.is_test_mode = await getTestModeStateFromDb();
-  return config;
-}
-
-async function exec(sql, meta) {
-  const p = getPool();
-  return traceDb('query', meta, () => p.query(sql));
 }
 
 const COLUMN_TYPES = {
@@ -461,7 +428,7 @@ function buildSelectorWhere(selectors) {
 }
 
 function withAdminRoleSql(client) {
-  const role = String(process.env.PKM_DB_ADMIN_ROLE || '').trim();
+  const role = getDbAdminRole();
   if (!role) return Promise.resolve();
   if (!sb.isValidIdent(role)) {
     throw new Error('PKM_DB_ADMIN_ROLE must be a valid SQL identifier');
@@ -1357,93 +1324,6 @@ ORDER BY m.from_entry_id ASC`;
   });
 }
 
-async function readContinue(opts) {
-  const config = await getConfigWithTestMode();
-  const sql = sb.buildReadContinue({
-    config,
-    entries_table: await getEntriesTableFromConfig(config),
-    q: opts.q,
-    days: opts.days,
-    limit: opts.limit,
-  });
-  return exec(sql, { op: 'read_continue' });
-}
-
-async function readFind(opts) {
-  const config = await getConfigWithTestMode();
-  const sql = sb.buildReadFind({
-    config,
-    entries_table: await getEntriesTableFromConfig(config),
-    q: opts.q,
-    days: opts.days,
-    limit: opts.limit,
-  });
-  return exec(sql, { op: 'read_find' });
-}
-
-async function readLast(opts) {
-  const config = await getConfigWithTestMode();
-  const sql = sb.buildReadLast({
-    config,
-    entries_table: await getEntriesTableFromConfig(config),
-    q: opts.q,
-    days: opts.days,
-    limit: opts.limit,
-  });
-  return exec(sql, { op: 'read_last' });
-}
-
-async function readPull(opts) {
-  const config = await getConfigWithTestMode();
-  const sql = sb.buildReadPull({
-    entries_table: await getEntriesTableFromConfig(config),
-    entry_id: opts.entry_id,
-    shortN: opts.shortN,
-    longN: opts.longN,
-  });
-  return exec(sql, { op: 'read_pull' });
-}
-
-async function readWorkingMemory(opts) {
-  const topicKey = String((opts && opts.topic_key) || '').trim();
-  if (!topicKey) {
-    throw new Error('read_working_memory requires topic_key');
-  }
-  const config = await getConfigWithTestMode();
-  const sql = sb.buildReadWorkingMemory({
-    entries_table: await getEntriesTableFromConfig(config),
-    topic_key: topicKey,
-  });
-  return exec(sql, { op: 'read_working_memory' });
-}
-
-async function readSmoke(opts) {
-  const suite = String((opts && opts.suite) ?? '').trim();
-  if (!suite) {
-    throw new Error('read_smoke requires suite');
-  }
-  const run_id = opts && Object.prototype.hasOwnProperty.call(opts, 'run_id')
-    ? String(opts.run_id ?? '').trim()
-    : '';
-  const config = await getConfigWithTestMode();
-  const sql = sb.buildReadSmoke({
-    entries_table: await getEntriesTableFromConfig(config),
-    suite,
-    run_id: run_id || null,
-  });
-  return exec(sql, { op: 'read_smoke' });
-}
-
-async function getTestMode() {
-  const state = await getTestModeStateFromDb();
-  return { rows: [{ is_test_mode: state }], rowCount: 1 };
-}
-
-async function toggleTestModeState() {
-  const state = await toggleTestModeStateInDb();
-  return { rows: [{ is_test_mode: state }], rowCount: 1 };
-}
-
 function toJsonParam(value) {
   if (value === undefined) return null;
   if (value === null) return null;
@@ -1531,718 +1411,76 @@ function parseOptionalText(value) {
   return out || null;
 }
 
-async function getTier2Candidates(opts) {
-  const options = opts || {};
-  const schemaOverride = String(options.schema || '').trim();
-  const entries_table = schemaOverride
-    ? getEntriesTableBySchema(schemaOverride)
-    : await getEntriesTableFromConfig(await getConfigWithTestMode());
-  const staticConfig = getConfig();
-  const distillCfg = staticConfig && staticConfig.distill ? staticConfig.distill : {};
-  const defaultScanLimit = Math.max(
-    Number(distillCfg.max_entries_per_run || 0) * 5,
-    100
-  );
-  const scanLimitRaw = Number(options.limit || distillCfg.candidate_scan_limit || defaultScanLimit || 250);
-  const scanLimit = Number.isFinite(scanLimitRaw) && scanLimitRaw > 0
-    ? Math.min(Math.trunc(scanLimitRaw), 2000)
-    : 250;
-  const sql = sb.buildTier2CandidateDiscovery({ entries_table, limit: scanLimit });
-  return exec(sql, {
-    op: 'tier2_candidates',
-    table: entries_table,
-    schema: schemaOverride || 'active',
-    limit: scanLimit,
-  });
-}
+const {
+  getTier2Candidates,
+  getTier2DetailsByIds,
+  persistTier2EligibilityStatusByIds,
+  persistTier2QueuedStatusByIds,
+  getTier2SyncEntryByEntryId,
+  persistTier2SyncSuccess,
+  persistTier2SyncFailure,
+  markTier2StaleInProd,
+} = createDistillStore({
+  sb,
+  getConfig,
+  getEntriesTableBySchema,
+  getEntriesTableFromConfig,
+  getConfigWithTestMode,
+  exec,
+  parseUuidList,
+  parsePositiveBigintString,
+  wrapTier2EntriesError,
+  toSqlValue,
+});
 
-async function getTier2DetailsByIds(ids, opts) {
-  const options = opts || {};
-  const uuidList = parseUuidList(ids, 'ids');
-  if (!uuidList.length) {
-    return { rows: [], rowCount: 0 };
-  }
-  const schemaOverride = String(options.schema || '').trim();
-  const entries_table = schemaOverride
-    ? getEntriesTableBySchema(schemaOverride)
-    : await getEntriesTableFromConfig(await getConfigWithTestMode());
-  const sql = sb.buildTier2SelectedDetailQuery({
-    entries_table,
-    ids: uuidList,
-  });
-  return exec(sql, {
-    op: 'tier2_details',
-    table: entries_table,
-    schema: schemaOverride || 'active',
-    ids: uuidList.length,
-  });
-}
+const {
+  insertPipelineEvent,
+  getPipelineRun,
+  getRecentPipelineRuns,
+  getLastPipelineRun,
+  upsertFailurePack,
+  getFailurePackById,
+  getFailurePackByRunId,
+  listFailurePacks,
+  prunePipelineEvents,
+} = createDebugStore({
+  sb,
+  parseFailurePackSummary,
+  PIPELINE_EVENTS_TABLE,
+  FAILURE_PACKS_TABLE,
+  getPool,
+  traceDb,
+  wrapFailurePacksError,
+  parsePositiveInt,
+  parseOptionalText,
+  parseNullableBoolean,
+  parseNonEmptyText,
+  parseUuid,
+  toJsonParam,
+  isUniqueViolation,
+});
 
-async function persistTier2EligibilityStatusByIds(ids, opts) {
-  const uuidList = parseUuidList(ids, 'ids');
-  if (!uuidList.length) {
-    return { rows: [], rowCount: 0 };
-  }
-  const options = opts && typeof opts === 'object' ? opts : {};
-  const status = String(options.status || '').trim();
-  if (!['queued', 'skipped', 'not_eligible'].includes(status)) {
-    throw new Error('status must be queued|skipped|not_eligible');
-  }
-  const reasonCode = options.reason_code === null || options.reason_code === undefined
-    ? null
-    : String(options.reason_code).trim();
-
-  const schemaOverride = String(options.schema || '').trim();
-  const entriesTable = schemaOverride
-    ? getEntriesTableBySchema(schemaOverride)
-    : await getEntriesTableFromConfig(await getConfigWithTestMode());
-  const sql = sb.buildTier2PersistEligibilityStatus({
-    entries_table: entriesTable,
-    ids: uuidList,
-    status,
-    reason_code: reasonCode,
-  });
-  try {
-    return await exec(sql, {
-      op: 'tier2_eligibility_status_update',
-      table: entriesTable,
-      schema: schemaOverride || 'active',
-      status,
-      ids: uuidList.length,
-    });
-  } catch (err) {
-    throw wrapTier2EntriesError(err, entriesTable);
-  }
-}
-
-async function persistTier2QueuedStatusByIds(ids, opts) {
-  const options = opts && typeof opts === 'object' ? opts : {};
-  return persistTier2EligibilityStatusByIds(ids, {
-    status: 'queued',
-    reason_code: String(options.reason_code || 'batch_dispatch').trim() || 'batch_dispatch',
-    schema: options.schema,
-  });
-}
-
-async function getTier2SyncEntryByEntryId(entryId) {
-  const normalized = parsePositiveBigintString(entryId, 'entry_id');
-  const entriesTable = getEntriesTableBySchema('pkm');
-  const sql = sb.buildTier2EntryByEntryId({
-    entries_table: entriesTable,
-    entry_id: normalized,
-  });
-  let result;
-  try {
-    result = await exec(sql, {
-      op: 'tier2_sync_entry_get',
-      table: entriesTable,
-      entry_id: normalized,
-    });
-  } catch (err) {
-    throw wrapTier2EntriesError(err, entriesTable);
-  }
-  return result.rows && result.rows[0] ? result.rows[0] : null;
-}
-
-async function persistTier2SyncSuccess(entryId, artifact) {
-  const normalized = parsePositiveBigintString(entryId, 'entry_id');
-  const entriesTable = getEntriesTableBySchema('pkm');
-  const payload = artifact && typeof artifact === 'object' ? artifact : {};
-  const expectedContentHashRaw = Object.prototype.hasOwnProperty.call(payload, 'distill_created_from_hash')
-    ? payload.distill_created_from_hash
-    : null;
-  const expectedContentHashValue = expectedContentHashRaw === null || expectedContentHashRaw === undefined
-    ? null
-    : (String(expectedContentHashRaw).trim() || null);
-  const set = [
-    `distill_summary = ${toSqlValue('text', payload.distill_summary || null)}`,
-    `distill_excerpt = ${toSqlValue('text', payload.distill_excerpt || null)}`,
-    `distill_version = ${toSqlValue('text', payload.distill_version || null)}`,
-    `distill_created_from_hash = ${toSqlValue('text', payload.distill_created_from_hash || null)}`,
-    `distill_why_it_matters = ${toSqlValue('text', payload.distill_why_it_matters || null)}`,
-    `distill_stance = ${toSqlValue('text', payload.distill_stance || null)}`,
-    `distill_metadata = ${toSqlValue('jsonb', payload.distill_metadata || null)}`,
-    `distill_status = ${toSqlValue('text', 'completed')}`,
-  ];
-  const sql = sb.buildUpdate({
-    table: entriesTable,
-    set,
-    where: [
-      `entry_id = ${toSqlValue('bigint', normalized)}`,
-      `content_hash IS NOT DISTINCT FROM ${toSqlValue('text', expectedContentHashValue)}`,
-    ].join(' AND '),
-    returning: ['entry_id', 'distill_status', 'content_hash'],
-  });
-  try {
-    return await exec(sql, {
-      op: 'tier2_sync_persist_completed',
-      table: entriesTable,
-      entry_id: normalized,
-      expected_content_hash: expectedContentHashValue,
-    });
-  } catch (err) {
-    throw wrapTier2EntriesError(err, entriesTable);
-  }
-}
-
-async function persistTier2SyncFailure(entryId, opts) {
-  const normalized = parsePositiveBigintString(entryId, 'entry_id');
-  const entriesTable = getEntriesTableBySchema('pkm');
-  const options = opts && typeof opts === 'object' ? opts : {};
-  const status = String(options.status || 'failed').trim() || 'failed';
-  const metadata = options.metadata && typeof options.metadata === 'object'
-    ? options.metadata
-    : {};
-  const set = [
-    `distill_status = ${toSqlValue('text', status)}`,
-    `distill_metadata = ${toSqlValue('jsonb', metadata)}`,
-  ];
-  const sql = sb.buildUpdate({
-    table: entriesTable,
-    set,
-    where: `entry_id = ${toSqlValue('bigint', normalized)}`,
-    returning: ['entry_id', 'distill_status'],
-  });
-  try {
-    return await exec(sql, {
-      op: 'tier2_sync_persist_failed',
-      table: entriesTable,
-      entry_id: normalized,
-    });
-  } catch (err) {
-    throw wrapTier2EntriesError(err, entriesTable);
-  }
-}
-
-async function insertPipelineEvent(event) {
-  const row = event && typeof event === 'object' ? { ...event } : {};
-  const run_id = String(row.run_id || '').trim();
-  const step = String(row.step || '').trim();
-  const direction = String(row.direction || '').trim().toLowerCase();
-  if (!run_id) throw new Error('insertPipelineEvent requires run_id');
-  if (!step) throw new Error('insertPipelineEvent requires step');
-  if (!['start', 'end', 'error'].includes(direction)) {
-    throw new Error('insertPipelineEvent direction must be start|end|error');
-  }
-
-  const sql = sb.buildInsertPipelineEvent({ eventsTable: PIPELINE_EVENTS_TABLE });
-  const baseSeq = parsePositiveInt(row.seq, 1);
-  const paramsBase = [
-    run_id,
-    0, // seq placeholder per attempt
-    row.service || null,
-    row.pipeline || null,
-    step,
-    direction,
-    row.level || 'info',
-    row.duration_ms != null ? Number(row.duration_ms) : null,
-    (row.entry_id != null && Number.isFinite(Number(row.entry_id))) ? Number(row.entry_id) : null,
-    row.batch_id || null,
-    row.trace_id || null,
-    toJsonParam(row.input_summary),
-    toJsonParam(row.output_summary),
-    toJsonParam(row.error),
-    row.artifact_path || null,
-    toJsonParam(row.meta || {}),
-  ];
-
-  let attempt = 0;
-  while (attempt < 8) {
-    attempt += 1;
-    const seq = baseSeq + (attempt - 1);
-    const params = [...paramsBase];
-    params[1] = seq;
-    try {
-      const res = await getPool().query(sql, params);
-      return res.rows && res.rows[0] ? res.rows[0] : { run_id, seq };
-    } catch (err) {
-      if (!isUniqueViolation(err)) throw err;
-      if (attempt >= 8) throw err;
-    }
-  }
-  return null;
-}
-
-async function getPipelineRun(run_id, opts) {
-  const id = String(run_id || '').trim();
-  if (!id) throw new Error('run_id is required');
-  const options = opts || {};
-  const limit = parsePositiveInt(options.limit, 5000);
-  const sql = sb.buildGetPipelineEventsByRunId({ eventsTable: PIPELINE_EVENTS_TABLE });
-  const res = await getPool().query(sql, [id, limit]);
-  return {
-    run_id: id,
-    rows: res.rows || [],
-  };
-}
-
-async function getRecentPipelineRuns(opts) {
-  const options = opts || {};
-  const limitRaw = parsePositiveInt(options.limit, 50);
-  const limit = Math.min(limitRaw, 200);
-  const beforeRaw = String(options.before_ts || '').trim();
-  const beforeTs = beforeRaw ? new Date(beforeRaw) : null;
-  if (beforeRaw && (!beforeTs || Number.isNaN(beforeTs.getTime()))) {
-    throw new Error('before_ts must be a valid datetime');
-  }
-  const hasError = parseNullableBoolean(options.has_error);
-  const sql = sb.buildGetRecentPipelineRuns({ eventsTable: PIPELINE_EVENTS_TABLE });
-  const params = [beforeTs ? beforeTs.toISOString() : null, hasError, limit];
-  const res = await getPool().query(sql, params);
-  return {
-    rows: res.rows || [],
-    limit,
-    before_ts: beforeTs ? beforeTs.toISOString() : null,
-    has_error: hasError,
-  };
-}
-
-async function getLastPipelineRun(opts) {
-  const options = opts || {};
-  const limit = parsePositiveInt(options.limit, 5000);
-  const excludeRunId = String(options.exclude_run_id || '').trim();
-  const latestSql = sb.buildGetLastPipelineRunId({
-    eventsTable: PIPELINE_EVENTS_TABLE,
-    excludeRunId: !!excludeRunId,
-  });
-  const latest = await getPool().query(latestSql, excludeRunId ? [excludeRunId] : []);
-  const run_id = latest.rows && latest.rows[0] ? latest.rows[0].run_id : null;
-  if (!run_id) {
-    return { run_id: null, rows: [] };
-  }
-  return getPipelineRun(run_id, { limit });
-}
-
-async function upsertFailurePack(input) {
-  const summary = parseFailurePackSummary(input);
-  const sql = sb.buildUpsertFailurePack({ failurePacksTable: FAILURE_PACKS_TABLE });
-  const params = [
-    summary.run_id,
-    summary.execution_id,
-    summary.workflow_id,
-    summary.workflow_name,
-    summary.mode,
-    summary.failed_at,
-    summary.node_name,
-    summary.node_type,
-    summary.error_name,
-    summary.error_message,
-    summary.status,
-    summary.has_sidecars,
-    summary.sidecar_root,
-    toJsonParam(summary.pack),
-  ];
-  try {
-    const res = await traceDb('failure_pack_upsert', {
-      table: FAILURE_PACKS_TABLE,
-      run_id: summary.run_id,
-      status: summary.status,
-      has_sidecars: summary.has_sidecars,
-    }, () => getPool().query(sql, params));
-    return res.rows && res.rows[0]
-      ? res.rows[0]
-      : { run_id: summary.run_id, status: summary.status, upsert_action: 'updated' };
-  } catch (err) {
-    throw wrapFailurePacksError(err);
-  }
-}
-
-async function getFailurePackById(failureId) {
-  const id = parseUuid(failureId, 'failure_id');
-  const sql = sb.buildGetFailurePackById({ failurePacksTable: FAILURE_PACKS_TABLE });
-  try {
-    const res = await traceDb('failure_pack_get_by_id', {
-      table: FAILURE_PACKS_TABLE,
-      failure_id: id,
-    }, () => getPool().query(sql, [id]));
-    return res.rows && res.rows[0] ? res.rows[0] : null;
-  } catch (err) {
-    throw wrapFailurePacksError(err);
-  }
-}
-
-async function getFailurePackByRunId(runId) {
-  const run_id = parseNonEmptyText(runId, 'run_id');
-  const sql = sb.buildGetFailurePackByRunId({ failurePacksTable: FAILURE_PACKS_TABLE });
-  try {
-    const res = await traceDb('failure_pack_get_by_run', {
-      table: FAILURE_PACKS_TABLE,
-      run_id,
-    }, () => getPool().query(sql, [run_id]));
-    return res.rows && res.rows[0] ? res.rows[0] : null;
-  } catch (err) {
-    throw wrapFailurePacksError(err);
-  }
-}
-
-async function listFailurePacks(opts) {
-  const options = opts && typeof opts === 'object' ? opts : {};
-  const limitRaw = parsePositiveInt(options.limit, 20);
-  const limit = Math.min(limitRaw, 100);
-  const beforeRaw = parseOptionalText(options.before_ts) || '';
-  const beforeTs = beforeRaw ? new Date(beforeRaw) : null;
-  if (beforeRaw && (!beforeTs || Number.isNaN(beforeTs.getTime()))) {
-    throw new Error('before_ts must be a valid datetime');
-  }
-  const workflowName = parseOptionalText(options.workflow_name);
-  const nodeName = parseOptionalText(options.node_name);
-  const mode = parseOptionalText(options.mode);
-  const sql = sb.buildListFailurePacks({ failurePacksTable: FAILURE_PACKS_TABLE });
-  try {
-    const res = await traceDb('failure_pack_list', {
-      table: FAILURE_PACKS_TABLE,
-      limit,
-      before_ts: beforeTs ? beforeTs.toISOString() : null,
-      workflow_name: workflowName,
-      node_name: nodeName,
-      mode,
-    }, () => getPool().query(sql, [
-      beforeTs ? beforeTs.toISOString() : null,
-      workflowName,
-      nodeName,
-      mode,
-      limit,
-    ]));
-    return {
-      rows: res.rows || [],
-      limit,
-      before_ts: beforeTs ? beforeTs.toISOString() : null,
-      workflow_name: workflowName,
-      node_name: nodeName,
-      mode,
-    };
-  } catch (err) {
-    throw wrapFailurePacksError(err);
-  }
-}
-
-async function prunePipelineEvents(days) {
-  const keepDays = parsePositiveInt(days, 30);
-  const sql = sb.buildPrunePipelineEvents({ eventsTable: PIPELINE_EVENTS_TABLE });
-  const res = await getPool().query(sql, [keepDays]);
-  return {
-    deleted: Number(res.rowCount || 0),
-    keep_days: keepDays,
-  };
-}
-
-async function markTier2StaleInProd() {
-  const entriesTable = getEntriesTableBySchema('pkm');
-  const sql = sb.buildTier2MarkStale({ entriesTable });
-  let res;
-  try {
-    res = await exec(sql, {
-      op: 'tier2_mark_stale',
-      table: entriesTable,
-    });
-  } catch (err) {
-    throw wrapTier2EntriesError(err, entriesTable);
-  }
-  return {
-    updated: Number(res.rowCount || 0),
-  };
-}
-
-async function getCalendarRequestById(requestId) {
-  const id = parseUuid(requestId, 'request_id');
-  const sql = `SELECT *
-FROM ${CALENDAR_REQUESTS_TABLE}
-WHERE request_id = $1::uuid
-LIMIT 1`;
-  const res = await traceDb('calendar_request_get_by_id', {
-    op: 'calendar_request_get_by_id',
-    table: CALENDAR_REQUESTS_TABLE,
-  }, () => getPool().query(sql, [id]));
-  return res.rows && res.rows[0] ? res.rows[0] : null;
-}
-
-async function getLatestOpenCalendarRequestByChat(chatId) {
-  const telegram_chat_id = parseNonEmptyText(chatId, 'telegram_chat_id');
-  const sql = `SELECT *
-FROM ${CALENDAR_REQUESTS_TABLE}
-WHERE telegram_chat_id = $1
-  AND status = 'needs_clarification'
-ORDER BY updated_at DESC
-LIMIT 1`;
-  const res = await traceDb('calendar_request_get_latest_open', {
-    table: CALENDAR_REQUESTS_TABLE,
-    telegram_chat_id,
-  }, () => getPool().query(sql, [telegram_chat_id]));
-  return res.rows && res.rows[0] ? res.rows[0] : null;
-}
-
-async function upsertCalendarRequest(input) {
-  const data = (input && (input.input || input.data || input)) || {};
-  if (!data || typeof data !== 'object') {
-    throw new Error('calendar request upsert requires object input');
-  }
-  const run_id = parseNonEmptyText(data.run_id, 'run_id');
-  const source_system = parseOptionalText(data.source_system) || 'telegram';
-  const actor_code = parseNonEmptyText(data.actor_code, 'actor_code');
-  const telegram_chat_id = parseNonEmptyText(data.telegram_chat_id, 'telegram_chat_id');
-  const telegram_message_id = parseNonEmptyText(data.telegram_message_id, 'telegram_message_id');
-  const route_intent = parseOptionalText(data.route_intent);
-  const route_confidence = parseOptionalNumeric01(data.route_confidence, 'route_confidence');
-  const status = parseCalendarStatus(data.status, 'status', 'received');
-  const raw_text = parseNonEmptyText(data.raw_text, 'raw_text');
-  const clarification_turns = Array.isArray(data.clarification_turns) ? data.clarification_turns : [];
-  const normalized_event = data.normalized_event && typeof data.normalized_event === 'object'
-    ? data.normalized_event
-    : null;
-  const warning_codes = data.warning_codes && typeof data.warning_codes === 'object'
-    ? data.warning_codes
-    : null;
-  const error = data.error && typeof data.error === 'object'
-    ? data.error
-    : null;
-  const google_calendar_id = parseOptionalText(data.google_calendar_id);
-  const google_event_id = parseOptionalText(data.google_event_id);
-  const idempotency_key_primary = parseNonEmptyText(data.idempotency_key_primary, 'idempotency_key_primary');
-  const idempotency_key_secondary = parseOptionalText(data.idempotency_key_secondary);
-
-  const sql = `INSERT INTO ${CALENDAR_REQUESTS_TABLE} AS cr (
-  run_id,
-  source_system,
-  actor_code,
-  telegram_chat_id,
-  telegram_message_id,
-  route_intent,
-  route_confidence,
-  status,
-  raw_text,
-  clarification_turns,
-  normalized_event,
-  warning_codes,
-  error,
-  google_calendar_id,
-  google_event_id,
-  idempotency_key_primary,
-  idempotency_key_secondary,
-  created_at,
-  updated_at
-)
-VALUES (
-  $1, $2, $3, $4, $5,
-  $6, $7, $8, $9,
-  $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb,
-  $14, $15, $16, $17,
-  now(), now()
-)
-ON CONFLICT (idempotency_key_primary) DO UPDATE
-SET
-  updated_at = now(),
-  run_id = EXCLUDED.run_id,
-  route_intent = COALESCE(EXCLUDED.route_intent, cr.route_intent),
-  route_confidence = COALESCE(EXCLUDED.route_confidence, cr.route_confidence),
-  idempotency_key_secondary = COALESCE(EXCLUDED.idempotency_key_secondary, cr.idempotency_key_secondary)
-RETURNING
-  *,
-  (xmax = 0) AS inserted`;
-
-  const params = [
-    run_id,
-    source_system,
-    actor_code,
-    telegram_chat_id,
-    telegram_message_id,
-    route_intent,
-    route_confidence,
-    status,
-    raw_text,
-    toJsonParam(clarification_turns),
-    toJsonParam(normalized_event),
-    toJsonParam(warning_codes),
-    toJsonParam(error),
-    google_calendar_id,
-    google_event_id,
-    idempotency_key_primary,
-    idempotency_key_secondary,
-  ];
-
-  const res = await traceDb('calendar_request_upsert', {
-    table: CALENDAR_REQUESTS_TABLE,
-    status,
-    route_intent,
-  }, () => getPool().query(sql, params));
-  return res.rows && res.rows[0] ? res.rows[0] : null;
-}
-
-async function updateCalendarRequestById(requestId, patch) {
-  const id = parseUuid(requestId, 'request_id');
-  const data = patch && typeof patch === 'object' ? patch : {};
-  const set = [];
-  const params = [];
-  let idx = 1;
-  const add = (expr, value) => {
-    params.push(value);
-    set.push(`${expr} = $${idx++}`);
-  };
-
-  if (Object.prototype.hasOwnProperty.call(data, 'run_id')) {
-    add('run_id', parseNonEmptyText(data.run_id, 'run_id'));
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'actor_code')) {
-    add('actor_code', parseNonEmptyText(data.actor_code, 'actor_code'));
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'telegram_message_id')) {
-    add('telegram_message_id', parseNonEmptyText(data.telegram_message_id, 'telegram_message_id'));
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'route_intent')) {
-    add('route_intent', parseOptionalText(data.route_intent));
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'route_confidence')) {
-    add('route_confidence', parseOptionalNumeric01(data.route_confidence, 'route_confidence'));
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'status')) {
-    add('status', parseCalendarStatus(data.status, 'status'));
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'raw_text')) {
-    add('raw_text', parseNonEmptyText(data.raw_text, 'raw_text'));
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'clarification_turns')) {
-    if (!Array.isArray(data.clarification_turns)) {
-      throw new Error('clarification_turns must be an array');
-    }
-    params.push(toJsonParam(data.clarification_turns));
-    set.push(`clarification_turns = $${idx++}::jsonb`);
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'normalized_event')) {
-    params.push(toJsonParam(data.normalized_event && typeof data.normalized_event === 'object' ? data.normalized_event : null));
-    set.push(`normalized_event = $${idx++}::jsonb`);
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'warning_codes')) {
-    params.push(toJsonParam(data.warning_codes && typeof data.warning_codes === 'object' ? data.warning_codes : null));
-    set.push(`warning_codes = $${idx++}::jsonb`);
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'error')) {
-    params.push(toJsonParam(data.error && typeof data.error === 'object' ? data.error : null));
-    set.push(`error = $${idx++}::jsonb`);
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'google_calendar_id')) {
-    add('google_calendar_id', parseOptionalText(data.google_calendar_id));
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'google_event_id')) {
-    add('google_event_id', parseOptionalText(data.google_event_id));
-  }
-  if (Object.prototype.hasOwnProperty.call(data, 'idempotency_key_secondary')) {
-    add('idempotency_key_secondary', parseOptionalText(data.idempotency_key_secondary));
-  }
-
-  if (!set.length) {
-    throw new Error('calendar request update requires at least one updatable field');
-  }
-  set.push('updated_at = now()');
-  params.push(id);
-  const sql = `UPDATE ${CALENDAR_REQUESTS_TABLE}
-SET ${set.join(',\n    ')}
-WHERE request_id = $${idx}::uuid
-RETURNING *`;
-  const res = await traceDb('calendar_request_update', {
-    table: CALENDAR_REQUESTS_TABLE,
-    fields: set.length - 1,
-  }, () => getPool().query(sql, params));
-  return res.rows && res.rows[0] ? res.rows[0] : null;
-}
-
-async function finalizeCalendarRequestById(requestId, payload) {
-  const data = payload && typeof payload === 'object' ? payload : {};
-  const status = parseCalendarStatus(data.status, 'status');
-  if (!CALENDAR_TERMINAL_STATUSES.has(status) && status !== 'calendar_write_started') {
-    throw new Error('finalize status must be calendar_write_started|calendar_created|calendar_failed|query_answered|ignored');
-  }
-
-  const existing = await getCalendarRequestById(requestId);
-  if (!existing) return null;
-
-  const google_event_id = Object.prototype.hasOwnProperty.call(data, 'google_event_id')
-    ? parseOptionalText(data.google_event_id)
-    : null;
-  const google_calendar_id = Object.prototype.hasOwnProperty.call(data, 'google_calendar_id')
-    ? parseOptionalText(data.google_calendar_id)
-    : null;
-
-  if (
-    CALENDAR_TERMINAL_STATUSES.has(existing.status)
-    && existing.status === status
-    && (!google_event_id || google_event_id === existing.google_event_id)
-    && (!google_calendar_id || google_calendar_id === existing.google_calendar_id)
-  ) {
-    return { ...existing, finalize_action: 'noop' };
-  }
-
-  const next = {
-    status,
-  };
-  if (Object.prototype.hasOwnProperty.call(data, 'run_id')) next.run_id = data.run_id;
-  if (Object.prototype.hasOwnProperty.call(data, 'warning_codes')) next.warning_codes = data.warning_codes;
-  if (Object.prototype.hasOwnProperty.call(data, 'error')) next.error = data.error;
-  if (Object.prototype.hasOwnProperty.call(data, 'google_event_id')) next.google_event_id = google_event_id;
-  if (Object.prototype.hasOwnProperty.call(data, 'google_calendar_id')) next.google_calendar_id = google_calendar_id;
-
-  return updateCalendarRequestById(existing.request_id, next);
-}
-
-async function insertCalendarObservations(input) {
-  const data = (input && (input.input || input.data || input)) || {};
-  const items = Array.isArray(data.items) ? data.items : [data];
-  if (!items.length) {
-    throw new Error('calendar observe requires at least one item');
-  }
-
-  const values = [];
-  const params = [];
-  let idx = 1;
-  for (let i = 0; i < items.length; i += 1) {
-    const item = items[i] && typeof items[i] === 'object' ? items[i] : {};
-    const run_id = parseNonEmptyText(item.run_id || data.run_id, `items[${i}].run_id`);
-    const google_calendar_id = parseNonEmptyText(item.google_calendar_id, `items[${i}].google_calendar_id`);
-    const google_event_id = parseNonEmptyText(item.google_event_id, `items[${i}].google_event_id`);
-    const observation_kind = parseNonEmptyText(item.observation_kind, `items[${i}].observation_kind`);
-    const source_type = parseNonEmptyText(item.source_type, `items[${i}].source_type`);
-    const snapshot = item.event_snapshot;
-    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
-      throw new Error(`items[${i}].event_snapshot must be an object`);
-    }
-    const resolved_people = item.resolved_people && typeof item.resolved_people === 'object'
-      ? item.resolved_people
-      : null;
-    const resolved_color = parseOptionalText(item.resolved_color);
-    const was_reported = parseBooleanStrict(item.was_reported, `items[${i}].was_reported`, false);
-
-    params.push(
-      run_id,
-      google_calendar_id,
-      google_event_id,
-      observation_kind,
-      source_type,
-      toJsonParam(snapshot),
-      toJsonParam(resolved_people),
-      resolved_color,
-      was_reported
-    );
-    values.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}::jsonb, $${idx++}::jsonb, $${idx++}, $${idx++}::boolean, now(), now())`);
-  }
-
-  const sql = `INSERT INTO ${CALENDAR_EVENT_OBSERVATIONS_TABLE} (
-  run_id,
-  google_calendar_id,
-  google_event_id,
-  observation_kind,
-  source_type,
-  event_snapshot,
-  resolved_people,
-  resolved_color,
-  was_reported,
-  created_at,
-  updated_at
-)
-VALUES ${values.join(',\n       ')}
-RETURNING observation_id, run_id, google_calendar_id, google_event_id, observation_kind, source_type, was_reported, created_at`;
-  return traceDb('calendar_observe_insert', {
-    table: CALENDAR_EVENT_OBSERVATIONS_TABLE,
-    count: items.length,
-  }, () => getPool().query(sql, params));
-}
+const {
+  getCalendarRequestById,
+  getLatestOpenCalendarRequestByChat,
+  upsertCalendarRequest,
+  updateCalendarRequestById,
+  finalizeCalendarRequestById,
+  insertCalendarObservations,
+} = createCalendarStore({
+  CALENDAR_REQUESTS_TABLE,
+  CALENDAR_EVENT_OBSERVATIONS_TABLE,
+  CALENDAR_TERMINAL_STATUSES,
+  getPool,
+  traceDb,
+  parseUuid,
+  parseNonEmptyText,
+  parseOptionalText,
+  parseOptionalNumeric01,
+  parseCalendarStatus,
+  parseBooleanStrict,
+  toJsonParam,
+});
 
 module.exports = {
   getPool,

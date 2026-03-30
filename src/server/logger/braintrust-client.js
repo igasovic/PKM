@@ -1,23 +1,23 @@
 'use strict';
 
+const { getBraintrustConfig } = require('../runtime-env.js');
+
 let braintrustLogger = null;
 
 function getBraintrustLogger() {
   if (braintrustLogger !== null) return braintrustLogger;
-  if (!process.env.BRAINTRUST_API_KEY) {
+  const braintrustConfig = getBraintrustConfig();
+  if (!braintrustConfig.apiKey) {
     throw new Error('BRAINTRUST_API_KEY is required');
   }
   const { initLogger } = require('braintrust');
-  const projectName =
-    process.env.BRAINTRUST_PROJECT ||
-    process.env.BRAINTRUST_PROJECT_NAME ||
-    'pkm-backend';
+  const projectName = braintrustConfig.projectName;
   if (!projectName || !String(projectName).trim()) {
     throw new Error('BRAINTRUST_PROJECT (or BRAINTRUST_PROJECT_NAME) is required');
   }
   braintrustLogger = initLogger({
     projectName,
-    apiKey: process.env.BRAINTRUST_API_KEY,
+    apiKey: braintrustConfig.apiKey,
     asyncFlush: true,
   });
   if (!braintrustLogger) {

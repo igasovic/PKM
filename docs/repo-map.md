@@ -28,7 +28,7 @@
 | `src/server/` | HTTP API, business logic, DB access layer, logging, orchestration | `src/libs/`, DB module, documented contracts | raw SQL outside approved files; bypass DB module; undocumented contracts |
 | `src/web/` | UI application | documented backend endpoints, shared libs as appropriate | direct DB access; undocumented backend paths |
 | `src/libs/` | shared pure utilities and helpers | local utilities only | hidden environment-specific side effects unless intentional |
-| `src/n8n/` | workflow JSON, externalized code nodes, runtime package manifest | documented backend endpoints, staged shared helpers | direct DB access; raw SQL; `/data/...` runtime imports |
+| `src/n8n/` | workflow JSON, externalized code nodes, runtime package manifest | documented backend endpoints, staged shared helpers | direct PKM product DB access; raw SQL; `/data/...` runtime imports. n8n's own runtime/execution DB is infrastructure and allowed. |
 | `src/n8n/package/` | generated runtime package output | build/runtime consumers only | manual authoring or review as a source-of-truth surface |
 | `scripts/n8n/` | active n8n sync and cutover scripts | repo-managed n8n surfaces | ad hoc workflow state edits outside orchestrated flow |
 | `scripts/archive/n8n/` | retired scripts kept for history | none for normal operations | use in active workflows |
@@ -38,12 +38,17 @@
 | `docs/` | contracts, guides, architecture, runbooks | references to authoritative repo surfaces | become the only source of truth for code behavior without matching implementation |
 
 ## Placement Rules
+- Backend composition and ownership should follow:
+  - `src/server/routes/` for route-family handlers
+  - `src/server/app/` for shared HTTP helpers only
+  - `src/server/repositories/` for bounded facades over `src/server/db.js`
+  - `src/server/workers/` for background loops and maintenance startup helpers
 - New n8n logic belongs under `src/n8n/`.
 - `src/n8n/package/` is generated output, not an authoring surface.
 - Legacy `js/` workflow tree is sunset and must not be used.
 - Raw SQL is allowed only in:
   - `src/libs/sql-builder.js`
-  - `src/server/db.js`
+  - `src/server/db/**`
 - Business logic must call DB module methods rather than issuing SQL directly.
 
 ## Generated Vs Authoritative

@@ -13,6 +13,7 @@ const {
   runBatchScheduleGraph,
   runBatchCollectGraph,
 } = require('./tier1/graphs.js');
+const { getT1BatchSettings } = require('./runtime-env.js');
 
 async function enrichTier1(input) {
   const logger = getLogger().child({ pipeline: 't1.enrich.sync' });
@@ -118,16 +119,15 @@ function resolveTier1SyncLimit(value, fallback = 20) {
 }
 
 function resolveTier1WorkerSyncLimitFromEnv() {
-  const raw = Number(process.env.T1_BATCH_SYNC_LIMIT || 20);
-  return resolveTier1SyncLimit(raw, 20);
+  return resolveTier1SyncLimit(getT1BatchSettings().syncLimit, 20);
 }
 
 function isTier1WorkerEnabled() {
-  return String(process.env.T1_BATCH_WORKER_ENABLED || 'true').toLowerCase() !== 'false';
+  return getT1BatchSettings().workerEnabled;
 }
 
 function resolveTier1WorkerIntervalMs() {
-  const intervalRaw = Number(process.env.T1_BATCH_SYNC_INTERVAL_MS || 10 * 60_000);
+  const intervalRaw = getT1BatchSettings().syncIntervalMs;
   return Number.isFinite(intervalRaw) && intervalRaw >= 5_000 ? intervalRaw : 60_000;
 }
 

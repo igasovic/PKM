@@ -95,7 +95,7 @@ Cross-cutting changes should be planned explicitly even if the code diff is smal
 ### Database safety
 - No raw SQL outside:
   - `src/libs/sql-builder.js`
-  - `src/server/db.js`
+  - `src/server/db/**`
 - Business logic must call DB module methods rather than issuing SQL directly.
 
 ### Logging and observability
@@ -256,7 +256,7 @@ Run:
 
 ## 6) Do Not Do
 - Do not bypass `docs/api.md` and the relevant `docs/api_*.md` file by calling undocumented endpoints.
-- Do not introduce cross-component coupling such as UI<->DB or n8n<->DB.
+- Do not introduce cross-component coupling such as UI<->PKM product DB or n8n<->PKM product DB. n8n's own runtime/execution database is part of n8n infrastructure and is allowed.
 - Do not log raw payloads or large objects.
 - Do not send transition telemetry anywhere except Postgres `pipeline_events`.
 - Do not write raw SQL outside approved files.

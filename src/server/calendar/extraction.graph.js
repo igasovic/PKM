@@ -13,6 +13,7 @@ const {
   buildPromptContext,
 } = require('./extraction.prompt.js');
 const { parseExtractionLlmResult } = require('./extraction.schema.js');
+const { hasLiteLLMKey } = require('../runtime-env.js');
 
 const DEFAULT_EXTRACTION_MODEL = 'pkm-default';
 
@@ -39,7 +40,7 @@ function nowDateInTz(timezone) {
 }
 
 function hasLiteLlmKey() {
-  return text(process.env.LITELLM_MASTER_KEY).length > 0;
+  return hasLiteLLMKey();
 }
 
 function getLiteLLMClient() {

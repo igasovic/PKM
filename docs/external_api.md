@@ -46,7 +46,6 @@ Custom GPT action
 Unsupported public path:
 
 ```text
-Custom GPT -> pkm-server /mcp
 Custom GPT -> pkm-server /db/*
 ```
 

@@ -134,7 +134,7 @@ Bootstrap helper for first-time runtime->repo import:
 | `docker` | `ops/stack/docker-compose.yml`, `ops/stack/env/*.env`, `ops/stack/n8n-runners/n8n-task-runners.json` | `/home/igasovic/stack/docker-compose.yml`, `/home/igasovic/stack/*.env` (managed non-secret env only), `/home/igasovic/stack/n8n-task-runners.json` | authoritative | versioned, non-secret | infra | file drift compare + affected-service summary | copy managed files + targeted compose apply when scope is known (fallback full apply) | copy managed runtime files to repo |
 | `litellm` | `ops/stack/litellm/config.yaml` | `/home/igasovic/stack/litellm/config.yaml` | authoritative | versioned, non-secret | infra | file drift compare | copy config + restart `litellm` | copy runtime config to repo |
 | `postgres` | `ops/stack/postgres/init/*`, optional `ops/stack/postgres/postgresql.conf`, `ops/stack/postgres/pg_hba.conf` | `/home/igasovic/stack/postgres-init/*`, optional `/home/igasovic/stack/postgres/*.conf` | authoritative | versioned, non-secret, host-local runtime target | infra/db | dir+file drift compare (excludes live data dir) | copy init/config only; never touches live data | pull init/config only; never touches live data |
-| `backend` | `src/libs/config/`, compatibility entrypoint `src/libs/config.js`, related `src/server/**` config readers | backend deployment/runtime state | authoritative (partial) | versioned code/config | backend | readiness check (`scripts/cfg/backend_push.sh` present + executable) | run `scripts/cfg/backend_push.sh` (targeted `pkm-server` deploy) | blocked (no runtime-to-repo import path) |
+| `backend` | `src/libs/config/`, compatibility entrypoint `src/libs/config.js`, `src/server/runtime-env.js`, related config-aware backend modules | backend deployment/runtime state | authoritative (partial) | versioned code/config | backend | readiness check (`scripts/cfg/backend_push.sh` present + executable) | run `scripts/cfg/backend_push.sh` (targeted `pkm-server` deploy) | blocked (no runtime-to-repo import path) |
 
 Notes:
 - Secrets and credentials are host-local and never copied from repo.
@@ -218,6 +218,7 @@ Keep this list updated whenever a new config-adjacent surface is discovered or o
 - `/home/igasovic/stack/n8n/`
 - `/home/igasovic/stack/litellm/config.yaml`
 - `src/libs/config/` and compatibility entrypoint `src/libs/config.js`
+- `src/server/runtime-env.js` as the approved backend runtime env loader
 - `src/server/**` direct env reads until removed
 - `src/n8n/workflows/`
 - `src/n8n/nodes/`

@@ -7,6 +7,7 @@ const { getRunContext } = require('../logger/context.js');
 const { classifyByRules } = require('./routing.rules.js');
 const { buildRoutingSystemPrompt, buildRoutingUserPrompt } = require('./routing.prompt.js');
 const { parseRoutingLlmResult } = require('./routing.schema.js');
+const { hasLiteLLMKey } = require('../runtime-env.js');
 
 const DEFAULT_ROUTING_MODEL = 'gpt-5-nano';
 
@@ -28,7 +29,7 @@ function getRoutingModel(options) {
 }
 
 function hasLiteLlmKey() {
-  return text(process.env.LITELLM_MASTER_KEY).length > 0;
+  return hasLiteLLMKey();
 }
 
 function getLiteLLMClient() {

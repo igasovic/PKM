@@ -47,7 +47,7 @@ Current repo behavior is:
 - session-note idempotency policy key is `chatgpt_session_note_v1` with primary key `chatgpt:<session_id>`
 - working-memory idempotency policy key is `chatgpt_working_memory_v1` with primary key `wm:<normalized_topic_primary>`
 - ChatGPT-authored session notes and working-memory rows must not trigger Tier-1 or Tier-2 enrichment
-- the public `/mcp` route is disabled, but the current implementation still reuses internal MCP tool code for working-memory retrieval and wrap/commit execution
+- there is no MCP execution layer in the active implementation; working-memory retrieval and wrap/commit run through backend `chatgpt` service modules directly
 
 ## Goals
 - keep working-memory semantics separate from public transport/orchestration details
@@ -111,21 +111,22 @@ Coupled docs:
 Relevant surfaces:
 - n8n workflows `05 ChatGPT Wrap Commit` and `11 ChatGPT Read Router`
 - backend adapter layer in `src/server/chatgpt-actions.js`
-- backend implementation currently shared with internal MCP service code
+- backend implementation in `src/server/chatgpt-actions.js` and `src/server/chatgpt/**`
 
 ## Evidence / recovery basis
 Recovered from:
 - `chatgpt/project_instructions.md`
 - `src/server/index.js`
 - `src/server/chatgpt-actions.js`
-- `src/server/mcp/service.js`
+- `src/server/chatgpt/service.js`
+- `src/server/chatgpt/renderers.js`
+- `src/server/chatgpt/topic.js`
 - `src/n8n/workflows/05-chatgpt-wrap-commit*`
 - `src/n8n/workflows/11-chatgpt-read-router*`
 - `docs/requirements.md`
 - `docs/changelog.md`
 
 ## Known gaps requiring code deep-dive
-- `REVIEW_REQUIRED: confirm whether the continued use of `src/server/mcp/service.js` as the execution layer for working-memory and wrap/commit is an intentional long-term architecture or a transitional reuse. Public MCP is disabled, but the internal implementation seam is still MCP-shaped.`
 - `REVIEW_REQUIRED: verify whether any non-ChatGPT callers persist or consume these same artifact types. This pass confirmed the ChatGPT path, but did not exhaustively inventory alternate internal callers.`
 
 ## Validation / acceptance criteria
@@ -137,7 +138,6 @@ This PRD remains accurate if:
 
 ## Risks / open questions
 - transport/orchestration work can easily re-absorb this surface if public integration and memory semantics are documented together again
-- current implementation reuse through MCP service code may slow future cleanup unless it is either embraced explicitly or retired deliberately
 
 ## TBD
 - whether working-memory retrieval should ever be exposed to non-ChatGPT callers as a first-class product surface

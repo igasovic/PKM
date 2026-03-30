@@ -52,7 +52,7 @@ The UI is a secondary operator-facing consumer of a subset of backend routes, mo
 Unsupported architecture:
 - UI-first assumptions when shaping core backend modules
 - direct public callers to internal backend routes
-- direct n8n access to Postgres
+- direct n8n access to PKM product data tables in Postgres
 
 ## Consumer Priority
 
@@ -66,21 +66,24 @@ Unsupported architecture:
 ## Current Module Topology
 
 ### 1. Transport and startup
-- `src/server/index.js`
-- currently owns HTTP dispatch, request parsing, auth checks, response mapping, and maintenance startup
+- entrypoint and composition: `src/server/index.js`
+- shared HTTP helpers: `src/server/app/http-utils.js`
+- route-family dispatch: `src/server/routes/**`
+- background maintenance loops: `src/server/workers/maintenance-worker.js`
 
 ### 2. Domain/application services
 - ingest: `src/server/ingestion-pipeline.js`, `src/server/normalization.js`, `src/server/idempotency.js`, `src/server/quality.js`
 - calendar: `src/server/calendar-service.js`, `src/server/calendar-access.js`, `src/server/calendar/**`, `src/server/telegram-router/**`
-- Tier-1: `src/server/tier1-enrichment.js`, `src/server/tier1/**`
-- Tier-2: `src/server/tier2-enrichment.js`, `src/server/tier2/**`
-- ChatGPT / working memory: `src/server/chatgpt-actions.js`, `src/server/mcp/**`
+- classify: `src/server/tier1-enrichment.js`, `src/server/tier1/**`
+- distill: `src/server/tier2-enrichment.js`, `src/server/tier2/**`
+- ChatGPT / working memory: `src/server/chatgpt-actions.js`, `src/server/chatgpt/**`
 - backlog / batch status: `src/server/email-importer.js`, `src/server/batch-status-service.js`, `src/server/batch-worker-runtime.js`
 
 ### 3. Persistence
 - shared DB gateway: `src/server/db.js`
 - connection bootstrap: `src/server/db-pool.js`
-- bounded-context stores already exist for Tier-1 and Tier-2:
+- repository facades for route/domain ownership: `src/server/repositories/**`
+- bounded-context stores already exist for classify and distill:
   - `src/server/tier1/store.js`
   - `src/server/tier2/store.js`
 
@@ -92,23 +95,23 @@ Unsupported architecture:
 ## Current Strengths
 
 - contract docs are stronger than the implementation structure
-- Tier-2 already shows a good backend pattern:
+- the route/controller split is now explicit:
+  - HTTP composition in `src/server/index.js`
+  - shared request/response/auth helpers in `src/server/app/http-utils.js`
+  - route-family ownership in `src/server/routes/**`
+  - maintenance loops in `src/server/workers/maintenance-worker.js`
+- distill already shows a good backend pattern:
   - domain rules in `src/server/tier2/control-plane.js`
   - persistence in `src/server/tier2/store.js`
   - orchestration in `src/server/tier2/service.js` and `src/server/tier2-enrichment.js`
-- shared builder logic is staged for reuse across backend and UI where appropriate
+- route-facing repository facades now reduce direct coupling from HTTP handlers into `db.js`
+- backend runtime env access is now centralized in `src/server/runtime-env.js`
 
 ## Current Structural Hotspots
 
 ### `src/server/index.js`
-- single-file router + controller + middleware + bootstrap
-- carries too many unrelated concerns:
-  - route matching
-  - auth
-  - body parsing
-  - response normalization
-  - some route-local orchestration
-  - worker/timer startup
+- much smaller than before, but still owns global composition and startup wiring
+- should keep trending toward composition only, with no route-local business logic added back in
 
 ### `src/server/db.js`
 - central SQL boundary is correct, but the module is too broad
@@ -118,16 +121,16 @@ Unsupported architecture:
   - test-mode state
   - calendar business logs
   - failure-pack persistence
-  - Tier-2 support queries
+  - distill support queries
   - maintenance helpers
 
 ### Config ownership
-- shared config loader exists, but backend still has direct `process.env` reads outside bootstrap/config
-- config ownership is therefore only partially normalized today
+- backend runtime env access is now routed through `src/server/runtime-env.js`
+- broader config ownership still spans both `src/libs/config/**` and backend runtime loaders, so those seams should keep getting simpler
 
 ### Transitional seams
-- public MCP is retired, but internal ChatGPT execution still passes through MCP-shaped service code
-- some compatibility routes and runtime aliases still exist for migration safety
+- some compatibility naming still exists at route/env level for stability (`/enrich/t1`, `T1_*`, `T2_*`)
+- the old internal MCP execution seam has been removed; ChatGPT actions now execute through `src/server/chatgpt/**`
 
 ## Incremental Target Shape
 
@@ -136,37 +139,27 @@ The goal is not a big rewrite. The target is an incremental n8n-first backend st
 ```text
 src/server/
   app/
-    create-server.js
-    middleware/
+    http-utils.js
   routes/
-    control.routes.js
-    ingest.routes.js
-    calendar.routes.js
-    distill.routes.js
-    read-write.routes.js
-  services/
-    ingest/
-    calendar/
-    tier1/
-    tier2/
-    chatgpt/
-    debug/
+    control-routes.js
+    classify-routes.js
+    calendar-routes.js
+    distill-routes.js
+    status-routes.js
+    read-write-routes.js
   repositories/
-    entries.repo.js
-    runtime-config.repo.js
-    calendar.repo.js
-    failure-packs.repo.js
-    tier1.repo.js
-    tier2.repo.js
+    read-write-repository.js
+    calendar-repository.js
+    debug-repository.js
+    distill-repository.js
   workers/
-    tier1-batch.worker.js
-    tier2-batch.worker.js
-    maintenance.worker.js
+    maintenance-worker.js
 ```
 
 Rules for getting there:
 - keep backend n8n-first in route and service design
 - preserve the raw-SQL boundary
+- keep SQL implementation under `src/server/db/**` and `src/libs/sql-builder.js`
 - move one route family at a time
 - prefer extracting route modules and repositories before deeper domain rewrites
 

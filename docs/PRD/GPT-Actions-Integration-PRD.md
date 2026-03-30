@@ -37,7 +37,6 @@ This PRD does not own:
 
 ## Current behavior / baseline
 Current repo behavior is:
-- `POST /mcp` is legacy-disabled and returns `410 legacy_disabled`
 - public ChatGPT access is through n8n webhooks only
 - public webhook endpoints are:
   - `POST /webhook/pkm/chatgpt/read`
@@ -119,13 +118,12 @@ Relevant surfaces:
 - internal backend admin-secret protected routes
 
 ## Historical context
-The public MCP -> n8n-first pivot is complete. Historical implementation sequencing lives in:
+The public MCP -> n8n-first pivot is complete, and the unused backend MCP implementation has been removed. Historical implementation sequencing lives in:
 - `docs/PRD/archive/MCP-transition-work-packages-v2.md`
 
 ## Validation / acceptance criteria
 This PRD remains accurate if:
 - n8n remains the only public ChatGPT integration boundary
-- `/mcp` remains disabled for active use
 - public read and write flows continue to surface explicit outcomes
 - public contract changes update both `docs/external_api.md` and `chatgpt/action_schema.yaml`
 

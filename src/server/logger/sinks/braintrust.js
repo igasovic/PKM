@@ -2,6 +2,12 @@
 
 const { getRunContext } = require('../context.js');
 const { getBraintrustLogger } = require('../braintrust-client.js');
+const {
+  getModelCostMapRaw,
+  getNamedModelCostEnv,
+  getFallbackLlmCostEnv,
+  shouldWarnBraintrustSinkInTest,
+} = require('../../runtime-env.js');
 const SINK_WARN_INTERVAL_MS = 60_000;
 
 let modelCostMapCache = {
@@ -23,6 +29,7 @@ function resolveContext(ctx) {
 }
 
 function toFinite(value) {
+  if (value === null || value === undefined || value === '') return undefined;
   const n = Number(value);
   return Number.isFinite(n) ? n : undefined;
 }
@@ -53,7 +60,7 @@ function readRatePair(obj) {
 }
 
 function getModelCostMap() {
-  const raw = String(process.env.LLM_MODEL_COSTS_PER_1M_USD_JSON || '').trim();
+  const raw = getModelCostMapRaw();
   if (!raw) return null;
   if (modelCostMapCache.raw === raw) return modelCostMapCache.parsed;
   let parsed = null;
@@ -102,8 +109,9 @@ function resolveCostRates(model) {
 
     const modelKey = sanitizeModelEnvKey(modelName);
     if (modelKey) {
-      const modelInputPerM = toFinite(process.env[`LLM_MODEL_${modelKey}_INPUT_COST_PER_1M_USD`]);
-      const modelOutputPerM = toFinite(process.env[`LLM_MODEL_${modelKey}_OUTPUT_COST_PER_1M_USD`]);
+      const modelCosts = getNamedModelCostEnv(modelKey);
+      const modelInputPerM = toFinite(modelCosts.inputPerM);
+      const modelOutputPerM = toFinite(modelCosts.outputPerM);
       if (Number.isFinite(modelInputPerM) && Number.isFinite(modelOutputPerM)) {
         return {
           inputPerM: modelInputPerM,
@@ -113,15 +121,15 @@ function resolveCostRates(model) {
     }
   }
 
-  const inputPerM = toFinite(process.env.LLM_INPUT_COST_PER_1M_USD);
-  const outputPerM = toFinite(process.env.LLM_OUTPUT_COST_PER_1M_USD);
+  const fallbackCosts = getFallbackLlmCostEnv();
+  const inputPerM = toFinite(fallbackCosts.inputPerM);
+  const outputPerM = toFinite(fallbackCosts.outputPerM);
   if (!Number.isFinite(inputPerM) || !Number.isFinite(outputPerM)) return null;
   return { inputPerM, outputPerM };
 }
 
 function sinkWarningsEnabled() {
-  if (String(process.env.NODE_ENV || '').trim().toLowerCase() !== 'test') return true;
-  return String(process.env.PKM_BRAINTRUST_SINK_WARN_IN_TEST || '').trim() === '1';
+  return shouldWarnBraintrustSinkInTest();
 }
 
 function normalizeUsage(usage) {

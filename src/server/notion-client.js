@@ -1,11 +1,12 @@
 'use strict';
 
-const NOTION_API_BASE = String(process.env.NOTION_API_BASE || 'https://api.notion.com/v1').replace(/\/+$/, '');
-const NOTION_API_VERSION = String(process.env.NOTION_API_VERSION || '2022-06-28').trim();
-const NOTION_DATABASE_URL = String(
-  process.env.NOTION_DATABASE_URL || 'https://www.notion.so/1a01372f11ad4ae7a8ebf5769af98b58?v=9b730daaf4444e6183d20a870cbe0560&source=copy_link'
-).trim();
-const NOTION_DATABASE_ID = String(process.env.NOTION_DATABASE_ID || '').trim();
+const { getNotionSettings } = require('./runtime-env.js');
+
+const notionSettings = getNotionSettings();
+const NOTION_API_BASE = notionSettings.apiBase;
+const NOTION_API_VERSION = notionSettings.apiVersion;
+const NOTION_DATABASE_URL = notionSettings.databaseUrl;
+const NOTION_DATABASE_ID = notionSettings.databaseId;
 
 const SUPPORTED_BLOCK_TYPES = new Set([
   'paragraph',
@@ -210,7 +211,7 @@ function extractTitleFromPage(page) {
 
 class NotionClient {
   constructor(opts = {}) {
-    const token = opts.token || process.env.NOTION_API_TOKEN || '';
+    const token = opts.token || notionSettings.apiToken || '';
     this.token = String(token).trim();
     this.apiBase = String(opts.apiBase || NOTION_API_BASE).replace(/\/+$/, '');
     this.version = String(opts.version || NOTION_API_VERSION).trim();

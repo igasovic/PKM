@@ -30,12 +30,14 @@ fi
 #    Allowed:
 #      - src/libs/sql-builder.js
 #      - src/server/db.js
+#      - src/server/db/**
 # --------
 echo "==> Checking for likely raw SQL outside allowed files..."
 # Heuristic patterns; tune as you learn false positives
 SQL_PATTERNS='(SELECT|INSERT|UPDATE|DELETE|CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE)\b'
 ALLOWED_1='src/libs/sql-builder.js'
 ALLOWED_2='src/server/db.js'
+ALLOWED_3='src/server/db/'
 
 # Search only in src/ and only in JS/TS-ish files
 MATCHES="$(rg -n --hidden --glob '!**/node_modules/**' \
@@ -46,8 +48,10 @@ MATCHES="$(rg -n --hidden --glob '!**/node_modules/**' \
 if [[ -n "$MATCHES" ]]; then
   # Filter out allowed files
   VIOLATIONS="$(echo "$MATCHES" | grep -vE "^$ROOT/$ALLOWED_1:" | grep -vE "^$ROOT/$ALLOWED_2:" || true)"
+  VIOLATIONS="$(echo "$VIOLATIONS" | grep -vE "^$ROOT/$ALLOWED_3" || true)"
   # rg output might not be rooted; handle relative output too
   VIOLATIONS="$(echo "$VIOLATIONS" | grep -vE "^$ALLOWED_1:" | grep -vE "^$ALLOWED_2:" || true)"
+  VIOLATIONS="$(echo "$VIOLATIONS" | grep -vE "^$ALLOWED_3" || true)"
 
   if [[ -n "$VIOLATIONS" ]]; then
     echo "ERROR: Likely raw SQL found outside allowed files:"
@@ -56,6 +60,7 @@ if [[ -n "$MATCHES" ]]; then
     echo "Rule: No raw SQL outside:"
     echo "  - $ALLOWED_1"
     echo "  - $ALLOWED_2"
+    echo "  - ${ALLOWED_3}**"
     exit 1
   fi
 fi

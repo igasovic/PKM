@@ -171,7 +171,7 @@ Anything visible on the family calendar surface is considered family-visible. No
 
 ## 6. Core invariants and boundaries
 
-1. **n8n must not talk directly to Postgres.** It should call backend APIs and Google / Telegram only.
+1. **n8n must not talk directly to PKM product data in Postgres.** It should call backend APIs and Google / Telegram only. n8n's own runtime/execution database remains part of n8n infrastructure and is allowed.
 2. **Backend must not call Google Calendar or Telegram directly.** Backend produces normalized decisions and logs.
 3. **LiteLLM remains the only LLM gateway.** No direct provider calls from n8n or backend business code.
 4. **Existing `POST /normalize/telegram` remains PKM-only.** Calendar must not overload it.

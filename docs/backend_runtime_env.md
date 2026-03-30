@@ -32,6 +32,7 @@
 
 This section is a convenience summary for backend-related env vars.
 Authoritative runtime location and apply workflow still live in `docs/env.md` and `docs/config_operations.md`.
+Backend feature modules should read these values through `src/server/runtime-env.js`, not from direct `process.env` calls.
 
 These variables are required in the service container:
 - `PKM_INGEST_USER`
@@ -55,9 +56,9 @@ Optional:
 - `T1_DEFAULT_MODEL` (recommended: `t1-default`)
 - `T1_BATCH_MODEL` (recommended: `t1-batch`)
 - `T1_BATCH_DEFAULT_MODEL` (optional provider-default batch alias fallback)
-- `T1_BATCH_PROVIDER_MODEL` (optional provider model override for Tier-1 batch submission)
-- `T1_BATCH_REQUEST_MODEL` (optional provider request model override for Tier-1 batch submission)
-- `T1_REASONING_EFFORT` (optional LiteLLM/OpenAI reasoning effort hint for Tier-1 sync calls)
+- `T1_BATCH_PROVIDER_MODEL` (optional provider model override for classify batch submission)
+- `T1_BATCH_REQUEST_MODEL` (optional provider request model override for classify batch submission)
+- `T1_REASONING_EFFORT` (optional LiteLLM/OpenAI reasoning effort hint for classify sync calls)
 - `T1_BATCH_WORKER_ENABLED` (`true` default)
 - `T1_BATCH_SYNC_INTERVAL_MS` (`600000` default)
 - `T1_BATCH_SYNC_LIMIT` (`20` default)
@@ -74,8 +75,8 @@ Optional:
 - `T2_BATCH_SYNC_INTERVAL_MS` (`600000` default)
 - `T2_BATCH_SYNC_LIMIT` (`distill.max_entries_per_run` default)
 - `T2_BATCH_COLLECT_LIMIT` (`20` default)
-- `T2_BATCH_STATUS_HISTORY_LIMIT` (optional cap for returned Tier-2 batch status history; bounded in code)
-- `T2_BATCH_REQUEST_MODEL` (optional provider model override for Tier‑2 batch request lines; falls back to `T1_BATCH_REQUEST_MODEL`)
+- `T2_BATCH_STATUS_HISTORY_LIMIT` (optional cap for returned distill batch status history; bounded in code)
+- `T2_BATCH_REQUEST_MODEL` (optional provider model override for distill batch request lines; falls back to `T1_BATCH_REQUEST_MODEL`)
 - `DB_DELETE_MOVE_MAX_BATCH` (`200` default; admin delete/move safety cap)
 - `FAMILY_CALENDAR_ID` (optional; shared calendar id surfaced in `/config.calendar.family_calendar_id`)
 - `FAMILY_CALENDAR_RECIPIENT_EMAIL` (optional; default `pkm.gasovic`)

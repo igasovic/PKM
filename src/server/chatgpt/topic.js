@@ -11,11 +11,10 @@ function normalizeTopicLabel(value) {
 function normalizeTopicKey(value) {
   const label = normalizeTopicLabel(value).toLowerCase();
   if (!label) return '';
-  const normalized = label
+  return label
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
     .replace(/\s+/g, '-');
-  return normalized;
 }
 
 module.exports = {

@@ -17,6 +17,7 @@ const {
   buildTier2Artifact,
   validateTier2Artifact,
 } = require('./parsing-validation.js');
+const { getT2ModelEnv } = require('../runtime-env.js');
 
 let litellmClient = null;
 
@@ -33,25 +34,26 @@ function getDistillConfig() {
 
 function getModelForRequestType(distillConfig, requestType) {
   const models = distillConfig && distillConfig.models ? distillConfig.models : {};
+  const modelEnv = getT2ModelEnv();
   if (requestType === 'chunk_note_generation') {
-    return models.chunk_note || models.direct || process.env.T2_MODEL_CHUNK_NOTE || process.env.T2_MODEL_DIRECT || 't2-direct';
+    return models.chunk_note || models.direct || modelEnv.chunkNote || modelEnv.direct || 't2-direct';
   }
   if (requestType === 'final_synthesis') {
-    return models.synthesis || models.direct || process.env.T2_MODEL_SYNTHESIS || process.env.T2_MODEL_DIRECT || 't2-direct';
+    return models.synthesis || models.direct || modelEnv.synthesis || modelEnv.direct || 't2-direct';
   }
   if (requestType === 'batch_direct_generation') {
     return models.batch_direct
       || models.sync_direct
       || models.direct
-      || process.env.T2_MODEL_BATCH_DIRECT
-      || process.env.T2_MODEL_SYNC_DIRECT
-      || process.env.T2_MODEL_DIRECT
+      || modelEnv.batchDirect
+      || modelEnv.syncDirect
+      || modelEnv.direct
       || 't2-direct';
   }
   if (requestType === 'sync_direct_generation') {
-    return models.sync_direct || models.direct || process.env.T2_MODEL_SYNC_DIRECT || process.env.T2_MODEL_DIRECT || 't2-direct';
+    return models.sync_direct || models.direct || modelEnv.syncDirect || modelEnv.direct || 't2-direct';
   }
-  return models.direct || process.env.T2_MODEL_DIRECT || 't2-direct';
+  return models.direct || modelEnv.direct || 't2-direct';
 }
 
 function normalizeEntryId(value) {

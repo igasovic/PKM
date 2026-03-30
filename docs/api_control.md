@@ -30,9 +30,9 @@
 
 | Endpoint family | Auth | Primary callers | Schema touched | Typical tests |
 |---|---|---|---|---|
-| Health | none | operators, probes | none | `test/server.test.js` |
-| Internal ChatGPT actions | admin secret | n8n ChatGPT workflows | `pkm.entries` | `test/server/mcp.api-contract.test.js`, `test/server/n8n.wf11-route-read-request.test.js` |
-| Config and debug | mixed; debug routes require admin secret | operators, debug UI, WF99 | `runtime_config`, `pipeline_events`, `failure_packs` | `test/server/config-module-compat.test.js`, `test/server/failure-pack.api-contract.test.js` |
+| Health | none | operators, probes | none | `test/server/control.api-contract.test.js`, `test/server.test.js` |
+| Internal ChatGPT actions | admin secret | n8n ChatGPT workflows | `pkm.entries` | `test/server/chatgpt.api-contract.test.js`, `test/server/n8n.wf11-route-read-request.test.js` |
+| Config and debug | mixed; debug routes require admin secret | operators, debug UI, WF99 | `runtime_config`, `pipeline_events`, `failure_packs` | `test/server/control.api-contract.test.js`, `test/server/config-module-compat.test.js`, `test/server/failure-pack.api-contract.test.js` |
 
 ## Run ID Correlation
 
@@ -69,23 +69,6 @@ Response:
 ```
 
 ## ChatGPT Integration
-
-### `POST /mcp`
-Legacy MCP endpoint.
-
-Boundary rules:
-- `/mcp` is no longer the supported ChatGPT integration path.
-- ChatGPT integration now runs through GPT actions routed to n8n webhooks.
-
-Current response:
-- HTTP `410`
-- payload:
-```json
-{
-  "error": "legacy_disabled",
-  "message": "/mcp is legacy and disabled for ChatGPT integration; use GPT actions routed through n8n webhooks"
-}
-```
 
 ### Read Path Used By ChatGPT n8n Workflow
 n8n `11 ChatGPT Read Router` performs semantic routing and calls existing internal routes directly:
