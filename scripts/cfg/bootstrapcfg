@@ -55,7 +55,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#requested_surfaces[@]} -eq 0 ]]; then
-  requested_surfaces=(docker litellm postgres cloudflared)
+  requested_surfaces=(docker litellm postgres)
   if [[ "$include_n8n" -eq 1 ]]; then
     requested_surfaces+=(n8n)
   fi

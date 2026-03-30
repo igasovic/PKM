@@ -2,6 +2,15 @@
 
 Purpose: define one practical standard for authoring n8n Code nodes and HTTP Request nodes in this repo.
 
+Authoritative for:
+- n8n code-node authoring rules
+- wrapper and import conventions
+- reviewer checks for n8n node safety and payload shape
+
+Not authoritative for:
+- n8n sync/apply workflow; use `docs/n8n_sync.md`
+- backend route contracts; use `docs/api.md` and the relevant `docs/api_*.md` file
+
 ## 1) Scope and Required References
 
 This guide covers:
@@ -11,7 +20,19 @@ This guide covers:
 
 Read together with:
 - `docs/n8n_sync.md` (sync process and operational flow)
-- `docs/api.md` (backend endpoint contracts)
+- `docs/api.md` and the relevant `docs/api_*.md` file (backend endpoint contracts)
+
+## Quick Review Checklist
+- wrapper imports use `@igasovic/n8n-blocks` root exports or approved package subpaths
+- no `/data/...` runtime imports
+- no direct HTTP or SSH calls from Code nodes
+- fail-fast behavior preserved
+- `telegram_chat_id` is preserved across payload reshapes
+- HTTP Request nodes build one object and `JSON.stringify(...)` the whole body
+
+## Rule Strength
+- `Hard rule`: must be followed unless a PRD explicitly documents the exception.
+- `Recommended`: default pattern to use unless the local workflow has a strong reason not to.
 
 ## 2) Runtime Model: Code Node Inputs and Outputs
 
@@ -38,16 +59,16 @@ return rows.map(r => ({ json: r }));
 
 ## 3) Authoring Rules (Code Node)
 
-### 3.1 Inline vs externalized
+### 3.1 Hard rule: Inline vs externalized
 - `< 50` non-empty lines: inline in workflow JSON.
 - `>= 50` non-empty lines: externalize to `src/n8n/nodes/...` and keep thin wrapper in workflow.
 
-### 3.2 Keep inline code simple
+### 3.2 Hard rule: Keep inline code simple
 - Do not use module wrapper patterns in inline code (`module.exports`, `exports.default`, `ctx` wrapper shims).
 - Use n8n runtime variables directly.
 - Return explicit n8n item arrays.
 
-### 3.3 Runtime import rules
+### 3.3 Hard rule: Runtime import rules
 - Canonical workflow wrappers must import from package root `@igasovic/n8n-blocks` and call named root exports.
 - Root-export naming convention: `wf<NN><NodeName>` (for example `wf10CommandParser`, `wf30PrepareFinalizeRequest`).
 - Externalized node files may import shared helpers via package subpaths (`@igasovic/n8n-blocks/shared/...`).
@@ -59,12 +80,12 @@ return rows.map(r => ({ json: r }));
 const { wf10CommandParser } = require('@igasovic/n8n-blocks');
 ```
 
-### 3.4 Fail-fast error handling
+### 3.4 Hard rule: Fail-fast error handling
 - Do not set `continueOnFail: true` on any node.
 - Do not set node `onError` to continuation modes (`continueRegularOutput`, `continueErrorOutput`).
 - Default behavior must be fail-fast so workflow errors stop execution unless a PRD explicitly documents an exception.
 
-### 3.5 No Transport Calls From Code Nodes
+### 3.5 Hard rule: No Transport Calls From Code Nodes
 - Code nodes must not perform direct HTTP requests or SSH calls.
 - Use standard n8n transport nodes instead (`HTTP Request`, `SSH`, etc.).
 - Exception policy:
@@ -83,7 +104,7 @@ const { wf10CommandParser } = require('@igasovic/n8n-blocks');
 - Do not use `$json.chat_id` in n8n workflow expressions or Code-node outputs.
 - When calling subworkflows, always pass `telegram_chat_id` in payload (`{ json: { ...$json, telegram_chat_id } }`).
 
-### 4.3 Sender-node chat-id resolution order
+### 4.3 Recommended pattern: Sender-node chat-id resolution order
 Use this fallback order in Telegram sender nodes:
 1. direct source-trigger node chat id (when trigger exists in same workflow)
 2. current item message chat id (`$json.message.chat.id`)
@@ -149,7 +170,38 @@ Template:
 })()) }}
 ```
 
-## 6) Canonical Examples
+## 6) Anti-patterns
+
+Bad: fragile relative import from repo source
+```js
+const helper = require('../../../src/libs/helper');
+```
+
+Good: staged package import
+```js
+const { wf10CommandParser } = require('@igasovic/n8n-blocks');
+```
+
+Bad: quoted JSON with embedded object interpolation
+```js
+{ \"metadata\": \"{{$json.metadata}}\" }
+```
+
+Good: build one object and stringify the whole payload
+```js
+{{ JSON.stringify({ metadata: $json.metadata ?? null }) }}
+```
+
+Bad: direct transport call from a Code node
+```js
+await fetch('http://example.com');
+```
+
+Good: keep transport in `HTTP Request` or `SSH` nodes
+- compose data in Code nodes
+- perform I/O in transport nodes
+
+## 7) Canonical Examples
 
 ### 6.1 Externalized code with thin wrapper
 Workflow wrapper:
@@ -199,7 +251,7 @@ const telegram_message = finalizeMarkdownV2(joinLines([
 return [{ json: { ...$json, telegram_message } }];
 ```
 
-## 7) Failure Modes and Fast Fixes
+## 8) Failure Modes and Fast Fixes
 
 - `ctx is not defined`
   - Cause: inline code copied from module/externalized wrapper style.
@@ -226,8 +278,9 @@ This guide is intentionally organized by execution flow, not by node type:
 3. **Authoring rules**: enforceable standards for code shape and file placement.  
 4. **Telegram rules**: trigger/auth/routing behavior and sender extraction order.  
 5. **HTTP rules**: transport contract for backend calls from n8n.  
-6. **Examples**: minimal patterns to copy safely.  
-7. **Failure modes**: operational debugging shortcuts tied to real errors.
+6. **Anti-patterns**: common mistakes to avoid.  
+7. **Examples**: minimal patterns to copy safely.  
+8. **Failure modes**: operational debugging shortcuts tied to real errors.
 
 This structure is meant to avoid "template dumping" and keep one linear path:
 what environment you are in -> what rules apply -> how to write nodes -> how to send API payloads -> how to debug.

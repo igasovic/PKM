@@ -1,104 +1,78 @@
 # Repository Map
 
-Defines ownership boundaries and allowed dependencies. If unsure where code belongs,
-propose placement before implementing.
+## Purpose
+- define ownership boundaries and allowed dependencies
+- help agents place work in the right surface quickly
+- clarify which docs and contracts are likely to move together
 
----
+## Authoritative For
+- ownership by repo area
+- placement rules
+- allowed dependency directions at a high level
 
-## src/ (product code)
+## Not Authoritative For
+- runtime topology and service edges; use `docs/service_dependancy_graph.md`
+- exact runtime paths and mounts; use `docs/env.md`
+- API or schema contracts; use `docs/api.md` and `docs/database_schema.md`
 
-### src/server/ (Backend)
-Owns:
-- HTTP API implementation
-- Business logic
-- DB access layer
-- Logging and telemetry sinks
-- Tier pipeline modules (for example `src/server/tier1/`, `src/server/tier2/`)
+## Read When
+- deciding where code belongs
+- reviewing whether a change introduced unsafe coupling
+- planning work that spans server, web, n8n, scripts, or ops surfaces
 
-Public surface:
-- API endpoints documented in docs/api.md
-- DB module methods (src/server/db.js)
+## Core Ownership Map
 
-Hard rules:
-- No raw SQL outside:
-  - src/libs/sql-builder.js
-  - src/server/db.js
-- Business logic must call DB module methods (e.g., db.insertPipelineEvent(...))
-- Pipeline transition logs use src/server/logger
-- Telemetry destinations:
-  - LLM telemetry → Braintrust
-  - Transition telemetry → Postgres pipeline_events
+| Surface | Owns | May depend on | Must not do |
+|---|---|---|---|
+| `src/server/` | HTTP API, business logic, DB access layer, logging, orchestration | `src/libs/`, DB module, documented contracts | raw SQL outside approved files; bypass DB module; undocumented contracts |
+| `src/web/` | UI application | documented backend endpoints, shared libs as appropriate | direct DB access; undocumented backend paths |
+| `src/libs/` | shared pure utilities and helpers | local utilities only | hidden environment-specific side effects unless intentional |
+| `src/n8n/` | workflow JSON, externalized code nodes, runtime package manifest | documented backend endpoints, staged shared helpers | direct DB access; raw SQL; `/data/...` runtime imports |
+| `src/n8n/package/` | generated runtime package output | build/runtime consumers only | manual authoring or review as a source-of-truth surface |
+| `scripts/n8n/` | active n8n sync and cutover scripts | repo-managed n8n surfaces | ad hoc workflow state edits outside orchestrated flow |
+| `scripts/archive/n8n/` | retired scripts kept for history | none for normal operations | use in active workflows |
+| `scripts/cfg/` | config diff/apply tooling | repo-managed config surfaces | bypass documented operator workflow |
+| `ops/stack/` | repo-authored non-secret stack config and runtime definitions | config tooling and documented runtime assumptions | host-local secret storage in repo |
+| `test/` | automated tests | touched implementation surfaces | silently accept changed behavior without updating tests |
+| `docs/` | contracts, guides, architecture, runbooks | references to authoritative repo surfaces | become the only source of truth for code behavior without matching implementation |
 
----
+## Placement Rules
+- New n8n logic belongs under `src/n8n/`.
+- `src/n8n/package/` is generated output, not an authoring surface.
+- Legacy `js/` workflow tree is sunset and must not be used.
+- Raw SQL is allowed only in:
+  - `src/libs/sql-builder.js`
+  - `src/server/db.js`
+- Business logic must call DB module methods rather than issuing SQL directly.
 
-### src/web/ (UI)
-Owns:
-- UI application
+## Generated Vs Authoritative
+- Authoritative source files live in repo-owned authoring surfaces such as `src/n8n/`, `ops/stack/`, `docs/`, and approved config/code locations.
+- Generated outputs such as `src/n8n/package/` are build artifacts and should not be treated as the authoring surface.
+- Live n8n state is runtime state, not source code; sync it through `docs/n8n_sync.md` workflows.
 
-Hard rules:
-- UI must not access DB directly
-- UI calls backend ONLY via endpoints documented in docs/api.md
+## Change Routing
 
----
+| If you touch... | Also inspect... |
+|---|---|
+| backend endpoints | `docs/api.md`, relevant `docs/api_*.md`, `docs/database_schema.md`, relevant tests |
+| public webhook contracts | `docs/external_api.md`, `docs/api.md`, relevant `docs/api_*.md`, `docs/service_dependancy_graph.md` |
+| schema or migrations | `docs/database_schema.md`, `docs/api.md`, relevant `docs/api_*.md`, `docs/config_operations.md` |
+| n8n nodes or workflows | `docs/n8n_sync.md`, `docs/n8n_node_style_guide.md`, `docs/api.md`, relevant `docs/api_*.md` |
+| runtime/config/infra | `docs/config_operations.md`, `docs/env.md`, `docs/service_dependancy_graph.md` |
+| topology or trust boundaries | `docs/service_dependancy_graph.md`, `docs/env.md` |
+| repo structure / ownership | this file and `AGENTS.md` |
 
-### src/libs/ (Shared code)
-Owns:
-- Pure shared utilities/types/helpers used across server/web/n8n
-
-Hard rules:
-- Avoid environment-specific side effects unless explicitly intended
-
----
-
-### src/n8n/ (n8n workflow code)  [Target location]
-Owns:
-- Code used by n8n Code nodes (externalized JS)
-- Workflow JSON under `src/n8n/workflows`
-- Runtime package manifest under `src/n8n/package.manifest.json`
-- Generated runtime package output under `src/n8n/package/` (non-authoritative build artifact)
-
-Hard rules:
-- No direct DB access
-- No raw SQL
-- Must call backend ONLY via endpoints documented in docs/api.md
-- Keep Code node wrappers thin; logic lives in files here
-- Canonical runtime imports use `@igasovic/n8n-blocks/...`, never `/data/...`
-
-Migration policy:
-- New features: put new n8n logic under src/n8n/
-- `js/` workflow tree is sunset and must not be used
-
----
-
-## scripts/n8n/ (active n8n sync scripts)
-Owns:
-- Active n8n sync and cutover scripts
-
-Rules:
-- Use `scripts/n8n/sync_workflows.sh` as the orchestrator
-- Keep legacy/retired helpers out of this folder
-
-## scripts/archive/n8n/ (retired scripts)
-Owns:
-- Deprecated n8n scripts kept only for history/reference
-
-Rules:
-- Do not use these scripts for normal operations
-
----
-
-## test/ (Jest)
-Owns:
-- Automated tests (unit, integration, contract)
-
-Rules:
-- Behavior changes require Jest tests
-- Boundary/contract changes require contract tests
-
----
-
-## docs/ (contracts + guides)
-Authoritative contracts:
-- docs/api.md
-- docs/database_schema.md
-- docs/env.md
+## Docs That Matter Most
+- `docs/README.md`: doc entrypoint and read routing
+- `docs/service_dependancy_graph.md`: dependency topology and trust boundaries
+- `docs/env.md`: runtime access paths, ports, mounts, stack root
+- `docs/api.md`: internal backend API index and shared conventions
+- `docs/api_*.md`: detailed backend endpoint contracts by domain
+- `docs/backend_runtime_env.md`: backend env vars and runtime knobs
+- `docs/external_api.md`: public webhook contracts
+- `docs/database_schema.md`: DB schema and lifecycle
+- `docs/database_operations.md`: DB backup and restore runbook
+- `docs/config_operations.md`: config registry and operator apply workflow
+- `docs/n8n_sync.md`: n8n sync and deployment flow
+- `docs/n8n_node_style_guide.md`: n8n authoring and review rules
+- `docs/prd-expectations.md`: repo-local expectations for PRD quality and agent use

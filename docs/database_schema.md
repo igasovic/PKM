@@ -1,5 +1,26 @@
 # PKM Database Schema v2.6 (Observed + Required Runtime Tables)
 
+## Purpose
+- define the authoritative database schemas, tables, grants, and lifecycle notes used by PKM
+- help agents distinguish mirrored tables, prod-only tables, and admin-sensitive operations
+
+## Authoritative For
+- schema and table inventory
+- grants, constraints, indexes, and prod/test mirroring
+- DB facts that affect API behavior and safe review
+
+## Not Authoritative For
+- runtime topology and service edges; use `docs/service_dependancy_graph.md`
+- config apply workflow; use `docs/config_operations.md`
+
+## Read When
+- changing schema, migrations, idempotency, test-mode behavior, or DB-backed lifecycle rules
+- reviewing API changes that rely on DB guarantees
+
+## Update When
+- any table, index, grant, mirror rule, or prod/test lifecycle expectation changes
+- DB-backed operational behavior changes in a way that affects API contracts
+
 **Observed on:** 2026-02-17 (from `psql` introspection against database `pkm`).
 
 This file is meant to be a **human + agent** reference:
@@ -8,6 +29,26 @@ This file is meant to be a **human + agent** reference:
 - what each DB role can do
 - column/index/constraint details per table
 - operational notes that affect `/db/delete` and `/db/move`
+
+## Quick Table Map
+
+| Table group | Scope | Primary use |
+|---|---|---|
+| `entries`, `idempotency_policies` | mirrored in `pkm` and `pkm_test` | core ingest, dedupe, read and enrichment lifecycle |
+| `runtime_config`, `failure_packs`, calendar tables | prod-only | runtime toggles, failure diagnostics, calendar business logs |
+| `t1_*`, `t2_*` batch tables | mirrored in `pkm` and `pkm_test` | durable batch orchestration and status visibility |
+
+## Table Ownership Summary
+
+| Table or group | Owner | Primary writers | Primary readers | Mirrored? | Retention note |
+|---|---|---|---|---|---|
+| `entries` | `pgadmin` | backend via `pkm_ingest` | backend, `pkm_read` | yes | not explicitly bounded |
+| `idempotency_policies` | `pgadmin` | migrations / admin setup | backend | yes | not explicitly bounded |
+| `runtime_config` | `pgadmin` | backend | backend, `pkm_read`, `n8n` | no | not explicitly bounded |
+| `pipeline_events` | `pgadmin` | backend | debug tools / admin flows | no | daily prune; default `30` days |
+| `failure_packs` | `pgadmin` | backend / WF99 path | admin debug flows | no | not documented here |
+| `calendar_*` tables | `pgadmin` | backend calendar flows | backend calendar/report/debug flows | no | not documented here |
+| `t1_*`, `t2_*` tables | `pgadmin` | backend batch flows | status APIs / admin flows | yes | not documented here |
 
 ---
 
@@ -301,6 +342,9 @@ Defines idempotency/deduplication behavior per `(source, content_type)` and stab
 - Check: `conflict_action IN ('skip','update')`
 
 **Seed policies (current)**
+This is the authoritative observed policy catalog for the current DB state.
+If `docs/requirements.md` lags during the later requirements cleanup pass, prefer this list for current schema truth.
+
 - `telegram_thought_v1` (telegram / thought / update)
 - `telegram_link_v1` (telegram / link / skip)
 - `email_newsletter_v1` (email / newsletter / skip)
@@ -604,99 +648,7 @@ Indexes:
 ---
 
 
-## Backups
+## Database Operations
 
-This project uses **logical Postgres backups** (`pg_dump` custom format) because the DB is still small and we want **fast, low-risk** operations with easy restore.
-
-### Policy and frequency
-
-**Local backups (cron on host)**
-- **Daily**: 02:10 local time — creates fresh dumps for `pkm` and `n8n` and builds the rolling “daily” bundle.
-- **Weekly**: Sunday 02:20 — promotes the most recent nightly dumps and builds the rolling “weekly” bundle.
-- **Monthly**: 1st of month 02:25 — promotes the most recent nightly dumps and builds the rolling “monthly” bundle.
-- **Rotation**: 02:35 — prunes old local history.
-
-**Retention (local disk)**
-- Nightly: keep **14 days**
-- Weekly: keep **8 weeks**
-- Monthly: keep **12 months**
-
-Notes:
-- Backups are **logical only** (no WAL archiving).
-- Backups run outside peak hours to reduce chances of ingestion/maintenance operations failing.
-
-### On-disk locations
-
-Backups live on the host under:
-
-- Root: `/home/igasovic/backup/postgres`
-- Timestamped history:
-  - `nightly/` — fresh daily dumps
-  - `weekly/` — weekly promoted copies
-  - `monthly/` — monthly promoted copies
-- Rolling bundles for off-site upload (overwritten each run):
-  - `/home/igasovic/backup/postgres/uploads/pkm_backup_daily.tgz`
-  - `/home/igasovic/backup/postgres/uploads/pkm_backup_weekly.tgz`
-  - `/home/igasovic/backup/postgres/uploads/pkm_backup_monthly.tgz`
-
-Each bundle contains:
-- `pkm.dump` (custom-format `pg_dump`)
-- `n8n.dump`
-- `globals.sql.gz` (roles/grants; optional to apply during restore)
-- `SHA256SUMS` (integrity)
-- `MANIFEST.txt` (metadata)
-
-Scripts are versioned in the repo:
-- `/home/igasovic/repos/n8n-workflows/scripts/db/backup.sh`
-- `/home/igasovic/repos/n8n-workflows/scripts/db/rotate.sh`
-- `/home/igasovic/repos/n8n-workflows/scripts/db/restore.sh`
-
-### Off-site backup (n8n → Google Drive)
-
-Off-site copies are pushed by n8n to Google Drive and intentionally kept to **only 3 files** (latest daily/weekly/monthly).
-
-**How it works**
-- n8n reads the rolling bundle files from disk (mounted into the n8n container under the allowed path):
-  - `/home/node/.n8n-files/backup-postgres/uploads/pkm_backup_daily.tgz`
-  - `/home/node/.n8n-files/backup-postgres/uploads/pkm_backup_weekly.tgz`
-  - `/home/node/.n8n-files/backup-postgres/uploads/pkm_backup_monthly.tgz`
-- Workflow schedule: **04:00** daily
-  - Always uploads **daily**
-  - Uploads **weekly** only on Sunday
-  - Uploads **monthly** only on the 1st
-- Overwrite policy: if a file with the same name exists in the target folder, n8n deletes it and uploads the new one (ensures exactly 3 files).
-
-### Monitoring and alerting
-
-- Cron jobs report status to n8n via local webhooks.
-- On failure, n8n sends a Telegram alert.
-- A daily **09:00** Telegram summary reports the latest status for: daily/weekly/monthly/rotation.
-
-### Restore
-
-- Preferred: restore into **scratch DBs** first (safe), then promote to prod only if needed.
-- `restore.sh` supports:
-  - `--target scratch` (default): restores into `pkm_restore_YYYYmmdd_HHMMSS` and `n8n_restore_YYYYmmdd_HHMMSS`
-  - `--target prod`: requires `CONFIRM_PROD=YES` to prevent accidents
-- Integrity: bundles include `SHA256SUMS`; restore verifies checksums when present.
-
-
-## What else is useful (recommended additions)
-
-If you want this schema doc to be maximally helpful for agents, consider adding:
-
-1. **Operational invariants**
-   - which columns are considered canonical vs derived
-   - how “idempotency keys” are constructed (where they live in metadata/external_ref)
-
-2. **Admin operations contract**
-   - the exact semantics for `/db/delete` and `/db/move` (what is preserved, what is re-assigned)
-   - validation rules (max ranges, dry-run requirement, explicit schema requirement)
-
-3. **Data lifecycle**
-   - when to truncate `pkm_test.*`
-   - whether `pkm` ever gets truncated (ideally never)
-
-4. **Perf expectations**
-   - common query patterns and which indexes support them
-   - when to VACUUM/ANALYZE (if you see bloat)
+Operator-facing backup and restore workflow now lives in `docs/database_operations.md`.
+Keep this file focused on schema and lifecycle facts, and keep operational runbooks there.

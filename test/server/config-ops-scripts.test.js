@@ -337,62 +337,26 @@ describe('config ops scripts', () => {
     expect(res.stdout).toContain('pull mode is not supported');
   });
 
-  test('importcfg cloudflared pull is non-blocking in token mode when runtime config is missing', () => {
-    const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
-    const repoCloudflared = path.join(tempRepoRoot, 'ops/stack/cloudflared/config.yml');
-    const composeFile = path.join(tempStackRoot, 'docker-compose.yml');
-
-    fs.mkdirSync(path.dirname(repoCloudflared), { recursive: true });
-    fs.mkdirSync(path.dirname(composeFile), { recursive: true });
-
-    fs.writeFileSync(repoCloudflared, 'ingress:\n  - service: existing\n', 'utf8');
-    fs.writeFileSync(
-      composeFile,
-      [
-        'services:',
-        '  cloudflared:',
-        '    image: cloudflare/cloudflared:latest',
-        '    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}',
-        '',
-      ].join('\n'),
-      'utf8',
-    );
-
-    const res = runScript(importcfgPath, ['cloudflared'], {
-      CFG_REPO_ROOT: tempRepoRoot,
-      CFG_STACK_ROOT: tempStackRoot,
-    });
-
-    expect(res.code).toBe(0);
-    expect(res.stdout).toContain('Surface: cloudflared');
-    expect(res.stdout).toContain('Mode: pull');
-    expect(res.stdout).toContain('Status: ok');
-    expect(res.stdout).toContain('detected token-based tunnel mode in compose; nothing to import');
-
-    fs.rmSync(tempRoot, { recursive: true, force: true });
-  });
-
   test('bootstrapcfg imports selected surfaces via importcfg', () => {
     const { tempRoot, tempRepoRoot, tempStackRoot } = makeTempRoots();
 
     const repoLitellm = path.join(tempRepoRoot, 'ops/stack/litellm/config.yaml');
     const runtimeLitellm = path.join(tempStackRoot, 'litellm/config.yaml');
-    const repoCloudflared = path.join(tempRepoRoot, 'ops/stack/cloudflared/config.yml');
-    const runtimeCloudflared = path.join(tempStackRoot, 'cloudflared/config.yml');
+    const repoPostgresInit = path.join(tempRepoRoot, 'ops/stack/postgres/init');
+    const runtimePostgresInit = path.join(tempStackRoot, 'postgres-init');
 
     fs.mkdirSync(path.dirname(repoLitellm), { recursive: true });
     fs.mkdirSync(path.dirname(runtimeLitellm), { recursive: true });
-    fs.mkdirSync(path.dirname(repoCloudflared), { recursive: true });
-    fs.mkdirSync(path.dirname(runtimeCloudflared), { recursive: true });
+    fs.mkdirSync(repoPostgresInit, { recursive: true });
+    fs.mkdirSync(runtimePostgresInit, { recursive: true });
 
     fs.writeFileSync(repoLitellm, 'model_list:\n  - model_name: old\n', 'utf8');
     fs.writeFileSync(runtimeLitellm, 'model_list:\n  - model_name: imported_litellm\n', 'utf8');
-    fs.writeFileSync(repoCloudflared, 'ingress:\n  - service: old\n', 'utf8');
-    fs.writeFileSync(runtimeCloudflared, 'ingress:\n  - service: imported_cloudflared\n', 'utf8');
+    fs.writeFileSync(path.join(runtimePostgresInit, '01-bootstrap.sql'), '-- imported postgres\n', 'utf8');
 
     const res = runScript(
       bootstrapcfgPath,
-      ['--surface', 'litellm', '--surface', 'cloudflared'],
+      ['--surface', 'litellm', '--surface', 'postgres'],
       {
         CFG_REPO_ROOT: tempRepoRoot,
         CFG_STACK_ROOT: tempStackRoot,
@@ -401,13 +365,12 @@ describe('config ops scripts', () => {
 
     expect(res.code).toBe(0);
     expect(res.stdout).toContain('[1/2] importcfg litellm');
-    expect(res.stdout).toContain('[2/2] importcfg cloudflared');
+    expect(res.stdout).toContain('[2/2] importcfg postgres');
     expect(res.stdout).toContain('Bootstrap import complete.');
 
     const litellmRepo = fs.readFileSync(repoLitellm, 'utf8');
-    const cloudflaredRepo = fs.readFileSync(repoCloudflared, 'utf8');
     expect(litellmRepo).toContain('imported_litellm');
-    expect(cloudflaredRepo).toContain('imported_cloudflared');
+    expect(fs.readFileSync(path.join(repoPostgresInit, '01-bootstrap.sql'), 'utf8')).toContain('-- imported postgres');
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });
@@ -463,11 +426,10 @@ describe('config ops scripts', () => {
     });
 
     expect(res.code).toBe(0);
-    expect(res.stdout).toContain('[1/5] importcfg docker');
-    expect(res.stdout).toContain('[2/5] importcfg litellm');
-    expect(res.stdout).toContain('[3/5] importcfg postgres');
-    expect(res.stdout).toContain('[4/5] importcfg cloudflared');
-    expect(res.stdout).toContain('[5/5] importcfg n8n');
+    expect(res.stdout).toContain('[1/4] importcfg docker');
+    expect(res.stdout).toContain('[2/4] importcfg litellm');
+    expect(res.stdout).toContain('[3/4] importcfg postgres');
+    expect(res.stdout).toContain('[4/4] importcfg n8n');
     expect(res.stdout).toContain('Bootstrap import complete.');
 
     expect(fs.readFileSync(repoCompose, 'utf8')).toContain('cloudflared');
@@ -515,10 +477,9 @@ describe('config ops scripts', () => {
     });
 
     expect(res.code).toBe(0);
-    expect(res.stdout).toContain('[1/4] importcfg docker');
-    expect(res.stdout).toContain('[2/4] importcfg litellm');
-    expect(res.stdout).toContain('[3/4] importcfg postgres');
-    expect(res.stdout).toContain('[4/4] importcfg cloudflared');
+    expect(res.stdout).toContain('[1/3] importcfg docker');
+    expect(res.stdout).toContain('[2/3] importcfg litellm');
+    expect(res.stdout).toContain('[3/3] importcfg postgres');
     expect(res.stdout).not.toContain('importcfg n8n');
     expect(res.stdout).toContain('Bootstrap import complete.');
 

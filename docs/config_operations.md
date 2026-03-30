@@ -1,5 +1,63 @@
 # Configuration Operations
 
+## Purpose
+- define the authoritative config surface registry and operator apply workflow
+- keep repo-authored config and runtime-applied state separate
+- give agents one place to learn how config changes are reported and applied
+
+## Authoritative For
+- config surface ownership
+- `checkcfg` / `updatecfg` operator workflow
+- classification of repo-authored vs host-local config state
+
+## Not Authoritative For
+- service dependency topology; use `docs/service_dependancy_graph.md`
+- business behavior requirements; use the relevant contract docs
+
+## Read When
+- touching Docker, runtime config, host-side config, env ownership, or apply flow
+- reviewing whether a change introduced a new config surface
+
+## Update When
+- a new config surface is introduced
+- ownership or apply behavior changes
+- an existing surface changes class, owner, or target path
+
+## Quick Decisions
+
+| If you are changing... | Read / use |
+|---|---|
+| repo-authored non-secret config | this doc + `checkcfg` / `updatecfg` flow |
+| runtime topology or access paths | `docs/service_dependancy_graph.md`, `docs/env.md` |
+| business logic defaults | this doc plus the relevant contract or config-loader docs |
+
+## Reporting Examples
+
+Single-surface handoff:
+
+```text
+Config surfaces changed:
+- docker
+
+Run:
+- checkcfg docker
+- updatecfg docker --push
+```
+
+Multi-surface handoff:
+
+```text
+Config surfaces changed:
+- docker
+- litellm
+
+Run:
+- checkcfg docker
+- updatecfg docker --push
+- checkcfg litellm
+- updatecfg litellm --push
+```
+
 ## 1. Operator workflow
 Rule: all non-secret config is repo-authored first. Host-local edits are for secrets, credentials, runtime-mutable state, and persistent service data only.
 
@@ -63,7 +121,7 @@ Convenience wrapper for runtime-to-repo import:
 
 ### `bootstrapcfg`
 Bootstrap helper for first-time runtime->repo import:
-- default surfaces: `docker litellm postgres cloudflared n8n`
+- default surfaces: `docker litellm postgres n8n`
 - optional `--skip-n8n` to skip n8n import in the same run
 - calls `importcfg <surface>` for each selected surface in sequence
 - does not support `backend` (no runtime->repo import path)
@@ -76,14 +134,14 @@ Bootstrap helper for first-time runtime->repo import:
 | `docker` | `ops/stack/docker-compose.yml`, `ops/stack/env/*.env`, `ops/stack/n8n-runners/n8n-task-runners.json` | `/home/igasovic/stack/docker-compose.yml`, `/home/igasovic/stack/*.env` (managed non-secret env only), `/home/igasovic/stack/n8n-task-runners.json` | authoritative | versioned, non-secret | infra | file drift compare + affected-service summary | copy managed files + targeted compose apply when scope is known (fallback full apply) | copy managed runtime files to repo |
 | `litellm` | `ops/stack/litellm/config.yaml` | `/home/igasovic/stack/litellm/config.yaml` | authoritative | versioned, non-secret | infra | file drift compare | copy config + restart `litellm` | copy runtime config to repo |
 | `postgres` | `ops/stack/postgres/init/*`, optional `ops/stack/postgres/postgresql.conf`, `ops/stack/postgres/pg_hba.conf` | `/home/igasovic/stack/postgres-init/*`, optional `/home/igasovic/stack/postgres/*.conf` | authoritative | versioned, non-secret, host-local runtime target | infra/db | dir+file drift compare (excludes live data dir) | copy init/config only; never touches live data | pull init/config only; never touches live data |
-| `cloudflared` | `ops/stack/cloudflared/config.yml` | runtime cloudflared config path + host-local credentials JSON | authoritative | versioned config + host-local credential dependency | infra | file drift compare + credentials presence check | copy config + restart `cloudflared` (credentials required) | copy runtime config to repo |
 | `backend` | `src/libs/config/`, compatibility entrypoint `src/libs/config.js`, related `src/server/**` config readers | backend deployment/runtime state | authoritative (partial) | versioned code/config | backend | readiness check (`scripts/cfg/backend_push.sh` present + executable) | run `scripts/cfg/backend_push.sh` (targeted `pkm-server` deploy) | blocked (no runtime-to-repo import path) |
-| `smoke` | `test/smoke/config/defaults.json` | n8n runtime reads via `/data/test/smoke/config/defaults.json` mount path | authoritative | versioned, non-secret | n8n/smoke harness | blocked (no dedicated adapter yet) | blocked (repo-authored; no operator push step) | blocked |
 
 Notes:
 - Secrets and credentials are host-local and never copied from repo.
 - Runtime mutable state (`pkm.runtime_config`) is out of `updatecfg` scope.
 - Home Assistant/Matter remain out of this config program unless explicitly scoped in.
+- `cloudflared` currently runs in token-based compose mode and is not part of the active repo-managed config surface set.
+- `test/smoke/config/defaults.json` is repo-owned test input consumed by smoke workflows, but it is not part of the active `checkcfg` / `updatecfg` surface set.
 
 ## 4. Current adapter behavior details
 
@@ -118,12 +176,6 @@ Notes:
 - `checkcfg postgres` compares init/config files only.
 - push/pull operate on init/config files only and never DB data.
 
-### cloudflared
-- `checkcfg cloudflared` validates config drift and credential-file presence.
-- `updatecfg cloudflared --push` requires credentials and restarts `cloudflared`.
-- `updatecfg cloudflared --pull` does not restart services.
-  - if runtime `config.yml` is missing and compose indicates token-based tunnel mode, pull is treated as no-op import (non-blocking).
-
 ### backend
 - `checkcfg backend` is readiness-only (deploy script check), not runtime parity.
 - `updatecfg backend --push` runs `scripts/cfg/backend_push.sh` (optional git pull + targeted compose build/up for `pkm-server` + readiness check).
@@ -157,7 +209,7 @@ If you want to skip n8n in the bootstrap run:
 `updatecfg` remains explicit operator action in this phase. Config apply may require validation order, restart sequencing, or secret readiness. Read-only automation may run `checkcfg` later, but blind auto-apply is out of scope.
 
 ## 8. Living config inventory
-Keep this list updated whenever a new surface is discovered or ownership changes.
+Keep this list updated whenever a new config-adjacent surface is discovered or ownership changes. This inventory is broader than the active `checkcfg` / `updatecfg` registry above.
 
 - `/home/igasovic/stack/docker-compose.yml`
 - `/home/igasovic/stack/.env` (secret, host-local)
@@ -176,5 +228,4 @@ Keep this list updated whenever a new surface is discovered or ownership changes
 - `scripts/db/**`
 - `pkm.runtime_config` (runtime-mutable DB state)
 - shell exports for `N8N_API_*`
-- cloudflared local-managed config + host-local credentials JSON
-- `test/smoke/config/defaults.json`
+- `test/smoke/config/defaults.json` (repo-owned smoke input; outside active `checkcfg` / `updatecfg` surfaces)

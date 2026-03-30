@@ -2,11 +2,50 @@
 
 Canonical process for syncing n8n workflows and externalized Code-node JS with this repo.
 
+Authoritative for:
+- n8n sync, export, patch, and validation workflow
+- repo/runtime sync modes and operational flow
+
+Not authoritative for:
+- code-node style rules; use `docs/n8n_node_style_guide.md`
+- backend contract semantics; use `docs/api.md` and the relevant `docs/api_*.md` file
+
 Canonical repo locations:
 - Workflows: `src/n8n/workflows`
 - Externalized code nodes: `src/n8n/nodes`
 - Runtime package manifest: `src/n8n/package.manifest.json`
 - Generated runtime package: `src/n8n/package` (build output, ignored)
+
+## Mode Selection
+
+| Goal | Recommended mode |
+|---|---|
+| pull live n8n changes into repo | `--mode pull` |
+| push repo changes into live n8n | `--mode push` |
+| reconcile drift end-to-end | `--mode full` |
+| rebuild runners without patching workflows | `./scripts/n8n/recreate_stack.sh` |
+
+## Command Scope
+
+| Command | Run from | Primary effect |
+|---|---|---|
+| `./scripts/n8n/sync_workflows.sh --mode pull` | repo checkout with n8n API access | import live n8n workflow state into repo |
+| `./scripts/n8n/sync_workflows.sh --mode push` | repo checkout with n8n API access | patch repo workflow state into live n8n |
+| `./scripts/n8n/sync_workflows.sh --mode full` | repo checkout with n8n API access | reconcile repo and live state end-to-end |
+| `./scripts/n8n/recreate_stack.sh` | Pi/runtime-capable shell | rebuild runners image and recreate n8n services |
+| `./scripts/n8n/validate_cutover.sh` | Pi/runtime-capable shell | validate live runtime and optional smoke path |
+| `./scripts/n8n/run_smoke.sh` | Pi/runtime-capable shell | execute smoke master workflow |
+
+## Pre-flight Checks
+- confirm you are operating from repo root
+- confirm the intended workflow names and scope
+- confirm `N8N_API_BASE_URL` and `N8N_API_KEY` when using live operations
+- confirm whether you are doing authoring sync, deployment sync, or drift reconciliation
+
+## Post-flight Checks
+- validate the live export or run `validate_cutover.sh`
+- confirm runtime package and wrappers resolve correctly
+- update related docs if workflow boundaries, apply flow, or imports changed
 
 ## One command
 

@@ -1,6 +1,10 @@
 # env.md — PKM stack environment (Raspberry Pi)
 
 **Purpose:** quick human review + enough context for agents to safely operate / extend the stack (what runs where, how to connect, what can break, and what not to touch).
+**Authoritative for:** runtime access paths, published ports, mounts, stack root, observed host/container operational notes.  
+**Not authoritative for:** high-level dependency topology and trust edges; use `docs/service_dependancy_graph.md`.  
+**Read when:** runtime debugging, topology verification, operator workflows, host/container assumptions.  
+**Update when:** ports, mounts, stack root, access paths, or operator-facing runtime behavior changes.
 
 **Last verified:** 2026-03-28  
 **Host:** `pi` (LAN: `192.168.5.4`)  
@@ -8,8 +12,26 @@
 **Docker:** 29.1.4 • **Docker Compose:** v5.0.1
 
 **Related API docs:**
-- Internal backend contracts: `docs/api.md`
+- Internal backend contracts: `docs/api.md` and the relevant `docs/api_*.md` file
 - Public Custom GPT webhook contracts: `docs/external_api.md`
+- Backend env/runtime knobs: `docs/backend_runtime_env.md`
+
+## Topology Quick Table
+
+| Service | Published at | Config source | Runtime target |
+|---|---|---|---|
+| `pkm-server` | LAN `:3010` | repo-managed docker/env surfaces + backend config loader | container `pkm-server` on internal network |
+| `litellm` | LAN `:4000` | repo-managed LiteLLM config + docker/env surfaces | container `litellm` on internal network |
+| `n8n` | Pi loopback `:5678`, public via Cloudflare | repo-managed docker/env + live n8n workflow state | container `n8n` plus loopback host publish |
+| `postgres` | internal only | repo-managed init/config surfaces + host-local data | container `postgres` on internal network |
+| `cloudflared` | public publishing edge | runtime-managed compose token mode; not part of current repo-managed config surfaces | host-networked `cloudflared` container |
+| `homeassistant` | LAN `:8123`, public via Cloudflare | out of current repo config program | host-networked `homeassistant` container |
+| `matter-server` | LAN `:5580` | out of current repo config program | host-networked `matter-server` container |
+
+## Section Status Guide
+- `authoritative`: use this section for runtime assumptions and operator-facing values
+- `observed`: describes current observed state and should be re-verified when infra changes
+- `open questions`: unresolved items that should not be silently assumed away
 
 ---
 
@@ -36,7 +58,7 @@ docker logs -n 200 n8n
 
 ---
 
-## 1) Access paths
+## 1) Access paths (authoritative)
 
 ### LAN entrypoints (Pi)
 | Service | URL (LAN) | Notes |
@@ -142,7 +164,7 @@ ssh pi-remote
 
 ### Service dependency graph (overview)
 
-> For the detailed version, see `Service_dependancy_graph.md`.
+> This is only a compact overview. The authoritative topology and trust-boundary graph lives in `docs/service_dependancy_graph.md`.
 
 ```mermaid
 flowchart LR
@@ -175,7 +197,7 @@ flowchart LR
 
 ---
 
-## 2) Host baseline
+## 2) Host baseline (observed)
 
 ### Hardware + capacity (current)
 - **CPU:** 4× ARM Cortex-A72 @ 1.5GHz  
@@ -194,7 +216,7 @@ Expected mount state:
 
 ---
 
-## 3) Stack layout on disk
+## 3) Stack layout on disk (authoritative)
 
 **Compose project:** `stack`  
 **Stack root:** `/home/igasovic/stack`  
@@ -212,7 +234,7 @@ Expected mount state:
 
 ---
 
-## 4) How the stack starts
+## 4) How the stack starts (observed)
 
 There is **no separate systemd unit** that runs `docker compose up` at boot.
 
@@ -223,7 +245,7 @@ Instead:
 
 ---
 
-## 5) Docker services (what runs, ports, networks, mounts)
+## 5) Docker services (observed + runtime contract)
 
 ### Networks
 - `internal` bridge network for: `postgres`, `n8n`, `n8n-runners`, `litellm`, `pkm-server`
@@ -262,7 +284,7 @@ Instead:
 
 ---
 
-## 6) Postgres (DB roles, schemas, prod/test)
+## 6) Postgres (authoritative + observed)
 
 **Primary app DB used by PKM:** `pkm`  
 **n8n DB:** separate `n8n` database.
@@ -300,7 +322,7 @@ cat "$MIGRATION" | docker exec -i postgres psql -U "$PGUSER" -d pkm -v ON_ERROR_
 
 ---
 
-## 7) n8n
+## 7) n8n (authoritative + observed)
 
 **Container:** `n8n`  
 **Task runners:** external sidecar `n8n-runners`  
@@ -345,7 +367,7 @@ cat "$MIGRATION" | docker exec -i postgres psql -U "$PGUSER" -d pkm -v ON_ERROR_
 
 ---
 
-## 8) PKM server
+## 8) PKM server (authoritative + observed)
 
 **Purpose:** lightweight API service used by n8n and future clients.  
 **Container:** `pkm-server`  
@@ -405,7 +427,7 @@ Recommended wiring (so **pkm-server never calls OpenAI directly**):
 
 ---
 
-## 9) LiteLLM (OpenAI-compatible proxy/router)
+## 9) LiteLLM (observed + recommended target wiring)
 
 **Container:** `litellm`  
 **LAN URL:** http://192.168.5.4:4000/v1  
@@ -424,7 +446,7 @@ Recommended wiring (so **pkm-server never calls OpenAI directly**):
 
 ---
 
-## 10) Home Assistant + Matter
+## 10) Home Assistant + Matter (observed / out of scope)
 
 **Home Assistant**
 - Container: `homeassistant`
@@ -445,7 +467,7 @@ Rule of thumb:
 
 ---
 
-## 11) Cloudflared (Cloudflare Tunnel)
+## 11) Cloudflared (observed runtime)
 
 **Container:** `cloudflared`  
 **Network mode:** host  
@@ -455,6 +477,7 @@ Important:
 - The image is minimal and **does not include a shell** (`sh`/`bash`); use:
   - `docker exec cloudflared cloudflared ...`
 - No bind-mounted `/etc/cloudflared/config.yml`; routing is managed in Cloudflare UI.
+- `cloudflared` is currently runtime-managed via compose token mode and is not an active `checkcfg` / `updatecfg` surface.
 - The tunnel token is currently embedded in `docker-compose.yml` (move it to `.env` or secrets).
 
 Observed version:
@@ -468,7 +491,7 @@ Observed version:
 
 ---
 
-## 12) Secrets / environment variables
+## 12) Secrets / environment variables (observed names only)
 
 All secrets live in:
 - `/home/igasovic/stack/.env`  (**DO NOT COMMIT**)
@@ -498,7 +521,7 @@ Notes:
 
 ---
 
-## 13) Backups
+## 13) Backups (observed runtime)
 
 Currently present (created during SSD migration / snapshotting):
 - `/home/igasovic/backup/pi_backup_bundle.tgz` (root-owned bundle)
@@ -514,7 +537,7 @@ Recommendation (future):
 
 ---
 
-## 14) Open questions / TODOs (for agents)
+## 14) Open questions / TODOs (open questions)
 
 These are the remaining decisions/gaps that should be made explicit to avoid “agent guessing”:
 

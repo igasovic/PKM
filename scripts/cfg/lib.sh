@@ -19,10 +19,6 @@ CFG_RUNTIME_POSTGRES_INIT_DIR="${CFG_RUNTIME_POSTGRES_INIT_DIR:-$CFG_STACK_ROOT/
 CFG_REPO_POSTGRES_CONF_DIR="${CFG_REPO_POSTGRES_CONF_DIR:-$CFG_REPO_ROOT/ops/stack/postgres}"
 CFG_RUNTIME_POSTGRES_CONF_DIR="${CFG_RUNTIME_POSTGRES_CONF_DIR:-$CFG_STACK_ROOT/postgres}"
 
-CFG_REPO_CLOUDFLARED_FILE="${CFG_REPO_CLOUDFLARED_FILE:-$CFG_REPO_ROOT/ops/stack/cloudflared/config.yml}"
-CFG_RUNTIME_CLOUDFLARED_FILE="${CFG_RUNTIME_CLOUDFLARED_FILE:-$CFG_STACK_ROOT/cloudflared/config.yml}"
-CFG_CLOUDFLARED_CREDENTIALS_FILE="${CFG_CLOUDFLARED_CREDENTIALS_FILE:-$CFG_STACK_ROOT/cloudflared/credentials.json}"
-
 CFG_N8N_SYNC_SCRIPT="${CFG_N8N_SYNC_SCRIPT:-$CFG_REPO_ROOT/scripts/n8n/sync_workflows.sh}"
 CFG_N8N_SNAPSHOT_SCRIPT="${CFG_N8N_SNAPSHOT_SCRIPT:-$CFG_REPO_ROOT/scripts/n8n/export_workflows_snapshot.sh}"
 CFG_N8N_PACKAGE_BUILD_SCRIPT="${CFG_N8N_PACKAGE_BUILD_SCRIPT:-$CFG_REPO_ROOT/scripts/n8n/build_runtime_package.js}"
@@ -41,7 +37,6 @@ SUPPORTED_SURFACES=(
   docker
   litellm
   postgres
-  cloudflared
   backend
 )
 
@@ -282,16 +277,6 @@ docker_collect_compose_services() {
   out="$(printf '%s\n' "$out" | sed '/^[[:space:]]*$/d')"
   printf -v "$__out_var" '%s' "$out"
   return 0
-}
-
-is_cloudflared_token_mode() {
-  if [[ ! -f "$CFG_COMPOSE_FILE" ]]; then
-    return 1
-  fi
-  if grep -Eq -- '--token|TUNNEL_TOKEN' "$CFG_COMPOSE_FILE"; then
-    return 0
-  fi
-  return 1
 }
 
 # -------------------------
@@ -1085,21 +1070,6 @@ check_surface_postgres() {
   progress_done "comparison complete"
 }
 
-check_surface_cloudflared() {
-  progress_start "checkcfg:cloudflared" 2
-  progress_step "compare cloudflared config"
-  compare_file_for_check "$CFG_REPO_CLOUDFLARED_FILE" "$CFG_RUNTIME_CLOUDFLARED_FILE" "cloudflared config"
-
-  progress_step "verify cloudflared credentials"
-  add_check_runtime_target "$CFG_CLOUDFLARED_CREDENTIALS_FILE"
-  if [[ -f "$CFG_CLOUDFLARED_CREDENTIALS_FILE" ]]; then
-    add_check_detail "cloudflared credentials: present"
-  else
-    mark_check_drift "cloudflared credentials missing ($CFG_CLOUDFLARED_CREDENTIALS_FILE)."
-  fi
-  progress_done "comparison complete"
-}
-
 check_surface_backend() {
   progress_start "checkcfg:backend" 2
   progress_step "verify backend deploy script"
@@ -1143,9 +1113,6 @@ run_surface_check() {
       ;;
     postgres)
       check_surface_postgres
-      ;;
-    cloudflared)
-      check_surface_cloudflared
       ;;
     backend)
       check_surface_backend
@@ -1571,49 +1538,6 @@ update_surface_postgres() {
   progress_done "$mode complete"
 }
 
-update_surface_cloudflared() {
-  local mode="$1"
-  progress_start "updatecfg:cloudflared:$mode" 2
-  progress_step "sync cloudflared config ($mode)"
-  if [[ "$mode" == "push" ]]; then
-    if [[ ! -f "$CFG_CLOUDFLARED_CREDENTIALS_FILE" ]]; then
-      mark_update_blocked "cloudflared credentials missing ($CFG_CLOUDFLARED_CREDENTIALS_FILE)."
-      progress_fail "credentials missing"
-      return 0
-    fi
-    copy_file_if_changed "$CFG_REPO_CLOUDFLARED_FILE" "$CFG_RUNTIME_CLOUDFLARED_FILE" "cloudflared config"
-  else
-    if [[ -f "$CFG_RUNTIME_CLOUDFLARED_FILE" ]]; then
-      copy_file_runtime_to_repo_if_changed "$CFG_RUNTIME_CLOUDFLARED_FILE" "$CFG_REPO_CLOUDFLARED_FILE" "cloudflared config"
-    elif is_cloudflared_token_mode; then
-      add_update_detail "cloudflared config: runtime source missing ($CFG_RUNTIME_CLOUDFLARED_FILE)"
-      add_update_detail "cloudflared config: detected token-based tunnel mode in compose; nothing to import"
-    else
-      copy_file_runtime_to_repo_if_changed "$CFG_RUNTIME_CLOUDFLARED_FILE" "$CFG_REPO_CLOUDFLARED_FILE" "cloudflared config"
-    fi
-  fi
-
-  if [[ "$UPDATE_STATE" == "blocked" ]]; then
-    progress_fail "update blocked"
-    return 0
-  fi
-
-  if [[ "$mode" == "pull" ]]; then
-    progress_step "skip restart for pull mode"
-    add_update_detail "cloudflared pull mode does not restart services"
-    progress_done "pull complete"
-    return 0
-  fi
-
-  progress_step "restart cloudflared service"
-  restart_service cloudflared
-  if [[ "$UPDATE_STATE" == "blocked" ]]; then
-    progress_fail "restart failed"
-    return 0
-  fi
-  progress_done "push complete"
-}
-
 update_surface_backend() {
   local mode="$1"
   progress_start "updatecfg:backend:$mode" 2
@@ -1664,9 +1588,6 @@ run_surface_update() {
       ;;
     postgres)
       update_surface_postgres "$mode"
-      ;;
-    cloudflared)
-      update_surface_cloudflared "$mode"
       ;;
     backend)
       update_surface_backend "$mode"
