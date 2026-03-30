@@ -174,7 +174,9 @@ Manual path remains available:
 
 1. n8n workflow fails.
 2. Shared error workflow routes to `wf99`.
-3. `wf99` reads the failure event and extracts:
+3. `wf99` runs a lightweight ignore-rule check keyed by workflow name + error message.
+4. If ignored, `wf99` exits without failure-pack write or Telegram alert.
+5. If not ignored, `wf99` reads the failure event and extracts:
    - `run_id`,
    - `execution_id`,
    - workflow metadata,
@@ -183,10 +185,11 @@ Manual path remains available:
    - failing node input,
    - immediate parent node metadata,
    - immediate parent input.
-4. `wf99` writes large payloads to sidecar files under shared storage.
-5. `wf99` builds normalized JSON envelope.
-6. `wf99` `POST`s envelope to PKM admin endpoint.
-7. PKM upserts the failure-pack record keyed by `run_id`.
+6. `wf99` writes large payloads to sidecar files under shared storage.
+7. `wf99` builds normalized JSON envelope.
+8. A dedicated n8n `HTTP Request` node posts envelope to PKM admin endpoint.
+9. `wf99` composes Telegram text in a dedicated compose-only Code node.
+10. PKM upserts the failure-pack record keyed by `run_id`.
 
 ### 7.2 Read path
 

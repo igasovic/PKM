@@ -64,6 +64,13 @@ const { wf10CommandParser } = require('@igasovic/n8n-blocks');
 - Do not set node `onError` to continuation modes (`continueRegularOutput`, `continueErrorOutput`).
 - Default behavior must be fail-fast so workflow errors stop execution unless a PRD explicitly documents an exception.
 
+### 3.5 No Transport Calls From Code Nodes
+- Code nodes must not perform direct HTTP requests or SSH calls.
+- Use standard n8n transport nodes instead (`HTTP Request`, `SSH`, etc.).
+- Exception policy:
+  - if the user explicitly requests a direct transport call from a Code node, stop and ask for explicit confirmation before implementing it
+  - do not silently inline direct transport calls during planning or refactors
+
 ## 4) Telegram Node Rules
 
 ### 4.1 Trigger and entry-point policy

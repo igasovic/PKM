@@ -1,4 +1,39 @@
 # changelog
+## 2026-03-30 — WF99 decomposition + ignore rules + code-node transport guard
+
+### What changed
+- Added n8n style-guide guardrail:
+  - Code nodes must not perform direct HTTP/SSH transport calls.
+  - direct Code-node transport calls now require explicit user request + confirmation before implementation.
+  - file: `docs/n8n_node_style_guide.md`
+- Decomposed `99 Error Handling` workflow from one monolithic Code node into focused steps:
+  - `Extract Failure Context`
+  - `Check Ignore Rules`
+  - `IF Ignore Error`
+  - `Build Failure Pack Envelope`
+  - `Store Failure Pack` (standard HTTP Request node)
+  - `Merge Pack Context`
+  - `Finalize Failure Pack Result`
+  - `Run Smoke Cleanup`
+  - `Compose Message` (compose-only)
+  - file: `src/n8n/workflows/99-error-handling__R2r3jkL5Rb39zKpyutwhW.json`
+- Added new WF99 externalized node modules and root exports:
+  - `extract-failure-context__...js`
+  - `check-ignore-rules__...js`
+  - `build-failure-pack-envelope__...js`
+  - `finalize-failure-pack-result__...js`
+  - `run-smoke-cleanup__...js`
+  - updated `compose-message__...js` to message-composition only
+  - file: `src/n8n/package.manifest.json`
+- Added static ignore rule for appendix-2 class error:
+  - workflow `04 Notion Capture` + message `Gateway timed out - perhaps try again later?`
+  - appendix-1 IMAP deactivation ignore remains covered via static rule matching.
+- Updated WF99 node tests to cover extraction, ignore rules, and smoke cleanup/message composition path:
+  - file: `test/server/n8n.error-handling-message.test.js`
+- Updated failure-pack PRD/work-package docs to reflect ignore gate + HTTP-node transport split:
+  - `docs/PRD/failure-pack-prd-draft.md`
+  - `docs/PRD/failure-pack-work-packages-draft.md`
+
 ## 2026-03-29 — Calendar normalize resilience + calendar model alias
 
 ### What changed

@@ -55,6 +55,7 @@ Implement the n8n-side write path that captures a failed run and emits one norma
 
 ### Scope
 - assemble failure context from the shared error-workflow path,
+- run lightweight static ignore-rule matching keyed by workflow + message,
 - resolve failing node metadata,
 - resolve immediate parent node metadata,
 - capture failing node input,
@@ -62,7 +63,8 @@ Implement the n8n-side write path that captures a failed run and emits one norma
 - compute duplication delta for parent input,
 - write sidecars first to shared storage,
 - apply redaction,
-- post normalized envelope to PKM.
+- post normalized envelope to PKM via standard n8n `HTTP Request` node,
+- keep message composition isolated to a compose-only node.
 
 ### Components touched
 - `wf99` workflow wiring

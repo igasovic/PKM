@@ -63,6 +63,11 @@
     "wf33FormatCalendarReportMessage": "nodes/33-calendar-weekly-report/format-calendar-report-message.js",
     "wf80Format": "nodes/80-postgres-backup/format.js",
     "wf80Parse": "nodes/80-postgres-backup/parse.js",
+    "wf99ExtractFailureContext": "nodes/99-error-handling/extract-failure-context.js",
+    "wf99CheckIgnoreRules": "nodes/99-error-handling/check-ignore-rules.js",
+    "wf99BuildFailurePackEnvelope": "nodes/99-error-handling/build-failure-pack-envelope.js",
+    "wf99FinalizeFailurePackResult": "nodes/99-error-handling/finalize-failure-pack-result.js",
+    "wf99RunSmokeCleanup": "nodes/99-error-handling/run-smoke-cleanup.js",
     "wf99ComposeMessage": "nodes/99-error-handling/compose-message.js"
   },
   "shared": [

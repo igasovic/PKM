@@ -1,23 +1,117 @@
 {
   "active": true,
   "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Extract Failure Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Extract Failure Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Check Ignore Rules",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Check Ignore Rules": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "IF Ignore Error",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF Ignore Error": {
+      "main": [
+        [],
+        [
+          {
+            "index": 0,
+            "node": "Build Failure Pack Envelope",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build Failure Pack Envelope": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Store Failure Pack",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Merge Pack Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Store Failure Pack": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge Pack Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge Pack Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Finalize Failure Pack Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Finalize Failure Pack Result": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Run Smoke Cleanup",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Run Smoke Cleanup": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Compose Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Compose Message": {
       "main": [
         [
           {
             "index": 0,
             "node": "Send a text message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Error Trigger": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Compose Message",
             "type": "main"
           }
         ]
@@ -33,11 +127,171 @@
       "name": "Error Trigger",
       "parameters": {},
       "position": [
-        -272,
+        -960,
         -32
       ],
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1
+    },
+    {
+      "id": "9a3df598-56e7-4f09-8ce2-086c7b8285b2",
+      "name": "Extract Failure Context",
+      "parameters": {
+        "jsCode": "try{const {wf99ExtractFailureContext}=require('@igasovic/n8n-blocks');return await wf99ExtractFailureContext({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:99-error-handling/extract-failure-context__9a3df598-56e7-4f09-8ce2-086c7b8285b2.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        -736,
+        -32
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "7f65eb87-fad0-425d-850c-e31e1981f7f9",
+      "name": "Check Ignore Rules",
+      "parameters": {
+        "jsCode": "try{const {wf99CheckIgnoreRules}=require('@igasovic/n8n-blocks');return await wf99CheckIgnoreRules({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:99-error-handling/check-ignore-rules__7f65eb87-fad0-425d-850c-e31e1981f7f9.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        -512,
+        -32
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "7c3ec4dd-5bd6-4c1f-a944-38a2699f6a79",
+      "name": "IF Ignore Error",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "5eacb90b-6bba-4de9-9da7-c8fca8f8c8fc",
+              "leftValue": "={{ $json.ignored_error === true }}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": true
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        -288,
+        -32
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "id": "f9f4ebbc-0990-4845-91f0-1f6291e560eb",
+      "name": "Build Failure Pack Envelope",
+      "parameters": {
+        "jsCode": "try{const {wf99BuildFailurePackEnvelope}=require('@igasovic/n8n-blocks');return await wf99BuildFailurePackEnvelope({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:99-error-handling/build-failure-pack-envelope__f9f4ebbc-0990-4845-91f0-1f6291e560eb.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        -64,
+        -32
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "7fc43612-b2c6-4c4e-9ea0-9646e6c1afdd",
+      "name": "Store Failure Pack",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $json.run_id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify($json.failure_pack_envelope) }}",
+        "method": "POST",
+        "options": {
+          "ignoreResponseCode": true
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/debug/failures"
+      },
+      "position": [
+        160,
+        -160
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "66502332-8753-474f-95b4-e3f612da8f05",
+      "name": "Merge Pack Context",
+      "parameters": {
+        "combineBy": "combineByPosition",
+        "mode": "combine",
+        "options": {}
+      },
+      "position": [
+        384,
+        -32
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
+    },
+    {
+      "id": "2ea1b7d2-618f-45f8-b3c2-0f38f6f7b45f",
+      "name": "Finalize Failure Pack Result",
+      "parameters": {
+        "jsCode": "try{const {wf99FinalizeFailurePackResult}=require('@igasovic/n8n-blocks');return await wf99FinalizeFailurePackResult({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:99-error-handling/finalize-failure-pack-result__2ea1b7d2-618f-45f8-b3c2-0f38f6f7b45f.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        608,
+        -32
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "1e49beef-0ce8-4fc3-aa2f-cf298f3537ff",
+      "name": "Run Smoke Cleanup",
+      "parameters": {
+        "jsCode": "try{const {wf99RunSmokeCleanup}=require('@igasovic/n8n-blocks');return await wf99RunSmokeCleanup({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:99-error-handling/run-smoke-cleanup__1e49beef-0ce8-4fc3-aa2f-cf298f3537ff.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        832,
+        -32
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "566912ab-5d96-4405-8443-6a296ef03366",
+      "name": "Compose Message",
+      "parameters": {
+        "jsCode": "try{const {wf99ComposeMessage}=require('@igasovic/n8n-blocks');return await wf99ComposeMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:99-error-handling/compose-message__566912ab-5d96-4405-8443-6a296ef03366.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1056,
+        -32
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
       "credentials": {
@@ -57,25 +311,12 @@
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        144,
+        1280,
         -32
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "webhookId": "944396bc-56db-4702-8ac9-d2e1b31dfb63"
-    },
-    {
-      "id": "566912ab-5d96-4405-8443-6a296ef03366",
-      "name": "Compose Message",
-      "parameters": {
-        "jsCode": "try{const {wf99ComposeMessage}=require('@igasovic/n8n-blocks');return await wf99ComposeMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:99-error-handling/compose-message__566912ab-5d96-4405-8443-6a296ef03366.js] ${e.message}`;throw e;}"
-      },
-      "position": [
-        -64,
-        -32
-      ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
     }
   ],
   "settings": {
