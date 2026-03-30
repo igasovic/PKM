@@ -1,11 +1,19 @@
-# PRD — Family Calendar on the PKM Pi Stack
+# PRD — Family Calendar On The PKM Pi Stack
 
 Status: proposed  
-Baseline date: 2026-03-12  
-Intended repo path: `docs/PRD/family-calendar-PRD.md`
+Surface owner: family-calendar feature surface  
+Scope type: canonical surface  
+Last verified: 2026-03-30  
+Related authoritative docs: `docs/api_calendar.md`, `docs/database_schema.md`, `docs/config_operations.md`, `docs/env.md`  
+Related work-package doc: `docs/PRD/family-calendar-work-packages.md`
 
----
+## Purpose
+Define the family-calendar feature surface centered on Telegram creation, Google Calendar writes/reads, and scheduled family reports.
 
+## Status and scope boundary
+This PRD owns the family-calendar feature surface and remains proposed work, not a backfilled baseline of currently implemented behavior.
+
+## Detailed design
 ## 1. Baseline and current behavior
 
 ### 1.1 Existing Telegram behavior

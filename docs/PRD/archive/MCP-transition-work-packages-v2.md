@@ -1,6 +1,6 @@
-# MCP-work-packages-v2.md
+# Work Packages — MCP To n8n-first Transition (Archived)
 
-Status: Transition plan for n8n-first ChatGPT integration  
+Status: archived historical transition plan for n8n-first ChatGPT integration  
 Owner: Igor / ChatGPT  
 Date: 2026-03-26
 

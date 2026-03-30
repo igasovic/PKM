@@ -1,8 +1,29 @@
-# Logging PRD (As-Built)
+# PRD — Logging And Telemetry
 
-Created: March 12, 2026  
-Source of truth: current implementation in `src/server/logger/`, `src/server/index.js`, `src/server/db.js`, `src/server/litellm-client.js`
+Status: active  
+Surface owner: backend logging and observability layer  
+Scope type: backfilled baseline  
+Last verified: 2026-03-30  
+Related authoritative docs: `docs/api_control.md`, `docs/database_schema.md`, `docs/backend_runtime_env.md`  
+Related work-package doc: none
 
+## Purpose
+Define the backend logging and telemetry system as it exists today.
+
+## Status and scope boundary
+This PRD owns:
+- transition telemetry to Postgres `pipeline_events`
+- Braintrust operational telemetry
+- correlation, summarization, redaction, and sink-failure guarantees for backend logging
+
+This PRD does not own:
+- feature-specific business logs such as family-calendar business tables
+- a full alerting or observability platform beyond the current sinks
+
+## Evidence / recovery basis
+Recovered primarily from current implementation under `src/server/logger/` and related backend call sites.
+
+## Detailed design
 ## 1) Purpose
 
 Define the backend logging/telemetry system as it exists today, including:

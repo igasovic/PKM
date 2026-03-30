@@ -1,5 +1,24 @@
-# Smoke Test PRD
+# PRD — Smoke Harness
 
+Status: active  
+Surface owner: n8n-first end-to-end validation harness  
+Scope type: canonical surface  
+Last verified: 2026-03-30  
+Related authoritative docs: `docs/api_read_write.md`, `docs/api_control.md`, `docs/n8n_sync.md`, `docs/requirements.md`  
+Related work-package doc: none
+
+## Status and scope boundary
+This PRD owns:
+- the orchestrated smoke harness and fixtures
+- smoke-only selector and cleanup behavior
+- daily/on-demand end-to-end validation expectations for critical workflows
+
+This PRD does not own:
+- output-quality evaluation
+- feature semantics for the systems it probes
+- generic config-surface ownership of cloudflared or other runtime services
+
+## Detailed design
 ## Purpose
 
 Define the smoke-test system for the PKM stack so that after changes, and once daily, you can verify that the real n8n-orchestrated system still works end to end without spending hours chasing parser drift, routing regressions, payload-shape mismatches, or provider quirks.

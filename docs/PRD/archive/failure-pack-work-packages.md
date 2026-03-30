@@ -1,7 +1,7 @@
-# Work Packages Draft — Failure Pack Capture and Retrieval
+# Work Packages — Failure Pack Capture And Retrieval (Archived)
 
-Status: implemented-v1 (2026-03-28)  
-Related PRD: `failure-pack-prd-draft.md`
+Status: archived completed companion (implemented-v1 on 2026-03-28)  
+Related PRD: `docs/PRD/failure-pack-prd-draft.md`
 
 ---
 

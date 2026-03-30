@@ -21,7 +21,7 @@ Start with:
 - `docs/service_dependancy_graph.md`
 - `docs/env.md`
 - then the relevant contract and config docs for the touched surfaces
-- then the owning PRD for the surface when the change is major or cross-cutting
+- then the owning PRD in `docs/PRD/README.md` when the change is major or cross-cutting
 
 ### Reviewing agent
 Start with:
@@ -37,6 +37,7 @@ Start with:
 - `docs/repo-map.md`
 - `docs/config_operations.md`
 - then the relevant contract docs (`api`, `external_api`, `database_schema`)
+- then `docs/PRD/README.md` for active surface ownership
 
 ## Change-Type Routing
 
@@ -50,7 +51,7 @@ Start with:
 | Backend runtime knobs | `docs/backend_runtime_env.md`, `docs/config_operations.md`, `docs/env.md` | `docs/backend_runtime_env.md`, related env/config docs |
 | DB backup / restore workflow | `docs/database_operations.md`, `docs/env.md`, `docs/config_operations.md` | `docs/database_operations.md`, related env/config docs |
 | Repo placement / ownership | `docs/repo-map.md` | `docs/repo-map.md` |
-| PRD process / expectations | `docs/prd-expectations.md` and the owning file in `docs/PRD/` | owning PRD and any contract docs touched |
+| PRD process / expectations | `docs/prd-expectations.md`, `docs/PRD/README.md`, and the owning PRD | owning PRD and any contract docs touched |
 
 ## Authoritative Docs
 
@@ -69,7 +70,8 @@ Start with:
 | `docs/n8n_node_style_guide.md` | n8n node authoring and review rules | deployment/apply workflow |
 | `docs/repo-map.md` | ownership, placement, allowed dependencies | runtime topology |
 | `docs/requirements.md` | broad behavioral requirements and invariants in current structure | single-surface canonical contract docs |
-| `docs/prd-expectations.md` | repo-local expectations for PRD quality and agent usage | the actual product decisions for a specific surface |
+| `docs/prd-expectations.md` | repo-local expectations for PRD quality and agent usage | actual product decisions for a specific surface |
+| `docs/PRD/README.md` | active PRD routing and archive boundaries | domain truth or API/schema contracts |
 
 ## Documentation Conventions
 Each authoritative doc should make these things obvious near the top:
@@ -87,5 +89,5 @@ Each authoritative doc should make these things obvious near the top:
 - coding agent: final update to match implemented real state before work closes
 
 ## Current Constraints
-- `docs/requirements.md`, `docs/changelog.md`, and `docs/PRD/` remain in place and are intentionally not being restructured in this pass.
-- `docs/prd-expectations.md` captures the desired future expectations so those surfaces can be updated later without losing the target model.
+- `docs/requirements.md` and `docs/changelog.md` still contain important historical and behavioral context and must be consulted when recovering old surfaces.
+- Active PRDs are now routed through `docs/PRD/README.md`; archived PRD artifacts live under `docs/PRD/archive/`.

@@ -28,7 +28,7 @@ If a task is cross-cutting, read all relevant surface docs before changing code 
 ### Source-of-truth precedence
 - `AGENTS.md` governs agent behavior, process, and hard invariants.
 - `docs/*.md` contract and runbook docs govern domain truth for their declared scope.
-- `docs/PRD/*.md` governs change intent, rollout, work packages, and unresolved decisions for owned surfaces.
+- `docs/PRD/README.md` routes agents to the active surface owner. Active `docs/PRD/*.md` files govern change intent, rollout, work packages, and unresolved decisions for owned surfaces.
 - If two sources conflict, reconcile them in the same change set rather than silently choosing the older text.
 
 ---
@@ -60,7 +60,7 @@ Cross-cutting changes should be planned explicitly even if the code diff is smal
 ---
 
 ## 0b) PRDs (required process)
-- PRDs live under `docs/PRD/`.
+- PRDs live under `docs/PRD/`; use `docs/PRD/README.md` to find the active owner for a surface.
 - Use an existing PRD when one already covers the surface you are changing.
 - New major functionality: create a new PRD file.
 - Minor functionality: update the existing PRD that owns that surface.

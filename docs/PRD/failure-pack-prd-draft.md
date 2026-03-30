@@ -1,12 +1,28 @@
-# PRD Draft — Failure Pack Capture and Retrieval for n8n / PKM
+# PRD — Failure Pack Capture And Retrieval For n8n / PKM
 
-Status: implemented-v1 (2026-03-28)  
-Owner: TBD  
-Baseline date: 2026-03-28  
-Related surfaces: `wf99`, `pkm-server`, `docs/api.md`, `docs/database_schema.md`, `docs/env.md`, debug UI app
+Status: active  
+Surface owner: n8n failure capture + PKM failure-pack retrieval surface  
+Scope type: canonical surface  
+Last verified: 2026-03-30  
+Related authoritative docs: `docs/api_control.md`, `docs/database_schema.md`, `docs/env.md`, `docs/requirements.md`  
+Related work-package doc: `docs/PRD/archive/failure-pack-work-packages.md`
 
----
+## Purpose
+Define the failure-pack surface for durable n8n failure capture, PKM persistence, and operator/agent retrieval.
 
+## Status and scope boundary
+This PRD owns:
+- `wf99` failure-pack capture
+- PKM failure-pack write/read endpoints
+- shared-disk sidecar policy for failure packs
+- debug UI Failures page as a consumer of this surface
+
+This PRD does not own:
+- generalized logging/observability platform design
+- non-n8n execution paths
+- raw n8n execution browsing as the primary investigation path
+
+## Detailed design
 ## 1. Problem
 
 Today, workflow failures are visible in Telegram and raw execution data exists in n8n, but debugging still requires manual digging through n8n execution details and logs. The desired operator experience is:

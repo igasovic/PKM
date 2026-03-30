@@ -1,12 +1,10 @@
-# Work Packages — Family Calendar on the PKM Pi Stack
+# Work Packages — Family Calendar
 
-Status: proposed  
-Companion to: `family-calendar-PRD.md`  
-Intended repo path: `docs/PRD/family-calendar-work-packages.md`
+Status: proposed companion  
+Companion to: `docs/PRD/family-calendar-PRD.md`  
+Last verified: 2026-03-30
 
----
-
-## 1. Delivery order
+## Delivery order
 
 Recommended implementation order:
 

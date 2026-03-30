@@ -1,8 +1,11 @@
-# Work Packages
+# Work Packages — Distill
+
+Status: active companion  
+Companion to: `docs/PRD/Distill-PRD.md`  
+Last verified: 2026-03-30
 
 ## Purpose
-
-This file breaks the Tier 2 distillation implementation into ordered, testable work packages. It assumes a code-access agent will do a reconciliation pass before touching implementation, per `AGENTS.md`.
+This file breaks the Tier-2 distillation implementation into ordered, testable work packages.
 
 ## Sequencing assumptions
 

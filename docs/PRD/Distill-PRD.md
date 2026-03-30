@@ -1,9 +1,64 @@
-# Distill PRD
+# PRD — Distill (Tier-2)
 
-Created: March 7, 2026 2:34 PM  
-Last edit: March 8, 2026
-Source baseline: `PKM Tier 2 - Distillation`
+Status: active  
+Surface owner: backend Tier-2 planning and execution surface  
+Scope type: canonical surface  
+Last verified: 2026-03-30  
+Related authoritative docs: `docs/api_distill.md`, `docs/database_schema.md`, `docs/backend_runtime_env.md`, `docs/requirements.md`  
+Related work-package doc: `docs/PRD/distill_work_packages.md`
 
+## Purpose
+Define the Tier-2 distill surface, including planning, selection, generation, validation, and persistence for distillation work.
+
+## Status and scope boundary
+This PRD owns:
+- Tier-2 planning and execution behavior
+- candidate discovery, eligibility, scoring, budgeting, route selection, generation, validation, and persistence
+- Tier-2 sync and batch execution contracts
+- Tier-2-specific state written back to entries and related batch/runtime state
+
+This PRD does not own:
+- ingest normalization and idempotent insert rules
+- Tier-1 classify behavior
+- generic read/context-pack behavior beyond Tier-2 fields that generic read can display
+- working-memory or public ChatGPT integration surfaces
+
+## Current behavior / baseline
+This PRD remains the detailed owner of the Tier-2 design. The file below retains the deeper control-plane breakdown recovered and drafted for the distill surface.
+
+## Goals
+- keep Tier-2 planning deterministic before model generation starts
+- keep validation and currentness rules explicit
+- keep Tier-2 separated from ingest and classify while still exposing its outputs to read surfaces
+
+## Non-goals
+- owning Tier-1 classify orchestration
+- documenting generic read contracts in full here
+- turning the PRD into the primary home for schema or env reference details
+
+## Boundaries and callers
+Primary callers and coupled surfaces:
+- backend Tier-2 APIs and workers
+- classify surface for handoff separation
+- read/context-pack surface for display of distill output fields
+- `10 Read` command parser shell for `/distill-run` entrypoint ergonomics
+
+### Command-shell coupling
+- When exposed through the `10 Read` workflow shell, `/distill-run` defaults to batch execution semantics.
+- Sync execution is allowed only when explicitly requested through `--sync`.
+- Help-text and parser ergonomics for `/distill-run` live with the read workflow shell, but execution-mode semantics remain owned by this PRD.
+
+## Evidence / recovery basis
+Recovered from:
+- existing `docs/PRD/Distill-PRD.md`
+- `docs/requirements.md`
+- `docs/changelog.md`
+- related backend/runtime docs
+
+## Known gaps requiring code deep-dive
+- `REVIEW_REQUIRED: confirm the exact current implementation coverage of the full Tier-2 PRD against `src/server/**` before treating every section below as fully implemented baseline. The design ownership is clear, but this cleanup pass did not re-verify each planned control-plane phase against code line by line.`
+
+## Detailed design
 ## Control Plane
 1. Candidate Discovery
 2. Eligibility Gate

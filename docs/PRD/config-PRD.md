@@ -1,184 +1,116 @@
 # PRD — Repository-Managed Configuration Sync
 
-**Status:** In progress (WP1 baseline implemented; updatecfg push/pull implemented; n8n check-path export optimization implemented; WP11 importcfg wrapper implemented; bootstrapcfg helper implemented)  
-**Owner:** TBD  
-**Baseline date:** 2026-03-10
+Status: active  
+Surface owner: operator config reconciliation workflow  
+Scope type: canonical surface  
+Last verified: 2026-03-30  
+Related authoritative docs: `docs/config_operations.md`, `docs/env.md`, `docs/service_dependancy_graph.md`  
+Related work-package doc: `docs/PRD/config_working_packages.md`
 
-## 1. Summary
-This PRD defines a simple operator workflow for configuration changes across the PKM stack. The repo is the authored source of truth for versioned, non-secret config; runtime locations under `/home/igasovic/stack` and live n8n state are deployment targets. Agents make config changes in the repo, commit them, and must tell the operator exactly which config surfaces require reconciliation. The operator then runs `checkcfg <surface>` to compare repo vs runtime, and `updatecfg <surface>` to apply only that surface.
+## Purpose
+Define the repo-first operator workflow for reconciling versioned, non-secret configuration between this repository and the runtime stack.
 
-## 2. Problem
-Today config is spread across backend code, n8n, Docker Compose, LiteLLM, cloudflared, Postgres init/config, and host-local files. The missing piece is not just ownership; it is a predictable sync workflow. After an agent lands a change, the operator needs one short list of affected surfaces and one short command per surface. Anything more complex will drift or be skipped.
+## Status and scope boundary
+This PRD owns:
+- the operator interface `checkcfg <surface>` and `updatecfg <surface> --push|--pull`
+- the expectation that agents report changed config surfaces explicitly
+- the active repo-managed config surfaces:
+  - `n8n`
+  - `docker`
+  - `litellm`
+  - `postgres`
+  - `backend`
+- bootstrap/import workflow through `importcfg` and `bootstrapcfg`
 
-## 3. Goals
-1. Make repo-driven config changes operationally simple.
-2. Standardize on `checkcfg <surface>` and `updatecfg <surface>`.
-3. Let agents state exactly which surfaces changed and what command the operator must run.
-4. Limit each command to one surface at a time.
-5. Keep secrets and persistent state out of repo sync.
+This PRD does not own:
+- runtime topology facts themselves
+- secrets and host-local credentials
+- `pkm.runtime_config` as a mutable feature store
+- `cloudflared` as an active repo-managed config surface
 
-## 4. Non-goals
-1. No blind cron job that auto-applies config.
-2. No attempt to sync secrets from Git.
-3. No requirement that every surface uses the same low-level mechanism.
-4. No Home Assistant or Matter Server work in this phase.
+## Current behavior / baseline
+Current repo behavior is:
+- non-secret config is authored in repo first and applied explicitly by the operator
+- `checkcfg` compares one surface at a time and reports clean, drifted, or blocked state
+- `updatecfg` applies one surface at a time in `push` or `pull` mode
+- `importcfg` is a thin alias for `updatecfg <surface> --pull`
+- `bootstrapcfg` imports default surfaces `docker litellm postgres n8n`
+- `backend` supports push-only deploy through `scripts/cfg/backend_push.sh`
+- `cloudflared` currently runs in token-based compose mode and is not part of the active repo-managed config program
 
-## 5. In-scope surfaces
-- `backend` — backend loader-owned config and backend restart/build implications
-- `n8n` — workflow JSON and externalized node sync through n8n API
-- `docker` — repo Compose and non-secret stack env projected to `/home/igasovic/stack`
-- `litellm` — repo LiteLLM config projected to stack runtime path
-- `postgres` — repo init/config files projected to stack runtime path
-- `cloudflared` — repo local-managed tunnel config projected to stack runtime path
+## Goals
+- keep config changes reviewable, diffable, and rollbackable
+- keep the operator handoff explicit and short
+- prevent ad hoc host edits from becoming the primary authored source for versioned config
+- let agents update repo/docs while operators keep runtime apply control
 
-## 6. Source-of-truth model
-- **Repo authored source of truth:** versioned, non-secret config.
-- **Runtime mirrors:** `/home/igasovic/stack/*` and live n8n workflow state.
-- **Host-local only:** secrets, credentials, persistent state, and `pkm.runtime_config` runtime flags.
-- **Rule:** `updatecfg <surface> --push` applies repo-authored config to runtime for that surface only.
-- **Rule:** `updatecfg <surface> --pull` imports managed runtime config back into repo for that surface.
-- **Rule:** `checkcfg <surface>` compares repo-authored config with the current runtime state for that surface only.
+## Non-goals
+- blind cron-based auto-apply
+- syncing secrets from git
+- forcing every surface into the same low-level apply mechanism
+- treating runtime-mutable service state as repo-managed config
 
-## 7. Required operator workflow
-### 7.1 Agent workflow
-When an agent changes config, it must:
-1. commit the repo changes
-2. list affected surfaces explicitly
-3. tell the operator which commands to run
+## Boundaries and callers
+Primary callers:
+- agents preparing config changes and operator handoff text
+- operator commands under `scripts/cfg/`
+- repo docs that define config surface ownership
 
-### 7.2 Required handoff text
-Every agent response that changes config must include a block like:
+Boundary rule:
+- config behavior and ownership live in `docs/config_operations.md`
+- this PRD owns why the config program exists, which surfaces are in scope, and how changes are handed off and sequenced
 
-```text
-Config surfaces changed:
-- n8n
-- docker
+## Control plane / execution flow
+1. agent changes repo-owned config or config-aware code.
+2. agent updates any coupled docs/PRDs.
+3. agent reports changed config surfaces in the mandatory final-response block.
+4. operator runs `checkcfg <surface>`.
+5. operator runs `updatecfg <surface> --push|--pull` only for approved surfaces.
+6. operator reruns `checkcfg` if needed to verify clean state.
 
-Run:
-- checkcfg n8n
-- updatecfg n8n --push
-- checkcfg docker
-- updatecfg docker --push
-```
+## Active surfaces
+| Surface | Purpose | Direction support |
+|---|---|---|
+| `n8n` | workflow + externalized node reconciliation | push + pull |
+| `docker` | compose/env/runtime file projection | push + pull |
+| `litellm` | LiteLLM config file projection | push + pull |
+| `postgres` | init/config file projection only | push + pull |
+| `backend` | backend-only deploy path | push only |
 
-If no operator action is needed, the agent must say so explicitly.
+`cloudflared` is intentionally excluded from this table because the planned repo-managed migration never happened and the current runtime uses token-based compose state instead.
 
-### 7.3 Operator workflow
-1. pull latest repo changes
-2. run `checkcfg <surface>` for each reported surface
-3. review diff/result
-4. run `updatecfg <surface> --push|--pull` for each approved surface/direction
-5. rerun `checkcfg <surface>` if needed to confirm clean state
+## API / operational surfaces
+Owned operator commands:
+- `scripts/cfg/checkcfg`
+- `scripts/cfg/updatecfg`
+- `scripts/cfg/importcfg`
+- `scripts/cfg/bootstrapcfg`
 
-## 8. Command contract
-### 8.1 `checkcfg <surface>`
-Purpose: compare repo vs runtime for exactly one surface.  
-Output must include:
-- whether drift exists
-- which files or live objects differ
-- whether repo is ahead, runtime is ahead, or comparison is mixed
-- exact next command
+Coupled docs:
+- `docs/config_operations.md`
+- `AGENTS.md`
+- any PRD that introduces a new config surface or changes ownership
 
-Example:
-```bash
-checkcfg n8n
-checkcfg docker
-checkcfg litellm
-```
+## Config / runtime / topology implications
+Relevant runtime targets are documented in `docs/config_operations.md` and `docs/env.md`.
 
-### 8.2 `updatecfg <surface> --push|--pull`
-Purpose: apply one-surface reconciliation in a chosen direction.  
-Mode semantics:
-- `push`: repo -> runtime
-- `pull`: runtime -> repo
+Hard rules for this PRD:
+- secrets stay host-local
+- runtime-mutable state stays out of repo sync unless a future PRD says otherwise
+- new config surfaces must be added to `docs/config_operations.md` in the same change set
 
-Behavior by surface:
-- `n8n`: delegates to n8n sync script mode
-- `docker`: push applies managed Compose/env to stack runtime; pull imports managed runtime files to repo
-- `litellm`: push applies + restarts service; pull imports runtime config to repo
-- `postgres`: push/pull apply only init/config files; never live data
-- `cloudflared`: push applies + restarts service (credentials required); pull imports runtime config to repo
-- `backend`: push runs `scripts/cfg/backend_push.sh` (optional git pull + targeted `pkm-server` compose deploy + readiness check); pull is intentionally blocked
+## Validation / acceptance criteria
+This PRD remains accurate if:
+- `checkcfg` and `updatecfg` remain the operator entrypoints
+- agents continue to include the mandatory config handoff block when config changes
+- active surfaces and bootstrap defaults stay aligned with `docs/config_operations.md` and `scripts/cfg/*`
+- `cloudflared` stays out of the active surface registry unless a future change actually implements the repo-managed move
 
-Example:
-```bash
-updatecfg n8n --push
-updatecfg n8n --pull
-updatecfg docker --push
-```
+## Risks / open questions
+- backend is only partially a config surface and partially a deploy surface
+- operators still need to understand the difference between versioned repo config and runtime-mutable state
+- `REVIEW_REQUIRED: decide whether `backend` should remain a first-class config surface long-term or move to a pure deploy/runbook surface. The current implementation is deliberate, but the ownership line is still softer than the other surfaces.`
 
-### 8.3 Optional later extensions
-Not required in this PRD:
-- `checkcfg all`
-- `updatecfg all`
-- `updatecfg --full`
-- `updatecfg <surface> --dry-run`
-
-`importcfg <surface>` is implemented as a convenience wrapper equivalent to `updatecfg <surface> --pull`.
-`bootstrapcfg` is implemented as a first-time multi-surface import helper (sequential `importcfg` wrapper).
-Current default bootstrap surface set is `docker litellm postgres cloudflared n8n`; `--skip-n8n` opts out.
-
-## 9. Why auto-apply is out of scope
-There should not be a cron job that blindly applies repo changes to runtime. Config updates may require validation, restart ordering, human review, or secret readiness. A timer may run `checkcfg` or health checks later, but `updatecfg` remains an explicit operator action in this phase.
-
-## 10. Surface-specific sync rules
-### 10.1 n8n
-Repo is authoritative for `src/n8n/workflows/` and `src/n8n/nodes/`. Runtime reconciliation uses the n8n API sync path, not direct DB edits. `checkcfg n8n` should minimize runtime cost by exporting live workflows once and reusing that snapshot for both normalized and raw comparison paths.
-
-### 10.2 docker
-Repo is authoritative for `ops/stack/docker-compose.yml` and committed non-secret stack env files. Runtime target is `/home/igasovic/stack`.
-`updatecfg docker --push` should restart only affected services when changed env files map clearly to compose services, and fall back to full compose apply when scope is ambiguous or compose-level changes are present.
-
-### 10.3 litellm
-Repo is authoritative for `ops/stack/litellm/config.yaml`. Runtime target is `/home/igasovic/stack/litellm/config.yaml`.
-
-### 10.4 postgres
-Repo is authoritative for init and optional config files under `ops/stack/postgres/`. Live data remains host-local and is never part of `updatecfg postgres`.
-
-### 10.5 cloudflared
-Repo is authoritative for local-managed tunnel config under `ops/stack/cloudflared/config.yml`. Credentials JSON remains host-local and is never part of repo sync.
-
-### 10.6 backend
-Repo is authoritative for backend config code under `src/libs/config/` (with compatibility entrypoint `src/libs/config.js`) and related backend sources. `updatecfg backend` applies backend-only deployment via `scripts/cfg/backend_push.sh` and must avoid full-stack restarts when backend-only changes are applied.
-
-## 11. Repository organization target
-```text
-ops/
-  stack/
-    docker-compose.yml
-    env/
-      base.env
-      pi.env
-      secrets.example.env
-    litellm/
-      config.yaml
-    postgres/
-      init/
-      postgresql.conf
-      pg_hba.conf
-    cloudflared/
-      config.yml
-scripts/
-  cfg/
-    checkcfg
-    updatecfg
-src/
-  libs/
-    config/
-src/
-  n8n/
-    workflows/
-    nodes/
-```
-
-## 12. Acceptance criteria
-1. PRD defines `checkcfg <surface>` and `updatecfg <surface>` as the operator interface.
-2. `AGENTS.md` requires agents to report affected config surfaces and commands.
-3. Each in-scope surface has a documented repo source and runtime target.
-4. `config_operations.md` specifies exact behavior for each surface.
-5. Working packages exist for command implementation and per-surface adapters.
-
-## 13. TBD
-1. Whether `backend` should remain a first-class `updatecfg` surface or stay under normal code deploy commands.
-2. Whether `checkcfg all` should be added later.
-3. Whether a read-only periodic `checkcfg` timer should be added later.
+## TBD
+- whether a read-only periodic `checkcfg` automation should exist later
+- whether backend should ever support a runtime-to-repo import path

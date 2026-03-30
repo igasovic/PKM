@@ -1,4 +1,75 @@
 # changelog
+## 2026-03-30 — Requirements migration into owning PRDs
+
+### What changed
+- Folded the remaining active requirement areas out of `docs/requirements.md` and into owning PRDs:
+  - `docs/PRD/classify-PRD.md`
+  - `docs/PRD/read-PRD.md`
+  - `docs/PRD/pkm-ui-PRD.md`
+  - `docs/PRD/test-mode-PRD.md`
+  - `docs/PRD/ingest-PRD.md`
+  - `docs/PRD/Distill-PRD.md`
+  - `docs/PRD/GPT-Actions-Integration-PRD.md`
+- Converted `docs/requirements.md` into a legacy migration ledger instead of an active requirements owner.
+- Updated `docs/PRD/README.md` so the requirements migration map reflects completed migration rather than pending `PRD_GAP` backfill.
+
+### Cutoff note
+- After this entry, `docs/requirements.md` should be treated as a historical index and migration ledger, not as the primary owner of active feature requirements.
+
+## 2026-03-30 — Ingest PRD deep-dive + PRD gap ownership map
+
+### What changed
+- Deepened `docs/PRD/ingest-PRD.md` from a boundary-only baseline into a more useful ingest contract:
+  - added method matrix
+  - added idempotency policy ownership table
+  - added write-boundary / batch-write semantics
+  - added retrieval / quality ownership notes
+  - tightened evidence sources and reduced resolved uncertainty
+- Added a concrete requirements-to-PRD backfill map in:
+  - `docs/PRD/README.md`
+- Updated `docs/requirements.md` markers so remaining `PRD_GAP:` items point at exact intended PRD owners.
+- Added an explicit changelog-as-inbox rule to:
+  - `docs/prd-expectations.md`
+
+### PRDs impacted
+- `docs/PRD/ingest-PRD.md`
+- `docs/PRD/README.md`
+
+## 2026-03-30 — PRD corpus rework cutoff
+
+### What changed
+- Reworked the active PRD corpus around owned surfaces instead of historical drafting order:
+  - added active index: `docs/PRD/README.md`
+  - added baseline PRDs:
+    - `docs/PRD/ingest-PRD.md`
+    - `docs/PRD/test-mode-PRD.md`
+    - `docs/PRD/classify-PRD.md`
+    - `docs/PRD/read-PRD.md`
+    - `docs/PRD/working-memory-PRD.md`
+    - `docs/PRD/pkm-ui-PRD.md`
+- Tightened retained active PRDs so ownership is clearer:
+  - `docs/PRD/GPT-Actions-Integration-PRD.md`
+  - `docs/PRD/config-PRD.md`
+  - `docs/PRD/Distill-PRD.md`
+  - `docs/PRD/logging-PRD.md`
+  - `docs/PRD/smoke-test-PRD.md`
+  - `docs/PRD/failure-pack-prd-draft.md`
+  - `docs/PRD/family-calendar-PRD.md`
+- Moved completed or historical artifacts under `docs/PRD/archive/`.
+- Removed obsolete PRD copies:
+  - `docs/PRD/project_instructions.v2.md`
+  - `docs/PRD/project_instructions.v3.md`
+  - duplicate `docs/PRD/MCP-work-packages.md`
+- Updated process/routing docs:
+  - `docs/prd-expectations.md`
+  - `docs/README.md`
+  - `AGENTS.md`
+- Added `PRD_GAP:` markers in `docs/requirements.md` for requirements that still have no explicit active PRD owner.
+
+### Cutoff note
+- Use this entry as the documentation cutoff point for future changelog-driven PRD analysis.
+- Entries before this date may reference pre-rework PRD filenames and pre-archive locations.
+
 ## 2026-03-30 — WF99 decomposition + ignore rules + code-node transport guard
 
 ### What changed

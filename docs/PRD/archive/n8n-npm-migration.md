@@ -1,10 +1,10 @@
-# n8n Internal JS Package Migration PRD
+# n8n Internal JS Package Migration PRD (Archived)
 
 - Status: Completed on 2026-03-20 (repo migration + Pi cutover validation complete)
 - Owner: Igor Gasovic
 - Executor: Coding agent with full repo access
 - Primary runtime target: Raspberry Pi stack deployment
-- PRD location in repo: `docs/PRD/n8n-npm-migration.md`
+- PRD location in repo: `docs/PRD/archive/n8n-npm-migration.md`
 
 ## 1. Title, status, owners, scope
 
