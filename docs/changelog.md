@@ -1,15 +1,58 @@
 # changelog
+## 2026-03-30 — PRD split and filename normalization pass
+
+### What changed
+- Normalized active PRD filenames to lowercase kebab-case so the corpus is easier to scan and reference consistently.
+- Split oversized PRDs where a clean contract/reference boundary existed:
+  - `docs/PRD/distill-prd.md` now keeps the active contract
+  - `docs/PRD/archive/distill-reference-appendix.md` now holds the most reference-heavy appendix material
+  - `docs/PRD/smoke-prd.md` now keeps the active smoke-harness contract
+  - `docs/PRD/smoke-detailed-matrix.md` now holds the detailed test matrix, fixtures, assertion guidance, and implementation handoff
+- Updated PRD routing docs to acknowledge active reference companions:
+  - `docs/PRD/README.md`
+  - `docs/prd-expectations.md`
+
+### Cutoff note
+- After this entry, active PRDs should prefer lowercase kebab-case filenames and should split dense appendix or matrix material into companion docs when that improves retrieval without weakening ownership.
+
+## 2026-03-30 — PRD usability pass
+
+### What changed
+- Added a retrieval layer to active PRDs so agents can find the right sections faster instead of reading large files linearly:
+  - `Use this PRD when`
+  - `Fast path by agent`
+  - `Section map` on larger PRDs
+- Updated:
+  - `docs/PRD/README.md`
+  - `docs/prd-expectations.md`
+  - `docs/PRD/ingest-prd.md`
+  - `docs/PRD/classify-prd.md`
+  - `docs/PRD/read-prd.md`
+  - `docs/PRD/test-mode-prd.md`
+  - `docs/PRD/working-memory-prd.md`
+  - `docs/PRD/gpt-actions-integration-prd.md`
+  - `docs/PRD/pkm-ui-prd.md`
+  - `docs/PRD/config-prd.md`
+  - `docs/PRD/logging-prd.md`
+  - `docs/PRD/distill-prd.md`
+  - `docs/PRD/failure-pack-prd.md`
+  - `docs/PRD/family-calendar-prd.md`
+  - `docs/PRD/smoke-prd.md`
+
+### Cutoff note
+- After this entry, active PRDs should be maintained as search-first docs with an explicit retrieval layer near the top.
+
 ## 2026-03-30 — Requirements migration into owning PRDs
 
 ### What changed
 - Folded the remaining active requirement areas out of `docs/requirements.md` and into owning PRDs:
-  - `docs/PRD/classify-PRD.md`
-  - `docs/PRD/read-PRD.md`
-  - `docs/PRD/pkm-ui-PRD.md`
-  - `docs/PRD/test-mode-PRD.md`
-  - `docs/PRD/ingest-PRD.md`
-  - `docs/PRD/Distill-PRD.md`
-  - `docs/PRD/GPT-Actions-Integration-PRD.md`
+  - `docs/PRD/classify-prd.md`
+  - `docs/PRD/read-prd.md`
+  - `docs/PRD/pkm-ui-prd.md`
+  - `docs/PRD/test-mode-prd.md`
+  - `docs/PRD/ingest-prd.md`
+  - `docs/PRD/distill-prd.md`
+  - `docs/PRD/gpt-actions-integration-prd.md`
 - Converted `docs/requirements.md` into a legacy migration ledger instead of an active requirements owner.
 - Updated `docs/PRD/README.md` so the requirements migration map reflects completed migration rather than pending `PRD_GAP` backfill.
 
@@ -19,7 +62,7 @@
 ## 2026-03-30 — Ingest PRD deep-dive + PRD gap ownership map
 
 ### What changed
-- Deepened `docs/PRD/ingest-PRD.md` from a boundary-only baseline into a more useful ingest contract:
+- Deepened `docs/PRD/ingest-prd.md` from a boundary-only baseline into a more useful ingest contract:
   - added method matrix
   - added idempotency policy ownership table
   - added write-boundary / batch-write semantics
@@ -32,7 +75,7 @@
   - `docs/prd-expectations.md`
 
 ### PRDs impacted
-- `docs/PRD/ingest-PRD.md`
+- `docs/PRD/ingest-prd.md`
 - `docs/PRD/README.md`
 
 ## 2026-03-30 — PRD corpus rework cutoff
@@ -41,20 +84,20 @@
 - Reworked the active PRD corpus around owned surfaces instead of historical drafting order:
   - added active index: `docs/PRD/README.md`
   - added baseline PRDs:
-    - `docs/PRD/ingest-PRD.md`
-    - `docs/PRD/test-mode-PRD.md`
-    - `docs/PRD/classify-PRD.md`
-    - `docs/PRD/read-PRD.md`
-    - `docs/PRD/working-memory-PRD.md`
-    - `docs/PRD/pkm-ui-PRD.md`
+    - `docs/PRD/ingest-prd.md`
+    - `docs/PRD/test-mode-prd.md`
+    - `docs/PRD/classify-prd.md`
+    - `docs/PRD/read-prd.md`
+    - `docs/PRD/working-memory-prd.md`
+    - `docs/PRD/pkm-ui-prd.md`
 - Tightened retained active PRDs so ownership is clearer:
-  - `docs/PRD/GPT-Actions-Integration-PRD.md`
-  - `docs/PRD/config-PRD.md`
-  - `docs/PRD/Distill-PRD.md`
-  - `docs/PRD/logging-PRD.md`
-  - `docs/PRD/smoke-test-PRD.md`
-  - `docs/PRD/failure-pack-prd-draft.md`
-  - `docs/PRD/family-calendar-PRD.md`
+  - `docs/PRD/gpt-actions-integration-prd.md`
+  - `docs/PRD/config-prd.md`
+  - `docs/PRD/distill-prd.md`
+  - `docs/PRD/logging-prd.md`
+  - `docs/PRD/smoke-prd.md`
+  - `docs/PRD/failure-pack-prd.md`
+  - `docs/PRD/family-calendar-prd.md`
 - Moved completed or historical artifacts under `docs/PRD/archive/`.
 - Removed obsolete PRD copies:
   - `docs/PRD/project_instructions.v2.md`
@@ -102,7 +145,7 @@
 - Updated WF99 node tests to cover extraction, ignore rules, and smoke cleanup/message composition path:
   - file: `test/server/n8n.error-handling-message.test.js`
 - Updated failure-pack PRD/work-package docs to reflect ignore gate + HTTP-node transport split:
-  - `docs/PRD/failure-pack-prd-draft.md`
+  - `docs/PRD/failure-pack-prd.md`
   - `docs/PRD/failure-pack-work-packages-draft.md`
 
 ## 2026-03-29 — Calendar normalize resilience + calendar model alias
@@ -189,7 +232,7 @@
   - `11 ChatGPT Read Router`
 - Added externalized n8n code nodes and package root exports for these workflows.
 - Updated canonical PRD/instruction surfaces to v3 transition docs:
-  - `docs/PRD/GPT-Actions-Integration-PRD.md`
+  - `docs/PRD/gpt-actions-integration-prd.md`
   - `docs/PRD/MCP-work-packages.md`
   - `chatgpt/project_instructions.md`
 - Marked `docs/mcp_api.md` as legacy reference.
@@ -287,7 +330,7 @@
   - invokes smoke cleanup helper (`00-smoke-master/t99-cleanup__...js`)
   - includes cleanup status/details in Telegram failure report (`Smoke cleanup: ok|failed`, deleted IDs, cleanup error)
 - Updated smoke PRD snapshot/failure behavior notes:
-  - `docs/PRD/smoke-test-PRD.md`
+  - `docs/PRD/smoke-prd.md`
 
 ## 2026-03-15 — Fail-fast n8n workflow policy + smoke precheck hard-fail
 
@@ -601,7 +644,7 @@
 - Updated docs:
   - `docs/api.md` (calendar route/normalize payload + env vars)
   - `docs/config_operations.md` (repo ownership for calendar allowlist vars)
-  - `docs/PRD/family-calendar-PRD.md` (formalized allowlist model)
+  - `docs/PRD/family-calendar-prd.md` (formalized allowlist model)
 
 ## 2026-03-12 — Family calendar backend foundation (WP1-WP3 start)
 
@@ -742,8 +785,8 @@
   - `updatecfg backend --push` now runs `scripts/cfg/backend_push.sh`
 - Updated docs/tests:
   - `docs/config_operations.md`
-  - `docs/PRD/config-PRD.md`
-  - `docs/PRD/config_working_packages.md`
+  - `docs/PRD/config-prd.md`
+  - `docs/PRD/config-work-packages.md`
   - `test/server/config-ops-scripts.test.js` backend deploy-script expectation path + docker apply-scope coverage + importcfg coverage
 - Added importcfg guard coverage and operator readme alignment:
   - `test/server/config-ops-scripts.test.js` now covers unknown surface and backend-blocked behavior for `importcfg`

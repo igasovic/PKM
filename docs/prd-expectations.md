@@ -161,7 +161,17 @@ Rules:
 - each work package must cite exact sections in the canonical PRD
 - once implemented, the canonical PRD baseline should be updated first, then the work package should be marked `completed` and moved to archive unless it is still actively guiding follow-on work
 
-### 3. Backfilled baseline PRD
+### 3. Active reference companion
+
+Use this when the canonical PRD remains the surface owner, but a dense appendix or execution matrix needs to live separately for usability.
+
+Rules:
+- it must point to one canonical PRD
+- it must not replace the canonical PRD as the owner of the surface
+- use it for detailed matrices, reference-heavy appendices, or deep execution notes that would otherwise bury the active contract
+- if it stops guiding active work, either archive it or fold the still-relevant parts back into the canonical PRD
+
+### 4. Backfilled baseline PRD
 
 Use this when code exists but product intent was never cleanly captured.
 
@@ -173,7 +183,7 @@ Rules:
 
 This is the preferred way to recover missing surfaces from legacy code.
 
-### 4. Migration PRD
+### 5. Migration PRD
 
 Use this for time-boxed transitions such as major runtime, packaging, or boundary migrations.
 
@@ -185,7 +195,7 @@ Rules:
 
 Completed migrations should not remain mixed into the active surface set without an explicit reason.
 
-### 5. Not-a-PRD artifacts
+### 6. Not-a-PRD artifacts
 
 These do not belong in the active PRD set:
 - duplicate files
@@ -215,6 +225,24 @@ Recommended status values:
 - `archived`
 
 Avoid status hidden only in prose or filenames.
+
+## Usability And Retrieval Layer
+
+PRDs in this repo can be detailed, but they should not force agents to read them linearly.
+
+Every active canonical PRD should add a compact retrieval layer near the top:
+- `Use this PRD when`
+- `Fast path by agent`
+
+Long PRDs should also add:
+- `Section map`
+
+Recommended thresholds:
+- under roughly 250 lines: `Use this PRD when` + `Fast path by agent` is usually enough
+- over roughly 250 lines: add a `Section map`
+- over roughly 600 lines: treat the PRD as search-first and make the `Section map` explicit enough that a coding, planning, reviewing, or architect agent can jump directly to the relevant section
+
+This retrieval layer should tell the reader where to start, not restate the full PRD.
 
 ## Required Sections For Canonical Surface PRDs
 

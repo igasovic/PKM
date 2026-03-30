@@ -5,10 +5,21 @@ Surface owner: operator config reconciliation workflow
 Scope type: canonical surface  
 Last verified: 2026-03-30  
 Related authoritative docs: `docs/config_operations.md`, `docs/env.md`, `docs/service_dependancy_graph.md`  
-Related work-package doc: `docs/PRD/config_working_packages.md`
+Related work-package doc: `docs/PRD/config-work-packages.md`
 
 ## Purpose
 Define the repo-first operator workflow for reconciling versioned, non-secret configuration between this repository and the runtime stack.
+
+## Use this PRD when
+- changing repo-managed config ownership or operator sync workflow
+- changing `checkcfg` / `updatecfg` expectations or active config-surface boundaries
+- deciding whether a setting belongs in repo-managed config, host-local state, or runtime-persistent storage
+
+## Fast path by agent
+- Coding agent: read `Status and scope boundary`, `Control plane / execution flow`, `Active surfaces`, and `API / operational surfaces`.
+- Planning agent: read `Goals`, `Boundaries and callers`, `Active surfaces`, and `Risks / open questions`.
+- Reviewing agent: read `Status and scope boundary`, `Active surfaces`, `Validation / acceptance criteria`, and `Risks / open questions`.
+- Architect agent: read `Boundaries and callers`, `Active surfaces`, `Config / runtime / topology implications`, and `TBD`.
 
 ## Status and scope boundary
 This PRD owns:

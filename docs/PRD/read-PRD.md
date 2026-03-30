@@ -10,6 +10,17 @@ Related work-package doc: none
 ## Purpose
 Baseline the generic PKM retrieval surface and the shared context-pack builder used by workflows and the PKM UI.
 
+## Use this PRD when
+- changing generic `pull`, `last`, `find`, or `continue` behavior
+- changing context-pack construction or fixed output layout
+- changing command-shell help and parser behavior for generic read flows
+
+## Fast path by agent
+- Coding agent: read `Status and scope boundary`, `Control plane / execution flow`, `Context-pack contract`, `Payload-shape tolerance`, and `API / contract surfaces`.
+- Planning agent: read `Goals`, `Boundaries and callers`, `Control plane / execution flow`, `Context-pack contract`, and `Risks / open questions`.
+- Reviewing agent: read `Status and scope boundary`, `Context-pack contract`, `Fixed UI layout expectations`, `Validation / acceptance criteria`, and `Known gaps requiring code deep-dive`.
+- Architect agent: read `Boundaries and callers`, `Data model / state transitions`, `API / contract surfaces`, and `Config / runtime / topology implications`.
+
 ## Status and scope boundary
 This PRD owns:
 - `POST /db/read/continue`
@@ -73,7 +84,7 @@ Boundary rule:
 - The `10 Read` workflow command parser must support `--help` and `-h` on user-facing commands and return usage immediately without backend API calls.
 - `/help` returns an overview block that includes current distill command forms and option flags.
 - Read-surface commands such as `find`, `continue`, `last`, and `pull` keep their shell/help behavior here even when the downstream execution route lives elsewhere.
-- `/distill-run` help text and shell parsing live in the read workflow command parser, while execution-mode semantics live in `docs/PRD/Distill-PRD.md`.
+- `/distill-run` help text and shell parsing live in the read workflow command parser, while execution-mode semantics live in `docs/PRD/distill-prd.md`.
 
 ## Data model / state transitions
 Read is a query surface, not a mutation surface.

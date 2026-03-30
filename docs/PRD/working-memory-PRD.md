@@ -10,6 +10,17 @@ Related work-package doc: none
 ## Purpose
 Separate the working-memory domain surface from the public GPT Actions integration boundary so topic memory, session-note semantics, and wrap/commit behavior can evolve without being buried inside webhook transport details.
 
+## Use this PRD when
+- changing working-memory retrieval or wrap-commit behavior
+- changing working-memory artifact semantics, topic normalization, or memory-write invariants
+- deciding whether a behavior belongs to GPT transport or the memory domain itself
+
+## Fast path by agent
+- Coding agent: read `Status and scope boundary`, `Control plane / execution flow`, `Data model / state transitions`, and `API / contract surfaces`.
+- Planning agent: read `Goals`, `Boundaries and callers`, `Control plane / execution flow`, and `Risks / open questions`.
+- Reviewing agent: read `Status and scope boundary`, `Data model / state transitions`, `Validation / acceptance criteria`, and `Known gaps requiring code deep-dive`.
+- Architect agent: read `Boundaries and callers`, `API / contract surfaces`, and `Config / runtime / topology implications`.
+
 ## Status and scope boundary
 This PRD owns:
 - topic working-memory retrieval semantics

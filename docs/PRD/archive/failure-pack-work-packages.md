@@ -1,7 +1,7 @@
 # Work Packages — Failure Pack Capture And Retrieval (Archived)
 
 Status: archived completed companion (implemented-v1 on 2026-03-28)  
-Related PRD: `docs/PRD/failure-pack-prd-draft.md`
+Related PRD: `docs/PRD/failure-pack-prd.md`
 
 ---
 

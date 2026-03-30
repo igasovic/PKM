@@ -16,29 +16,29 @@ Migration note (2026-03-30):
 
 | Former section in this file | Current owner |
 |---|---|
-| Scope | `docs/PRD/ingest-PRD.md` |
-| Core rules | `docs/PRD/ingest-PRD.md` |
-| Content hash requirements | `docs/PRD/ingest-PRD.md` |
-| Data flow | `docs/PRD/ingest-PRD.md` |
-| API requirements | `docs/PRD/ingest-PRD.md` plus `docs/api_ingest.md` |
-| Policy definitions | `docs/PRD/ingest-PRD.md` |
-| DB requirements | `docs/PRD/ingest-PRD.md` plus `docs/database_schema.md` |
-| Conflict handling | `docs/PRD/ingest-PRD.md` |
-| Test mode and schema behavior | `docs/PRD/test-mode-PRD.md` |
-| Test mode requirements | `docs/PRD/test-mode-PRD.md` |
-| Integration expectations (n8n and other clients) | `docs/PRD/ingest-PRD.md` |
-| Batch CRUD requirements | `docs/PRD/ingest-PRD.md` |
-| Quality/retrieval computation requirements | `docs/PRD/ingest-PRD.md` |
-| Tier-1 LiteLLM client requirements | `docs/PRD/classify-PRD.md` |
-| Tier-1 orchestration requirements | `docs/PRD/classify-PRD.md` |
-| Tier-2 distillation requirements | `docs/PRD/Distill-PRD.md` |
-| Tier-1 batch visibility requirements | `docs/PRD/classify-PRD.md` |
-| Pipeline transition logging requirements | `docs/PRD/logging-PRD.md` plus `docs/PRD/failure-pack-prd-draft.md` |
-| Debug UI requirements | `docs/PRD/pkm-ui-PRD.md` |
-| Read context pack requirements | `docs/PRD/read-PRD.md` |
-| Telegram command UX requirements | `docs/PRD/read-PRD.md` plus `docs/PRD/Distill-PRD.md` |
-| Family calendar requirements | `docs/PRD/family-calendar-PRD.md` |
-| ChatGPT action requirements | `docs/PRD/GPT-Actions-Integration-PRD.md` plus `docs/PRD/working-memory-PRD.md` |
+| Scope | `docs/PRD/ingest-prd.md` |
+| Core rules | `docs/PRD/ingest-prd.md` |
+| Content hash requirements | `docs/PRD/ingest-prd.md` |
+| Data flow | `docs/PRD/ingest-prd.md` |
+| API requirements | `docs/PRD/ingest-prd.md` plus `docs/api_ingest.md` |
+| Policy definitions | `docs/PRD/ingest-prd.md` |
+| DB requirements | `docs/PRD/ingest-prd.md` plus `docs/database_schema.md` |
+| Conflict handling | `docs/PRD/ingest-prd.md` |
+| Test mode and schema behavior | `docs/PRD/test-mode-prd.md` |
+| Test mode requirements | `docs/PRD/test-mode-prd.md` |
+| Integration expectations (n8n and other clients) | `docs/PRD/ingest-prd.md` |
+| Batch CRUD requirements | `docs/PRD/ingest-prd.md` |
+| Quality/retrieval computation requirements | `docs/PRD/ingest-prd.md` |
+| Tier-1 LiteLLM client requirements | `docs/PRD/classify-prd.md` |
+| Tier-1 orchestration requirements | `docs/PRD/classify-prd.md` |
+| Tier-2 distillation requirements | `docs/PRD/distill-prd.md` |
+| Tier-1 batch visibility requirements | `docs/PRD/classify-prd.md` |
+| Pipeline transition logging requirements | `docs/PRD/logging-prd.md` plus `docs/PRD/failure-pack-prd.md` |
+| Debug UI requirements | `docs/PRD/pkm-ui-prd.md` |
+| Read context pack requirements | `docs/PRD/read-prd.md` |
+| Telegram command UX requirements | `docs/PRD/read-prd.md` plus `docs/PRD/distill-prd.md` |
+| Family calendar requirements | `docs/PRD/family-calendar-prd.md` |
+| ChatGPT action requirements | `docs/PRD/gpt-actions-integration-prd.md` plus `docs/PRD/working-memory-prd.md` |
 | Non-goals | owned by the relevant feature PRD |
 
 ## Remaining Uncovered Requirements

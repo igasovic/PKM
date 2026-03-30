@@ -10,6 +10,17 @@ Related work-package doc: none
 ## Purpose
 Baseline the PKM UI as a real product surface without making it the owner of individual feature semantics that already belong to other PRDs.
 
+## Use this PRD when
+- changing shared UI shell behavior, page boundaries, or backend-only access assumptions
+- changing debug page or failures page UI contracts at the shell level
+- deciding whether a requirement belongs to the UI shell or to a backend-owned feature PRD
+
+## Fast path by agent
+- Coding agent: read `Status and scope boundary`, `Control plane / execution flow`, `Debug page feature contract`, `Failures page feature contract`, and `API / contract surfaces`.
+- Planning agent: read `Goals`, `Boundaries and callers`, `Control plane / execution flow`, and `Risks / open questions`.
+- Reviewing agent: read `Status and scope boundary`, `Debug page feature contract`, `Failures page feature contract`, `Validation / acceptance criteria`, and `Known gaps requiring code deep-dive`.
+- Architect agent: read `Boundaries and callers`, `Data model / state transitions`, `API / contract surfaces`, and `Config / runtime / topology implications`.
+
 ## Status and scope boundary
 This PRD owns:
 - the existence and role of the PKM UI shell under `src/web/pkm-debug-ui`

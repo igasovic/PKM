@@ -10,6 +10,24 @@ Related work-package doc: none
 ## Purpose
 Baseline the ingest surface that turns external captures into PKM entry writes, while keeping classify and distill as separate downstream surfaces.
 
+## Use this PRD when
+- changing Telegram, email, Notion, or webpage ingest behavior before classify starts
+- changing normalization output, idempotent insert/update semantics, or ingest-side quality/retrieval projections
+- deciding whether email backlog import belongs with ingest or classify
+
+## Fast path by agent
+- Coding agent: read `Status and scope boundary`, `Control plane / execution flow`, `Method matrix`, `Write-boundary contract`, and `API / contract surfaces`.
+- Planning agent: read `Goals`, `Boundaries and callers`, `Control plane / execution flow`, `Contract delta table`, and `Risks / open questions`.
+- Reviewing agent: read `Status and scope boundary`, `Idempotency policy ownership`, `Content-hash invariants`, `Batch write expectations`, and `Validation / acceptance criteria`.
+- Architect agent: read `Boundaries and callers`, `Contract delta table`, `Write-boundary contract`, `Config / runtime / topology implications`, and `Risks / open questions`.
+
+## Section map
+- Flow shape: `Control plane / execution flow`
+- Ingest-method differences: `Method matrix`
+- DB-write and idempotency rules: `Data model / state transitions`
+- Endpoint ownership: `API / contract surfaces`
+- Remaining uncertainty: `Known gaps requiring code deep-dive`, `TBD`
+
 ## Status and scope boundary
 This PRD owns:
 - normalization for Telegram, email, webpage/article text, and Notion
@@ -91,7 +109,7 @@ Boundary rule:
 2. each message is parsed and normalized through the same email-ingest pipeline used by normal capture.
 3. inserts run in chunked batch mode with per-item failure isolation.
 4. non-skipped rows with usable `clean_text` are accumulated for classify batch enqueue.
-5. classify batch enqueue happens through `/enrich/t1/batch`, but the classify lifecycle after enqueue belongs to `docs/PRD/classify-PRD.md`.
+5. classify batch enqueue happens through `/enrich/t1/batch`, but the classify lifecycle after enqueue belongs to `docs/PRD/classify-prd.md`.
 
 ## Method matrix
 

@@ -1,7 +1,7 @@
 # Work Packages — Configuration Sync
 
 Status: active companion  
-Companion to: `docs/PRD/config-PRD.md`  
+Companion to: `docs/PRD/config-prd.md`  
 Last verified: 2026-03-30
 
 ## Current implementation snapshot

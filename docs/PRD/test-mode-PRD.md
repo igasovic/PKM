@@ -10,6 +10,17 @@ Related work-package doc: none
 ## Purpose
 Define the runtime test-mode capability that switches PKM data operations between `pkm` and `pkm_test` without requiring separate deployments.
 
+## Use this PRD when
+- changing persisted test-mode state, schema routing, or test/prod isolation guarantees
+- changing `/db/test-mode*` endpoints or worker behavior that depends on schema routing
+- deciding whether a test concern belongs to smoke harnesses or to the platform test-mode surface
+
+## Fast path by agent
+- Coding agent: read `Status and scope boundary`, `Control plane / execution flow`, `Routing and worker contract`, `Data model / state transitions`, and `API / contract surfaces`.
+- Planning agent: read `Goals`, `Boundaries and callers`, `Control plane / execution flow`, and `Config / runtime / topology implications`.
+- Reviewing agent: read `Status and scope boundary`, `Routing and worker contract`, `Validation / acceptance criteria`, and `Risks / open questions`.
+- Architect agent: read `Boundaries and callers`, `Data model / state transitions`, `API / contract surfaces`, and `Config / runtime / topology implications`.
+
 ## Status and scope boundary
 This PRD owns:
 - persisted runtime test-mode state under `pkm.runtime_config`

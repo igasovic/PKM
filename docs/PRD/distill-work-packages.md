@@ -1,7 +1,7 @@
 # Work Packages — Distill
 
 Status: active companion  
-Companion to: `docs/PRD/Distill-PRD.md`  
+Companion to: docs/PRD/distill-prd.md`  
 Last verified: 2026-03-30
 
 ## Purpose
@@ -26,8 +26,8 @@ This file breaks the Tier-2 distillation implementation into ordered, testable w
 - `### Candidate Discovery`
 - `### Validation`
 - `### Async Execution Design`
-- `### Schema Migration Plan Guidelines`
-- `### Candidate Discovery SQL Guidelines`
+- `docs/PRD/archive/distill-reference-appendix.md#schema-migration-plan-guidelines`
+- `docs/PRD/archive/distill-reference-appendix.md#candidate-discovery-sql-guidelines`
 
 **Optional source references**
 - `AGENTS.md` sections `Read-first`, `System boundaries`, `Default workflow`, `Quality gates`
@@ -70,7 +70,7 @@ This file breaks the Tier-2 distillation implementation into ordered, testable w
 **PRD references**
 - `### Tier 2 / distill_ fields on entries`
 - `### State Transition Matrix`
-- `### Schema Migration Plan Guidelines`
+- `docs/PRD/archive/distill-reference-appendix.md#schema-migration-plan-guidelines`
 
 **Optional source references**
 - `database_schema.md` sections `pkm.entries / pkm_test.entries`, `Test vs prod + mirroring`
@@ -166,8 +166,8 @@ This file breaks the Tier-2 distillation implementation into ordered, testable w
 - `### Budgeting`
 - `### Route Selection`
 - `### Budgeting Implementation Rules`
-- `### Priority Scoring Formula`
-- `### Candidate Discovery SQL Guidelines`
+- `docs/PRD/archive/distill-reference-appendix.md#priority-scoring-formula`
+- `docs/PRD/archive/distill-reference-appendix.md#candidate-discovery-sql-guidelines`
 
 **Optional source references**
 - `AGENTS.md` section `Database safety`
@@ -339,7 +339,7 @@ This file breaks the Tier-2 distillation implementation into ordered, testable w
 - Add Tier 2 observability without violating existing logging boundaries.
 
 **PRD references**
-- `### Observability / Braintrust Plan`
+- `docs/PRD/archive/distill-reference-appendix.md#observability--braintrust-plan`
 - `### Async Execution Design`
 - `### State Transition Matrix`
 
@@ -445,7 +445,7 @@ This file breaks the Tier-2 distillation implementation into ordered, testable w
 **PRD references**
 - `## Control Plane`
 - `### Async Execution Design`
-- `### Observability / Braintrust Plan`
+- `docs/PRD/archive/distill-reference-appendix.md#observability--braintrust-plan`
 
 **Optional source references**
 - `AGENTS.md` sections `n8n workflow editing model`, `Repository ownership and placement`
@@ -482,7 +482,7 @@ This file breaks the Tier-2 distillation implementation into ordered, testable w
   - `### Validation Contract`
   - `### Retry Config and Behavior`
   - `### State Transition Matrix`
-  - `### Schema Migration Plan Guidelines`
+  - `docs/PRD/archive/distill-reference-appendix.md#schema-migration-plan-guidelines`
 
 **Optional source references**
 - `AGENTS.md` section `Quality gates`

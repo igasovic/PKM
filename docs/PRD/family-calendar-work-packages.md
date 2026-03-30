@@ -1,7 +1,7 @@
 # Work Packages — Family Calendar
 
 Status: proposed companion  
-Companion to: `docs/PRD/family-calendar-PRD.md`  
+Companion to: `docs/PRD/family-calendar-prd.md`  
 Last verified: 2026-03-30
 
 ## Delivery order
@@ -57,7 +57,7 @@ Create the documented contract surface before implementation spreads across back
 
 ### Likely files
 
-- `docs/PRD/family-calendar-PRD.md`
+- `docs/PRD/family-calendar-prd.md`
 - `docs/PRD/family-calendar-work-packages.md`
 - `docs/api.md`
 - `docs/database_schema.md`

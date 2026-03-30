@@ -10,6 +10,24 @@ Related work-package doc: `docs/PRD/archive/failure-pack-work-packages.md`
 ## Purpose
 Define the failure-pack surface for durable n8n failure capture, PKM persistence, and operator/agent retrieval.
 
+## Use this PRD when
+- changing failure-pack capture, persistence, retrieval, or sidecar behavior
+- changing the failure investigation path exposed to operators or agents
+- deciding whether a diagnostic requirement belongs here or in the general logging layer
+
+## Fast path by agent
+- Coding agent: read `Status and scope boundary`, `Target operator experience`, `Control plane and execution flow`, `JSON envelope contract`, and `PKM API surface`.
+- Planning agent: read `Problem`, `Goal`, `Scope boundary`, `Key product decisions`, and `Operator UI`.
+- Reviewing agent: read `Status and scope boundary`, `Payload policy`, `Redaction policy`, `PKM API surface`, `Security and access model`, and `Retention and cleanup`.
+- Architect agent: read `Scope boundary`, `Persistence boundary`, `Sidecar writer boundary`, `JSON envelope contract`, and `Logging and observability boundary`.
+
+## Section map
+- Why this surface exists: `Problem`, `Goal`, `Target operator experience`
+- Capture and retrieval flow: `Control plane and execution flow`
+- Stored artifact shape: `Data model`, `JSON envelope contract`
+- APIs and UI: `PKM API surface`, `Operator UI`
+- Safety and lifecycle: `Security and access model`, `Logging and observability boundary`, `Retention and cleanup`
+
 ## Status and scope boundary
 This PRD owns:
 - `wf99` failure-pack capture

@@ -10,6 +10,25 @@ Related work-package doc: none
 ## Purpose
 Define the backend logging and telemetry system as it exists today.
 
+## Use this PRD when
+- changing backend transition telemetry, Braintrust instrumentation, correlation, summarization, or redaction behavior
+- reviewing whether a feature change violates logging or sink-boundary guarantees
+- deciding whether a telemetry concern belongs to this cross-cutting layer or to a feature-specific PRD
+
+## Fast path by agent
+- Coding agent: read `Status and scope boundary`, `Architecture`, `Transition Event Contract`, `Braintrust Telemetry Contract`, and `Operational Guarantees`.
+- Planning agent: read `Goals and Non-Goals`, `Architecture`, `Configuration Matrix`, and `Validation Coverage`.
+- Reviewing agent: read `Status and scope boundary`, `Transition Event Contract`, `Summarization and Redaction`, `Sink failure behavior`, and `Validation Coverage`.
+- Architect agent: read `Ownership boundaries`, `Transition Event Contract`, `Braintrust Telemetry Contract`, `Operational Guarantees`, and `File Map`.
+
+## Section map
+- Boundaries and architecture: `Status and scope boundary`, `Architecture`
+- Run/request correlation: `Correlation Model`
+- Postgres transition logging: `Transition Event Contract`
+- Redaction and payload controls: `Summarization and Redaction`
+- Braintrust rules: `Braintrust Telemetry Contract`
+- Operational setup and code map: `Configuration Matrix`, `Operational Guarantees`, `File Map`
+
 ## Status and scope boundary
 This PRD owns:
 - transition telemetry to Postgres `pipeline_events`

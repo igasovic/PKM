@@ -10,6 +10,24 @@ Related work-package doc: `docs/PRD/family-calendar-work-packages.md`
 ## Purpose
 Define the family-calendar feature surface centered on Telegram creation, Google Calendar writes/reads, and scheduled family reports.
 
+## Use this PRD when
+- planning or reviewing the family-calendar feature surface
+- changing Telegram-to-calendar intent handling, Google Calendar interaction, reporting, or family-calendar schemas
+- deciding whether a future calendar behavior belongs in this feature PRD or in a shared ingest/read/config surface
+
+## Fast path by agent
+- Coding agent: read `Status and scope boundary`, `1. Baseline and current behavior`, `6. Core invariants and boundaries`, `8. Control plane and execution flow`, `13. Data model and schema changes`, and `16. API and operational surfaces`.
+- Planning agent: read `2. Problem statement`, `3. Goals`, `4. Non-goals for v1`, `6. Core invariants and boundaries`, `8. Control plane and execution flow`, and `18. Migration and rollout plan`.
+- Reviewing agent: read `Status and scope boundary`, `6. Core invariants and boundaries`, `9. Event normalization rules`, `14. Validation and state transitions`, `16. API and operational surfaces`, and `19. Success criteria`.
+- Architect agent: read `1.2 Existing system boundaries`, `6. Core invariants and boundaries`, `8.6 Hybrid backend orchestration (implemented shape)`, `13. Data model and schema changes`, `15. Config surface`, and `20. Future improvements and TBD`.
+
+## Section map
+- Current baseline and motivation: `1. Baseline and current behavior`, `2. Problem statement`, `3. Goals`, `4. Non-goals for v1`
+- Product boundaries: `5. Users, roles, and permissions`, `6. Core invariants and boundaries`, `7. Event classes`
+- Flow design: `8. Control plane and execution flow`, `9. Event normalization rules`, `10. Subject coding and display rules`, `11. Color model`, `12. Query and report formatting rules`
+- Persistent and operational impact: `13. Data model and schema changes`, `14. Validation and state transitions`, `15. Config surface`, `16. API and operational surfaces`, `17. Observability and logging requirements`
+- Delivery planning: `18. Migration and rollout plan`, `19. Success criteria`, `20. Future improvements and TBD`, `21. Work packages`
+
 ## Status and scope boundary
 This PRD owns the family-calendar feature surface and remains proposed work, not a backfilled baseline of currently implemented behavior.
 

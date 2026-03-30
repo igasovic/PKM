@@ -10,6 +10,17 @@ Related work-package doc: `docs/PRD/archive/MCP-transition-work-packages-v2.md`
 ## Purpose
 Keep the public ChatGPT integration boundary narrow, stable, and clearly separated from the internal domain surfaces it calls.
 
+## Use this PRD when
+- changing the public ChatGPT action webhook boundary
+- changing request/response semantics exposed to ChatGPT
+- deciding whether a behavior belongs to GPT transport or working-memory/read feature domains
+
+## Fast path by agent
+- Coding agent: read `Status and scope boundary`, `Control plane / execution flow`, `API / contract surfaces`, and `Config / runtime / topology implications`.
+- Planning agent: read `Goals`, `Boundaries and callers`, `Control plane / execution flow`, `Contract delta table`, and `Historical context`.
+- Reviewing agent: read `Status and scope boundary`, `API / contract surfaces`, `Validation / acceptance criteria`, and `Risks / open questions`.
+- Architect agent: read `Boundaries and callers`, `Contract delta table`, `Config / runtime / topology implications`, and `Historical context`.
+
 ## Status and scope boundary
 This PRD owns:
 - public ChatGPT-facing webhook endpoints
@@ -34,7 +45,7 @@ Current repo behavior is:
 - `05 ChatGPT Wrap Commit` validates public write payloads and calls internal `POST /chatgpt/wrap-commit`
 - `11 ChatGPT Read Router` resolves semantic read intent in n8n and calls exactly one internal backend route per request
 - public action schema is maintained in `chatgpt/action_schema.yaml`
-- working-memory method is available through the public read action, but its internal semantics are owned by `docs/PRD/working-memory-PRD.md`
+- working-memory method is available through the public read action, but its internal semantics are owned by `docs/PRD/working-memory-prd.md`
 - read/write action calls emit structured observability tied to action, method, request metadata, outcome, and compact error summaries through the existing backend/n8n logging surfaces
 
 ## Goals
@@ -86,8 +97,8 @@ Internal routes used by the public workflows:
 - `POST /chatgpt/wrap-commit`
 
 Internal-domain ownership lives in:
-- `docs/PRD/read-PRD.md`
-- `docs/PRD/working-memory-PRD.md`
+- `docs/PRD/read-prd.md`
+- `docs/PRD/working-memory-prd.md`
 
 ## Contract delta table
 | Surface | Changes? | Baseline known? | Notes |

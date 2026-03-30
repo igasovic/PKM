@@ -10,6 +10,17 @@ Related work-package doc: none
 ## Purpose
 Baseline the Tier-1 classify surface so it is cleanly separated from ingest on the way in and distill on the way out.
 
+## Use this PRD when
+- changing Tier-1 classify sync or batch behavior
+- changing LiteLLM-backed classify execution, orchestration, or batch-status semantics
+- deciding whether a behavior belongs to ingest or classify
+
+## Fast path by agent
+- Coding agent: read `Status and scope boundary`, `Control plane / execution flow`, `Runtime contract`, `Orchestration contract`, and `API / contract surfaces`.
+- Planning agent: read `Goals`, `Boundaries and callers`, `Contract delta table`, `Control plane / execution flow`, and `Risks / open questions`.
+- Reviewing agent: read `Status and scope boundary`, `Runtime contract`, `Batch visibility contract`, `Validation / acceptance criteria`, and `Known gaps requiring code deep-dive`.
+- Architect agent: read `Boundaries and callers`, `Contract delta table`, `Data model / state transitions`, and `Config / runtime / topology implications`.
+
 ## Status and scope boundary
 This PRD owns:
 - `POST /enrich/t1`
