@@ -45,7 +45,7 @@ describe('tier2 sync service', () => {
       }),
     }));
 
-    jest.doMock('../../src/server/db.js', () => ({
+    jest.doMock('../../src/server/db/distill-store.js', () => ({
       getTier2SyncEntryByEntryId: async () => ({
         entry_id: 701,
         title: 'Direct route sample',
@@ -132,7 +132,7 @@ describe('tier2 sync service', () => {
       }),
     }));
 
-    jest.doMock('../../src/server/db.js', () => ({
+    jest.doMock('../../src/server/db/distill-store.js', () => ({
       getTier2SyncEntryByEntryId: async () => ({
         entry_id: 702,
         title: 'Chunked route sample',
@@ -203,7 +203,7 @@ describe('tier2 sync service', () => {
       }),
     }));
 
-    jest.doMock('../../src/server/db.js', () => ({
+    jest.doMock('../../src/server/db/distill-store.js', () => ({
       getTier2SyncEntryByEntryId: async () => ({
         entry_id: 709,
         title: 'Batch mode sample',
@@ -255,7 +255,7 @@ describe('tier2 sync service', () => {
       }),
     }));
 
-    jest.doMock('../../src/server/db.js', () => ({
+    jest.doMock('../../src/server/db/distill-store.js', () => ({
       getTier2SyncEntryByEntryId: async () => ({
         entry_id: 703,
         title: 'Validation failure sample',
@@ -322,7 +322,7 @@ describe('tier2 sync service', () => {
       }),
     }));
 
-    jest.doMock('../../src/server/db.js', () => ({
+    jest.doMock('../../src/server/db/distill-store.js', () => ({
       getTier2SyncEntryByEntryId: async () => ({
         entry_id: 704,
         title: 'Generation failure sample',
@@ -393,7 +393,7 @@ describe('tier2 sync service', () => {
       }),
     }));
 
-    jest.doMock('../../src/server/db.js', () => ({
+    jest.doMock('../../src/server/db/distill-store.js', () => ({
       getTier2SyncEntryByEntryId: async () => ({
         entry_id: 706,
         title: 'Current completed artifact',
@@ -457,7 +457,7 @@ describe('tier2 sync service', () => {
       }),
     }));
 
-    jest.doMock('../../src/server/db.js', () => ({
+    jest.doMock('../../src/server/db/distill-store.js', () => ({
       getTier2SyncEntryByEntryId: async () => ({
         entry_id: 707,
         title: 'Current completed artifact',
@@ -518,7 +518,7 @@ describe('tier2 sync service', () => {
       }),
     }));
 
-    jest.doMock('../../src/server/db.js', () => ({
+    jest.doMock('../../src/server/db/distill-store.js', () => ({
       getTier2SyncEntryByEntryId: async () => ({
         entry_id: 705,
         title: 'Currentness mismatch sample',
@@ -577,7 +577,7 @@ describe('tier2 sync service', () => {
       }),
     }));
 
-    jest.doMock('../../src/server/db.js', () => ({
+    jest.doMock('../../src/server/db/distill-store.js', () => ({
       getTier2SyncEntryByEntryId: async () => ({
         entry_id: 708,
         title: 'Null hash sample',

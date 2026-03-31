@@ -25,7 +25,7 @@
 
 | Surface | Owns | May depend on | Must not do |
 |---|---|---|---|
-| `src/server/` | HTTP API, business logic, DB access layer, logging, orchestration | `src/libs/`, DB module, documented contracts | raw SQL outside approved files; bypass DB module; undocumented contracts |
+| `src/server/` | HTTP API, business logic, DB access layer, logging, orchestration | `src/libs/`, `src/server/db/**`, documented contracts | raw SQL outside approved files; bypass DB stores/repositories; undocumented contracts |
 | `src/web/` | UI application | documented backend endpoints, shared libs as appropriate | direct DB access; undocumented backend paths |
 | `src/libs/` | shared pure utilities and helpers | local utilities only | hidden environment-specific side effects unless intentional |
 | `src/n8n/` | workflow JSON, externalized code nodes, runtime package manifest | documented backend endpoints, staged shared helpers | direct PKM product DB access; raw SQL; `/data/...` runtime imports. n8n's own runtime/execution DB is infrastructure and allowed. |
@@ -41,7 +41,7 @@
 - Backend composition and ownership should follow:
   - `src/server/routes/` for route-family handlers
   - `src/server/app/` for shared HTTP helpers only
-  - `src/server/repositories/` for bounded facades over `src/server/db.js`
+  - `src/server/repositories/` for bounded facades over `src/server/db/**`
   - `src/server/workers/` for background loops and maintenance startup helpers
 - New n8n logic belongs under `src/n8n/`.
 - `src/n8n/package/` is generated output, not an authoring surface.
@@ -49,7 +49,7 @@
 - Raw SQL is allowed only in:
   - `src/libs/sql-builder.js`
   - `src/server/db/**`
-- Business logic must call DB module methods rather than issuing SQL directly.
+- Business logic must call DB store or repository methods rather than issuing SQL directly.
 
 ## Generated Vs Authoritative
 - Authoritative source files live in repo-owned authoring surfaces such as `src/n8n/`, `ops/stack/`, `docs/`, and approved config/code locations.

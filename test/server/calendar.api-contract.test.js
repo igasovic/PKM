@@ -33,7 +33,7 @@ describe('calendar API contract', () => {
   const routeMock = jest.fn();
   const normalizeMock = jest.fn();
   const normalizeWithTraceMock = jest.fn();
-  const dbMock = {
+  const calendarRepoMock = {
     upsertCalendarRequest: jest.fn(),
     getCalendarRequestById: jest.fn(),
     getLatestOpenCalendarRequestByChat: jest.fn(),
@@ -50,7 +50,7 @@ describe('calendar API contract', () => {
     routeMock.mockReset();
     normalizeMock.mockReset();
     normalizeWithTraceMock.mockReset();
-    Object.values(dbMock).forEach((fn) => fn.mockReset());
+    Object.values(calendarRepoMock).forEach((fn) => fn.mockReset());
   });
 
   afterEach(async () => {
@@ -69,24 +69,7 @@ describe('calendar API contract', () => {
       normalizeCalendarRequestWithTrace: normalizeWithTraceMock,
     }));
 
-    jest.doMock('../../src/server/db.js', () => ({
-      ...dbMock,
-      insert: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      move: jest.fn(),
-      readContinue: jest.fn(),
-      readFind: jest.fn(),
-      readLast: jest.fn(),
-      readPull: jest.fn(),
-      getRecentPipelineRuns: jest.fn(),
-      getPipelineRun: jest.fn(),
-      getLastPipelineRun: jest.fn(),
-      getTestMode: jest.fn(),
-      toggleTestModeState: jest.fn(),
-      prunePipelineEvents: jest.fn(),
-      markTier2StaleInProd: jest.fn(),
-    }));
+    jest.doMock('../../src/server/repositories/calendar-repository.js', () => ({ ...calendarRepoMock }));
 
     const { createServer } = require('../../src/server/index.js');
     server = createServer();
@@ -129,7 +112,7 @@ describe('calendar API contract', () => {
       route: 'calendar_create',
       confidence: 0.93,
     });
-    dbMock.upsertCalendarRequest.mockResolvedValue({
+    calendarRepoMock.upsertCalendarRequest.mockResolvedValue({
       request_id: '9f678f95-8f9f-4f31-8e53-b97f1d9fafe4',
     });
 
@@ -164,7 +147,7 @@ describe('calendar API contract', () => {
       route: 'pkm_capture',
       confidence: 0.62,
     });
-    dbMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
+    calendarRepoMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
       request_id: '5c8ceaa0-0f5f-4ec2-badf-3d663ae8c940',
       status: 'needs_clarification',
     });
@@ -194,8 +177,8 @@ describe('calendar API contract', () => {
       clarification_question: null,
       request_id: '5c8ceaa0-0f5f-4ec2-badf-3d663ae8c940',
     });
-    expect(dbMock.upsertCalendarRequest).not.toHaveBeenCalled();
-    expect(dbMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
+    expect(calendarRepoMock.upsertCalendarRequest).not.toHaveBeenCalled();
+    expect(calendarRepoMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
   });
 
   test('POST /telegram/route does not override explicit pkm prefix with continuation route', async () => {
@@ -203,7 +186,7 @@ describe('calendar API contract', () => {
       route: 'pkm_capture',
       confidence: 1,
     });
-    dbMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
+    calendarRepoMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
       request_id: '33f3e37b-f4a4-4437-a6e8-67ce7f2c227f',
       status: 'needs_clarification',
     });
@@ -232,7 +215,7 @@ describe('calendar API contract', () => {
       confidence: 1,
       request_id: null,
     });
-    expect(dbMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
+    expect(calendarRepoMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
   });
 
   test('POST /telegram/route reuses open request for explicit cal prefix to avoid unique-chat conflicts', async () => {
@@ -240,7 +223,7 @@ describe('calendar API contract', () => {
       route: 'calendar_create',
       confidence: 1,
     });
-    dbMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
+    calendarRepoMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
       request_id: 'cal-open-123',
       status: 'needs_clarification',
     });
@@ -269,8 +252,8 @@ describe('calendar API contract', () => {
       confidence: 1,
       request_id: 'cal-open-123',
     });
-    expect(dbMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
-    expect(dbMock.upsertCalendarRequest).not.toHaveBeenCalled();
+    expect(calendarRepoMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
+    expect(calendarRepoMock.upsertCalendarRequest).not.toHaveBeenCalled();
   });
 
   test('POST /telegram/route downgrades PKM route for calendar-only sender when allowlist is enforced', async () => {
@@ -307,7 +290,7 @@ describe('calendar API contract', () => {
   });
 
   test('POST /calendar/normalize uses explicit request_id for continuation and propagates run id header', async () => {
-    dbMock.getCalendarRequestById.mockResolvedValue({
+    calendarRepoMock.getCalendarRequestById.mockResolvedValue({
       request_id: 'f12556d4-c454-4885-a89c-d61dc28db3fd',
       status: 'needs_clarification',
       raw_text: 'Mila dentist',
@@ -321,7 +304,7 @@ describe('calendar API contract', () => {
       warning_codes: [],
       message: null,
     });
-    dbMock.updateCalendarRequestById.mockResolvedValue({
+    calendarRepoMock.updateCalendarRequestById.mockResolvedValue({
       request_id: 'f12556d4-c454-4885-a89c-d61dc28db3fd',
       status: 'needs_clarification',
     });
@@ -357,11 +340,11 @@ describe('calendar API contract', () => {
       message: null,
       request_status: 'needs_clarification',
     });
-    expect(dbMock.getLatestOpenCalendarRequestByChat).not.toHaveBeenCalled();
+    expect(calendarRepoMock.getLatestOpenCalendarRequestByChat).not.toHaveBeenCalled();
   });
 
   test('POST /calendar/normalize optionally returns normalize trace metadata', async () => {
-    dbMock.upsertCalendarRequest.mockResolvedValue({
+    calendarRepoMock.upsertCalendarRequest.mockResolvedValue({
       request_id: '627ff0cd-3461-4b93-a6c8-5eb66e5f30a8',
       status: 'received',
       raw_text: 'Mila dentist tomorrow at 3:00p',
@@ -385,7 +368,7 @@ describe('calendar API contract', () => {
         status: 'ready_to_create',
       },
     });
-    dbMock.updateCalendarRequestById.mockResolvedValue({
+    calendarRepoMock.updateCalendarRequestById.mockResolvedValue({
       request_id: '627ff0cd-3461-4b93-a6c8-5eb66e5f30a8',
       status: 'normalized',
     });
@@ -422,7 +405,7 @@ describe('calendar API contract', () => {
   });
 
   test('POST /calendar/normalize creates a new request when request_id is omitted', async () => {
-    dbMock.upsertCalendarRequest.mockResolvedValue({
+    calendarRepoMock.upsertCalendarRequest.mockResolvedValue({
       request_id: 'b11c6085-8949-45ef-8e03-11c35a1eac62',
       status: 'received',
       raw_text: 'Mila dentist tomorrow at 3:00p',
@@ -436,7 +419,7 @@ describe('calendar API contract', () => {
       warning_codes: [],
       message: null,
     });
-    dbMock.updateCalendarRequestById.mockResolvedValue({
+    calendarRepoMock.updateCalendarRequestById.mockResolvedValue({
       request_id: 'b11c6085-8949-45ef-8e03-11c35a1eac62',
       status: 'needs_clarification',
     });
@@ -463,8 +446,8 @@ describe('calendar API contract', () => {
     const payload = JSON.parse(res.body);
     expect(payload.request_id).toBe('b11c6085-8949-45ef-8e03-11c35a1eac62');
     expect(payload.status).toBe('needs_clarification');
-    expect(dbMock.getLatestOpenCalendarRequestByChat).not.toHaveBeenCalled();
-    expect(dbMock.upsertCalendarRequest).toHaveBeenCalled();
+    expect(calendarRepoMock.getLatestOpenCalendarRequestByChat).not.toHaveBeenCalled();
+    expect(calendarRepoMock.upsertCalendarRequest).toHaveBeenCalled();
   });
 
   test('POST /calendar/normalize rejects sender not in calendar allowlist', async () => {
@@ -536,7 +519,7 @@ describe('calendar API contract', () => {
   });
 
   test('POST /calendar/finalize maps success to calendar_created', async () => {
-    dbMock.finalizeCalendarRequestById.mockResolvedValue({
+    calendarRepoMock.finalizeCalendarRequestById.mockResolvedValue({
       request_id: '3243fcdd-e81c-4c94-aa79-d8d8f99bb9dd',
       status: 'calendar_created',
       google_calendar_id: 'family@group.calendar.google.com',
@@ -573,7 +556,7 @@ describe('calendar API contract', () => {
   });
 
   test('POST /calendar/observe inserts observation rows', async () => {
-    dbMock.insertCalendarObservations.mockResolvedValue({
+    calendarRepoMock.insertCalendarObservations.mockResolvedValue({
       rowCount: 1,
       rows: [
         {

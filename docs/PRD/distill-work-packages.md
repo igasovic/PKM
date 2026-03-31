@@ -26,7 +26,7 @@ This file breaks the Tier-2 distillation implementation into ordered, testable w
 
 - Work starts with a reconciliation pass, not code.
 - API, schema, runtime, and read-surface contracts must be updated in the same change set when they are affected.
-- New DB access must respect the `AGENTS.md` rule: no raw SQL outside `src/libs/sql-builder.js` and `src/server/db.js`.
+- New DB access must respect the `AGENTS.md` rule: no raw SQL outside `src/libs/sql-builder.js` and `src/server/db/**`.
 - n8n, UI, and backend boundaries must continue to flow through documented backend APIs only.
 
 ---

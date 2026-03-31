@@ -53,7 +53,15 @@
     "auth": "internal",
     "doc": "docs/api_ingest.md",
     "primary_callers": ["Telegram ingest workflows"],
-    "tests": ["test/server/classify.api-contract.test.js"]
+    "tests": ["test/server/classify.api-contract.test.js"],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "text": "pkm hello from telegram",
+        "source": { "chat_id": "1509032341", "message_id": "777" }
+      }
+    }
   },
   {
     "method": "POST",
@@ -69,7 +77,16 @@
     "auth": "internal",
     "doc": "docs/api_ingest.md",
     "primary_callers": ["Email ingest workflows"],
-    "tests": ["test/server/classify.api-contract.test.js"]
+    "tests": ["test/server/classify.api-contract.test.js"],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "raw_text": "hello from email",
+        "from": "user@example.com",
+        "subject": "Inbox item"
+      }
+    }
   },
   {
     "method": "POST",
@@ -93,7 +110,16 @@
     "auth": "internal",
     "doc": "docs/api_ingest.md",
     "primary_callers": ["Classify workflows"],
-    "tests": ["test/server/classify.api-contract.test.js"]
+    "tests": ["test/server/classify.api-contract.test.js"],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "title": "Newsletter",
+        "author": "PKM",
+        "clean_text": "This is enough text to classify."
+      }
+    }
   },
   {
     "method": "POST",
@@ -125,7 +151,16 @@
     "auth": "admin_secret",
     "doc": "docs/api_calendar.md",
     "primary_callers": ["Family calendar router workflows"],
-    "tests": ["test/server/calendar.api-contract.test.js"]
+    "tests": ["test/server/calendar.api-contract.test.js"],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "text": "cal: Mila dentist tomorrow 3pm",
+        "actor_code": "igor",
+        "source": { "chat_id": "1509032341", "message_id": "777" }
+      }
+    }
   },
   {
     "method": "POST",
@@ -133,7 +168,16 @@
     "auth": "admin_secret",
     "doc": "docs/api_calendar.md",
     "primary_callers": ["Family calendar normalize workflows"],
-    "tests": ["test/server/calendar.api-contract.test.js"]
+    "tests": ["test/server/calendar.api-contract.test.js"],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "raw_text": "Mila dentist tomorrow 3pm",
+        "actor_code": "igor",
+        "source": { "chat_id": "1509032341", "message_id": "777" }
+      }
+    }
   },
   {
     "method": "POST",
@@ -173,7 +217,15 @@
     "auth": "admin_secret",
     "doc": "docs/api_distill.md",
     "primary_callers": ["Distill workflows", "operators"],
-    "tests": ["test/server/tier2.api-contract.test.js"]
+    "tests": ["test/server/tier2.api-contract.test.js"],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "dry_run": true,
+        "max_sync_items": 1
+      }
+    }
   },
   {
     "method": "GET",
@@ -197,7 +249,15 @@
     "auth": "internal",
     "doc": "docs/api_ingest.md",
     "primary_callers": ["Backlog import workflows"],
-    "tests": ["test/server/classify.api-contract.test.js"]
+    "tests": ["test/server/classify.api-contract.test.js"],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "mbox_path": "sample.mbox",
+        "max_emails": 1
+      }
+    }
   },
   {
     "method": "POST",
@@ -293,7 +353,17 @@
     "auth": "internal",
     "doc": "docs/api_read_write.md",
     "primary_callers": ["n8n capture workflows"],
-    "tests": ["test/server/read-write.api-contract.test.js"]
+    "tests": ["test/server/read-write.api-contract.test.js"],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "input": {
+          "source": "telegram",
+          "capture_text": "hello from smoke"
+        }
+      }
+    }
   },
   {
     "method": "POST",
@@ -349,7 +419,15 @@
     "auth": "internal",
     "doc": "docs/api_read_write.md",
     "primary_callers": ["11 ChatGPT Read Router", "read workflows"],
-    "tests": ["test/server/read-write.api-contract.test.js"]
+    "tests": ["test/server/read-write.api-contract.test.js"],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "entry_id": 101,
+        "longN": 500
+      }
+    }
   },
   {
     "method": "POST",

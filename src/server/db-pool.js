@@ -33,6 +33,14 @@ function getPool() {
   return pool;
 }
 
+async function closePool() {
+  if (!pool) return;
+  const current = pool;
+  pool = null;
+  await current.end();
+}
+
 module.exports = {
   getPool,
+  closePool,
 };

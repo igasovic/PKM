@@ -4,7 +4,7 @@ Status: active
 Surface owner: backend runtime-config state + schema-routing capability  
 Scope type: canonical surface  
 Last verified: 2026-03-30  
-Related authoritative docs: `docs/api_read_write.md`, `docs/database_schema.md`, `docs/env.md`, `docs/requirements.md`  
+Related authoritative docs: `docs/api_read_write.md`, `docs/database_schema.md`, `docs/env.md`, `docs/requirements.md`, `docs/test_mode_exemptions.md`  
 Related work-package doc: none
 
 ## Purpose
@@ -65,7 +65,7 @@ Current repo behavior is:
 Primary callers:
 - PKM UI sidebar toggle in `src/web/pkm-debug-ui`
 - smoke harness setup/cleanup flows
-- backend DB module methods that resolve active schema at request time
+- backend DB store methods that resolve active schema at request time
 
 Boundary rule:
 - callers may read or toggle test mode through the owned endpoints
@@ -121,16 +121,23 @@ Test mode remains runtime-mutable state, not a repo-managed `checkcfg` / `update
 
 ## Evidence / recovery basis
 Recovered from:
-- `src/server/index.js`
+- `src/server/routes/read-write-routes.js`
+- `src/server/routes/control-routes.js`
 - `src/server/test-mode.js`
-- `src/server/db.js`
+- `src/server/db/runtime-store.js`
 - `src/web/pkm-debug-ui/src/App.tsx`
 - `src/n8n/workflows/00-smoke-master*`
 - `docs/requirements.md`
 - `docs/changelog.md`
 
-## Known gaps requiring code deep-dive
-- `REVIEW_REQUIRED: produce a complete exemption matrix for tables and APIs that intentionally ignore test mode. Calendar logs and failure packs are documented exceptions, but this pass did not exhaustively verify every newer table or debug surface against the DB module.`
+## Exemption matrix
+
+The maintained exemption matrix now lives in `docs/test_mode_exemptions.md`.
+
+Use it when:
+- adding a new store or table that might follow active test mode
+- reviewing whether a fixed-table or prod-pinned surface is intentional
+- checking batch surfaces that scan both schemas instead of following the active flag
 
 ## Validation / acceptance criteria
 This PRD remains accurate if:

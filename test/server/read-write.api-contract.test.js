@@ -29,7 +29,7 @@ describe('read-write API contract', () => {
   let port = null;
   let envBackup;
   let listenDenied = false;
-  let dbMock;
+  let repoMock;
 
   beforeEach(() => {
     jest.resetModules();
@@ -37,23 +37,18 @@ describe('read-write API contract', () => {
     envBackup = { ...process.env };
     process.env.PKM_ADMIN_SECRET = 'test-admin-secret';
 
-    dbMock = {
+    repoMock = {
       insert: jest.fn(async () => ({ rows: [{ entry_id: 1 }], rowCount: 1 })),
       update: jest.fn(async () => ({ rows: [{ entry_id: 1, updated: true }], rowCount: 1 })),
-      delete: jest.fn(async () => ({ rows: [{ entry_id: 1, deleted: true }], rowCount: 1 })),
-      move: jest.fn(async () => ({ rows: [{ entry_id: 1, moved: true }], rowCount: 1 })),
+      deleteEntries: jest.fn(async () => ({ rows: [{ entry_id: 1, deleted: true }], rowCount: 1 })),
+      moveEntries: jest.fn(async () => ({ rows: [{ entry_id: 1, moved: true }], rowCount: 1 })),
       readContinue: jest.fn(async () => ({ rows: [{ entry_id: 1 }], rowCount: 1 })),
       readFind: jest.fn(async () => ({ rows: [{ entry_id: 2, title: 'match' }], rowCount: 1 })),
       readLast: jest.fn(async () => ({ rows: [{ entry_id: 3 }], rowCount: 1 })),
       readPull: jest.fn(async () => ({ rows: [{ entry_id: 4, excerpt: 'detail' }], rowCount: 1 })),
       readSmoke: jest.fn(async () => ({ rows: [{ entry_id: 5 }], rowCount: 1 })),
-      getRecentPipelineRuns: jest.fn(async () => ({ rows: [] })),
-      getPipelineRun: jest.fn(async () => ({ run_id: 'run-1', rows: [] })),
-      getLastPipelineRun: jest.fn(async () => ({ run_id: null, rows: [] })),
-      prunePipelineEvents: jest.fn(async () => ({ deleted: 0 })),
-      markTier2StaleInProd: jest.fn(async () => ({ updated: 0 })),
     };
-    jest.doMock('../../src/server/db.js', () => dbMock);
+    jest.doMock('../../src/server/repositories/read-write-repository.js', () => repoMock);
     jest.doMock('../../src/server/tier1-enrichment.js', () => ({
       getTier1BatchStatusList: async () => ({ summary: {}, jobs: [] }),
       getTier1BatchStatus: async () => null,
@@ -110,7 +105,7 @@ describe('read-write API contract', () => {
     const res = await request(port, 'POST', '/db/insert', JSON.stringify(payload), { 'Content-Type': 'application/json' });
 
     expect(res.status).toBe(200);
-    expect(dbMock.insert).toHaveBeenCalledWith(payload);
+    expect(repoMock.insert).toHaveBeenCalledWith(payload);
     expect(JSON.parse(res.body)).toEqual([{ entry_id: 1 }]);
   });
 
@@ -122,7 +117,7 @@ describe('read-write API contract', () => {
     const res = await request(port, 'POST', '/db/update', JSON.stringify(payload), { 'Content-Type': 'application/json' });
 
     expect(res.status).toBe(200);
-    expect(dbMock.update).toHaveBeenCalledWith(payload);
+    expect(repoMock.update).toHaveBeenCalledWith(payload);
     expect(JSON.parse(res.body)).toEqual([{ entry_id: 1, updated: true }]);
   });
 
@@ -139,7 +134,7 @@ describe('read-write API contract', () => {
       'x-pkm-admin-secret': 'test-admin-secret',
     });
     expect(ok.status).toBe(200);
-    expect(dbMock.move).toHaveBeenCalledWith(payload);
+    expect(repoMock.moveEntries).toHaveBeenCalledWith(payload);
     expect(JSON.parse(ok.body)).toEqual([{ entry_id: 1, moved: true }]);
   });
 
@@ -156,7 +151,7 @@ describe('read-write API contract', () => {
       'x-pkm-admin-secret': 'test-admin-secret',
     });
     expect(ok.status).toBe(200);
-    expect(dbMock.delete).toHaveBeenCalledWith(payload);
+    expect(repoMock.deleteEntries).toHaveBeenCalledWith(payload);
     expect(JSON.parse(ok.body)).toEqual([{ entry_id: 1, deleted: true }]);
   });
 
@@ -168,7 +163,7 @@ describe('read-write API contract', () => {
     const res = await request(port, 'POST', '/db/read/find', JSON.stringify(payload), { 'Content-Type': 'application/json' });
 
     expect(res.status).toBe(200);
-    expect(dbMock.readFind).toHaveBeenCalledWith(payload);
+    expect(repoMock.readFind).toHaveBeenCalledWith(payload);
     expect(JSON.parse(res.body)).toEqual([{ entry_id: 2, title: 'match' }]);
   });
 
@@ -180,7 +175,7 @@ describe('read-write API contract', () => {
     const res = await request(port, 'POST', '/db/read/pull', JSON.stringify(payload), { 'Content-Type': 'application/json' });
 
     expect(res.status).toBe(200);
-    expect(dbMock.readPull).toHaveBeenCalledWith(payload);
+    expect(repoMock.readPull).toHaveBeenCalledWith(payload);
     expect(JSON.parse(res.body)).toEqual([{ entry_id: 4, excerpt: 'detail' }]);
   });
 

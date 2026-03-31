@@ -96,7 +96,7 @@ Cross-cutting changes should be planned explicitly even if the code diff is smal
 - No raw SQL outside:
   - `src/libs/sql-builder.js`
   - `src/server/db/**`
-- Business logic must call DB module methods rather than issuing SQL directly.
+- Business logic must call DB store or repository methods rather than issuing SQL directly.
 
 ### Logging and observability
 - Use the shared backend logger: `src/server/logger`.
@@ -260,7 +260,7 @@ Run:
 - Do not log raw payloads or large objects.
 - Do not send transition telemetry anywhere except Postgres `pipeline_events`.
 - Do not write raw SQL outside approved files.
-- Do not bypass DB module methods from business logic.
+- Do not bypass DB store or repository methods from business logic.
 - Do not commit secrets.
 - Do not reintroduce hidden config through `docker-compose.yml`, ad hoc `.env` growth, or duplicated defaults in code.
 - Do not reintroduce a `js/` workflow tree.

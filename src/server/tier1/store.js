@@ -4,7 +4,7 @@ const sb = require('../../libs/sql-builder.js');
 const { getConfig } = require('../../libs/config.js');
 const { getPool } = require('../db-pool.js');
 const { braintrustSink } = require('../logger/braintrust.js');
-const { getTestModeStateFromDb } = require('../db.js');
+const { getTestModeStateFromDb } = require('../db/runtime-store.js');
 const { TERMINAL_BATCH_STATUSES } = require('./constants.js');
 
 function isMissingRelationError(err) {

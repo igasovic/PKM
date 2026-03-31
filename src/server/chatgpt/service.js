@@ -1,6 +1,7 @@
 'use strict';
 
-const db = require('../db.js');
+const { readWorkingMemory } = require('../db/read-store.js');
+const { insert } = require('../db/write-store.js');
 const { deriveContentHashFromCleanText } = require('../../libs/content-hash.js');
 const contextPackBuilder = require('../../libs/context-pack-builder-core.js');
 const { normalizeTopicLabel, normalizeTopicKey, asText } = require('./topic.js');
@@ -144,7 +145,7 @@ async function pullWorkingMemory(args) {
     });
   }
 
-  const result = await db.readWorkingMemory({ topic_key: topicKey });
+  const result = await readWorkingMemory({ topic_key: topicKey });
   const row = Array.isArray(result && result.rows) && result.rows.length > 0 ? result.rows[0] : null;
   const found = row && Object.prototype.hasOwnProperty.call(row, 'found') ? !!row.found : !!row;
 
@@ -349,11 +350,11 @@ async function wrapCommit(args) {
     'topic_secondary_confidence',
   ];
 
-  const sessionInsertResult = await db.insert({
+  const sessionInsertResult = await insert({
     input: sessionInsertInput,
     returning,
   });
-  const workingMemoryInsertResult = await db.insert({
+  const workingMemoryInsertResult = await insert({
     input: workingMemoryInsertInput,
     returning,
   });

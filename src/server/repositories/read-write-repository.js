@@ -1,15 +1,16 @@
 'use strict';
 
-const db = require('../db.js');
+const writeStore = require('../db/write-store.js');
+const readStore = require('../db/read-store.js');
 
 module.exports = {
-  insert: (...args) => db.insert(...args),
-  update: (...args) => db.update(...args),
-  deleteEntries: (...args) => db.delete(...args),
-  moveEntries: (...args) => db.move(...args),
-  readContinue: (...args) => db.readContinue(...args),
-  readFind: (...args) => db.readFind(...args),
-  readLast: (...args) => db.readLast(...args),
-  readPull: (...args) => db.readPull(...args),
-  readSmoke: (...args) => db.readSmoke(...args),
+  insert: (...args) => writeStore.insert(...args),
+  update: (...args) => writeStore.update(...args),
+  deleteEntries: (...args) => writeStore.deleteEntries(...args),
+  moveEntries: (...args) => writeStore.moveEntries(...args),
+  readContinue: (...args) => readStore.readContinue(...args),
+  readFind: (...args) => readStore.readFind(...args),
+  readLast: (...args) => readStore.readLast(...args),
+  readPull: (...args) => readStore.readPull(...args),
+  readSmoke: (...args) => readStore.readSmoke(...args),
 };

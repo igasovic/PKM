@@ -1,14 +1,14 @@
 'use strict';
 
-const db = require('../db.js');
+const debugStore = require('../db/debug-store.js');
 
 module.exports = {
-  upsertFailurePack: (...args) => db.upsertFailurePack(...args),
-  getFailurePackById: (...args) => db.getFailurePackById(...args),
-  getFailurePackByRunId: (...args) => db.getFailurePackByRunId(...args),
-  listFailurePacks: (...args) => db.listFailurePacks(...args),
-  getPipelineRun: (...args) => db.getPipelineRun(...args),
-  getLastPipelineRun: (...args) => db.getLastPipelineRun(...args),
-  getRecentPipelineRuns: (...args) => db.getRecentPipelineRuns(...args),
-  prunePipelineEvents: (...args) => db.prunePipelineEvents(...args),
+  upsertFailurePack: (...args) => debugStore.upsertFailurePack(...args),
+  getFailurePackById: (...args) => debugStore.getFailurePackById(...args),
+  getFailurePackByRunId: (...args) => debugStore.getFailurePackByRunId(...args),
+  listFailurePacks: (...args) => debugStore.listFailurePacks(...args),
+  getPipelineRun: (...args) => debugStore.getPipelineRun(...args),
+  getLastPipelineRun: (...args) => debugStore.getLastPipelineRun(...args),
+  getRecentPipelineRuns: (...args) => debugStore.getRecentPipelineRuns(...args),
+  prunePipelineEvents: (...args) => debugStore.prunePipelineEvents(...args),
 };

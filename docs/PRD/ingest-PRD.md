@@ -263,7 +263,7 @@ Recovered from:
 - `src/server/ingestion-pipeline.js`
 - `src/server/normalization.js`
 - `src/server/idempotency.js`
-- `src/server/db.js`
+- `src/server/db/write-store.js`
 - `src/server/email-importer.js`
 - `src/n8n/workflows/02-telegram-capture*`
 - `src/n8n/workflows/03-e-mail-capture*`

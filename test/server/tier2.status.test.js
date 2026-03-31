@@ -6,7 +6,7 @@ describe('tier2 status surfaces', () => {
   });
 
   function mockQueuedMarkerDb() {
-    jest.doMock('../../src/server/db.js', () => ({
+    jest.doMock('../../src/server/db/distill-store.js', () => ({
       persistTier2QueuedStatusByIds: async () => ({ rowCount: 0 }),
     }));
   }

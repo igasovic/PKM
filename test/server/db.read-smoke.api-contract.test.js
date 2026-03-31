@@ -29,35 +29,22 @@ describe('db read smoke API contract', () => {
   let port = null;
   let listenDenied = false;
 
-  const dbMock = {
+  const repoMock = {
     insert: jest.fn(),
     update: jest.fn(),
-    delete: jest.fn(),
-    move: jest.fn(),
+    deleteEntries: jest.fn(),
+    moveEntries: jest.fn(),
     readContinue: jest.fn(),
     readFind: jest.fn(),
     readLast: jest.fn(),
     readPull: jest.fn(),
     readSmoke: jest.fn(),
-    getRecentPipelineRuns: jest.fn(),
-    getPipelineRun: jest.fn(),
-    getLastPipelineRun: jest.fn(),
-    getTestMode: jest.fn(),
-    toggleTestModeState: jest.fn(),
-    prunePipelineEvents: jest.fn(),
-    markTier2StaleInProd: jest.fn(),
-    upsertCalendarRequest: jest.fn(),
-    getCalendarRequestById: jest.fn(),
-    getLatestOpenCalendarRequestByChat: jest.fn(),
-    updateCalendarRequestById: jest.fn(),
-    finalizeCalendarRequestById: jest.fn(),
-    insertCalendarObservations: jest.fn(),
   };
 
   beforeEach(() => {
     jest.resetModules();
     listenDenied = false;
-    Object.values(dbMock).forEach((fn) => fn.mockReset());
+    Object.values(repoMock).forEach((fn) => fn.mockReset());
   });
 
   afterEach(async () => {
@@ -69,7 +56,7 @@ describe('db read smoke API contract', () => {
   });
 
   async function startServerWithMocks() {
-    jest.doMock('../../src/server/db.js', () => ({ ...dbMock }));
+    jest.doMock('../../src/server/repositories/read-write-repository.js', () => ({ ...repoMock }));
     const { createServer } = require('../../src/server/index.js');
     server = createServer();
     try {
@@ -92,7 +79,7 @@ describe('db read smoke API contract', () => {
   }
 
   test('POST /db/read/smoke forwards suite/run_id to db.readSmoke', async () => {
-    dbMock.readSmoke.mockResolvedValue({
+    repoMock.readSmoke.mockResolvedValue({
       rows: [
         { entry_id: 11, id: 'e1' },
         { entry_id: 22, id: 'e2' },
@@ -116,14 +103,14 @@ describe('db read smoke API contract', () => {
       { entry_id: 11, id: 'e1' },
       { entry_id: 22, id: 'e2' },
     ]);
-    expect(dbMock.readSmoke).toHaveBeenCalledWith({
+    expect(repoMock.readSmoke).toHaveBeenCalledWith({
       suite: 'T00',
       run_id: 'smoke_20260320_010203',
     });
   });
 
   test('POST /db/read/smoke returns bad_request when suite is missing', async () => {
-    dbMock.readSmoke.mockRejectedValue(new Error('read_smoke requires suite'));
+    repoMock.readSmoke.mockRejectedValue(new Error('read_smoke requires suite'));
 
     await startServerWithMocks();
     if (listenDenied) return;

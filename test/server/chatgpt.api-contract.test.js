@@ -46,17 +46,16 @@ describe('chatgpt action API contract', () => {
     process.env = envBackup;
   });
 
-  async function startServerWithMocks(dbOverrides) {
-    const baseDbMock = {
-      readLast: async () => ({ rows: [] }),
-      readFind: async () => ({ rows: [] }),
-      readContinue: async () => ({ rows: [] }),
-      readPull: async () => ({ rows: [] }),
-      readWorkingMemory: async () => ({ rows: [] }),
-      insert: async () => ({ rows: [], rowCount: 0 }),
+  async function startServerWithMocks(overrides) {
+    const opts = overrides || {};
+    const readStoreMock = {
+      readWorkingMemory: opts.readWorkingMemory || (async () => ({ rows: [] })),
     };
-    const dbMock = { ...baseDbMock, ...(dbOverrides || {}) };
-    jest.doMock('../../src/server/db.js', () => dbMock);
+    const writeStoreMock = {
+      insert: opts.insert || (async () => ({ rows: [], rowCount: 0 })),
+    };
+    jest.doMock('../../src/server/db/read-store.js', () => readStoreMock);
+    jest.doMock('../../src/server/db/write-store.js', () => writeStoreMock);
 
     const { createServer } = require('../../src/server/index.js');
     server = createServer();
@@ -73,11 +72,11 @@ describe('chatgpt action API contract', () => {
     } catch (err) {
       if (err && (err.code === 'EPERM' || err.code === 'EACCES')) {
         listenDenied = true;
-        return { dbMock };
+        return { readStoreMock, writeStoreMock };
       }
       throw err;
     }
-    return { dbMock };
+    return { readStoreMock, writeStoreMock };
   }
 
   test('POST /chatgpt/read is removed', async () => {

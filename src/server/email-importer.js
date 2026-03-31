@@ -2,7 +2,7 @@
 
 const fs = require('fs/promises');
 const path = require('path');
-const db = require('./db.js');
+const { insert } = require('./db/write-store.js');
 const { runEmailIngestionPipeline } = require('./ingestion-pipeline.js');
 const { enqueueTier1Batch } = require('./tier1-enrichment.js');
 const { braintrustSink } = require('./logger/braintrust.js');
@@ -347,7 +347,7 @@ async function importEmailMbox(opts) {
     const pendingRows = insertBuffer.splice(0, insertBuffer.length);
     const result = await pipelineLogger.step(
       'email_import.db_insert_batch',
-      async () => db.insert({
+      async () => insert({
         items: pendingRows,
         continue_on_error: true,
         returning: insertReturning,

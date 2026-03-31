@@ -1,6 +1,6 @@
 'use strict';
 
-const db = require('../db.js');
+const distillStore = require('../db/distill-store.js');
 const { getConfig } = require('../../libs/config.js');
 const { LiteLLMClient } = require('../litellm-client.js');
 const { getLogger } = require('../logger/index.js');
@@ -260,7 +260,7 @@ async function persistValidationFailure(entryId, validation, generated, retryCou
   const prefix = String(stepPrefix || 't2.sync').trim();
   await logger.step(
     `${prefix}.persist.failure_state`,
-    async () => db.persistTier2SyncFailure(entryId, {
+    async () => distillStore.persistTier2SyncFailure(entryId, {
       status: 'failed',
       metadata: toFailureMetadata(
         validation && validation.error_code,
@@ -284,7 +284,7 @@ async function persistGenerationFailure(entryId, err, generated, retryCount, log
   const prefix = String(stepPrefix || 't2.sync').trim();
   await logger.step(
     `${prefix}.persist.failure_state`,
-    async () => db.persistTier2SyncFailure(entryId, {
+    async () => distillStore.persistTier2SyncFailure(entryId, {
       status: 'failed',
       metadata: toFailureMetadata(
         'generation_error',
@@ -308,7 +308,7 @@ async function loadEntryForSync(entryId, logger, stepPrefix) {
   const prefix = String(stepPrefix || 't2.sync').trim();
   const row = await logger.step(
     `${prefix}.load_entry`,
-    async () => db.getTier2SyncEntryByEntryId(entryId),
+    async () => distillStore.getTier2SyncEntryByEntryId(entryId),
     {
       input: { entry_id: entryId },
       output: (out) => ({
@@ -437,7 +437,7 @@ async function distillTier2SingleEntrySync(rawEntryId, rawOptions) {
 
   const persistResult = await logger.step(
     `${stepPrefix}.persist.completed`,
-    async () => db.persistTier2SyncSuccess(entryId, artifact),
+    async () => distillStore.persistTier2SyncSuccess(entryId, artifact),
     {
       input: {
         entry_id: entryId,

@@ -274,7 +274,7 @@ The following operation names are emitted:
 - API integration:
   - `src/server/index.js`
 - DB integration:
-  - `src/server/db.js`
+  - `src/server/db/debug-store.js`
   - `src/libs/sql-builder.js` (pipeline events SQL)
 - LLM integration:
   - `src/server/litellm-client.js`

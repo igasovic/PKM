@@ -1,7 +1,7 @@
 'use strict';
 
-const db = require('../db.js');
+const distillStore = require('../db/distill-store.js');
 
 module.exports = {
-  markDistillStaleInProd: (...args) => db.markTier2StaleInProd(...args),
+  markDistillStaleInProd: (...args) => distillStore.markTier2StaleInProd(...args),
 };

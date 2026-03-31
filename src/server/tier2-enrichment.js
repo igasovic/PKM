@@ -1,6 +1,6 @@
 'use strict';
 
-const db = require('./db.js');
+const distillStore = require('./db/distill-store.js');
 const { getConfig } = require('../libs/config.js');
 const { LiteLLMClient } = require('./litellm-client.js');
 const { braintrustSink } = require('./logger/braintrust.js');
@@ -800,7 +800,7 @@ async function collectOnePendingBatch(args) {
           : null;
         parsed = null;
       } else {
-        const persist = await db.persistTier2SyncSuccess(entryId, artifact);
+        const persist = await distillStore.persistTier2SyncSuccess(entryId, artifact);
         if (!persist || Number(persist.rowCount || 0) < 1) {
           itemStatus = 'error';
           errorCode = 'currentness_mismatch';
@@ -989,9 +989,9 @@ function createTier2BatchRunner(deps) {
   const runPlan = dependencies.runPlan || runTier2ControlPlanePlan;
   const distillOne = dependencies.distillOne || distillTier2SingleEntrySync;
   const markQueued = dependencies.markQueued
-    || (dependencies.distillOne ? (async () => ({ rowCount: 0 })) : db.persistTier2QueuedStatusByIds);
+    || (dependencies.distillOne ? (async () => ({ rowCount: 0 })) : distillStore.persistTier2QueuedStatusByIds);
   const persistFailure = dependencies.persistFailure
-    || (dependencies.distillOne ? (async () => ({ rowCount: 0 })) : db.persistTier2SyncFailure);
+    || (dependencies.distillOne ? (async () => ({ rowCount: 0 })) : distillStore.persistTier2SyncFailure);
   const getLoggerFn = dependencies.getLogger || getLogger;
   const getConfigFn = dependencies.getConfig || getConfig;
   const store = dependencies.store || tier2Store;
@@ -1367,7 +1367,7 @@ function createTier2BatchRunner(deps) {
       .filter(Boolean);
     const detailResult = await logger.step(
       't2.batch.load_selected_details',
-      async () => db.getTier2DetailsByIds(toProcessIds, { schema }),
+      async () => distillStore.getTier2DetailsByIds(toProcessIds, { schema }),
       {
         input: { schema, ids: toProcessIds.length },
         output: (out) => ({ rowCount: out && out.rowCount ? out.rowCount : 0 }),

@@ -1,6 +1,6 @@
 'use strict';
 
-const db = require('../db.js');
+const distillStore = require('../db/distill-store.js');
 const { getConfig } = require('../../libs/config.js');
 const { getLogger } = require('../logger/index.js');
 const { buildTier2SelectionPlan } = require('./control-plane.js');
@@ -99,7 +99,7 @@ function mergeSelectedWithDetails(selected, details) {
 
 function createTier2Planner(deps) {
   const dependencies = deps && typeof deps === 'object' ? deps : {};
-  const dbClient = dependencies.db || db;
+  const dbClient = dependencies.distillStore || dependencies.db || distillStore;
   const getConfigFn = dependencies.getConfig || getConfig;
   const getLoggerFn = dependencies.getLogger || getLogger;
 

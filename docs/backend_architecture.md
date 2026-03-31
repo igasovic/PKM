@@ -26,11 +26,20 @@
 - a new backend caller class is introduced
 - worker/startup composition changes
 
+## Maintenance Workflow
+- update this doc when backend module boundaries or caller priority change
+- update `docs/backend_db_store_map.md` in the same change when DB/store ownership moves
+- update `docs/test_mode_exemptions.md` in the same change when schema-routing behavior changes
+- update `docs/backend_route_registry.json` when route ownership or required tests change, then regenerate `docs/backend_test_surface_matrix.md`
+
 ## Related Docs
 - `docs/service_dependancy_graph.md`
 - `docs/env.md`
 - `docs/api.md`
 - `docs/backend_runtime_env.md`
+- `docs/backend_db_store_map.md`
+- `docs/test_mode_exemptions.md`
+- `docs/backend_test_surface_matrix.md`
 - `docs/database_schema.md`
 - `docs/repo-map.md`
 
@@ -80,12 +89,15 @@ Unsupported architecture:
 - backlog / batch status: `src/server/email-importer.js`, `src/server/batch-status-service.js`, `src/server/batch-worker-runtime.js`
 
 ### 3. Persistence
-- shared DB gateway: `src/server/db.js`
+- bounded DB stores: `src/server/db/**`
 - connection bootstrap: `src/server/db-pool.js`
 - repository facades for route/domain ownership: `src/server/repositories/**`
 - bounded-context stores already exist for classify and distill:
   - `src/server/tier1/store.js`
   - `src/server/tier2/store.js`
+- agent-facing ownership and test-mode routing references:
+  - `docs/backend_db_store_map.md`
+  - `docs/test_mode_exemptions.md`
 
 ### 4. Shared backend support
 - config: `src/libs/config/`
@@ -104,7 +116,7 @@ Unsupported architecture:
   - domain rules in `src/server/tier2/control-plane.js`
   - persistence in `src/server/tier2/store.js`
   - orchestration in `src/server/tier2/service.js` and `src/server/tier2-enrichment.js`
-- route-facing repository facades now reduce direct coupling from HTTP handlers into `db.js`
+- route-facing repository facades now reduce direct coupling from HTTP handlers into concrete DB stores
 - backend runtime env access is now centralized in `src/server/runtime-env.js`
 
 ## Current Structural Hotspots
@@ -113,16 +125,16 @@ Unsupported architecture:
 - much smaller than before, but still owns global composition and startup wiring
 - should keep trending toward composition only, with no route-local business logic added back in
 
-### `src/server/db.js`
-- central SQL boundary is correct, but the module is too broad
-- currently mixes:
-  - generic entry CRUD
-  - read surfaces
-  - test-mode state
-  - calendar business logs
-  - failure-pack persistence
-  - distill support queries
-  - maintenance helpers
+### `src/server/db/**`
+- the SQL boundary now lives in bounded stores instead of one catch-all module
+- current backend-owned store split:
+  - `runtime-store.js` for runtime config and test-mode helpers
+  - `read-store.js` for read surfaces
+  - `write-store.js` for generic write/delete/move and idempotency handling
+  - `distill-store.js` for distill candidate and persistence queries
+  - `calendar-store.js` for calendar request and observation logs
+  - `debug-store.js` for pipeline events and failure-pack persistence
+  - `shared.js` for cross-store parsing and SQL helper primitives
 
 ### Config ownership
 - backend runtime env access is now routed through `src/server/runtime-env.js`
@@ -166,13 +178,13 @@ Rules for getting there:
 ## Review Heuristics
 
 Good backend changes usually:
-- reduce the size or responsibility spread of `index.js` or `db.js`
+- reduce the size or responsibility spread of `index.js` or a single DB store
 - make n8n-facing route ownership clearer
 - move config reads toward one loader
 - turn transitional seams into explicit, named boundaries instead of hidden reuse
 
 Suspicious backend changes usually:
 - add new route-local business logic inside `index.js`
-- add more unrelated SQL helpers to `db.js`
+- add more unrelated SQL helpers to one store instead of creating or extending a bounded store
 - add more direct env reads in feature modules
 - optimize for UI ergonomics at the expense of n8n orchestration clarity

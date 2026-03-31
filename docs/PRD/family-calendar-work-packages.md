@@ -98,14 +98,14 @@ Add the durable business-log layer for Telegram calendar requests and external-e
 1. Add prod-only tables:
    - `pkm.calendar_requests`
    - `pkm.calendar_event_observations`
-2. Add DB module methods in approved DB layers only.
+2. Add DB store methods in approved DB layers only.
 3. Ensure these tables are not routed by active `test_mode`.
 4. Add idempotency handling for Telegram calendar requests.
 
 ### Deliverables
 
 - migrations / init scripts for new tables
-- DB methods for create, update, finalize, and observe flows
+- DB store methods for create, update, finalize, and observe flows
 - tests proving prod-only routing for calendar business logs
 
 ### Acceptance criteria
@@ -117,7 +117,7 @@ Add the durable business-log layer for Telegram calendar requests and external-e
 ### Likely files
 
 - `ops/stack/postgres/init/*` or existing migration path
-- `src/server/db.js`
+- `src/server/db/calendar-store.js`
 - `src/libs/sql-builder.js` if needed
 - tests covering table writes and schema routing
 
@@ -447,7 +447,7 @@ Make the feature debuggable and improvable from day one.
 3. Keep calendar business logs in dedicated tables, separate from transition telemetry.
 4. Keep n8n Code nodes thin; externalize larger JS under `src/n8n/nodes/`.
 5. Do not bypass `docs/api.md`.
-6. Do not bypass DB module methods.
+6. Do not bypass DB store or repository methods.
 7. If a new config surface appears, register it in `docs/config_operations.md`.
 
 ---

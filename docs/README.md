@@ -13,6 +13,8 @@ This file is the entrypoint for agents working in this repo.
 Start with:
 - `docs/repo-map.md`
 - `docs/backend_architecture.md` when changing backend structure or ownership
+- `docs/backend_db_store_map.md` when changing backend persistence ownership
+- `docs/test_mode_exemptions.md` when changing schema-routed or exempt persistence surfaces
 - then the surface docs for the change type you are touching
 - then `docs/changelog.md` only if recent behavior on that surface matters
 
@@ -20,6 +22,8 @@ Start with:
 Start with:
 - `docs/repo-map.md`
 - `docs/backend_architecture.md` when backend structure or caller boundaries are changing
+- `docs/backend_db_store_map.md` when DB ownership or store placement is changing
+- `docs/backend_test_surface_matrix.md` when test planning or route risk is part of the change
 - `docs/service_dependancy_graph.md`
 - `docs/env.md`
 - then the relevant contract and config docs for the touched surfaces
@@ -29,6 +33,8 @@ Start with:
 Start with:
 - `docs/repo-map.md`
 - `docs/backend_architecture.md` when reviewing backend refactors or ownership changes
+- `docs/backend_db_store_map.md` for DB boundary changes
+- `docs/test_mode_exemptions.md` for schema-routing changes
 - the contract docs for the changed surfaces
 - any relevant style guide or workflow guide
 - the owning PRD when the change touches boundaries, config, schema, or public contracts
@@ -39,6 +45,8 @@ Start with:
 - `docs/env.md`
 - `docs/repo-map.md`
 - `docs/backend_architecture.md` for backend implementation topology
+- `docs/backend_db_store_map.md` for store and table ownership
+- `docs/test_mode_exemptions.md` when reviewing schema-routing boundaries
 - `docs/config_operations.md`
 - then the relevant contract docs (`api`, `external_api`, `database_schema`)
 - then `docs/PRD/README.md` for active surface ownership
@@ -53,6 +61,9 @@ Start with:
 | n8n workflows / nodes | `docs/n8n_sync.md`, `docs/n8n_node_style_guide.md`, `docs/api.md`, relevant `docs/api_*.md` | n8n docs plus any touched contract docs |
 | Config / infra / runtime | `docs/config_operations.md`, `docs/env.md`, `docs/service_dependancy_graph.md` | `docs/config_operations.md`, `docs/env.md`, service graph if topology changed |
 | Backend implementation architecture | `docs/backend_architecture.md`, `docs/repo-map.md`, relevant `docs/api*.md` files | `docs/backend_architecture.md` plus any touched contract/config docs |
+| Backend DB ownership / store placement | `docs/backend_db_store_map.md`, `docs/backend_architecture.md`, `docs/database_schema.md` | `docs/backend_db_store_map.md`, related architecture/schema docs |
+| Test-mode routing / exemptions | `docs/PRD/test-mode-prd.md`, `docs/test_mode_exemptions.md`, `docs/database_schema.md` | `docs/test_mode_exemptions.md`, `docs/PRD/test-mode-prd.md`, related API/schema docs |
+| Backend test planning / route coverage | `docs/backend_test_surface_matrix.md`, `docs/backend_route_registry.json`, `docs/n8n_backend_contract_map.md` | `docs/backend_route_registry.json`, generated test matrix, related contract docs |
 | Backend runtime knobs | `docs/backend_runtime_env.md`, `docs/config_operations.md`, `docs/env.md` | `docs/backend_runtime_env.md`, related env/config docs |
 | DB backup / restore workflow | `docs/database_operations.md`, `docs/env.md`, `docs/config_operations.md` | `docs/database_operations.md`, related env/config docs |
 | Repo placement / ownership | `docs/repo-map.md` | `docs/repo-map.md` |
@@ -65,6 +76,9 @@ Start with:
 | `docs/service_dependancy_graph.md` | dependency topology, trust boundaries, service edges | exact runtime mounts, ports, host paths |
 | `docs/env.md` | runtime access paths, ports, mounts, stack root, operator-facing environment notes | high-level dependency topology |
 | `docs/backend_architecture.md` | backend implementation topology, consumer priority, module ownership | public/internal contract schemas, runtime ports, DB schema facts |
+| `docs/backend_db_store_map.md` | backend DB ownership, route/repository/store mapping | table DDL, runtime topology |
+| `docs/test_mode_exemptions.md` | which backend persistence surfaces honor active test mode | API schema details or workflow-only calendar test routing |
+| `docs/backend_test_surface_matrix.md` | generated backend route test-coverage inventory from the registry | whether individual tests are sufficient in depth |
 | `docs/n8n_backend_contract_map.md` | active n8n workflow to backend route ownership | detailed HTTP schemas or runtime topology |
 | `docs/api.md` | internal backend API index and shared conventions | public ChatGPT webhook contracts |
 | `docs/api_control.md`, `docs/api_ingest.md`, `docs/api_calendar.md`, `docs/api_distill.md`, `docs/api_read_write.md` | detailed internal endpoint contracts by family | public webhook contracts |
@@ -94,6 +108,19 @@ Each authoritative doc should make these things obvious near the top:
 - planning agent: first-pass update when a design changes boundaries or service edges
 - architect agent: second-pass review if the change is cross-cutting or high-risk
 - coding agent: final update to match implemented real state before work closes
+
+## Architecture Doc Maintenance
+
+Update architecture docs in the same change set as the code boundary they describe:
+- `docs/backend_architecture.md` when backend module topology, caller priority, workers, or composition rules change
+- `docs/backend_db_store_map.md` when route, repository, service, store, or table ownership changes
+- `docs/test_mode_exemptions.md` when a persistence surface starts honoring active test mode, becomes prod-pinned, or becomes dual-schema
+- `docs/backend_route_registry.json` when route path, auth, owner doc, primary callers, or required tests change
+
+Generated architecture-supporting docs:
+- `docs/backend_test_surface_matrix.md` is generated from `docs/backend_route_registry.json`
+- edit the registry, then regenerate via `scripts/CI/generate_backend_test_surface_matrix.py --write`
+- CI is expected to fail if the generated matrix is stale
 
 ## Current Constraints
 - `docs/requirements.md` and `docs/changelog.md` still contain important historical and behavioral context and must be consulted when recovering old surfaces.

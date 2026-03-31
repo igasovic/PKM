@@ -29,7 +29,7 @@ describe('failure-pack API contract', () => {
   let port = null;
   let envBackup;
   let listenDenied = false;
-  let dbMock;
+  let debugRepoMock;
 
   beforeEach(() => {
     jest.resetModules();
@@ -37,7 +37,7 @@ describe('failure-pack API contract', () => {
     envBackup = { ...process.env };
     process.env.PKM_ADMIN_SECRET = 'test-admin-secret';
 
-    dbMock = {
+    debugRepoMock = {
       upsertFailurePack: jest.fn(async () => ({
         failure_id: '11111111-1111-4111-8111-111111111111',
         run_id: 'run-abc',
@@ -111,10 +111,9 @@ describe('failure-pack API contract', () => {
       getLastPipelineRun: jest.fn(async () => ({ run_id: null, rows: [] })),
       getRecentPipelineRuns: jest.fn(async () => ({ rows: [], limit: 20, before_ts: null, has_error: null })),
       prunePipelineEvents: jest.fn(async () => ({ deleted: 0, keep_days: 30 })),
-      markTier2StaleInProd: jest.fn(async () => ({ updated: 0 })),
     };
 
-    jest.doMock('../../src/server/db.js', () => dbMock);
+    jest.doMock('../../src/server/repositories/debug-repository.js', () => debugRepoMock);
   });
 
   afterEach(async () => {
@@ -176,7 +175,7 @@ describe('failure-pack API contract', () => {
     );
 
     expect(res.status).toBe(200);
-    expect(dbMock.upsertFailurePack).toHaveBeenCalledTimes(1);
+    expect(debugRepoMock.upsertFailurePack).toHaveBeenCalledTimes(1);
     const parsed = JSON.parse(res.body);
     expect(parsed).toEqual({
       failure_id: '11111111-1111-4111-8111-111111111111',
@@ -220,7 +219,7 @@ describe('failure-pack API contract', () => {
     );
 
     expect(res.status).toBe(200);
-    expect(dbMock.listFailurePacks).toHaveBeenCalledWith({
+    expect(debugRepoMock.listFailurePacks).toHaveBeenCalledWith({
       limit: 20,
       before_ts: null,
       workflow_name: 'WF',
@@ -245,8 +244,8 @@ describe('failure-pack API contract', () => {
     );
 
     expect(res.status).toBe(200);
-    expect(dbMock.getFailurePackByRunId).toHaveBeenCalledWith('run-abc');
-    expect(dbMock.getPipelineRun).toHaveBeenCalledWith('run-abc', { limit: 5000 });
+    expect(debugRepoMock.getFailurePackByRunId).toHaveBeenCalledWith('run-abc');
+    expect(debugRepoMock.getPipelineRun).toHaveBeenCalledWith('run-abc', { limit: 5000 });
     const parsed = JSON.parse(res.body);
     expect(parsed.run_id).toBe('run-abc');
     expect(parsed.failure.failure_id).toBe('11111111-1111-4111-8111-111111111111');
