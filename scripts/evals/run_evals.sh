@@ -115,15 +115,37 @@ fi
 run_eval() {
   local target="$1"
   echo "==> Running $target eval"
-  local cmd=(npm run "eval:${target}:live")
-  if [[ ${#common_args[@]} -gt 0 ]]; then
-    cmd+=(--)
-    cmd+=("${common_args[@]}")
+  if command -v npm >/dev/null 2>&1; then
+    local cmd=(npm run "eval:${target}:live")
+    if [[ ${#common_args[@]} -gt 0 ]]; then
+      cmd+=(--)
+      cmd+=("${common_args[@]}")
+    fi
+    (
+      cd "$SERVER_DIR"
+      "${cmd[@]}"
+    )
+    return
   fi
-  (
-    cd "$SERVER_DIR"
+
+  if command -v node >/dev/null 2>&1; then
+    local script_path
+    if [[ "$target" == "router" ]]; then
+      script_path="$ROOT/scripts/evals/run_router_live.js"
+    else
+      script_path="$ROOT/scripts/evals/run_calendar_live.js"
+    fi
+    local cmd=(node "$script_path")
+    if [[ ${#common_args[@]} -gt 0 ]]; then
+      cmd+=("${common_args[@]}")
+    fi
     "${cmd[@]}"
-  )
+    return
+  fi
+
+  echo "ERROR: Neither 'npm' nor 'node' is available in PATH." >&2
+  echo "Install Node.js on the Pi or run evals from an environment that has node/npm." >&2
+  exit 127
 }
 
 if [[ "$run_router" == true ]]; then
