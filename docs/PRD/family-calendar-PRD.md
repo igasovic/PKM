@@ -4,8 +4,8 @@ Status: proposed
 Surface owner: family-calendar feature surface  
 Scope type: canonical surface  
 Last verified: 2026-03-30  
-Related authoritative docs: `docs/api_calendar.md`, `docs/database_schema.md`, `docs/config_operations.md`, `docs/env.md`  
-Related work-package doc: `docs/PRD/family-calendar-work-packages.md`
+Related authoritative docs: `docs/api_calendar.md`, `docs/database_schema.md`, `docs/config_operations.md`, `docs/env.md`, `docs/testing_strategy.md`  
+Related work-package docs: `docs/PRD/family-calendar-work-packages.md`, `docs/PRD/family-calendar-eval-work-packages.md`
 
 ## Purpose
 Define the family-calendar feature surface centered on Telegram creation, Google Calendar writes/reads, and scheduled family reports.
@@ -33,17 +33,17 @@ Define the family-calendar feature surface centered on Telegram creation, Google
 - deciding whether a future calendar behavior belongs in this feature PRD or in a shared ingest/read/config surface
 
 ## Fast path by agent
-- Coding agent: read `Status and scope boundary`, `1. Baseline and current behavior`, `6. Core invariants and boundaries`, `8. Control plane and execution flow`, `13. Data model and schema changes`, and `16. API and operational surfaces`.
-- Planning agent: read `2. Problem statement`, `3. Goals`, `4. Non-goals for v1`, `6. Core invariants and boundaries`, `8. Control plane and execution flow`, and `18. Migration and rollout plan`.
-- Reviewing agent: read `Status and scope boundary`, `6. Core invariants and boundaries`, `9. Event normalization rules`, `14. Validation and state transitions`, `16. API and operational surfaces`, and `19. Success criteria`.
-- Architect agent: read `1.2 Existing system boundaries`, `6. Core invariants and boundaries`, `8.6 Hybrid backend orchestration (implemented shape)`, `13. Data model and schema changes`, `15. Config surface`, and `20. Future improvements and TBD`.
+- Coding agent: read `Status and scope boundary`, `1. Baseline and current behavior`, `6. Core invariants and boundaries`, `8. Control plane and execution flow`, `13. Data model and schema changes`, `16. API and operational surfaces`, and `22. Evaluation strategy (non-gating)`.
+- Planning agent: read `2. Problem statement`, `3. Goals`, `4. Non-goals for v1`, `6. Core invariants and boundaries`, `8. Control plane and execution flow`, `18. Migration and rollout plan`, and `22. Evaluation strategy (non-gating)`.
+- Reviewing agent: read `Status and scope boundary`, `6. Core invariants and boundaries`, `9. Event normalization rules`, `14. Validation and state transitions`, `16. API and operational surfaces`, `19. Success criteria`, and `22. Evaluation strategy (non-gating)`.
+- Architect agent: read `1.2 Existing system boundaries`, `6. Core invariants and boundaries`, `8.6 Hybrid backend orchestration (implemented shape)`, `13. Data model and schema changes`, `15. Config surface`, `20. Future improvements and TBD`, and `22. Evaluation strategy (non-gating)`.
 
 ## Section map
 - Current baseline and motivation: `1. Baseline and current behavior`, `2. Problem statement`, `3. Goals`, `4. Non-goals for v1`
 - Product boundaries: `5. Users, roles, and permissions`, `6. Core invariants and boundaries`, `7. Event classes`
 - Flow design: `8. Control plane and execution flow`, `9. Event normalization rules`, `10. Subject coding and display rules`, `11. Color model`, `12. Query and report formatting rules`
 - Persistent and operational impact: `13. Data model and schema changes`, `14. Validation and state transitions`, `15. Config surface`, `16. API and operational surfaces`, `17. Observability and logging requirements`
-- Delivery planning: `18. Migration and rollout plan`, `19. Success criteria`, `20. Future improvements and TBD`, `21. Work packages`
+- Delivery planning: `18. Migration and rollout plan`, `19. Success criteria`, `20. Future improvements and TBD`, `21. Work packages`, `22. Evaluation strategy (non-gating)`
 
 ## Status and scope boundary
 This PRD owns the family-calendar feature surface and remains proposed work, not a backfilled baseline of currently implemented behavior.
@@ -1026,4 +1026,162 @@ If observation volume grows, add retention and/or deduplication policy for `pkm.
 
 ## 21. Work packages
 
-See companion document: `family-calendar-work-packages.md`
+See companion documents:
+
+- `docs/PRD/family-calendar-work-packages.md`
+- `docs/PRD/family-calendar-eval-work-packages.md`
+
+
+---
+
+## 22. Evaluation strategy (non-gating)
+
+### 22.1 Role and gating boundary
+
+Evaluation is implemented as a diagnostic system, not a deployment gate.
+
+- evals are not blocking
+- evals are not part of CI or regression-test enforcement
+- evals measure routing and normalization quality, detect drift, and guide improvements
+
+Failures do not block deploys, but they should be reviewed before iterative prompt or rule changes continue.
+
+### 22.2 Eval surfaces
+
+Evaluations operate on backend contracts only:
+
+- `POST /telegram/route`
+- `POST /calendar/normalize`
+
+Properties:
+
+- evaluated independently
+- not end-to-end
+- not n8n-level
+- not Google Calendar dependent
+
+### 22.3 Corpus and storage model
+
+Eval fixtures are stored in-repo under:
+
+```text
+evals/
+  router/
+  calendar/
+```
+
+Fixture types:
+
+- router (stateless)
+- router (stateful continuation)
+- calendar normalization
+
+Fixture lifecycle:
+
+- `gold/` is reviewed and trusted
+- `candidates/` is harvested and unreviewed
+
+Rules:
+
+- golden set is versioned
+- changes require explicit updates (no silent drift)
+- candidate fixtures require manual labeling before promotion
+
+### 22.4 Execution model
+
+Only live execution is supported in v1.
+
+- evals run against the real backend API
+- environment requires backend + LiteLLM + Postgres (Pi runtime profile)
+- evals use existing observability and request paths
+
+Offline/local eval mode is not part of v1.
+
+### 22.5 Metrics and advisory targets
+
+Metrics are advisory targets, not enforcement gates.
+
+Router targets:
+
+- accuracy >= 95%
+- `calendar_create` precision >= 98%
+- ambiguous recall >= 93%
+
+Normalize targets:
+
+- field extraction >= 95%
+- clarification accuracy >= 97%
+- deterministic correctness = 100%
+
+Usage:
+
+- compare quality over time
+- guide improvements and prompt/rule tuning
+- do not auto-block deploys
+
+### 22.6 Reporting outputs
+
+Each eval run should emit:
+
+- JSON report with metrics and per-case outcomes
+- Markdown report with summary metrics, confusion matrix, and grouped failures
+
+Failure group highlights:
+
+- false-positive `calendar_create`
+- bad clarification decisions
+- high-confidence errors
+
+### 22.7 Failure-harvesting workflow
+
+Eval corpus should grow from real behavior.
+
+Primary sources:
+
+- `pipeline_events` summaries
+- Debug UI traces (run-based)
+- Braintrust LLM traces
+- calendar business tables (`calendar_requests`, `calendar_event_observations`)
+
+Flow:
+
+1. identify a failure by Debug UI and/or `run_id`
+2. extract input and output into candidate fixture shape
+3. write candidate under `fixtures/candidates/`
+4. manually assign expected outcome
+5. promote reviewed case into `fixtures/gold/`
+
+Rules:
+
+- no auto-labeling
+- human review required
+- prioritize real-world failures over synthetic additions
+
+### 22.8 Separation from test strategy
+
+Evals are not tests:
+
+- not unit tests
+- not integration tests
+- not smoke tests
+
+Tests verify code-path correctness. Evals measure behavioral quality of routing and normalization.
+
+### 22.9 Observability integration
+
+Live eval runs use existing observability:
+
+- unique `run_id` per eval case
+- `pipeline_events` for step trace inspection
+- Debug UI lookup by `run_id`
+- Braintrust spans for LLM behavior
+
+No additional eval-specific persistence layer is introduced in v1.
+
+### 22.10 Non-goals
+
+- no CI/CD gating
+- no automatic rollback
+- no staging-only requirement
+- no offline eval mode
+- no eval-specific database tables

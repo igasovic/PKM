@@ -1,0 +1,687 @@
+[
+  {
+    "case_id": "N-CLEAN-001",
+    "name": "mila dentist default med duration",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Mila dentist tomorrow at 3:00p"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "MED",
+      "duration_minutes": 60,
+      "subject_people_tag": "M"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-002",
+    "name": "home no padding explicit duration",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Mila appointment tomorrow at 3:00p for 90 min at home"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "MED",
+      "duration_minutes": 90,
+      "padded": false,
+      "subject_people_tag": "M"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-003",
+    "name": "louie vet default dog duration",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Louie vet friday at 9:00a"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "DOG",
+      "duration_minutes": 60,
+      "subject_people_tag": "L"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-004",
+    "name": "family birthday collapse",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Mila Iva Louie Igor Danijela birthday tomorrow at 1:00p"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "EVT",
+      "duration_minutes": 180,
+      "subject_people_tag": "FAM",
+      "logical_color": "green"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-005",
+    "name": "igor danijela meeting admin",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Igor Danijela meeting monday at 10:00a for 30 min"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "ADM",
+      "duration_minutes": 30,
+      "subject_people_tag": "Ig,D"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-006",
+    "name": "school meeting kid category",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Iva school meeting tuesday at 14:00 for 45 min"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "KID",
+      "duration_minutes": 45,
+      "subject_people_tag": "Iv"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-007",
+    "name": "trip two hours",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Trip friday at 6:30p for 2h with Igor"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "TRV",
+      "duration_minutes": 120,
+      "subject_people_tag": "Ig"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-008",
+    "name": "home cleaning category",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Danijela home cleaning saturday at 11:00a for 60 min at home"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "HOME",
+      "duration_minutes": 60,
+      "padded": false,
+      "subject_people_tag": "D"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-009",
+    "name": "swim practice kids default duration",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Mila swim practice tomorrow at 4:30p"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "KID",
+      "duration_minutes": 60,
+      "subject_people_tag": "M"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-010",
+    "name": "iso date doctor checkup",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Doctor checkup 2026-04-05 08:15 with Mila"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "MED",
+      "duration_minutes": 60,
+      "subject_people_tag": "M"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-011",
+    "name": "admin paperwork call",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "paperwork review thursday at 1:00p with Igor"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "ADM",
+      "duration_minutes": 30,
+      "subject_people_tag": "Ig"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-012",
+    "name": "family concert explicit people",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Mila Iva Louie Igor Danijela concert saturday at 7:00p"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "EVT",
+      "duration_minutes": 120,
+      "subject_people_tag": "FAM",
+      "logical_color": "green"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-013",
+    "name": "house repair at home",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Danijela house repair sunday at 10:00a at home"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "HOME",
+      "duration_minutes": 60,
+      "padded": false,
+      "subject_people_tag": "D"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-014",
+    "name": "birthday override single person",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Iva birthday party friday at 5:00p"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "EVT",
+      "duration_minutes": 180,
+      "subject_people_tag": "Iv"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-015",
+    "name": "louie walk default dog",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Louie walk tomorrow at 7:00a"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "DOG",
+      "duration_minutes": 60,
+      "subject_people_tag": "L"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-016",
+    "name": "maps google location preserved",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Mila doctor tomorrow at 3:00p https://www.google.com/maps/place/Clinic"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "MED",
+      "duration_minutes": 60,
+      "location_prefix": "https://www.google.com/maps",
+      "subject_people_tag": "M"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-017",
+    "name": "airport trip early",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Igor airport trip monday at 5:00a"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "TRV",
+      "duration_minutes": 120,
+      "subject_people_tag": "Ig"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-018",
+    "name": "school parent meeting with two people",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "school parent meeting wednesday at 18:00 with Iva Danijela"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "KID",
+      "duration_minutes": 60,
+      "subject_people_tag": "Iv,D"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-019",
+    "name": "family event explicit hours",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Mila Iva Louie Igor Danijela family event tomorrow at 12:00p for 3 hours"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "EVT",
+      "duration_minutes": 180,
+      "subject_people_tag": "FAM",
+      "logical_color": "green"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-020",
+    "name": "meeting with iso and duration",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "meeting 2026-04-09 16:45 with Igor for 45 min"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "ADM",
+      "duration_minutes": 45,
+      "subject_people_tag": "Ig"
+    }
+  },
+  {
+    "case_id": "N-CLAR-001",
+    "name": "birthday missing time and people",
+    "bucket": "clarification",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "raw_text": "birthday party saturday"
+    },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": [
+        "start_time",
+        "people"
+      ]
+    }
+  },
+  {
+    "case_id": "N-CLAR-002",
+    "name": "dentist missing time",
+    "bucket": "clarification",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "raw_text": "Mila dentist tomorrow"
+    },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": [
+        "start_time"
+      ]
+    }
+  },
+  {
+    "case_id": "N-CLAR-003",
+    "name": "time only missing title and people",
+    "bucket": "clarification",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "raw_text": "tomorrow at 3pm"
+    },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": [
+        "title",
+        "people"
+      ]
+    }
+  },
+  {
+    "case_id": "N-CLAR-004",
+    "name": "cal prefix insufficient details",
+    "bucket": "clarification",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "raw_text": "cal: family meeting"
+    },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": [
+        "date",
+        "start_time",
+        "people"
+      ]
+    }
+  },
+  {
+    "case_id": "N-CLAR-005",
+    "name": "next week unsupported granularity",
+    "bucket": "clarification",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "raw_text": "kids dentist sometime next week"
+    },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": [
+        "date",
+        "start_time",
+        "people"
+      ]
+    }
+  },
+  {
+    "case_id": "N-CLAR-006",
+    "name": "appointment weekday no time",
+    "bucket": "clarification",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "raw_text": "appointment friday with Mila"
+    },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": [
+        "start_time"
+      ]
+    }
+  },
+  {
+    "case_id": "N-CLAR-007",
+    "name": "party missing time only",
+    "bucket": "clarification",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "raw_text": "Mila Iva party tomorrow"
+    },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": [
+        "start_time"
+      ]
+    }
+  },
+  {
+    "case_id": "N-CLAR-008",
+    "name": "louie walk missing date and time",
+    "bucket": "clarification",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "raw_text": "Louie walk"
+    },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": [
+        "date",
+        "start_time"
+      ]
+    }
+  },
+  {
+    "case_id": "N-CLAR-009",
+    "name": "home cleaning no time",
+    "bucket": "clarification",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "raw_text": "Danijela home cleaning tomorrow"
+    },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": [
+        "start_time"
+      ]
+    }
+  },
+  {
+    "case_id": "N-CLAR-010",
+    "name": "swim practice missing people and time",
+    "bucket": "clarification",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "raw_text": "swim practice saturday"
+    },
+    "expect": {
+      "status": "needs_clarification",
+      "missing_fields_includes": [
+        "start_time",
+        "people"
+      ]
+    }
+  },
+  {
+    "case_id": "N-EDGE-001",
+    "name": "all-day medical rejected",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "all-day Mila doctor appointment tomorrow"
+    },
+    "expect": {
+      "status": "rejected",
+      "reason_code": "all_day_not_supported"
+    }
+  },
+  {
+    "case_id": "N-EDGE-002",
+    "name": "all day family birthday rejected",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "all day family birthday saturday"
+    },
+    "expect": {
+      "status": "rejected",
+      "reason_code": "all_day_not_supported"
+    }
+  },
+  {
+    "case_id": "N-EDGE-003",
+    "name": "all-day school rejected",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "all-day school event friday"
+    },
+    "expect": {
+      "status": "rejected",
+      "reason_code": "all_day_not_supported"
+    }
+  },
+  {
+    "case_id": "N-EDGE-004",
+    "name": "all day travel rejected",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "all day travel monday with Igor"
+    },
+    "expect": {
+      "status": "rejected",
+      "reason_code": "all_day_not_supported"
+    }
+  },
+  {
+    "case_id": "N-EDGE-005",
+    "name": "all-day vet rejected",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "all-day vet visit for Louie tomorrow"
+    },
+    "expect": {
+      "status": "rejected",
+      "reason_code": "all_day_not_supported"
+    }
+  },
+  {
+    "case_id": "N-EDGE-006",
+    "name": "home edge still creates",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "Mila dentist tomorrow at 3pm for 60 min at home"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "MED",
+      "duration_minutes": 60,
+      "padded": false,
+      "subject_people_tag": "M"
+    }
+  },
+  {
+    "case_id": "N-EDGE-007",
+    "name": "apple maps edge location",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "Mila dentist tomorrow at 3pm for 60 min https://maps.apple.com/?q=clinic"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "MED",
+      "location_prefix": "https://maps.apple.com",
+      "subject_people_tag": "M"
+    }
+  },
+  {
+    "case_id": "N-EDGE-008",
+    "name": "family birthday edge color",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "Mila Iva Louie Igor Danijela birthday tomorrow at 1pm"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "subject_people_tag": "FAM",
+      "logical_color": "green",
+      "duration_minutes": 180
+    }
+  },
+  {
+    "case_id": "N-EDGE-009",
+    "name": "late night trip crossing day",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "2026-04-10 23:30 trip with Igor for 2h"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "TRV",
+      "duration_minutes": 120,
+      "subject_people_tag": "Ig"
+    }
+  },
+  {
+    "case_id": "N-EDGE-010",
+    "name": "24h style meeting edge",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "tomorrow 15:00 meeting with Igor"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "ADM",
+      "subject_people_tag": "Ig"
+    }
+  }
+]

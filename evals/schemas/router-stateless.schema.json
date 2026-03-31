@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pkm.local/evals/schemas/router-stateless.schema.json",
+  "title": "Family Calendar Router Stateless Fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case_id", "name", "bucket", "failure_tags", "input", "expect"],
+  "properties": {
+    "case_id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "bucket": { "type": "string", "enum": ["obvious", "ambiguous", "adversarial_edge"] },
+    "failure_tags": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1 }
+      }
+    },
+    "expect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["route"],
+      "properties": {
+        "route": {
+          "type": "string",
+          "enum": ["pkm_capture", "calendar_create", "calendar_query", "ambiguous"]
+        }
+      }
+    }
+  }
+}

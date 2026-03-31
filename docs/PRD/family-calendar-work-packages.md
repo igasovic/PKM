@@ -18,6 +18,7 @@ Last verified: 2026-03-30
 | implementation status | do not assume complete; verify against code before reusing a package unchanged |
 
 For feature boundaries, start with `docs/PRD/family-calendar-prd.md`. Use this file only when the question is about execution order or delivery slices.
+For eval-only execution details, see `docs/PRD/family-calendar-eval-work-packages.md`.
 
 ## Delivery order
 
@@ -31,6 +32,11 @@ Recommended implementation order:
 6. WP6 — `31 Calendar Read`
 7. WP7 — `32 Calendar Report`
 8. WP8 — evals, observability hardening, release checks
+9. WP9 — eval framework and runners (non-gating)
+10. WP10 — golden set initialization (non-gating)
+11. WP11 — failure harvesting tooling (non-gating)
+12. WP12 — eval reporting and analysis (non-gating)
+13. WP13 — observability alignment for evals (non-gating)
 
 ---
 
@@ -437,6 +443,176 @@ Make the feature debuggable and improvable from day one.
 - empty future day skipped
 - external invited event included as-is
 - external unresolved event rendered grey
+
+---
+
+## WP9 — Eval framework and runners (non-gating)
+
+### Goal
+
+Create the live eval execution framework without adding CI gates.
+
+### PRD sections
+
+- §22.1 Role and gating boundary
+- §22.2 Eval surfaces
+- §22.4 Execution model
+- §22.6 Reporting outputs
+
+### Scope
+
+1. Add top-level `evals/` structure and fixture schemas.
+2. Implement runner commands:
+   - `eval:router:live`
+   - `eval:calendar:live`
+3. Emit JSON + markdown report artifacts per run.
+
+### Deliverables
+
+- `scripts/evals/*` runner tooling
+- `evals/schemas/*` fixture schemas
+- command wiring in backend package scripts
+
+### Acceptance criteria
+
+- both runner commands execute against backend APIs
+- report artifacts are produced in `evals/reports/`
+- tooling remains non-gating
+
+---
+
+## WP10 — Golden set initialization (non-gating)
+
+### Goal
+
+Seed a high-signal fixture corpus for route and normalize evals.
+
+### PRD sections
+
+- §22.3 Corpus and storage model
+- §22.5 Metrics and advisory targets
+
+### Scope
+
+1. Router gold fixtures:
+   - 50 stateless cases
+   - minimum distribution:
+     - 20 obvious
+     - 15 ambiguous
+     - 15 adversarial/edge
+2. Router stateful continuation fixture set.
+3. Normalize gold fixtures:
+   - 40 cases
+   - minimum distribution:
+     - 20 clean
+     - 10 clarification
+     - 10 rejection/edge
+4. Add failure tags for grouping/triage.
+
+### Deliverables
+
+- `evals/router/fixtures/gold/stateless.json`
+- `evals/router/fixtures/gold/stateful.json`
+- `evals/calendar/fixtures/gold/normalize.json`
+
+### Acceptance criteria
+
+- fixture counts and bucket minimums are met
+- fixtures are committed in-repo and versioned
+
+---
+
+## WP11 — Failure harvesting tooling (non-gating)
+
+### Goal
+
+Convert a failing run id into candidate fixture output quickly.
+
+### PRD sections
+
+- §22.7 Failure-harvesting workflow
+- §22.9 Observability integration
+
+### Scope
+
+1. Add CLI/script that accepts:
+   - `surface`
+   - `run_id`
+2. Pull trace data from debug surfaces and pipeline-event summaries.
+3. Write candidate fixture JSON under `fixtures/candidates/`.
+4. Keep manual review/promotion as a required step.
+
+### Deliverables
+
+- `scripts/evals/harvest_failure_candidate.js`
+- candidate fixture output path conventions
+
+### Acceptance criteria
+
+- a single run id can produce a candidate fixture
+- candidate clearly marks manual expected-output labeling requirements
+
+---
+
+## WP12 — Eval reporting and analysis (non-gating)
+
+### Goal
+
+Make eval output actionable for iteration.
+
+### PRD sections
+
+- §22.5 Metrics and advisory targets
+- §22.6 Reporting outputs
+
+### Scope
+
+1. Include summary metrics and bucket summaries.
+2. Include router confusion matrix.
+3. Group and highlight:
+   - false-positive `calendar_create`
+   - bad clarification decisions
+   - high-confidence errors
+
+### Deliverables
+
+- JSON report schema (implicit via runner output)
+- Markdown report renderers
+
+### Acceptance criteria
+
+- one command generates readable reports
+- failures can be triaged by group without manual log reconstruction
+
+---
+
+## WP13 — Observability alignment for evals (non-gating)
+
+### Goal
+
+Ensure each eval case is traceable using existing debug and telemetry surfaces.
+
+### PRD sections
+
+- §17 Observability and logging requirements
+- §22.9 Observability integration
+
+### Scope
+
+1. Set unique run id per eval case.
+2. Verify run-trace rows exist for each case (with explicit opt-out switch only).
+3. Document eval-to-debug workflow in `evals/README.md`.
+
+### Deliverables
+
+- run-id naming conventions
+- per-case observability check in runners
+- eval trace workflow documentation
+
+### Acceptance criteria
+
+- failing cases are discoverable by run id in debug endpoints
+- no new persistence surfaces are introduced for eval tracking
 
 ---
 

@@ -1,0 +1,154 @@
+[
+  {
+    "case_id": "R-STATE-001",
+    "name": "continuation answer routes to calendar_create",
+    "bucket": "stateful_continuation",
+    "failure_tags": [
+      "stateful_continuation"
+    ],
+    "setup": {
+      "type": "normalize_open_request",
+      "raw_text": "birthday party saturday",
+      "expect_status": "needs_clarification"
+    },
+    "input": {
+      "text": "for Mila at 3:00p for 2 hours"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-STATE-002",
+    "name": "continuation with actor answer",
+    "bucket": "stateful_continuation",
+    "failure_tags": [
+      "stateful_continuation"
+    ],
+    "setup": {
+      "type": "normalize_open_request",
+      "raw_text": "doctor appointment tomorrow",
+      "expect_status": "needs_clarification"
+    },
+    "input": {
+      "text": "9:30a with Igor"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-STATE-003",
+    "name": "structured pkm prefix bypasses continuation",
+    "bucket": "stateful_continuation",
+    "failure_tags": [
+      "stateful_continuation"
+    ],
+    "setup": {
+      "type": "normalize_open_request",
+      "raw_text": "kids dentist tomorrow",
+      "expect_status": "needs_clarification"
+    },
+    "input": {
+      "text": "pkm: this is a separate note"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-STATE-004",
+    "name": "slash command bypasses continuation",
+    "bucket": "stateful_continuation",
+    "failure_tags": [
+      "stateful_continuation"
+    ],
+    "setup": {
+      "type": "normalize_open_request",
+      "raw_text": "school meeting thursday",
+      "expect_status": "needs_clarification"
+    },
+    "input": {
+      "text": "/today"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-STATE-005",
+    "name": "unstructured short follow-up uses continuation",
+    "bucket": "stateful_continuation",
+    "failure_tags": [
+      "stateful_continuation"
+    ],
+    "setup": {
+      "type": "normalize_open_request",
+      "raw_text": "birthday saturday",
+      "expect_status": "needs_clarification"
+    },
+    "input": {
+      "text": "cal tomorrow"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-STATE-006",
+    "name": "structured cal prefix stays query",
+    "bucket": "stateful_continuation",
+    "failure_tags": [
+      "stateful_continuation"
+    ],
+    "setup": {
+      "type": "normalize_open_request",
+      "raw_text": "party tomorrow",
+      "expect_status": "needs_clarification"
+    },
+    "input": {
+      "text": "cal: what do we have tomorrow?"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-STATE-007",
+    "name": "time-only follow-up uses continuation",
+    "bucket": "stateful_continuation",
+    "failure_tags": [
+      "stateful_continuation"
+    ],
+    "setup": {
+      "type": "normalize_open_request",
+      "raw_text": "Mila swim practice saturday",
+      "expect_status": "needs_clarification"
+    },
+    "input": {
+      "text": "tomorrow 3pm"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-STATE-008",
+    "name": "query-looking follow-up still continuation",
+    "bucket": "stateful_continuation",
+    "failure_tags": [
+      "stateful_continuation"
+    ],
+    "setup": {
+      "type": "normalize_open_request",
+      "raw_text": "Louie vet sunday",
+      "expect_status": "needs_clarification"
+    },
+    "input": {
+      "text": "what do we have tomorrow?"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  }
+]

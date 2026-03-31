@@ -3,7 +3,7 @@
 ## Purpose
 - define the practical test strategy for PKM across local development and Pi post-deploy verification
 - tell operators and coding agents which tests are mandatory, optional, mocked, live, isolated, or cleanup-sensitive
-- keep output-quality evals out of the same bucket as correctness, contract, and deployment-safety tests
+- keep non-gating evals separate from correctness, contract, and deployment-safety tests
 
 ## Authoritative For
 - which tests run locally on a Mac before push
@@ -14,7 +14,7 @@
 ## Not Authoritative For
 - exact endpoint schemas; use `docs/api*.md`
 - smoke workflow implementation detail; use `docs/PRD/smoke-prd.md` and `docs/PRD/smoke-detailed-matrix.md`
-- output-quality evaluation; that belongs to eval-specific docs and tooling
+- detailed eval fixture ownership and scoring logic; use `evals/README.md` and owning PRDs
 
 ## Read When
 - deciding what a coding agent should run before closing a change
@@ -31,7 +31,10 @@
 - `docs/n8n_backend_contract_map.md`
 - `docs/PRD/smoke-prd.md`
 - `docs/PRD/smoke-detailed-matrix.md`
+- `docs/PRD/family-calendar-prd.md`
+- `docs/PRD/family-calendar-eval-work-packages.md`
 - `docs/n8n_sync.md`
+- `evals/README.md`
 
 ## Core Principles
 
@@ -52,6 +55,7 @@
 | Pi backend post-deploy verification | Pi after `scripts/redeploy backend` | deployed backend plus live n8n entrypoints | backend readiness plus workflow-facing smoke confidence | must use smoke/test-mode isolation and cleanup | `./scripts/redeploy backend` then `./scripts/n8n/run_smoke.sh` |
 | Pi n8n/runtime post-deploy verification | Pi after `scripts/redeploy n8n` or runtime/config changes | full live stack: n8n, runners, backend, public ingress, providers where applicable | deployment health, runner packaging, CLI readiness, smoke path | must run the smoke workflow with cleanup enabled | `./scripts/redeploy n8n` then `./scripts/n8n/validate_cutover.sh --with-smoke` |
 | Scheduled live smoke | Pi on schedule | full live stack | regression detection after drift, provider changes, or deploys outside active coding | must restore test mode and clean created test entries | schedule `00 Smoke - Master` and route failures to WF99 cleanup |
+| Family-calendar live eval (non-gating) | Pi or any environment with live backend + DB + LiteLLM | backend calendar routing/normalize APIs and debug surfaces | behavior quality trends (router precision/recall, clarification quality, extraction drift) | must use unique run ids and retain manual review for fixture promotion | `cd src/server && npm run eval:router:live` and `npm run eval:calendar:live` |
 
 ## Local Mac Before Push
 
@@ -99,6 +103,7 @@ Run these when relevant:
 - web/UI touched: `cd src/web/pkm-debug-ui && npm run build`
 - smoke workflow logic touched: review `docs/PRD/smoke-prd.md` and run the normal local gate, then rely on Pi smoke for live verification
 - operator/deploy scripts touched: add or update Jest coverage under `test/server/` for the script path and run `bash scripts/CI/check.sh`
+- family-calendar routing/normalization behavior tuning: run non-gating live evals in a live-backend environment (`cd src/server && npm run eval:router:live` and `npm run eval:calendar:live`)
 
 ## Pi After Deployment
 
@@ -142,7 +147,7 @@ These rules are currently owned by the smoke harness and WF99 cleanup path, not 
 
 ## What This Strategy Does Not Cover
 
-- output-quality evaluation or ranking quality
+- broad cross-surface output-quality programs outside the owning eval surface docs
 - broad manual exploratory QA checklists
 - performance/load testing
 - security-specific test programs

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pkm.local/evals/schemas/router-stateful.schema.json",
+  "title": "Family Calendar Router Stateful Fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case_id", "name", "bucket", "failure_tags", "setup", "input", "expect"],
+  "properties": {
+    "case_id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "bucket": { "type": "string", "const": "stateful_continuation" },
+    "failure_tags": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "setup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "raw_text", "expect_status"],
+      "properties": {
+        "type": { "type": "string", "const": "normalize_open_request" },
+        "raw_text": { "type": "string", "minLength": 1 },
+        "expect_status": { "type": "string", "enum": ["needs_clarification"] }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1 }
+      }
+    },
+    "expect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["route"],
+      "properties": {
+        "route": {
+          "type": "string",
+          "enum": ["pkm_capture", "calendar_create", "calendar_query", "ambiguous"]
+        }
+      }
+    }
+  }
+}

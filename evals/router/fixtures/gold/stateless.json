@@ -1,0 +1,702 @@
+[
+  {
+    "case_id": "R-OBV-001",
+    "name": "pkm prefix override",
+    "bucket": "obvious",
+    "failure_tags": [
+      "prefix_override"
+    ],
+    "input": {
+      "text": "pkm: remember to buy milk"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-OBV-002",
+    "name": "slash command passthrough",
+    "bucket": "obvious",
+    "failure_tags": [
+      "slash_passthrough"
+    ],
+    "input": {
+      "text": "/help"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-OBV-003",
+    "name": "cal prefix create",
+    "bucket": "obvious",
+    "failure_tags": [
+      "prefix_override"
+    ],
+    "input": {
+      "text": "cal: Mila dentist tomorrow at 3:00p"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-004",
+    "name": "cal prefix query",
+    "bucket": "obvious",
+    "failure_tags": [
+      "prefix_override"
+    ],
+    "input": {
+      "text": "cal: what do we have tomorrow?"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-005",
+    "name": "obvious calendar query tomorrow",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "what do we have tomorrow on calendar?"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-006",
+    "name": "weekday list query",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "list events friday"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-007",
+    "name": "calendar question sunday",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "do we have plans sunday?"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-008",
+    "name": "anything planned query",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "anything planned tomorrow?"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-009",
+    "name": "dentist create",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "Mila dentist tomorrow at 3:00p"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-010",
+    "name": "vet create",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "book Louie vet friday at 9:00a"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-011",
+    "name": "appointment create",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "appointment monday at 10:00a for Igor"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-012",
+    "name": "birthday create",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "birthday party saturday at 1:00p for Mila"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-013",
+    "name": "iso-date create",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "add trip on 2026-04-10 at 6:30p"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-014",
+    "name": "create verb create",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "create family event tomorrow at 7:00p"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-015",
+    "name": "remind create",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "remind Mila school pickup tomorrow 4:00p"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-016",
+    "name": "book create",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "book dentist for Mila tomorrow at 2:15p"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-017",
+    "name": "show calendar monday",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "show calendar monday"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-018",
+    "name": "calendar tomorrow query",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "calendar tomorrow?"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-019",
+    "name": "pkm prefix calendar-looking text",
+    "bucket": "obvious",
+    "failure_tags": [
+      "prefix_override"
+    ],
+    "input": {
+      "text": "pkm: calendar tomorrow 3pm"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-OBV-020",
+    "name": "explicit query with events",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "what events do we have on tuesday?"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-AMB-001",
+    "name": "calendar tomorrow with time",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "calendar tomorrow 3pm"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-002",
+    "name": "schedule request with can you",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "can you schedule Mila dentist tomorrow at 3pm?"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-003",
+    "name": "set schedule tomorrow",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "set schedule for tomorrow"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-004",
+    "name": "do we have dentist tomorrow at time",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "do we have dentist tomorrow at 3pm"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-005",
+    "name": "calendar friday meeting with time",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "calendar friday 9am meeting"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-006",
+    "name": "what should I put on calendar with time",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "what should I put on calendar tomorrow at 8am"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-007",
+    "name": "schedule calendar event",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "schedule calendar event tomorrow at 6pm"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-008",
+    "name": "list plans with create signal",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "list plans tomorrow 4pm birthday"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-009",
+    "name": "events tomorrow add vet",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "events tomorrow add vet at 9am"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-010",
+    "name": "book calendar appointment",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "can we book calendar appointment tomorrow 11am"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-011",
+    "name": "show schedule with party time",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "show schedule for saturday 2pm party"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-012",
+    "name": "calendar monday trip time",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "calendar monday 7pm trip"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-013",
+    "name": "anything on calendar with time",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "anything on calendar tomorrow at 5pm for Mila"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-014",
+    "name": "plans friday doctor time",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "plans friday 8am doctor"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-015",
+    "name": "iso datetime meeting with calendar",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "calendar 2026-04-09 14:00 meeting"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-ADV-001",
+    "name": "plain note no routing cues",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "false_positive_calendar_create"
+    ],
+    "input": {
+      "text": "need to call mom tonight"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-ADV-002",
+    "name": "date word only",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "false_positive_calendar_create"
+    ],
+    "input": {
+      "text": "tomorrow maybe"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-ADV-003",
+    "name": "calendar-like plural noun",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "false_positive_calendar_create"
+    ],
+    "input": {
+      "text": "random thought about calendars"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-ADV-004",
+    "name": "calzone false friend",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "false_positive_calendar_create"
+    ],
+    "input": {
+      "text": "calzone for dinner tomorrow"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-ADV-005",
+    "name": "eventful adjective",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "false_positive_calendar_create"
+    ],
+    "input": {
+      "text": "eventful day today"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-ADV-006",
+    "name": "calendar generic statement",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "adversarial_query"
+    ],
+    "input": {
+      "text": "calendar is chaotic lately"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-ADV-007",
+    "name": "what is today",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "adversarial_query"
+    ],
+    "input": {
+      "text": "what is today"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-ADV-008",
+    "name": "meeting without date time",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "false_positive_calendar_create"
+    ],
+    "input": {
+      "text": "I have a meeting agenda draft"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-ADV-009",
+    "name": "meeting with time no date",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "adversarial_create"
+    ],
+    "input": {
+      "text": "meeting at 15:00 maybe"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-ADV-010",
+    "name": "weekday and plan noun",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "false_positive_calendar_create"
+    ],
+    "input": {
+      "text": "friday dinner plan"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-ADV-011",
+    "name": "show me generic",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "false_positive_calendar_create"
+    ],
+    "input": {
+      "text": "show me something cool"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-ADV-012",
+    "name": "slash status command",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "slash_passthrough"
+    ],
+    "input": {
+      "text": "/status"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-ADV-013",
+    "name": "cal prefix without details",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "prefix_override"
+    ],
+    "input": {
+      "text": "cal: just checking"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-ADV-014",
+    "name": "pkm prefix with create words",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "prefix_override"
+    ],
+    "input": {
+      "text": "pkm: add dentist tomorrow 3pm"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-ADV-015",
+    "name": "events stressful statement",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "adversarial_query"
+    ],
+    "input": {
+      "text": "events are stressful"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  }
+]

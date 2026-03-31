@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pkm.local/evals/schemas/calendar-normalize.schema.json",
+  "title": "Family Calendar Normalize Fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case_id", "name", "bucket", "failure_tags", "input", "expect"],
+  "properties": {
+    "case_id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "bucket": { "type": "string", "enum": ["clean", "clarification", "rejection_edge"] },
+    "failure_tags": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_text"],
+      "properties": {
+        "raw_text": { "type": "string", "minLength": 1 },
+        "timezone": { "type": "string", "minLength": 1 },
+        "clarification_turns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "expect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string", "enum": ["ready_to_create", "needs_clarification", "rejected"] },
+        "missing_fields_includes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "reason_code": { "type": "string", "minLength": 1 },
+        "category_code": { "type": "string", "minLength": 1 },
+        "duration_minutes": { "type": "integer", "minimum": 1 },
+        "subject_people_tag": { "type": "string", "minLength": 1 },
+        "logical_color": { "type": "string", "minLength": 1 },
+        "padded": { "type": "boolean" },
+        "location_prefix": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

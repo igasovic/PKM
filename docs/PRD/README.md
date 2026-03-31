@@ -40,6 +40,7 @@ This file is the entrypoint for active PRDs in this repo.
 ## Active Companion Docs
 - `docs/PRD/config-work-packages.md`
 - `docs/PRD/distill-work-packages.md`
+- `docs/PRD/family-calendar-eval-work-packages.md`
 - `docs/PRD/family-calendar-work-packages.md`
 - `docs/PRD/smoke-detailed-matrix.md`
 
