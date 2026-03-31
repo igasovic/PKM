@@ -73,6 +73,7 @@
 - `docs/service_dependancy_graph.md`: dependency topology and trust boundaries
 - `docs/env.md`: runtime access paths, ports, mounts, stack root
 - `docs/backend_architecture.md`: backend implementation topology and consumer hierarchy
+- `docs/testing_strategy.md`: required local and post-deploy test layers
 - `docs/api.md`: internal backend API index and shared conventions
 - `docs/api_*.md`: detailed backend endpoint contracts by domain
 - `docs/backend_runtime_env.md`: backend env vars and runtime knobs

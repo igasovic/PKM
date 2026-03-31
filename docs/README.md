@@ -15,6 +15,7 @@ Start with:
 - `docs/backend_architecture.md` when changing backend structure or ownership
 - `docs/backend_db_store_map.md` when changing backend persistence ownership
 - `docs/test_mode_exemptions.md` when changing schema-routed or exempt persistence surfaces
+- `docs/testing_strategy.md` when changing tests or deciding what to run locally vs post-deploy
 - then the surface docs for the change type you are touching
 - then `docs/changelog.md` only if recent behavior on that surface matters
 
@@ -24,6 +25,7 @@ Start with:
 - `docs/backend_architecture.md` when backend structure or caller boundaries are changing
 - `docs/backend_db_store_map.md` when DB ownership or store placement is changing
 - `docs/backend_test_surface_matrix.md` when test planning or route risk is part of the change
+- `docs/testing_strategy.md` when local versus post-deploy coverage is part of the plan
 - `docs/service_dependancy_graph.md`
 - `docs/env.md`
 - then the relevant contract and config docs for the touched surfaces
@@ -35,6 +37,7 @@ Start with:
 - `docs/backend_architecture.md` when reviewing backend refactors or ownership changes
 - `docs/backend_db_store_map.md` for DB boundary changes
 - `docs/test_mode_exemptions.md` for schema-routing changes
+- `docs/testing_strategy.md` when reviewing missing gates or deploy verification gaps
 - the contract docs for the changed surfaces
 - any relevant style guide or workflow guide
 - the owning PRD when the change touches boundaries, config, schema, or public contracts
@@ -47,6 +50,7 @@ Start with:
 - `docs/backend_architecture.md` for backend implementation topology
 - `docs/backend_db_store_map.md` for store and table ownership
 - `docs/test_mode_exemptions.md` when reviewing schema-routing boundaries
+- `docs/testing_strategy.md` when shaping test and verification layers
 - `docs/config_operations.md`
 - then the relevant contract docs (`api`, `external_api`, `database_schema`)
 - then `docs/PRD/README.md` for active surface ownership
@@ -64,6 +68,7 @@ Start with:
 | Backend DB ownership / store placement | `docs/backend_db_store_map.md`, `docs/backend_architecture.md`, `docs/database_schema.md` | `docs/backend_db_store_map.md`, related architecture/schema docs |
 | Test-mode routing / exemptions | `docs/PRD/test-mode-prd.md`, `docs/test_mode_exemptions.md`, `docs/database_schema.md` | `docs/test_mode_exemptions.md`, `docs/PRD/test-mode-prd.md`, related API/schema docs |
 | Backend test planning / route coverage | `docs/backend_test_surface_matrix.md`, `docs/backend_route_registry.json`, `docs/n8n_backend_contract_map.md` | `docs/backend_route_registry.json`, generated test matrix, related contract docs |
+| Testing strategy / execution | `docs/testing_strategy.md`, `docs/backend_test_surface_matrix.md`, `docs/PRD/smoke-prd.md` | `docs/testing_strategy.md`, related smoke and contract docs |
 | Backend runtime knobs | `docs/backend_runtime_env.md`, `docs/config_operations.md`, `docs/env.md` | `docs/backend_runtime_env.md`, related env/config docs |
 | DB backup / restore workflow | `docs/database_operations.md`, `docs/env.md`, `docs/config_operations.md` | `docs/database_operations.md`, related env/config docs |
 | Repo placement / ownership | `docs/repo-map.md` | `docs/repo-map.md` |
@@ -79,6 +84,7 @@ Start with:
 | `docs/backend_db_store_map.md` | backend DB ownership, route/repository/store mapping | table DDL, runtime topology |
 | `docs/test_mode_exemptions.md` | which backend persistence surfaces honor active test mode | API schema details or workflow-only calendar test routing |
 | `docs/backend_test_surface_matrix.md` | generated backend route test-coverage inventory from the registry | whether individual tests are sufficient in depth |
+| `docs/testing_strategy.md` | local pre-push versus Pi post-deploy test strategy | endpoint schemas or smoke implementation detail |
 | `docs/n8n_backend_contract_map.md` | active n8n workflow to backend route ownership | detailed HTTP schemas or runtime topology |
 | `docs/api.md` | internal backend API index and shared conventions | public ChatGPT webhook contracts |
 | `docs/api_control.md`, `docs/api_ingest.md`, `docs/api_calendar.md`, `docs/api_distill.md`, `docs/api_read_write.md` | detailed internal endpoint contracts by family | public webhook contracts |

@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node index.js",
     "pretest": "node ../../scripts/n8n/build_runtime_package.js",
-    "test": "NODE_PATH=../../src/n8n/package/node_modules${NODE_PATH:+:$NODE_PATH} jest --runInBand --rootDir ../.. test/server"
+    "test": "NODE_PATH=../../src/n8n/package/node_modules${NODE_PATH:+:$NODE_PATH} jest --runInBand --rootDir ../.. test/server",
+    "test:integration": "NODE_PATH=../../src/n8n/package/node_modules${NODE_PATH:+:$NODE_PATH} PKM_RUN_DB_INTEGRATION=1 jest --runInBand --rootDir ../.. test/server/db-stores.integration.test.js"
   },
   "dependencies": {
     "@langchain/core": "^0.3.79",
