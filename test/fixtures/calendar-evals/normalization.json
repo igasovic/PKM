@@ -56,5 +56,60 @@
       "status": "rejected",
       "reason_code": "all_day_not_supported"
     }
+  },
+  {
+    "name": "plain text location padded true",
+    "input": { "raw_text": "Mila dentist tomorrow at 3:00p at Cedar Park Dental" },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "MED",
+      "padded": true
+    }
+  },
+  {
+    "name": "no location padded true by default",
+    "input": { "raw_text": "Danijela admin call tomorrow at 9:00a for 30 min" },
+    "expect": {
+      "status": "ready_to_create",
+      "padded": true,
+      "subject_people_tag": "D",
+      "logical_color": "white"
+    }
+  },
+  {
+    "name": "danijela at home no padding",
+    "input": { "raw_text": "Danijela dina tomorrow at 9:00a at home" },
+    "expect": {
+      "status": "ready_to_create",
+      "padded": false,
+      "subject_people_tag": "D"
+    }
+  },
+  {
+    "name": "multi-person non-family uses first person color",
+    "input": { "raw_text": "Mila Iva swim practice tomorrow at 4:30p" },
+    "expect": {
+      "status": "ready_to_create",
+      "subject_people_tag": "M,Iv",
+      "logical_color": "purple"
+    }
+  },
+  {
+    "name": "school event creates with person",
+    "input": { "raw_text": "Mila class photo tomorrow at 8:30a" },
+    "expect": {
+      "status": "ready_to_create",
+      "subject_people_tag": "M",
+      "logical_color": "purple"
+    }
+  },
+  {
+    "name": "misc event creates with multi-person",
+    "input": { "raw_text": "Igor Danijela neighborhood block party saturday at 4:00p" },
+    "expect": {
+      "status": "ready_to_create",
+      "subject_people_tag": "Ig,D",
+      "logical_color": "blue"
+    }
   }
 ]

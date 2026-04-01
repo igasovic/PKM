@@ -11,7 +11,7 @@
 - allowed dependency directions at a high level
 
 ## Not Authoritative For
-- runtime topology and service edges; use `docs/service_dependancy_graph.md`
+- runtime topology and service edges; use `docs/service_dependency_graph.md`
 - exact runtime paths and mounts; use `docs/env.md`
 - API or schema contracts; use `docs/api.md` and `docs/database_schema.md`
 - backend implementation topology; use `docs/backend_architecture.md`
@@ -61,16 +61,16 @@
 | If you touch... | Also inspect... |
 |---|---|
 | backend endpoints | `docs/api.md`, relevant `docs/api_*.md`, `docs/database_schema.md`, relevant tests |
-| public webhook contracts | `docs/external_api.md`, `docs/api.md`, relevant `docs/api_*.md`, `docs/service_dependancy_graph.md` |
+| public webhook contracts | `docs/external_api.md`, `docs/api.md`, relevant `docs/api_*.md`, `docs/service_dependency_graph.md` |
 | schema or migrations | `docs/database_schema.md`, `docs/api.md`, relevant `docs/api_*.md`, `docs/config_operations.md` |
 | n8n nodes or workflows | `docs/n8n_sync.md`, `docs/n8n_node_style_guide.md`, `docs/api.md`, relevant `docs/api_*.md` |
-| runtime/config/infra | `docs/config_operations.md`, `docs/env.md`, `docs/service_dependancy_graph.md` |
-| topology or trust boundaries | `docs/service_dependancy_graph.md`, `docs/env.md` |
+| runtime/config/infra | `docs/config_operations.md`, `docs/env.md`, `docs/service_dependency_graph.md` |
+| topology or trust boundaries | `docs/service_dependency_graph.md`, `docs/env.md` |
 | repo structure / ownership | this file and `AGENTS.md` |
 
 ## Docs That Matter Most
 - `docs/README.md`: doc entrypoint and read routing
-- `docs/service_dependancy_graph.md`: dependency topology and trust boundaries
+- `docs/service_dependency_graph.md`: dependency topology and trust boundaries
 - `docs/env.md`: runtime access paths, ports, mounts, stack root
 - `docs/backend_architecture.md`: backend implementation topology and consumer hierarchy
 - `docs/testing_strategy.md`: required local and post-deploy test layers

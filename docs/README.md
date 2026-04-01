@@ -26,7 +26,7 @@ Start with:
 - `docs/backend_db_store_map.md` when DB ownership or store placement is changing
 - `docs/backend_test_surface_matrix.md` when test planning or route risk is part of the change
 - `docs/testing_strategy.md` when local versus post-deploy coverage is part of the plan
-- `docs/service_dependancy_graph.md`
+- `docs/service_dependency_graph.md`
 - `docs/env.md`
 - then the relevant contract and config docs for the touched surfaces
 - then the owning PRD in `docs/PRD/README.md` when the change is major or cross-cutting
@@ -44,7 +44,7 @@ Start with:
 
 ### Architect agent
 Start with:
-- `docs/service_dependancy_graph.md`
+- `docs/service_dependency_graph.md`
 - `docs/env.md`
 - `docs/repo-map.md`
 - `docs/backend_architecture.md` for backend implementation topology
@@ -60,10 +60,10 @@ Start with:
 | Change type | Read first | Must update if changed |
 |---|---|---|
 | Internal backend API | `docs/api.md`, relevant `docs/api_*.md`, `docs/database_schema.md`, `docs/repo-map.md` | `docs/api.md`, relevant `docs/api_*.md`, related schema/config docs |
-| Public ChatGPT / webhook | `docs/external_api.md`, `docs/api.md`, relevant `docs/api_*.md`, `docs/service_dependancy_graph.md` | `docs/external_api.md`, related internal contract docs |
+| Public ChatGPT / webhook | `docs/external_api.md`, `docs/api.md`, relevant `docs/api_*.md`, `docs/service_dependency_graph.md` | `docs/external_api.md`, related internal contract docs |
 | Database / schema / migrations | `docs/database_schema.md`, `docs/api.md`, relevant `docs/api_*.md`, `docs/config_operations.md` | `docs/database_schema.md`, related API/config docs |
 | n8n workflows / nodes | `docs/n8n_sync.md`, `docs/n8n_node_style_guide.md`, `docs/api.md`, relevant `docs/api_*.md` | n8n docs plus any touched contract docs |
-| Config / infra / runtime | `docs/config_operations.md`, `docs/env.md`, `docs/service_dependancy_graph.md` | `docs/config_operations.md`, `docs/env.md`, service graph if topology changed |
+| Config / infra / runtime | `docs/config_operations.md`, `docs/env.md`, `docs/service_dependency_graph.md` | `docs/config_operations.md`, `docs/env.md`, service graph if topology changed |
 | Backend implementation architecture | `docs/backend_architecture.md`, `docs/repo-map.md`, relevant `docs/api*.md` files | `docs/backend_architecture.md` plus any touched contract/config docs |
 | Backend DB ownership / store placement | `docs/backend_db_store_map.md`, `docs/backend_architecture.md`, `docs/database_schema.md` | `docs/backend_db_store_map.md`, related architecture/schema docs |
 | Test-mode routing / exemptions | `docs/PRD/test-mode-prd.md`, `docs/test_mode_exemptions.md`, `docs/database_schema.md` | `docs/test_mode_exemptions.md`, `docs/PRD/test-mode-prd.md`, related API/schema docs |
@@ -78,7 +78,7 @@ Start with:
 
 | Doc | Authoritative for | Not authoritative for |
 |---|---|---|
-| `docs/service_dependancy_graph.md` | dependency topology, trust boundaries, service edges | exact runtime mounts, ports, host paths |
+| `docs/service_dependency_graph.md` | dependency topology, trust boundaries, service edges | exact runtime mounts, ports, host paths |
 | `docs/env.md` | runtime access paths, ports, mounts, stack root, operator-facing environment notes | high-level dependency topology |
 | `docs/backend_architecture.md` | backend implementation topology, consumer priority, module ownership | public/internal contract schemas, runtime ports, DB schema facts |
 | `docs/backend_db_store_map.md` | backend DB ownership, route/repository/store mapping | table DDL, runtime topology |
@@ -110,7 +110,7 @@ Each authoritative doc should make these things obvious near the top:
 - Related docs
 
 ## Dependency Graph Update Workflow
-`docs/service_dependancy_graph.md` is authoritative and should be updated in passes:
+`docs/service_dependency_graph.md` is authoritative and should be updated in passes:
 - planning agent: first-pass update when a design changes boundaries or service edges
 - architect agent: second-pass review if the change is cross-cutting or high-risk
 - coding agent: final update to match implemented real state before work closes

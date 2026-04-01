@@ -4,7 +4,7 @@ Status: active
 Surface owner: public ChatGPT -> n8n webhook boundary  
 Scope type: canonical surface  
 Last verified: 2026-03-30  
-Related authoritative docs: `docs/external_api.md`, `docs/api_control.md`, `docs/service_dependancy_graph.md`, `chatgpt/action_schema.yaml`  
+Related authoritative docs: `docs/external_api.md`, `docs/api_control.md`, `docs/service_dependency_graph.md`, `chatgpt/action_schema.yaml`  
 Related work-package doc: `docs/PRD/archive/MCP-transition-work-packages-v2.md`
 
 ## Purpose

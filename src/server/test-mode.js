@@ -7,10 +7,11 @@ const {
 } = require('./db/runtime-store.js');
 
 class TestModeService {
-  constructor({ cacheMs = 10000 } = {}) {
+  constructor({ cacheMs = 2000 } = {}) {
     this.cacheMs = cacheMs;
     this.cachedValue = null;
     this.cachedAt = 0;
+    this.testModeOnSince = null;
   }
 
   async getState() {
@@ -21,6 +22,11 @@ class TestModeService {
     const value = await getTestModeStateFromDb();
     this.cachedValue = value;
     this.cachedAt = now;
+    if (value && !this.testModeOnSince) {
+      this.testModeOnSince = new Date().toISOString();
+    } else if (!value) {
+      this.testModeOnSince = null;
+    }
     return value;
   }
 
@@ -28,6 +34,7 @@ class TestModeService {
     await setTestModeStateInDb(!!nextState);
     this.cachedValue = !!nextState;
     this.cachedAt = Date.now();
+    this.testModeOnSince = nextState ? new Date().toISOString() : null;
     return this.cachedValue;
   }
 
@@ -35,7 +42,15 @@ class TestModeService {
     const next = await toggleTestModeStateInDb();
     this.cachedValue = next;
     this.cachedAt = Date.now();
+    this.testModeOnSince = next ? new Date().toISOString() : null;
     return next;
+  }
+
+  getWatchdogInfo() {
+    return {
+      is_test_mode: this.cachedValue,
+      test_mode_on_since: this.testModeOnSince,
+    };
   }
 
 }

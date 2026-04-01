@@ -367,7 +367,8 @@ async function handleControlRoutes(ctx) {
 
   if (method === 'GET' && url.pathname === '/db/test-mode') {
     const state = await testModeService.getState();
-    json(res, 200, [{ is_test_mode: state }]);
+    const info = testModeService.getWatchdogInfo();
+    json(res, 200, [{ is_test_mode: state, test_mode_on_since: info.test_mode_on_since || null }]);
     return true;
   }
 

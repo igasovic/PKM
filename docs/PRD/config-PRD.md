@@ -4,7 +4,7 @@ Status: active
 Surface owner: operator config reconciliation workflow  
 Scope type: canonical surface  
 Last verified: 2026-03-30  
-Related authoritative docs: `docs/config_operations.md`, `docs/env.md`, `docs/service_dependancy_graph.md`  
+Related authoritative docs: `docs/config_operations.md`, `docs/env.md`, `docs/service_dependency_graph.md`  
 Related work-package doc: `docs/PRD/config-work-packages.md`
 
 ## Purpose

@@ -12,7 +12,7 @@
 ## Not Authoritative For
 - detailed HTTP schemas; use `docs/api.md` and the relevant `docs/api_*.md`
 - public ChatGPT webhook contracts; use `docs/external_api.md`
-- runtime topology; use `docs/service_dependancy_graph.md`
+- runtime topology; use `docs/service_dependency_graph.md`
 
 ## Read When
 - adding or refactoring n8n workflows that call `pkm-server`

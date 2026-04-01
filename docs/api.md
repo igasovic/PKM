@@ -12,7 +12,7 @@
 ## Not Authoritative For
 - public ChatGPT / Custom GPT webhook contracts; use `docs/external_api.md`
 - detailed per-endpoint request/response schemas; use the linked domain docs below
-- runtime topology and service exposure; use `docs/service_dependancy_graph.md`
+- runtime topology and service exposure; use `docs/service_dependency_graph.md`
 - backend env/config details; use `docs/backend_runtime_env.md`, `docs/env.md`, and `docs/config_operations.md`
 
 ## Read When
@@ -35,7 +35,7 @@
 - `docs/backend_runtime_env.md`
 - `docs/external_api.md`
 - `docs/database_schema.md`
-- `docs/service_dependancy_graph.md`
+- `docs/service_dependency_graph.md`
 
 Base URL: `http://<host>:<port>`
 
@@ -90,6 +90,6 @@ The machine-readable route ownership registry lives in `docs/backend_route_regis
 | If you change... | Update at minimum |
 |---|---|
 | request or response shape for one endpoint family | `docs/api.md` and the relevant `docs/api_*.md` file |
-| admin protection or caller boundary | relevant `docs/api_*.md`, `docs/external_api.md` if public boundary changes, and `docs/service_dependancy_graph.md` when topology/trust edges move |
+| admin protection or caller boundary | relevant `docs/api_*.md`, `docs/external_api.md` if public boundary changes, and `docs/service_dependency_graph.md` when topology/trust edges move |
 | DB-backed lifecycle assumptions | relevant `docs/api_*.md` and `docs/database_schema.md` |
 | backend env vars or runtime knobs | `docs/backend_runtime_env.md`, plus `docs/env.md` / `docs/config_operations.md` if ownership or apply flow changes |

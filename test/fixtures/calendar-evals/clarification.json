@@ -11,7 +11,8 @@
     },
     "expect": {
       "status": "ready_to_create",
-      "subject_people_tag": "M"
+      "subject_people_tag": "M",
+      "logical_color": "purple"
     }
   },
   {

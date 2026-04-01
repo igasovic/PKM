@@ -39,7 +39,7 @@ async function handleReadWriteRoutes(ctx) {
       meta.input = body;
       let result;
 
-      if (url.pathname === '/db/delete' || url.pathname === '/db/move') {
+      if (url.pathname === '/db/delete' || url.pathname === '/db/move' || url.pathname === '/db/test-mode/toggle') {
         requireAdminSecret(req);
       }
 

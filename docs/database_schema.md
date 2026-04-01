@@ -1,4 +1,4 @@
-# PKM Database Schema v2.6 (Observed + Required Runtime Tables)
+# PKM Database Schema v2.7 (Observed + Required Runtime Tables)
 
 ## Purpose
 - define the authoritative database schemas, tables, grants, and lifecycle notes used by PKM
@@ -10,7 +10,7 @@
 - DB facts that affect API behavior and safe review
 
 ## Not Authoritative For
-- runtime topology and service edges; use `docs/service_dependancy_graph.md`
+- runtime topology and service edges; use `docs/service_dependency_graph.md`
 - config apply workflow; use `docs/config_operations.md`
 
 ## Read When
@@ -21,7 +21,7 @@
 - any table, index, grant, mirror rule, or prod/test lifecycle expectation changes
 - DB-backed operational behavior changes in a way that affects API contracts
 
-**Observed on:** 2026-02-17 (from `psql` introspection against database `pkm`).
+**Observed on:** 2026-03-31 (from `psql` introspection against database `pkm`).
 
 This file is meant to be a **human + agent** reference:
 - what exists (schemas/tables)
@@ -305,9 +305,9 @@ Primary storage for captured items (email, telegram, etc.) and Tier-1 enrichment
 - `entries_quality_good_created_at_idx` partial on `(created_at DESC)` WHERE `boilerplate_heavy IS NOT TRUE AND low_signal IS NOT TRUE`
 - `pkm_entries_idem_primary_uidx` UNIQUE partial on `(idempotency_policy_key, idempotency_key_primary)`
 - `pkm_entries_idem_secondary_uidx` UNIQUE partial on `(idempotency_policy_key, idempotency_key_secondary)`
-- (recommended) `entries_distill_status_created_at_idx` on `(distill_status, created_at DESC)`
-- (recommended) `entries_distill_created_from_hash_idx` on `(distill_created_from_hash)`
-- (recommended) partial candidate index for Tier‑2 discovery on newsletter rows with usable clean text
+- `entries_distill_status_created_at_idx` on `(distill_status, created_at DESC)`
+- `entries_distill_created_from_hash_idx` on `(distill_created_from_hash)`
+- `entries_distill_candidate_newsletter_idx` partial on `(created_at DESC, id)` WHERE `content_type = 'newsletter' AND clean_text IS NOT NULL AND btrim(clean_text) <> ''` (Tier-2 discovery)
 
 **Indexes (test)**
 Same intent as prod, but names differ slightly:

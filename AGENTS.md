@@ -5,7 +5,7 @@ Read `docs/README.md` first.
 
 Then read the minimum required docs for the surface you are changing:
 - Always: `docs/README.md`, `docs/repo-map.md`
-- Runtime topology / service interactions: `docs/service_dependancy_graph.md`, `docs/env.md`
+- Runtime topology / service interactions: `docs/service_dependency_graph.md`, `docs/env.md`
 - Internal backend API contracts: `docs/api.md` and the relevant `docs/api_*.md` domain doc
 - Public ChatGPT / webhook contracts: `docs/external_api.md`
 - Database schema / data lifecycle: `docs/database_schema.md`
@@ -20,7 +20,7 @@ Then read the minimum required docs for the surface you are changing:
 If a task is cross-cutting, read all relevant surface docs before changing code or contracts.
 
 ### Authoritative graph workflow
-`docs/service_dependancy_graph.md` is authoritative for dependency topology and trust boundaries.
+`docs/service_dependency_graph.md` is authoritative for dependency topology and trust boundaries.
 - Planning agents should do the first-pass graph update when a design changes topology or boundaries.
 - Architect agents should review and tighten the graph when the change is cross-cutting or boundary-sensitive.
 - Coding agents should finalize the graph to match implemented real state before work is considered done.
@@ -113,7 +113,7 @@ Cross-cutting changes should be planned explicitly even if the code diff is smal
 - `src/n8n/package/` is generated output only; do not treat it as the authoring surface.
 
 ### Runtime and environment boundary
-- `docs/service_dependancy_graph.md` is authoritative for service dependency topology and trust boundaries.
+- `docs/service_dependency_graph.md` is authoritative for service dependency topology and trust boundaries.
 - `docs/env.md` is authoritative for runtime access paths, ports, mounts, container names, and runtime stack root.
 - Do not assume paths, mounts, ports, or service edges not documented in those docs.
 
@@ -216,7 +216,7 @@ Architecture reviews should include:
 - contracts and source-of-truth docs impacted
 - topology, config, and migration implications
 - what remains local vs what becomes systemic
-- whether `docs/service_dependancy_graph.md`, `docs/env.md`, `docs/api.md`, `docs/external_api.md`, or `docs/config_operations.md` must change together
+- whether `docs/service_dependency_graph.md`, `docs/env.md`, `docs/api.md`, `docs/external_api.md`, or `docs/config_operations.md` must change together
 
 ### Config-change handoff block (mandatory)
 When your change affects config, your final response must include:
@@ -250,7 +250,14 @@ Run:
 - If boundaries or contracts change, update the relevant docs in the same change set.
 - Prefer refactoring to avoid duplication rather than copying code.
 - If config ownership changes, update both the PRD and `docs/config_operations.md`.
-- If topology or service dependencies change, update `docs/service_dependancy_graph.md` and any affected runtime access notes in `docs/env.md`.
+- If topology or service dependencies change, update `docs/service_dependency_graph.md` and any affected runtime access notes in `docs/env.md`.
+- If calendar routing, normalization, or extraction logic changes, run the non-gating family-calendar evals after redeploying to Pi:
+  ```bash
+  cd /home/igasovic/repos/n8n-workflows/src/server
+  npm run eval:router:live -- --backend-url http://pkm-server:8080 --admin-secret "$PKM_ADMIN_SECRET"
+  npm run eval:calendar:live -- --backend-url http://pkm-server:8080 --admin-secret "$PKM_ADMIN_SECRET"
+  ```
+  Review the generated report under `evals/reports/` before iterating on prompt or rule changes.
 
 ---
 

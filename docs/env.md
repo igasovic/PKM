@@ -2,7 +2,7 @@
 
 **Purpose:** quick human review + enough context for agents to safely operate / extend the stack (what runs where, how to connect, what can break, and what not to touch).
 **Authoritative for:** runtime access paths, published ports, mounts, stack root, observed host/container operational notes.  
-**Not authoritative for:** high-level dependency topology and trust edges; use `docs/service_dependancy_graph.md`.  
+**Not authoritative for:** high-level dependency topology and trust edges; use `docs/service_dependency_graph.md`.  
 **Read when:** runtime debugging, topology verification, operator workflows, host/container assumptions.  
 **Update when:** ports, mounts, stack root, access paths, or operator-facing runtime behavior changes.
 
@@ -164,7 +164,7 @@ ssh pi-remote
 
 ### Service dependency graph (overview)
 
-> This is only a compact overview. The authoritative topology and trust-boundary graph lives in `docs/service_dependancy_graph.md`.
+> This is only a compact overview. The authoritative topology and trust-boundary graph lives in `docs/service_dependency_graph.md`.
 
 ```mermaid
 flowchart LR

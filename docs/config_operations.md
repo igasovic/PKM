@@ -11,7 +11,7 @@
 - classification of repo-authored vs host-local config state
 
 ## Not Authoritative For
-- service dependency topology; use `docs/service_dependancy_graph.md`
+- service dependency topology; use `docs/service_dependency_graph.md`
 - business behavior requirements; use the relevant contract docs
 
 ## Read When
@@ -28,7 +28,7 @@
 | If you are changing... | Read / use |
 |---|---|
 | repo-authored non-secret config | this doc + `checkcfg` / `updatecfg` flow |
-| runtime topology or access paths | `docs/service_dependancy_graph.md`, `docs/env.md` |
+| runtime topology or access paths | `docs/service_dependency_graph.md`, `docs/env.md` |
 | business logic defaults | this doc plus the relevant contract or config-loader docs |
 
 ## Reporting Examples

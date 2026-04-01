@@ -191,7 +191,7 @@ describe('control and debug API contract', () => {
     });
 
     expect(testMode.status).toBe(200);
-    expect(JSON.parse(testMode.body)).toEqual([{ is_test_mode: false }]);
+    expect(JSON.parse(testMode.body)).toEqual([{ is_test_mode: false, test_mode_on_since: null }]);
     expect(echo.status).toBe(200);
     expect(JSON.parse(echo.body)).toEqual({ ok: true, data: { ok: true, run_id: 'run-echo' } });
     expect(echo.headers['x-pkm-run-id']).toBe('run-echo');

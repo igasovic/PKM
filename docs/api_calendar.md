@@ -22,7 +22,7 @@
 ## Related Docs
 - `docs/api.md`
 - `docs/database_schema.md`
-- `docs/service_dependancy_graph.md`
+- `docs/service_dependency_graph.md`
 
 ## Endpoint Map
 

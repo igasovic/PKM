@@ -33,7 +33,7 @@
 - update `docs/backend_route_registry.json` when route ownership or required tests change, then regenerate `docs/backend_test_surface_matrix.md`
 
 ## Related Docs
-- `docs/service_dependancy_graph.md`
+- `docs/service_dependency_graph.md`
 - `docs/env.md`
 - `docs/api.md`
 - `docs/backend_runtime_env.md`

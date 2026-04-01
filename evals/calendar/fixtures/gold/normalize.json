@@ -13,7 +13,8 @@
       "status": "ready_to_create",
       "category_code": "MED",
       "duration_minutes": 60,
-      "subject_people_tag": "M"
+      "subject_people_tag": "M",
+      "logical_color": "purple"
     }
   },
   {
@@ -31,7 +32,8 @@
       "category_code": "MED",
       "duration_minutes": 90,
       "padded": false,
-      "subject_people_tag": "M"
+      "subject_people_tag": "M",
+      "logical_color": "purple"
     }
   },
   {
@@ -48,7 +50,8 @@
       "status": "ready_to_create",
       "category_code": "DOG",
       "duration_minutes": 60,
-      "subject_people_tag": "L"
+      "subject_people_tag": "L",
+      "logical_color": "orange"
     }
   },
   {
@@ -83,7 +86,8 @@
       "status": "ready_to_create",
       "category_code": "ADM",
       "duration_minutes": 30,
-      "subject_people_tag": "Ig,D"
+      "subject_people_tag": "Ig,D",
+      "logical_color": "blue"
     }
   },
   {
@@ -100,7 +104,8 @@
       "status": "ready_to_create",
       "category_code": "KID",
       "duration_minutes": 45,
-      "subject_people_tag": "Iv"
+      "subject_people_tag": "Iv",
+      "logical_color": "yellow"
     }
   },
   {
@@ -117,7 +122,8 @@
       "status": "ready_to_create",
       "category_code": "TRV",
       "duration_minutes": 120,
-      "subject_people_tag": "Ig"
+      "subject_people_tag": "Ig",
+      "logical_color": "blue"
     }
   },
   {
@@ -135,7 +141,8 @@
       "category_code": "HOME",
       "duration_minutes": 60,
       "padded": false,
-      "subject_people_tag": "D"
+      "subject_people_tag": "D",
+      "logical_color": "white"
     }
   },
   {
@@ -152,7 +159,8 @@
       "status": "ready_to_create",
       "category_code": "KID",
       "duration_minutes": 60,
-      "subject_people_tag": "M"
+      "subject_people_tag": "M",
+      "logical_color": "purple"
     }
   },
   {
@@ -169,7 +177,8 @@
       "status": "ready_to_create",
       "category_code": "MED",
       "duration_minutes": 60,
-      "subject_people_tag": "M"
+      "subject_people_tag": "M",
+      "logical_color": "purple"
     }
   },
   {
@@ -186,7 +195,8 @@
       "status": "ready_to_create",
       "category_code": "ADM",
       "duration_minutes": 30,
-      "subject_people_tag": "Ig"
+      "subject_people_tag": "Ig",
+      "logical_color": "blue"
     }
   },
   {
@@ -222,7 +232,8 @@
       "category_code": "HOME",
       "duration_minutes": 60,
       "padded": false,
-      "subject_people_tag": "D"
+      "subject_people_tag": "D",
+      "logical_color": "white"
     }
   },
   {
@@ -239,7 +250,8 @@
       "status": "ready_to_create",
       "category_code": "EVT",
       "duration_minutes": 180,
-      "subject_people_tag": "Iv"
+      "subject_people_tag": "Iv",
+      "logical_color": "yellow"
     }
   },
   {
@@ -256,7 +268,8 @@
       "status": "ready_to_create",
       "category_code": "DOG",
       "duration_minutes": 60,
-      "subject_people_tag": "L"
+      "subject_people_tag": "L",
+      "logical_color": "orange"
     }
   },
   {
@@ -274,7 +287,8 @@
       "category_code": "MED",
       "duration_minutes": 60,
       "location_prefix": "https://www.google.com/maps",
-      "subject_people_tag": "M"
+      "subject_people_tag": "M",
+      "logical_color": "purple"
     }
   },
   {
@@ -291,7 +305,8 @@
       "status": "ready_to_create",
       "category_code": "TRV",
       "duration_minutes": 120,
-      "subject_people_tag": "Ig"
+      "subject_people_tag": "Ig",
+      "logical_color": "blue"
     }
   },
   {
@@ -308,7 +323,8 @@
       "status": "ready_to_create",
       "category_code": "KID",
       "duration_minutes": 60,
-      "subject_people_tag": "Iv,D"
+      "subject_people_tag": "Iv,D",
+      "logical_color": "yellow"
     }
   },
   {
@@ -343,7 +359,8 @@
       "status": "ready_to_create",
       "category_code": "ADM",
       "duration_minutes": 45,
-      "subject_people_tag": "Ig"
+      "subject_people_tag": "Ig",
+      "logical_color": "blue"
     }
   },
   {
@@ -614,7 +631,8 @@
       "category_code": "MED",
       "duration_minutes": 60,
       "padded": false,
-      "subject_people_tag": "M"
+      "subject_people_tag": "M",
+      "logical_color": "purple"
     }
   },
   {
@@ -631,7 +649,8 @@
       "status": "ready_to_create",
       "category_code": "MED",
       "location_prefix": "https://maps.apple.com",
-      "subject_people_tag": "M"
+      "subject_people_tag": "M",
+      "logical_color": "purple"
     }
   },
   {
@@ -665,7 +684,8 @@
       "status": "ready_to_create",
       "category_code": "TRV",
       "duration_minutes": 120,
-      "subject_people_tag": "Ig"
+      "subject_people_tag": "Ig",
+      "logical_color": "blue"
     }
   },
   {
@@ -681,7 +701,154 @@
     "expect": {
       "status": "ready_to_create",
       "category_code": "ADM",
-      "subject_people_tag": "Ig"
+      "subject_people_tag": "Ig",
+      "logical_color": "blue"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-021",
+    "name": "plain text location preserved",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Mila dentist tomorrow at 3:00p at Cedar Park Dental"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "MED",
+      "duration_minutes": 60,
+      "padded": true,
+      "subject_people_tag": "M",
+      "logical_color": "purple"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-022",
+    "name": "padded true default no location",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Danijela admin call tomorrow at 9:00a for 30 min"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "ADM",
+      "duration_minutes": 30,
+      "padded": true,
+      "subject_people_tag": "D",
+      "logical_color": "white"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-023",
+    "name": "danijela at home no padding",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Danijela dina tomorrow at 9:00a at home"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "padded": false,
+      "subject_people_tag": "D",
+      "logical_color": "white"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-024",
+    "name": "louie grooming padded true",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Louie grooming friday at 10:00a at Pet Smart"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "DOG",
+      "duration_minutes": 60,
+      "padded": true,
+      "subject_people_tag": "L",
+      "logical_color": "orange"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-025",
+    "name": "multi-person non-family first person color",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Mila Iva swim practice tomorrow at 4:30p"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "KID",
+      "duration_minutes": 60,
+      "subject_people_tag": "M,Iv",
+      "logical_color": "purple"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-026",
+    "name": "school class photo SCH category",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Mila class photo tomorrow at 8:30a"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "SCH",
+      "duration_minutes": 60,
+      "subject_people_tag": "M",
+      "logical_color": "purple"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-027",
+    "name": "school egg hunt day SCH category",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Iva school egg hunt day friday at 3:00p"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "SCH",
+      "duration_minutes": 60,
+      "subject_people_tag": "Iv",
+      "logical_color": "yellow"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-028",
+    "name": "neighborhood block party OTH category",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Igor Danijela neighborhood block party saturday at 4:00p"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "OTH",
+      "duration_minutes": 60,
+      "subject_people_tag": "Ig,D",
+      "logical_color": "blue"
     }
   }
 ]

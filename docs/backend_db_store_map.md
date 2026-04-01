@@ -13,7 +13,7 @@
 ## Not Authoritative For
 - endpoint schemas; use `docs/api.md` and the relevant `docs/api_*.md`
 - table definitions; use `docs/database_schema.md`
-- runtime topology; use `docs/service_dependancy_graph.md`
+- runtime topology; use `docs/service_dependency_graph.md`
 
 ## Read When
 - splitting or extending `src/server/db/**`

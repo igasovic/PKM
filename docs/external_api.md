@@ -10,7 +10,7 @@
 
 ## Not Authoritative For
 - internal backend endpoint contracts; use `docs/api.md` and the relevant `docs/api_*.md` file
-- runtime topology and service exposure; use `docs/service_dependancy_graph.md`
+- runtime topology and service exposure; use `docs/service_dependency_graph.md`
 
 ## Read When
 - changing ChatGPT / Custom GPT action behavior

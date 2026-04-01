@@ -31,6 +31,10 @@
 - `docs/database_schema.md`
 - `docs/PRD/smoke-prd.md`
 
+## Complexity note
+
+Test mode originally covered only the `entries` table. As the system grew, multiple table families were added to both schemas (entries, idempotency_policies, t1_batch_*, t2_batch_*) while others remained intentionally exempt (calendar logs, debug telemetry, runtime config). This split makes the operator mental model non-trivial: during manual QA, some data flows through test schema and some flows through prod schema depending on the table. The matrix below is the single source of truth for which surfaces go where.
+
 ## Decision Rule
 
 Default stance:

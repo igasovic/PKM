@@ -280,6 +280,132 @@
     }
   },
   {
+    "case_id": "R-OBV-021",
+    "name": "Cal prefix query #2",
+    "bucket": "obvious",
+    "failure_tags": [
+      "prefix_override"
+    ],
+    "input": {
+      "text": "Cal: what do we have tomorrow?"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-022",
+    "name": "appointment create #2",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "appt monday at 10:00a for Igor"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-023",
+    "name": "pkm prefix calendar-looking text #2",
+    "bucket": "obvious",
+    "failure_tags": [
+      "prefix_override"
+    ],
+    "input": {
+      "text": "Pkm: calendar tomorrow 3pm"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-OBV-024",
+    "name": "google maps",
+    "bucket": "obvious",
+    "failure_tags": [
+      "url"
+    ],
+    "input": {
+      "text": "https://maps.app.goo.gl/AxP18sEiQegN4Yva7"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-025",
+    "name": "google maps #2",
+    "bucket": "obvious",
+    "failure_tags": [
+      "url"
+    ],
+    "input": {
+      "text": "https://www.google.com/maps/place/Levant+Halal+Mediterranean+Cafe+Cafe+%26+Grill/@30.4873472,-97.8419712,15z/data=!4m6!3m5!1s0x865b2df31ef9d36d:0xa7721a73b24dfb30!8m2!3d30.4836808!4d-97.8309779!16s%2Fg%2F11h71tcbb1?entry=ttu&g_ep=EgoyMDI2MDMyOS4wIKXMDSoASAFQAw%3D%3D"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-026",
+    "name": "apple maps",
+    "bucket": "obvious",
+    "failure_tags": [
+      "url"
+    ],
+    "input": {
+      "text": "https://maps.apple/p/rgiGMibihR3WD-"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-028",
+    "name": "webpage",
+    "bucket": "obvious",
+    "failure_tags": [
+      "url"
+    ],
+    "input": {
+      "text": "https://paulgraham.com/greatwork.html"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
+  },
+  {
+    "case_id": "R-OBV-027",
+    "name": "apple maps #2",
+    "bucket": "obvious",
+    "failure_tags": [
+      "url"
+    ],
+    "input": {
+      "text": "https://maps.apple.com/place?place-id=I5804726049066B19&address=204+E+Little+Elm+Trail%2C+Cedar+Park%2C+TX++78613%2C+United+States&coordinate=30.492289%2C-97.807558&name=Twin+Lakes+Park&_provider=9902"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
+    "case_id": "R-OBV-029",
+    "name": "short",
+    "bucket": "obvious",
+    "failure_tags": [
+      "url"
+    ],
+    "input": {
+      "text": "tomorrow"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
     "case_id": "R-AMB-001",
     "name": "calendar tomorrow with time",
     "bucket": "ambiguous",
@@ -366,7 +492,7 @@
   {
     "case_id": "R-AMB-007",
     "name": "schedule calendar event",
-    "bucket": "ambiguous",
+    "bucket": "obvious",
     "failure_tags": [
       "bad_clarification_decision"
     ],
@@ -374,7 +500,7 @@
       "text": "schedule calendar event tomorrow at 6pm"
     },
     "expect": {
-      "route": "ambiguous"
+      "route": "calendar_create"
     }
   },
   {
@@ -570,7 +696,7 @@
       "text": "calendar is chaotic lately"
     },
     "expect": {
-      "route": "calendar_query"
+      "route": "pkm_capture"
     }
   },
   {
@@ -696,7 +822,7 @@
       "text": "events are stressful"
     },
     "expect": {
-      "route": "calendar_query"
+      "route": "pkm_capture"
     }
   }
 ]

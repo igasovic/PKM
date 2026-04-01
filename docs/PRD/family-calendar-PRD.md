@@ -45,6 +45,19 @@ Define the family-calendar feature surface centered on Telegram creation, Google
 - Persistent and operational impact: `13. Data model and schema changes`, `14. Validation and state transitions`, `15. Config surface`, `16. API and operational surfaces`, `17. Observability and logging requirements`
 - Delivery planning: `18. Migration and rollout plan`, `19. Success criteria`, `20. Future improvements and TBD`, `21. Work packages`, `22. Evaluation strategy (non-gating)`
 
+## Contract delta table
+
+| Surface | Changes? | Baseline known? | Notes |
+|---|---|---|---|
+| Internal backend API | yes | yes | new `/telegram/route`, `/calendar/normalize`, `/calendar/finalize`, `/calendar/observe` |
+| Public webhook API | no | yes | no new public endpoints; Telegram ingress stays through n8n |
+| Database schema | yes | yes | new `calendar_requests`, `calendar_event_observations` in prod `pkm` schema |
+| Config / infra | yes | yes | new shared config keys for people registry, categories, defaults, padding |
+| n8n workflows / nodes | yes | yes | extend `01 Telegram Router`, add `30`, `31`, `32` workflows |
+| Runtime topology | no | yes | no new services or ports |
+| Docs | yes | yes | `docs/api_calendar.md` added; `docs/api.md` index updated |
+| Tests | yes | yes | local Jest fixtures + gold eval fixtures added |
+
 ## Status and scope boundary
 This PRD owns the family-calendar feature surface and remains proposed work, not a backfilled baseline of currently implemented behavior.
 
@@ -962,6 +975,24 @@ The feature is successful when all of the following are true:
 14. Calendar request logs are written to Postgres in prod schema `pkm` and are not affected by `test_mode`.
 15. `run_id` can be traced through backend transition telemetry and Braintrust spans.
 16. The request logs are rich enough to export later for evaluation and prompt improvement.
+
+---
+
+## Risks / open questions
+
+1. **Malformed-input rejection boundary.** The normalize endpoint returns `status="rejected"` for known rejection cases (all-day), but there is no explicit contract for how arbitrary malformed or nonsensical input is handled. Risk: unexpected LLM hallucination on garbage input could produce a `ready_to_create` with bad fields rather than a rejection or clarification. Mitigation: add deterministic pre-validation for structurally invalid inputs before LLM extraction runs.
+2. **Single-open clarification race.** The one-open-request-per-chat model relies on latest-open lookup. If two messages arrive in rapid succession before the first is processed, the second could bind to a stale open request. Practical risk is low for family use but worth noting.
+3. **LLM routing drift.** Routing accuracy depends on LLM behavior which can drift across model updates. Advisory eval targets (§22.5) exist but are non-gating. Risk: a model update silently degrades routing quality with no automated alert.
+4. **Category registry expansion.** Adding new categories requires shared-config update + eval fixture expansion. No automated check ensures new categories have eval coverage.
+5. **Google Calendar color mapping fragility.** Google `colorId` values are integer strings with no semantic names. If Google changes color rendering, the visual contract breaks silently.
+
+## TBD
+
+- `TBD:` whether "dina", "dani", or other nickname variants for Danijela should be recognized by the person-name resolver
+- `TBD:` whether plain-text location strings should be normalized or stored verbatim (current assumption: verbatim)
+- `TBD:` retry budget and timeout for Google Calendar write failures beyond the single silent retry
+- `TBD:` whether `calendar_requests` should have a TTL or retention policy for old terminal-state rows
+- `TBD:` whether the padding rule (30 min before/after) should be configurable per category or remain global
 
 ---
 

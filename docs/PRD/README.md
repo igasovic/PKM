@@ -38,13 +38,16 @@ This file is the entrypoint for active PRDs in this repo.
 | Smoke harness | `docs/PRD/smoke-prd.md` | active | end-to-end smoke validation surface with split-out detailed matrix |
 
 ## Active Companion Docs
-- `docs/PRD/config-work-packages.md`
-- `docs/PRD/distill-work-packages.md`
-- `docs/PRD/family-calendar-eval-work-packages.md`
-- `docs/PRD/family-calendar-work-packages.md`
-- `docs/PRD/smoke-detailed-matrix.md`
 
-These remain active because they still help sequence ongoing work or hold detailed execution material that would otherwise overload a canonical PRD. Once the canonical PRD baseline is enough on its own, move the companion to `docs/PRD/archive/`.
+| Companion | Parent PRD | Status | Notes |
+|---|---|---|---|
+| `docs/PRD/config-work-packages.md` | config-prd | active | sequencing remaining config work |
+| `docs/PRD/distill-work-packages.md` | distill-prd | active | sequencing remaining distill work |
+| `docs/PRD/family-calendar-eval-work-packages.md` | family-calendar-prd | active | eval harness buildout |
+| `docs/PRD/family-calendar-work-packages.md` | family-calendar-prd | active | core calendar feature buildout |
+| `docs/PRD/smoke-detailed-matrix.md` | smoke-prd | active | detailed test matrix reference |
+
+Lifecycle rule: once the canonical PRD baseline is self-sufficient, move the companion to `docs/PRD/archive/`. Review companion relevance when the parent PRD status changes.
 
 ## Prompt / Instruction-Set Docs
 These are not PRDs, but PRDs should link them when they shape behavior:
