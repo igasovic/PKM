@@ -99,6 +99,68 @@ export interface ReadItem {
   raw: Record<string, unknown>;
 }
 
+export interface RecipeUpsertPayload {
+  id: number;
+  public_id: string;
+  created_at: string;
+  updated_at: string;
+  title: string;
+  title_normalized: string;
+  servings: number;
+  ingredients: string[];
+  instructions: string[];
+  notes: string | null;
+  search_text: string;
+  status: 'active' | 'needs_review' | 'archived' | string;
+  metadata: Record<string, unknown> | null;
+  source: string | null;
+  cuisine: string | null;
+  protein: string | null;
+  prep_time_minutes: number | null;
+  cook_time_minutes: number | null;
+  total_time_minutes: number | null;
+  difficulty: string | null;
+  tags: string[] | null;
+  url_canonical: string | null;
+  capture_text: string;
+  overnight: boolean;
+  review_reasons: string[];
+}
+
+export interface RecipeAlternative {
+  public_id: string;
+  title: string;
+  status: string;
+  review_reasons: string[];
+  cuisine: string | null;
+  protein: string | null;
+  difficulty: string | null;
+  total_time_minutes: number | null;
+  tags: string[] | null;
+  updated_at: string | null;
+}
+
+export interface RecipeSearchResult {
+  query: string;
+  top_hit: RecipeUpsertPayload | null;
+  alternatives: RecipeAlternative[];
+  total_candidates: number;
+}
+
+export interface RecipeReviewQueueItem {
+  id: number;
+  public_id: string;
+  title: string;
+  status: string;
+  review_reasons: string[];
+  created_at: string;
+}
+
+export interface RecipeReviewQueueResult {
+  rows: RecipeReviewQueueItem[];
+  limit: number;
+}
+
 export type SpanStatus = 'ok' | 'error' | 'missing_end' | 'orphan_end' | 'orphan_error';
 
 export interface PairedSpan {

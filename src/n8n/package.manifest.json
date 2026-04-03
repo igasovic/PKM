@@ -10,6 +10,7 @@
     "wf10FormatHelpMessage": "nodes/10-read/format-help-message.js",
     "wf10BuildContextPack": "nodes/10-read/build-context-pack.js",
     "wf10FormatStatusMessage": "nodes/10-read/format-status-message.js",
+    "wf10FormatRecipeMessage": "nodes/10-read/format-recipe-message.js",
     "wf10FormatDeleteMessage": "nodes/10-read/format-delete-message.js",
     "wf10FormatMoveMessage": "nodes/10-read/format-move-message.js",
     "wf10FormatDistillMessage": "nodes/10-read/format-distill-message.js",

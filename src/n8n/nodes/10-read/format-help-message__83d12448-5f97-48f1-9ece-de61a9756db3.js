@@ -4,9 +4,12 @@ const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.j
 
 module.exports = async function run(ctx) {
   const { $json } = ctx;
-  const msg = `Commands:
+const msg = `Commands:
 /help
 /pull <id> [--excerpt]
+/recipe <R<number>|query>
+/recipes <query>
+/recipe-save <structured_recipe_text>
 /last "query" [--days N] [--limit M]
 /find "needle" [--days N] [--limit M]
 /continue topic [--days N] [--limit M]
@@ -24,4 +27,3 @@ Tips:
 
   return [{ json: { ...$json, telegram_message: mdv2Message(msg) } }];
 };
-

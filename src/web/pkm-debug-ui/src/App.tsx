@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from 're
 import { DebugPage } from './pages/DebugPage';
 import { FailuresPage } from './pages/FailuresPage';
 import { ReadPage } from './pages/ReadPage';
+import { RecipesPage } from './pages/RecipesPage';
 
 type MenuItem = {
   id: string;
@@ -13,6 +14,7 @@ type MenuItem = {
 
 const MENU_ITEMS: MenuItem[] = [
   { id: 'read', label: 'Read', to: '/read' },
+  { id: 'recipes', label: 'Recipes', to: '/recipes' },
   { id: 'debug', label: 'Debug', to: '/debug' },
   { id: 'failures', label: 'Failures', to: '/failures' },
 ];
@@ -167,6 +169,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/read" replace />} />
               <Route path="/read" element={<ReadPage />} />
+              <Route path="/recipes" element={<RecipesPage />} />
               <Route path="/debug" element={<DebugPage />} />
               <Route path="/debug/run/:runId" element={<DebugPage />} />
               <Route path="/failures" element={<FailuresPage />} />

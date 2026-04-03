@@ -87,7 +87,7 @@ Start with:
 | `docs/testing_strategy.md` | local pre-push versus Pi post-deploy test strategy | endpoint schemas or smoke implementation detail |
 | `docs/n8n_backend_contract_map.md` | active n8n workflow to backend route ownership | detailed HTTP schemas or runtime topology |
 | `docs/api.md` | internal backend API index and shared conventions | public ChatGPT webhook contracts |
-| `docs/api_control.md`, `docs/api_ingest.md`, `docs/api_calendar.md`, `docs/api_distill.md`, `docs/api_read_write.md` | detailed internal endpoint contracts by family | public webhook contracts |
+| `docs/api_control.md`, `docs/api_ingest.md`, `docs/api_calendar.md`, `docs/api_distill.md`, `docs/api_read_write.md`, `docs/api_recipes.md` | detailed internal endpoint contracts by family | public webhook contracts |
 | `docs/backend_runtime_env.md` | backend env vars and runtime knobs | operator apply workflow |
 | `docs/external_api.md` | public webhook contracts for ChatGPT / Custom GPT actions | internal backend contracts |
 | `docs/database_schema.md` | DB schemas, tables, grants, lifecycle notes | runtime topology and apply workflow |

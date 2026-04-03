@@ -126,9 +126,6 @@ Recovered from:
 - `docs/requirements.md`
 - `docs/changelog.md`
 
-## Known gaps requiring code deep-dive
-- `REVIEW_REQUIRED: verify whether any non-ChatGPT callers persist or consume these same artifact types. This pass confirmed the ChatGPT path, but did not exhaustively inventory alternate internal callers.`
-
 ## Validation / acceptance criteria
 This PRD remains accurate if:
 - topic working-memory retrieval stays distinct from generic read

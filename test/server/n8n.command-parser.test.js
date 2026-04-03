@@ -114,4 +114,31 @@ describe('n8n command parser', () => {
     expect(out._reply_now).toBe(true);
     expect(unescapeMdv2(out.telegram_message)).toContain('calendar-only access');
   });
+
+  test('/recipe R42 routes to recipe_get with normalized public id', async () => {
+    const out = await runParser('/recipe r42');
+    expect(out.cmd).toBe('recipe_get');
+    expect(out.public_id).toBe('R42');
+  });
+
+  test('/recipe <query> routes to recipe_search', async () => {
+    const out = await runParser('/recipe lemon pasta');
+    expect(out.cmd).toBe('recipe_search');
+    expect(out.q).toBe('lemon pasta');
+    expect(out.alternatives_count).toBe(2);
+  });
+
+  test('/recipes <query> routes to recipe_search', async () => {
+    const out = await runParser('/recipes chicken soup');
+    expect(out.cmd).toBe('recipe_search');
+    expect(out.q).toBe('chicken soup');
+  });
+
+  test('/recipe-save payload forwards capture text', async () => {
+    const out = await runParser('/recipe-save # Lemon Pasta\n\n## Ingredients\n- pasta\n\n## Instructions\n1. boil');
+    expect(out.cmd).toBe('recipe_create');
+    expect(out.capture_text).toContain('# Lemon Pasta');
+    expect(out.capture_text).toContain('## Ingredients');
+    expect(out.capture_text).toContain('## Instructions');
+  });
 });

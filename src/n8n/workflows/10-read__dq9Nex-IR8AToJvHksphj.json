@@ -324,6 +324,27 @@
             "node": "PKM Distill Run",
             "type": "main"
           }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Recipe Get",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Recipe Search",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Recipe Create",
+            "type": "main"
+          }
         ]
       ]
     },
@@ -344,6 +365,50 @@
           {
             "index": 0,
             "node": "PKM Config",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Recipe Get": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Recipe Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Recipe Search": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Recipe Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Recipe Create": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Recipe Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Recipe Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -727,6 +792,81 @@
               },
               "outputKey": "distillrun",
               "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "ee2cc1d5-2a30-4ad3-85f8-a7e41f5ca577",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "recipe_get"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "recipe_get",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "1ca16b8a-70db-4e1b-b535-46da93dbbe13",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "recipe_search"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "recipe_search",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "db5f5f7f-f130-4c3a-a2ab-20f3f8a0f4ea",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "recipe_create"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "recipe_create",
+              "renameOutput": true
             }
           ]
         }
@@ -838,7 +978,7 @@
         },
         "workflowId": {
           "__rl": true,
-          "cachedResultName": "PKM — Retrieval Config",
+          "cachedResultName": "PKM \u2014 Retrieval Config",
           "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
           "mode": "list",
           "value": "Ue-cGR6_WP4Fe5C19tA28"
@@ -1214,6 +1354,100 @@
       "position": [
         2240,
         880
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "2b56d1cf-43fd-4f18-896d-9512f665fb26",
+      "name": "PKM Recipe Get",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify({ public_id: $json.public_id }) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/recipes/get"
+      },
+      "position": [
+        1568,
+        1728
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "3cc9e02d-a866-44c5-bd54-917df9802f57",
+      "name": "PKM Recipe Search",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify({ q: $json.q, alternatives_count: $json.alternatives_count || 2 }) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/recipes/search"
+      },
+      "position": [
+        1568,
+        1920
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "21cbc6da-f402-4e21-93ba-6dcfed16f48e",
+      "name": "PKM Recipe Create",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify({ capture_text: $json.capture_text, source: $json.source || \"telegram\" }) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/recipes/create"
+      },
+      "position": [
+        1568,
+        2112
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "f0f66df8-3b44-4f33-a7e1-0cf8bf3b4c1d",
+      "name": "Format Recipe Message",
+      "parameters": {
+        "jsCode": "try{const {wf10FormatRecipeMessage}=require('@igasovic/n8n-blocks');return await wf10FormatRecipeMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-recipe-message__f0f66df8-3b44-4f33-a7e1-0cf8bf3b4c1d.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        1792,
+        1920
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2

@@ -349,6 +349,54 @@
   },
   {
     "method": "POST",
+    "path": "/recipes/create",
+    "auth": "internal",
+    "doc": "docs/api_recipes.md",
+    "primary_callers": ["Telegram recipe workflows", "debug UI"],
+    "tests": ["test/server/recipes.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
+    "path": "/recipes/search",
+    "auth": "internal",
+    "doc": "docs/api_recipes.md",
+    "primary_callers": ["Telegram recipe workflows", "debug UI"],
+    "tests": ["test/server/recipes.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
+    "path": "/recipes/get",
+    "auth": "internal",
+    "doc": "docs/api_recipes.md",
+    "primary_callers": ["Telegram /recipe command", "debug UI"],
+    "tests": ["test/server/recipes.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
+    "path": "/recipes/patch",
+    "auth": "internal",
+    "doc": "docs/api_recipes.md",
+    "primary_callers": ["debug UI", "operators"],
+    "tests": ["test/server/recipes.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
+    "path": "/recipes/overwrite",
+    "auth": "internal",
+    "doc": "docs/api_recipes.md",
+    "primary_callers": ["debug UI", "operators"],
+    "tests": ["test/server/recipes.api-contract.test.js"]
+  },
+  {
+    "method": "GET",
+    "path": "/recipes/review",
+    "auth": "internal",
+    "doc": "docs/api_recipes.md",
+    "primary_callers": ["debug UI", "operators"],
+    "tests": ["test/server/recipes.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
     "path": "/db/insert",
     "auth": "internal",
     "doc": "docs/api_read_write.md",

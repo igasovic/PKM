@@ -30,6 +30,7 @@ const { handleCalendarRoutes } = require('./routes/calendar-routes.js');
 const { handleDistillRoutes } = require('./routes/distill-routes.js');
 const { handleStatusRoutes } = require('./routes/status-routes.js');
 const { handleReadWriteRoutes } = require('./routes/read-write-routes.js');
+const { handleRecipesRoutes } = require('./routes/recipes-routes.js');
 const { startMaintenanceWorker } = require('./workers/maintenance-worker.js');
 const { getServicePort } = require('./runtime-env.js');
 
@@ -60,6 +61,7 @@ async function handleRequest(req, res) {
   if (await handleDistillRoutes(routeContext)) return;
   if (await handleStatusRoutes(routeContext)) return;
   if (await handleReadWriteRoutes(routeContext)) return;
+  if (await handleRecipesRoutes(routeContext)) return;
   return notFound(res);
 }
 

@@ -1,5 +1,50 @@
 # changelog
 
+## 2026-04-02 — Recipes V1 surface (schema + API + Telegram + debug UI)
+
+### What changed
+- Added dedicated recipes persistence and backend contracts:
+  - migration `scripts/db/migrations/2026-04-02_recipes_surface.sql`
+  - backend store/repository/routes for `/recipes/create|search|get|patch|overwrite|review`
+  - recipe input normalization/parsing module with review-state recomputation and duplicate-title handling
+- Added operator tooling support:
+  - Debug UI `Recipes` page (`/recipes`) with search/get/create-from-capture/patch/overwrite/review queue
+  - Vite debug proxy routing for `/recipes/*`
+- Added Telegram recipe command path in `10 Read` workflow:
+  - `/recipe R42` direct lookup
+  - `/recipe <query>` and `/recipes <query>` lexical search
+  - `/recipe-save <structured_recipe_text>` capture create path
+  - new recipe formatter node wiring for Telegram output
+- Added coverage:
+  - backend API contract tests for recipes routes
+  - recipe input normalization tests
+  - n8n command parser + recipe formatter tests
+  - integration test fixture updates for mirrored `recipes` table setup
+
+### Surfaces changed
+- schema/migrations
+- backend API contracts
+- n8n Telegram command workflow
+- debug UI operator surface
+- PRD and contract documentation
+
+### PRDs impacted
+- `docs/PRD/recipes-prd.md`
+- `docs/PRD/recipes-work-packages.md`
+- `docs/PRD/README.md`
+
+### Contract docs impacted
+- `docs/api.md`
+- `docs/api_recipes.md`
+- `docs/database_schema.md`
+- `docs/backend_architecture.md`
+- `docs/backend_db_store_map.md`
+- `docs/test_mode_exemptions.md`
+- `docs/n8n_backend_contract_map.md`
+- `docs/backend_route_registry.json`
+- `docs/backend_test_surface_matrix.md`
+- `src/web/pkm-debug-ui/README.md`
+
 ## 2026-03-30 — Low-score doc usability cleanup
 
 ### What changed

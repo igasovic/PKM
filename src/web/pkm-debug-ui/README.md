@@ -2,6 +2,7 @@
 
 Local React + Tailwind GUI for:
 - **Read** workflows via `/db/read/*`
+- **Recipes** workflows via `/recipes/*`
 - **Debug** pipeline inspection via `/debug/*`
 - **Failures** diagnostics via `/debug/failures*`
 
@@ -12,6 +13,13 @@ Local React + Tailwind GUI for:
   - `POST /db/read/continue`
   - `POST /db/read/find`
   - `POST /db/read/last`
+- Recipes page depends on:
+  - `POST /recipes/create`
+  - `POST /recipes/search`
+  - `POST /recipes/get`
+  - `POST /recipes/patch`
+  - `POST /recipes/overwrite`
+  - `GET /recipes/review`
 - Debug page depends on:
   - `GET /debug/run/:run_id`
   - `GET /debug/runs`
@@ -41,15 +49,15 @@ PKM_ADMIN_SECRET=replace-with-your-pkm-admin-secret
 
 Vite proxy forwards:
 - `/db` to `${VITE_PKM_ORIGIN}/db`
+- `/recipes` to `${VITE_PKM_ORIGIN}/recipes`
 - `/debug` to `${VITE_PKM_ORIGIN}/debug` and injects `x-pkm-admin-secret` from `PKM_ADMIN_SECRET`
 
 This keeps frontend requests relative and avoids backend CORS changes.
 
 ## Features
-## Features
 
 ### Read
-- Left menu navigation (`/read`, `/debug`).
+- Left menu navigation (`/read`, `/recipes`, `/debug`, `/failures`).
 - Single-operation radio selection: `continue | find | last`.
 - Query controls: `q` (required), `days`, `limit`.
 - Sends request run id in `X-PKM-Run-Id` (`ui-read-<uuid>`).
@@ -76,6 +84,14 @@ This keeps frontend requests relative and avoids backend CORS changes.
 - Run-id lookup for direct detail open.
 - Detail panel with summary + stored pack + merged bundle trace.
 - Quick jump to `/debug/run/:run_id`.
+
+### Recipes
+- Side-menu route at `/recipes`.
+- Search via lexical backend rank (`POST /recipes/search`) with top hit + alternatives.
+- Direct lookup by public id (`POST /recipes/get`), including archived rows.
+- One-shot capture create panel (`POST /recipes/create`) from structured/semi-structured recipe text.
+- Patch and overwrite editors (`POST /recipes/patch`, `POST /recipes/overwrite`).
+- Review queue loader (`GET /recipes/review`) for `needs_review` rows.
 
 ## Optional SSH tunnel (if LAN is blocked)
 From Mac:

@@ -68,7 +68,7 @@ Unsupported architecture:
 | Consumer | Priority | Typical route families | Notes |
 |---|---|---|---|
 | `src/n8n/workflows/**` | primary | normalize, read/write, calendar, distill, debug, ChatGPT internal actions | backend exists mainly to serve this orchestration layer |
-| `src/web/pkm-debug-ui/**` | secondary | `/db/read/*`, `/debug/*`, test-mode control | operator/debug surface, not the main backend design center |
+| `src/web/pkm-debug-ui/**` | secondary | `/db/read/*`, `/debug/*`, `/recipes/*`, test-mode control | operator/debug surface, not the main backend design center |
 | operator scripts / local tooling | tertiary | health, ready, version, config-aware deploy/readiness | operational consumer, not product-facing |
 | public callers | none direct | none | must terminate at n8n/webhook boundary first |
 
@@ -85,6 +85,7 @@ Unsupported architecture:
 - calendar: `src/server/calendar-service.js`, `src/server/calendar-access.js`, `src/server/calendar/**`, `src/server/telegram-router/**`
 - classify: `src/server/tier1-enrichment.js`, `src/server/tier1/**`
 - distill: `src/server/tier2-enrichment.js`, `src/server/tier2/**`
+- recipes: `src/server/routes/recipes-routes.js`, `src/server/recipes/recipe-input.js`
 - ChatGPT / working memory: `src/server/chatgpt-actions.js`, `src/server/chatgpt/**`
 - backlog / batch status: `src/server/email-importer.js`, `src/server/batch-status-service.js`, `src/server/batch-worker-runtime.js`
 
@@ -131,6 +132,7 @@ Unsupported architecture:
   - `runtime-store.js` for runtime config and test-mode helpers
   - `read-store.js` for read surfaces
   - `write-store.js` for generic write/delete/move and idempotency handling
+  - `recipes-store.js` for recipe create/search/get/update/review persistence
   - `distill-store.js` for distill candidate and persistence queries
   - `calendar-store.js` for calendar request and observation logs
   - `debug-store.js` for pipeline events and failure-pack persistence
@@ -159,11 +161,13 @@ src/server/
     distill-routes.js
     status-routes.js
     read-write-routes.js
+    recipes-routes.js
   repositories/
     read-write-repository.js
     calendar-repository.js
     debug-repository.js
     distill-repository.js
+    recipes-repository.js
   workers/
     maintenance-worker.js
 ```

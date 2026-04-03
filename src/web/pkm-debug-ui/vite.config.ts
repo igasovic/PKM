@@ -9,16 +9,16 @@ export default defineConfig(({ mode }) => {
   const target = env.VITE_PKM_ORIGIN || 'http://192.168.5.4:3010';
   const adminSecret = env.PKM_ADMIN_SECRET || '';
   const readProxyPlugin = {
-    name: 'pkm-read-proxy',
+    name: 'pkm-internal-api-proxy',
     configureServer(server: any) {
       // Startup signal so we can verify this plugin is loaded by the active Vite process.
       // eslint-disable-next-line no-console
-      console.log(`[pkm-read-proxy] enabled -> ${target}`);
+      console.log(`[pkm-internal-api-proxy] enabled -> ${target}`);
       server.middlewares.use(async (req: any, res: any, next: any) => {
         const path = String(req.url || '');
-        if (!path.startsWith('/db/')) return next();
+        if (!path.startsWith('/db/') && !path.startsWith('/recipes/')) return next();
         // eslint-disable-next-line no-console
-        console.log(`[pkm-read-proxy] ${String(req.method || 'GET').toUpperCase()} ${path}`);
+        console.log(`[pkm-internal-api-proxy] ${String(req.method || 'GET').toUpperCase()} ${path}`);
 
         try {
           const method = String(req.method || 'GET').toUpperCase();

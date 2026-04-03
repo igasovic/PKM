@@ -58,6 +58,9 @@ const defaults = {
   continue: { days: 90, limit: 10 },
   with: { days: 90, limit: 10 },
   pull: { days: null, limit: null },   // <-- NEW
+  recipe: { days: null, limit: null },
+  recipes: { days: null, limit: null },
+  recipesave: { days: null, limit: null },
   delete: { days: null, limit: null },
   move: { days: null, limit: null },
   debug: { days: null, limit: null },
@@ -72,6 +75,8 @@ const cmdRaw = (mCmd?.[1] || '').toLowerCase();
 const cmdAlias = {
   'distill-run': 'distillrun',
   'distill_run': 'distillrun',
+  'recipe-save': 'recipesave',
+  'recipe_save': 'recipesave',
 };
 const cmd = cmdAlias[cmdRaw] || cmdRaw;
 const hasHelpFlag = /(?:^|\s)(?:--help|-h)(?:\s|$)/i.test(text);
@@ -80,6 +85,10 @@ const HELP_OVERVIEW =
   `Commands:\n` +
   `/help\n` +
   `/pull <id> [--excerpt]\n` +
+  `/recipe R42\n` +
+  `/recipe lemon pasta\n` +
+  `/recipes lemon pasta\n` +
+  `/recipe-save <structured_recipe_text>\n` +
   `/last "phrase" [--days N] [--limit M]\n` +
   `/find "needle" [--days N] [--limit M]\n` +
   `/continue topic [--days N] [--limit M]\n` +
@@ -95,6 +104,9 @@ const HELP_OVERVIEW =
 const COMMAND_HELP = {
   help: HELP_OVERVIEW,
   pull: `Usage:\n/pull <id> [--excerpt]\n/pull --help`,
+  recipe: `Usage:\n/recipe <R<number>|query>\nExamples:\n/recipe R42\n/recipe lemon pasta`,
+  recipes: `Usage:\n/recipes <query>\nExample:\n/recipes lemon pasta`,
+  recipesave: `Usage:\n/recipe-save <structured recipe text>\nExample:\n/recipe-save # Lemon Pasta\\n\\n- Servings: 4\\n\\n## Ingredients\\n- pasta\\n\\n## Instructions\\n1. boil`,
   last: `Usage:\n/last <query> [--days N] [--limit M]\nExamples:\n/last "LangGraph"\n/last agents --days 30 --limit 5`,
   find: `Usage:\n/find <query> [--days N] [--limit M]\nExamples:\n/find "currentness_mismatch"\n/find litellm --days 90`,
   continue: `Usage:\n/continue <query> [--days N] [--limit M]\nExample:\n/continue tier2 retries --days 30`,
@@ -135,6 +147,56 @@ if (hasHelpFlag) {
 // Special case: /help returns immediate usage block.
 if (cmd === 'help') {
   return replyNow(telegram_chat_id, usageFor('help'));
+}
+
+// Special case: /recipe <R<number>|query>
+//               /recipes <query>
+if (cmd === 'recipe' || cmd === 'recipes') {
+  const rest = text.replace(/^\/[a-zA-Z][a-zA-Z0-9_-]*/i, '').trim();
+  if (!rest) {
+    return replyNow(telegram_chat_id, usageFor(cmd));
+  }
+
+  if (cmd === 'recipe' && /^R\d+$/i.test(rest)) {
+    return [{
+      json: {
+        cmd: 'recipe_get',
+        public_id: String(rest).toUpperCase(),
+        telegram_chat_id,
+        smoke_mode,
+        smoke_case,
+      },
+    }];
+  }
+
+  return [{
+    json: {
+      cmd: 'recipe_search',
+      q: rest,
+      alternatives_count: 2,
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
+    },
+  }];
+}
+
+// Special case: /recipe-save <structured recipe text>
+if (cmd === 'recipesave') {
+  const capture_text = text.replace(/^\/[a-zA-Z][a-zA-Z0-9_-]*/i, '').trim();
+  if (!capture_text) {
+    return replyNow(telegram_chat_id, usageFor('recipesave'));
+  }
+  return [{
+    json: {
+      cmd: 'recipe_create',
+      capture_text,
+      source: 'telegram',
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
+    },
+  }];
 }
 
 // Special case: /pull <entry_id> [--excerpt]

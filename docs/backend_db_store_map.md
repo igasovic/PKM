@@ -37,6 +37,7 @@
 |---|---|---|---|---|---|
 | Control, debug, and ChatGPT actions | `src/server/routes/control-routes.js`, `src/server/chatgpt-actions.js`, `src/server/chatgpt/service.js` | `debug-repository`, `TestModeService`, ChatGPT service | `src/server/db/debug-store.js`, `src/server/db/runtime-store.js`, `src/server/db/read-store.js`, `src/server/db/write-store.js` | `pipeline_events`, `failure_packs`, `runtime_config`, `entries` | mixes operator control surfaces with working-memory reads and session-note writes |
 | Read and write | `src/server/routes/read-write-routes.js` | `src/server/repositories/read-write-repository.js` | `src/server/db/read-store.js`, `src/server/db/write-store.js` | `entries`, idempotency policy tables | the primary generic PKM data API for n8n and UI/operator tools |
+| Recipes | `src/server/routes/recipes-routes.js` | `src/server/repositories/recipes-repository.js` | `src/server/db/recipes-store.js`, `src/server/db/runtime-store.js` | active schema `recipes` | recipe create/search/get/update/review queue endpoints use active test-mode routing |
 | Calendar | `src/server/routes/calendar-routes.js` | `src/server/repositories/calendar-repository.js` | `src/server/db/calendar-store.js` | `calendar_requests`, `calendar_event_observations` | calendar business logs are fixed-table and not test-mode routed |
 | Distill API | `src/server/routes/distill-routes.js` | distill planner and worker services, `src/server/repositories/distill-repository.js` | `src/server/db/distill-store.js`, `src/server/tier2/store.js` | `entries`, `t2_batches`, `t2_batch_items`, `t2_batch_item_results` | candidate discovery uses the distill store; batch orchestration uses the distill batch store |
 | Classify and ingest | `src/server/routes/classify-routes.js` | ingestion pipeline, `src/server/tier1-enrichment.js`, `src/server/email-importer.js` | `src/server/db/write-store.js`, `src/server/tier1/store.js` | `entries`, `t1_batches`, `t1_batch_items`, `t1_batch_item_results` | route layer calls services directly rather than through repositories today |
@@ -61,4 +62,4 @@ Keep a separate domain-owned store when the persistence surface is its own contr
 - classify batch tables stay in `src/server/tier1/store.js`
 - distill batch tables stay in `src/server/tier2/store.js`
 
-That split keeps the generic DB stores focused on PKM entry data, runtime state, and shared logs instead of absorbing every batch table into one directory.
+That split keeps the generic DB stores focused on PKM entry/recipe data, runtime state, and shared logs instead of absorbing every batch table into one directory.
