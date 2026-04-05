@@ -175,7 +175,7 @@ Provide a short plan covering:
 - Keep apply logic explicit and reviewable.
 - For any non-secret config change, perform all repo/doc updates and provide only the required `checkcfg` / `updatecfg` operator command(s) for apply.
 - Before proposing any apply or migration command, explicitly state what will be applied and where: target host, container/service, database/schema, or file path.
-- For Postgres apply commands, never rely on an already-exported shell variable for admin user. Resolve DB user explicitly from `/home/igasovic/stack/.env` (fallback `postgres`) and pass it via `psql -U`.
+- For Postgres apply commands and migrations on this stack, use the exact admin user `pgadmin` with `psql -U pgadmin`. Do not fallback to `postgres`.
 - For Postgres migrations stored on the host, do not use `psql -f <host-path>` inside `docker exec` because `-f` resolves in-container paths. Pipe host files through stdin (`cat <host-file> | docker exec -i postgres psql ...`) or mount/copy into the container first.
 
 ### Docs-only changes
