@@ -183,7 +183,7 @@ Debug UI gets a dedicated **Recipes** page for search/read/update support. The d
 ### 7.5 V1 review queue flow
 1. Backend records `needs_review` when configured review-trigger fields are missing.
 2. Backend stores machine-readable review reasons in metadata JSONB.
-3. `/review` API returns recipe ID, title, and reasons for recipes requiring follow-up.
+3. `GET /recipes/review` returns recipe ID, title, and reasons for recipes requiring follow-up.
 
 ## 8. Data model / state transitions
 ### 8.1 Table choice
@@ -328,7 +328,7 @@ Behavior:
 - preserve explicit `archived` status unless explicitly changed
 
 ### 9.5 Review queue API
-`/review` API returns recipes needing follow-up.
+`GET /recipes/review` returns recipes needing follow-up.
 
 Minimum response fields:
 - `id`
@@ -412,7 +412,7 @@ No intended new external service in V1.
 Recipes debug UI should follow existing debug UI/admin protection patterns already in the repo. No new proxy/admin-secret handling is intended beyond existing patterns.
 
 ### 10.5 Telemetry / pipeline events
-Recipe flows should follow the existing `pipeline_events` pattern rather than inventing an unrelated telemetry surface. Recipe-specific event naming and payload conventions should be defined in a separate architect-owned analysis doc during implementation planning, then reflected in authoritative docs if they become contractual.
+Recipe flows should follow the existing `pipeline_events` pattern rather than inventing an unrelated telemetry surface. Recipe-specific event naming and payload conventions are captured in `docs/recipes_telemetry_conventions.md` and should be reflected in authoritative docs if they become contractual.
 
 ## 11. Migration / rollout / rollback
 ### 11.1 Migration plan
