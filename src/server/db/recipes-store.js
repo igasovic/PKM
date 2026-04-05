@@ -403,8 +403,9 @@ async function searchRecipes(opts) {
   }
 
   const alternativesCount = Number(opts && opts.alternatives_count);
-  const limitRaw = Number.isFinite(alternativesCount) ? alternativesCount : 2;
-  const limit = Math.max(0, Math.min(5, Math.trunc(limitRaw))) + 1;
+  const alternativesLimitRaw = Number.isFinite(alternativesCount) ? alternativesCount : 2;
+  const alternativesLimit = Math.max(0, Math.min(5, Math.trunc(alternativesLimitRaw)));
+  const limit = alternativesLimit + 1;
 
   const sql = `
     WITH query_input AS (
@@ -459,7 +460,7 @@ async function searchRecipes(opts) {
 
     const rows = Array.isArray(result.rows) ? result.rows.map((row) => mapRecipeRow(row)) : [];
     const top = rows[0] || null;
-    const alternatives = rows.slice(1, 3).map((row) => ({
+    const alternatives = rows.slice(1, 1 + alternativesLimit).map((row) => ({
       public_id: row.public_id,
       title: row.title,
       status: row.status,

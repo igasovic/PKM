@@ -411,4 +411,45 @@ describeIntegration('Postgres-backed DB store integration', () => {
     expect(prodCountAfterProdWrite.count).toBe(1);
     expect(testCountAfterProdWrite.count).toBe(1);
   });
+
+  test('recipes-store search honors alternatives_count up to supported limit', async () => {
+    const { createRecipe, searchRecipes } = require('../../src/server/db/recipes-store.js');
+    await setTestMode(adminPool, false);
+
+    const basePayload = {
+      servings: 2,
+      ingredients: ['lemon', 'pasta'],
+      instructions: ['mix'],
+      notes: null,
+      source: 'telegram',
+      cuisine: 'italian',
+      protein: 'none',
+      prep_time_minutes: 5,
+      cook_time_minutes: 10,
+      difficulty: 'easy',
+      tags: ['weeknight'],
+      url_canonical: null,
+      overnight: false,
+      metadata: null,
+      parser_meta: null,
+      requested_status: null,
+    };
+
+    for (let i = 1; i <= 6; i += 1) {
+      const title = `Lemon Pasta Variant ${i}`;
+      await createRecipe({
+        ...basePayload,
+        title,
+        title_normalized: title.toLowerCase(),
+        capture_text: `# ${title}`,
+        search_text: `${title} lemon pasta`,
+      });
+    }
+
+    const result = await searchRecipes({ q: 'lemon pasta', alternatives_count: 4 });
+
+    expect(result.top_hit).toBeTruthy();
+    expect(result.alternatives).toHaveLength(4);
+    expect(result.total_candidates).toBe(5);
+  });
 });
