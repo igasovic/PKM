@@ -1424,7 +1424,7 @@
             }
           ]
         },
-        "jsonBody": "={{ JSON.stringify({ capture_text: $json.capture_text, source: $json.source || \"telegram\" }) }}",
+        "jsonBody": "={{ JSON.stringify((() => { const txt = String($json.capture_text || '').trim(); const msgText = String(($json.message && $json.message.text) || $json.raw_text || '').trim(); const fallback = msgText.replace(/^\\/[a-zA-Z][a-zA-Z0-9_-]*/, '').trim(); return { capture_text: txt || fallback, source: $json.source || 'telegram' }; })()) }}",
         "method": "POST",
         "options": {},
         "sendBody": true,
