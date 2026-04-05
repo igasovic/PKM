@@ -77,6 +77,20 @@ describe('recipes API contract', () => {
         status: 'active',
         review_reasons: [],
       })),
+      linkRecipes: jest.fn(async () => ({
+        public_id: 'R1',
+        title: 'Pasta',
+        status: 'active',
+        linked_recipes: [
+          { public_id: 'R2', title: 'Ragu Bolognese', status: 'active' },
+        ],
+      })),
+      appendRecipeNote: jest.fn(async () => ({
+        public_id: 'R1',
+        title: 'Pasta',
+        status: 'active',
+        notes: 'Old note\nThis is important.',
+      })),
       listReviewQueue: jest.fn(async () => ({
         rows: [
           {
@@ -270,6 +284,61 @@ describe('recipes API contract', () => {
     expect(JSON.parse(res.body)).toEqual(expect.objectContaining({
       rows: expect.any(Array),
       limit: 25,
+    }));
+  });
+
+  test('POST /recipes/link forwards recipe id pair', async () => {
+    await startServer();
+    if (listenDenied) return;
+
+    const res = await request(port, 'POST', '/recipes/link', JSON.stringify({
+      public_id_1: 'r1',
+      public_id_2: 'R2',
+    }), {
+      'Content-Type': 'application/json',
+    });
+
+    expect(res.status).toBe(200);
+    expect(recipesRepoMock.linkRecipes).toHaveBeenCalledWith('R1', 'R2');
+    expect(JSON.parse(res.body)).toEqual(expect.objectContaining({
+      public_id: 'R1',
+      linked_recipes: expect.any(Array),
+    }));
+  });
+
+  test('POST /recipes/note appends note and returns recipe payload', async () => {
+    await startServer();
+    if (listenDenied) return;
+
+    const res = await request(port, 'POST', '/recipes/note', JSON.stringify({
+      public_id: 'r1',
+      note: 'this is important.',
+    }), {
+      'Content-Type': 'application/json',
+    });
+
+    expect(res.status).toBe(200);
+    expect(recipesRepoMock.appendRecipeNote).toHaveBeenCalledWith('R1', 'This is important.');
+    expect(JSON.parse(res.body)).toEqual(expect.objectContaining({
+      public_id: 'R1',
+    }));
+  });
+
+  test('POST /recipes/note returns 404 when recipe does not exist', async () => {
+    recipesRepoMock.appendRecipeNote.mockResolvedValueOnce(null);
+    await startServer();
+    if (listenDenied) return;
+
+    const res = await request(port, 'POST', '/recipes/note', JSON.stringify({
+      public_id: 'R999',
+      note: 'missing recipe',
+    }), {
+      'Content-Type': 'application/json',
+    });
+
+    expect(res.status).toBe(404);
+    expect(JSON.parse(res.body)).toEqual(expect.objectContaining({
+      error: 'not_found',
     }));
   });
 });

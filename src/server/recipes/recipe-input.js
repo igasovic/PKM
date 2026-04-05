@@ -128,6 +128,14 @@ function normalizePublicId(value) {
   return raw;
 }
 
+function capitalizeFirstLetter(value) {
+  const text = asString(value);
+  if (!text) return text;
+  const letterIdx = text.search(/[A-Za-z]/);
+  if (letterIdx < 0) return text;
+  return text.slice(0, letterIdx) + text.charAt(letterIdx).toUpperCase() + text.slice(letterIdx + 1);
+}
+
 function badRequest(message) {
   const err = new Error(message);
   err.statusCode = 400;
@@ -449,6 +457,51 @@ function buildOverwritePayload(input) {
   };
 }
 
+function buildLinkPayload(input) {
+  const body = (input && typeof input === 'object') ? input : {};
+  const public_id_1 = normalizePublicId(
+    body.public_id_1
+    || body.public_id1
+    || body.left_public_id
+    || body.left
+    || body.recipe_1
+    || body.recipe1
+  );
+  const public_id_2 = normalizePublicId(
+    body.public_id_2
+    || body.public_id2
+    || body.right_public_id
+    || body.right
+    || body.recipe_2
+    || body.recipe2
+  );
+
+  if (public_id_1 === public_id_2) {
+    throw badRequest('public_id_1 and public_id_2 must be different recipes');
+  }
+
+  return {
+    public_id_1,
+    public_id_2,
+  };
+}
+
+function buildAppendNotePayload(input) {
+  const body = (input && typeof input === 'object') ? input : {};
+  const public_id = normalizePublicId(body.public_id || body.id || body.recipe_id);
+  const noteRaw = body.note || body.append_note || body.text;
+  const note = capitalizeFirstLetter(noteRaw);
+
+  if (!note) {
+    throw badRequest('note is required');
+  }
+
+  return {
+    public_id,
+    note,
+  };
+}
+
 function statusForWrite(currentStatus, requestedStatus, reasons) {
   const statusRaw = asNullableString(requestedStatus);
   const statusLower = statusRaw ? statusRaw.toLowerCase() : null;
@@ -476,5 +529,8 @@ module.exports = {
   buildCreatePayload,
   buildPatchPayload,
   buildOverwritePayload,
+  buildLinkPayload,
+  buildAppendNotePayload,
+  capitalizeFirstLetter,
   badRequest,
 };

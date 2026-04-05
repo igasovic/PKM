@@ -24,7 +24,7 @@
 - WP0: completed (recipe telemetry naming aligned to existing `api.recipes.*` / `recipes_*` DB trace conventions)
 - WP1: completed
 - WP2: completed
-- WP3: completed for V1 command path (`/recipe`, `/recipes`, `/recipe-save`) in `10 Read`
+- WP3: completed for V1 command path (`/recipe`, `/recipes`, `/recipe-save`, `/recipe-link`, `/recipe-note`) in `10 Read`
 - WP4: completed
 - WP5: completed
 - WP6: completed for backend/n8n contract and formatter coverage; Telegram end-to-end validation remains operational verification work
@@ -144,9 +144,12 @@ Ship the first user-facing capture and retrieval path via Telegram.
 - one-shot paste capture only
 - `/recipe R<number>` direct lookup
 - recipe search command/path for vague-memory retrieval
+- `/recipe-link <R<number>> <R<number>>` link command
+- `/recipe-note <R<number>> <note>` append-note command
 - Telegram response rendering for:
   - create confirmation
   - recipe card
+  - See Also linked-recipe list
   - alternatives
 - preserve existing Telegram workflow guardrails and repo n8n authoring rules
 
@@ -161,6 +164,7 @@ Ship the first user-facing capture and retrieval path via Telegram.
 - semi-structured paste rejects ambiguous/incomplete required sections
 - `/recipe R<number>` works end to end
 - search returns top result plus two alternatives in Telegram-safe format
+- `/recipe-link` and `/recipe-note` work end to end
 
 ### Risks to watch
 - parser brittleness from semi-structured inputs

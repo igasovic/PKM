@@ -5,6 +5,8 @@ const {
   buildCreatePayload,
   buildPatchPayload,
   buildOverwritePayload,
+  buildLinkPayload,
+  buildAppendNotePayload,
   normalizePublicId,
 } = require('../recipes/recipe-input.js');
 const {
@@ -270,6 +272,98 @@ async function handleRecipesRoutes(ctx) {
       } else {
         sendError(res, err, { includeField: false });
       }
+    }
+    return true;
+  }
+
+  if (method === 'POST' && url.pathname === '/recipes/link') {
+    const start = Date.now();
+    const meta = {
+      op: 'api_recipes_link',
+      method,
+      path: url.pathname,
+    };
+
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const parsed = buildLinkPayload(body);
+
+      const recipe = await logger.step(
+        'api.recipes.link',
+        async () => recipesRepository.linkRecipes(parsed.public_id_1, parsed.public_id_2),
+        {
+          input: {
+            public_id_1: parsed.public_id_1,
+            public_id_2: parsed.public_id_2,
+          },
+          output: (out) => ({
+            public_id: out && out.public_id ? out.public_id : null,
+            linked_count: out && Array.isArray(out.linked_recipes) ? out.linked_recipes.length : 0,
+          }),
+          meta: { route: url.pathname },
+        }
+      );
+
+      logApiSuccess(meta, {
+        public_id: recipe.public_id,
+        linked_count: Array.isArray(recipe.linked_recipes) ? recipe.linked_recipes.length : 0,
+      }, {
+        duration_ms: Date.now() - start,
+      });
+      json(res, 200, recipe);
+    } catch (err) {
+      logApiError(meta, err, { duration_ms: Date.now() - start });
+      sendError(res, err, { includeField: false });
+    }
+    return true;
+  }
+
+  if (method === 'POST' && url.pathname === '/recipes/note') {
+    const start = Date.now();
+    const meta = {
+      op: 'api_recipes_note',
+      method,
+      path: url.pathname,
+    };
+
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const parsed = buildAppendNotePayload(body);
+
+      const recipe = await logger.step(
+        'api.recipes.note',
+        async () => recipesRepository.appendRecipeNote(parsed.public_id, parsed.note),
+        {
+          input: {
+            public_id: parsed.public_id,
+            note_len: parsed.note.length,
+          },
+          output: (out) => ({
+            found: !!out,
+            public_id: out && out.public_id ? out.public_id : null,
+          }),
+          meta: { route: url.pathname },
+        }
+      );
+
+      if (!recipe) {
+        notFound(res);
+        return true;
+      }
+
+      logApiSuccess(meta, {
+        public_id: recipe.public_id,
+      }, {
+        duration_ms: Date.now() - start,
+      });
+      json(res, 200, recipe);
+    } catch (err) {
+      logApiError(meta, err, { duration_ms: Date.now() - start });
+      sendError(res, err, { includeField: false });
     }
     return true;
   }

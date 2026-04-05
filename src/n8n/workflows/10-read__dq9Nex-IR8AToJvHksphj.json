@@ -345,6 +345,20 @@
             "node": "PKM Recipe Create",
             "type": "main"
           }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Recipe Link",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Recipe Note",
+            "type": "main"
+          }
         ]
       ]
     },
@@ -409,6 +423,28 @@
           {
             "index": 0,
             "node": "Send MarkdownV2 Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Recipe Link": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Recipe Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Recipe Note": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Recipe Message",
             "type": "main"
           }
         ]
@@ -866,6 +902,56 @@
                 }
               },
               "outputKey": "recipe_create",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "52a8e044-3dfa-4952-a177-7ff4a6458e7a",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "recipe_link"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "recipe_link",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "9beed5bc-c2e3-4515-9275-c35960825baf",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "recipe_note"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "recipe_note",
               "renameOutput": true
             }
           ]
@@ -1451,6 +1537,60 @@
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
+    },
+    {
+      "id": "8a2c6dc8-1e3d-4c8b-ae1c-4e7a4fe4f5f1",
+      "name": "PKM Recipe Link",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify({ public_id_1: $json.public_id_1, public_id_2: $json.public_id_2 }) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/recipes/link"
+      },
+      "position": [
+        1568,
+        2304
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "94fd52d9-89d6-4fcb-a43a-1c2dbeb3e6f0",
+      "name": "PKM Recipe Note",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify({ public_id: $json.public_id, note: $json.note }) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/recipes/note"
+      },
+      "position": [
+        1568,
+        2496
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
     }
   ],
   "settings": {

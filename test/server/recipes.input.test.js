@@ -4,6 +4,9 @@ const {
   buildCreatePayload,
   buildPatchPayload,
   buildOverwritePayload,
+  buildLinkPayload,
+  buildAppendNotePayload,
+  capitalizeFirstLetter,
   statusForWrite,
   buildReviewReasons,
 } = require('../../src/server/recipes/recipe-input.js');
@@ -67,5 +70,27 @@ describe('recipe input normalization', () => {
     expect(statusForWrite('archived', null, reasons)).toBe('archived');
     expect(statusForWrite('needs_review', null, reasons)).toBe('needs_review');
     expect(statusForWrite('active', 'archived', reasons)).toBe('archived');
+  });
+
+  test('buildLinkPayload normalizes two public ids and blocks self-link', () => {
+    const parsed = buildLinkPayload({
+      public_id_1: 'r2',
+      public_id_2: 'R123',
+    });
+
+    expect(parsed.public_id_1).toBe('R2');
+    expect(parsed.public_id_2).toBe('R123');
+    expect(() => buildLinkPayload({ public_id_1: 'R4', public_id_2: 'r4' })).toThrow('must be different recipes');
+  });
+
+  test('buildAppendNotePayload requires note and auto-capitalizes first letter', () => {
+    const parsed = buildAppendNotePayload({
+      public_id: 'r123',
+      note: 'this is a very important note.',
+    });
+
+    expect(parsed.public_id).toBe('R123');
+    expect(parsed.note).toBe('This is a very important note.');
+    expect(capitalizeFirstLetter('  note')).toBe('Note');
   });
 });

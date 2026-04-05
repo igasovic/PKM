@@ -101,6 +101,10 @@ export async function recipeOverwrite(publicId: string, recipe: Record<string, u
   return postJson('/recipes/overwrite', { public_id: publicId, recipe }) as Promise<RecipeUpsertPayload>;
 }
 
+export async function recipeLink(publicId1: string, publicId2: string): Promise<RecipeUpsertPayload> {
+  return postJson('/recipes/link', { public_id_1: publicId1, public_id_2: publicId2 }) as Promise<RecipeUpsertPayload>;
+}
+
 export async function recipeReviewQueue(limit = 50): Promise<RecipeReviewQueueResult> {
   return getJson(`/recipes/review?limit=${encodeURIComponent(String(limit))}`) as Promise<RecipeReviewQueueResult>;
 }

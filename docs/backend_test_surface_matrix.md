@@ -8,11 +8,11 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 - keep route, doc, and test planning tied to one source of truth
 
 ## Summary
-- total routes: 51
-- routes with contract tests: 51
+- total routes: 53
+- routes with contract tests: 53
 - routes with smoke coverage: 9
 - routes with integration tests: 0
-- operator/UI/probe routes: 28
+- operator/UI/probe routes: 29
 - routes with no declared tests: 0
 
 ## Matrix
@@ -60,6 +60,8 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 | `POST /recipes/get` | `internal` | Telegram /recipe command, debug UI | `docs/api_recipes.md` | yes | no | no | yes | test/server/recipes.api-contract.test.js |
 | `POST /recipes/patch` | `internal` | debug UI, operators | `docs/api_recipes.md` | yes | no | no | yes | test/server/recipes.api-contract.test.js |
 | `POST /recipes/overwrite` | `internal` | debug UI, operators | `docs/api_recipes.md` | yes | no | no | yes | test/server/recipes.api-contract.test.js |
+| `POST /recipes/link` | `internal` | Telegram /recipe-link command, debug UI | `docs/api_recipes.md` | yes | no | no | yes | test/server/recipes.api-contract.test.js |
+| `POST /recipes/note` | `internal` | Telegram /recipe-note command | `docs/api_recipes.md` | yes | no | no | no | test/server/recipes.api-contract.test.js |
 | `GET /recipes/review` | `internal` | debug UI, operators | `docs/api_recipes.md` | yes | no | no | yes | test/server/recipes.api-contract.test.js |
 | `POST /db/insert` | `internal` | n8n capture workflows | `docs/api_read_write.md` | yes | yes | no | no | test/server/read-write.api-contract.test.js |
 | `POST /db/update` | `internal` | n8n update workflows | `docs/api_read_write.md` | yes | no | no | no | test/server/read-write.api-contract.test.js |

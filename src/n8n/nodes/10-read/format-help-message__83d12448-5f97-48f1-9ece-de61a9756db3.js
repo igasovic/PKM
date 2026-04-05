@@ -10,6 +10,8 @@ const msg = `Commands:
 /recipe <R<number>|query>
 /recipes <query>
 /recipe-save <structured_recipe_text>
+/recipe-link <public_id_1> <public_id_2>
+/recipe-note <public_id> <note>
 /last "query" [--days N] [--limit M]
 /find "needle" [--days N] [--limit M]
 /continue topic [--days N] [--limit M]

@@ -125,6 +125,13 @@ export interface RecipeUpsertPayload {
   capture_text: string;
   overnight: boolean;
   review_reasons: string[];
+  linked_recipes?: RecipeLinkedItem[];
+}
+
+export interface RecipeLinkedItem {
+  public_id: string;
+  title: string;
+  status: string;
 }
 
 export interface RecipeAlternative {

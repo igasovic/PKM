@@ -388,6 +388,22 @@
     "tests": ["test/server/recipes.api-contract.test.js"]
   },
   {
+    "method": "POST",
+    "path": "/recipes/link",
+    "auth": "internal",
+    "doc": "docs/api_recipes.md",
+    "primary_callers": ["Telegram /recipe-link command", "debug UI"],
+    "tests": ["test/server/recipes.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
+    "path": "/recipes/note",
+    "auth": "internal",
+    "doc": "docs/api_recipes.md",
+    "primary_callers": ["Telegram /recipe-note command"],
+    "tests": ["test/server/recipes.api-contract.test.js"]
+  },
+  {
     "method": "GET",
     "path": "/recipes/review",
     "auth": "internal",

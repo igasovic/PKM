@@ -80,6 +80,18 @@ function renderFullRecipe(recipe) {
     lines.push('', bold('Notes'), mdv2(notes));
   }
 
+  const seeAlso = safeArray(recipe.linked_recipes)
+    .map((item) => (item && typeof item === 'object' ? item : null))
+    .filter(Boolean);
+  if (seeAlso.length) {
+    lines.push('', bold('See Also'));
+    for (const link of seeAlso) {
+      const title = asText(link.title) || 'Untitled';
+      const publicId = asText(link.public_id);
+      lines.push(`\\- ${mdv2(title)}${publicId ? ` \\(\\#${mdv2(publicId)}\\)` : ''}`);
+    }
+  }
+
   return joinLines(lines, { trimTrailing: true });
 }
 

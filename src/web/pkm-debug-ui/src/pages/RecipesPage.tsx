@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   recipeCreateFromCapture,
   recipeGet,
+  recipeLink,
   recipeOverwrite,
   recipePatch,
   recipeReviewQueue,
@@ -37,6 +38,7 @@ export function RecipesPage() {
 
   const [patchText, setPatchText] = useState('{\n  "title": ""\n}');
   const [overwriteText, setOverwriteText] = useState('{}');
+  const [linkTargetPublicId, setLinkTargetPublicId] = useState('');
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +58,7 @@ export function RecipesPage() {
       cook_time_minutes: selected.cook_time_minutes,
       total_time_minutes: selected.total_time_minutes,
       review_reasons: selected.review_reasons,
+      linked_recipes: selected.linked_recipes || [],
     };
   }, [selected]);
 
@@ -160,6 +163,25 @@ export function RecipesPage() {
       setInfo(`Overwrote ${out.public_id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'overwrite failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const linkSelectedRecipe = async () => {
+    if (!selected) return;
+    const target = linkTargetPublicId.trim().toUpperCase();
+    if (!target) return;
+    setError(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      const out = await recipeLink(selected.public_id, target);
+      setSelected(out);
+      setLinkTargetPublicId('');
+      setInfo(`Linked ${selected.public_id} <-> ${target}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'link failed');
     } finally {
       setBusy(false);
     }
@@ -363,6 +385,26 @@ export function RecipesPage() {
               </div>
 
               <div>
+                <div className="mb-1 text-xs text-slate-300">Link this recipe to another recipe ID</div>
+                <div className="grid gap-2 md:grid-cols-[180px_auto]">
+                  <input
+                    value={linkTargetPublicId}
+                    onChange={(event) => setLinkTargetPublicId(event.target.value.toUpperCase())}
+                    placeholder="R123"
+                    className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500 placeholder:text-slate-500 focus:ring"
+                  />
+                  <button
+                    type="button"
+                    className="rounded border border-emerald-500 bg-emerald-500/15 px-3 py-2 text-xs text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-50"
+                    onClick={() => { void linkSelectedRecipe(); }}
+                    disabled={busy || !linkTargetPublicId.trim()}
+                  >
+                    Link Recipes
+                  </button>
+                </div>
+              </div>
+
+              <div>
                 <div className="mb-1 text-xs text-slate-300">Overwrite payload (full recipe)</div>
                 <textarea
                   value={overwriteText}
@@ -384,6 +426,23 @@ export function RecipesPage() {
                 <summary className="cursor-pointer px-2 py-1 text-xs text-slate-300">Full payload JSON</summary>
                 <pre className="max-h-64 overflow-auto border-t border-slate-800 p-2 text-[11px] text-slate-300">{toPretty(selected)}</pre>
               </details>
+
+              <div>
+                <h3 className="text-sm font-semibold text-slate-100">See Also</h3>
+                {(selected.linked_recipes && selected.linked_recipes.length > 0) ? (
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-200">
+                    {selected.linked_recipes.map((link) => (
+                      <li key={`${selected.public_id}-${link.public_id}`}>
+                        {link.title} (#{link.public_id})
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="mt-2 rounded border border-slate-800 bg-slate-950/40 px-3 py-2 text-xs text-slate-400">
+                    No linked recipes.
+                  </div>
+                )}
+              </div>
             </>
           )}
         </section>

@@ -74,9 +74,10 @@ Out of scope for V1:
 ### 3.1 Confirmed baseline
 The recipes V1 surface is implemented and documented:
 - dedicated mirrored `recipes` tables in `pkm` and `pkm_test`
+- dedicated mirrored `recipe_links` tables in `pkm` and `pkm_test`
 - backend `/recipes/*` endpoints for create/search/get/patch/overwrite/review
 - debug UI `/recipes` operator page
-- Telegram command path in `10 Read` (`/recipe`, `/recipes`, `/recipe-save`)
+- Telegram command path in `10 Read` (`/recipe`, `/recipes`, `/recipe-save`, `/recipe-link`, `/recipe-note`)
 
 ### 3.2 Consequence for this PRD
 This PRD is now a canonical active-surface owner and should be updated alongside schema/API/workflow changes instead of treated as proposal-only text.
@@ -180,7 +181,19 @@ Debug UI gets a dedicated **Recipes** page for search/read/update support. The d
 3. Backend recomputes review status automatically on every write.
 4. `archived` remains explicit and is not overwritten by review recomputation.
 
-### 7.5 V1 review queue flow
+### 7.5 Recipe link flow
+1. User sends `/recipe-link <R<number>> <R<number>>` in Telegram or links from debug UI.
+2. n8n/debug UI calls recipe link API.
+3. Backend stores one canonical unordered pair in `recipe_links`.
+4. Recipe payload includes `linked_recipes` for See Also rendering in Telegram and debug UI.
+
+### 7.6 Recipe note append flow
+1. User sends `/recipe-note <R<number>> <note text>` in Telegram.
+2. n8n calls recipe note API.
+3. Backend auto-capitalizes the note first letter and appends to the bottom of existing notes.
+4. Backend returns the full updated recipe payload.
+
+### 7.7 V1 review queue flow
 1. Backend records `needs_review` when configured review-trigger fields are missing.
 2. Backend stores machine-readable review reasons in metadata JSONB.
 3. `GET /recipes/review` returns recipe ID, title, and reasons for recipes requiring follow-up.
@@ -341,7 +354,25 @@ Minimum response fields:
 Operational note:
 - recipe APIs should support `test_mode` using the same pattern already used for `entries`-related surfaces rather than inventing a recipe-specific variant
 
-### 9.6 Debug UI surface
+### 9.6 Recipe link API
+`POST /recipes/link` links exactly two distinct recipes.
+
+Behavior:
+- validates both recipe public IDs
+- rejects self-link attempts
+- stores one canonical unordered pair in `recipe_links`
+- returns full recipe payload including `linked_recipes`
+
+### 9.7 Recipe note append API
+`POST /recipes/note` appends one note to an existing recipe.
+
+Behavior:
+- validates recipe public ID
+- auto-capitalizes first letter of the note
+- appends note to the bottom of `notes`
+- returns full updated recipe payload
+
+### 9.8 Debug UI surface
 Add a **Recipes** page in the debug UI with support for:
 - search
 - read
@@ -349,13 +380,18 @@ Add a **Recipes** page in the debug UI with support for:
 
 The debug UI should consume full backend recipe payloads, including `search_text`, and remain an operator/developer surface rather than the primary user interface.
 
-### 9.7 Direct Telegram command contract
+### 9.9 Direct Telegram command contract
 Initial direct command:
 - `/recipe R<number>`
 
-Other Telegram search/capture commands remain implementation-defined in V1 and should be finalized in API/examples before coding.
+Additional commands in active scope:
+- `/recipe <query>`
+- `/recipes <query>`
+- `/recipe-save <structured_recipe_text>`
+- `/recipe-link <R<number>> <R<number>>`
+- `/recipe-note <R<number>> <note>`
 
-### 9.8 Input format contract for one-shot paste
+### 9.10 Input format contract for one-shot paste
 #### Canonical structured format
 ```md
 # Title
@@ -472,6 +508,7 @@ User-facing recipe card includes:
 - all ingredients
 - all instructions
 - all notes
+- See Also section with linked recipes in `- <Title> (#R<number>)` format
 
 ### 12.5 Debug acceptance
 Debug UI Recipes page can:

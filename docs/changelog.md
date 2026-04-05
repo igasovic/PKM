@@ -1,5 +1,53 @@
 # changelog
 
+## 2026-04-05 — Recipe links + append-note command
+
+### What changed
+- Added recipe linking and see-also support:
+  - migration `scripts/db/migrations/2026-04-05_recipe_links.sql` for mirrored `recipe_links` table in `pkm` and `pkm_test`
+  - backend recipe store/repository/routes support for:
+    - `POST /recipes/link`
+    - recipe detail payload `linked_recipes`
+  - Telegram recipe formatter now renders a `See Also` section at the bottom when linked recipes exist
+- Added append-only recipe note command path:
+  - backend `POST /recipes/note`
+  - Telegram command `/recipe-note <public id> <note>`
+  - note append auto-capitalizes first letter and appends to existing notes
+- Extended `10 Read` workflow command surface:
+  - `/recipe-link <public id 1> <public id 2>`
+  - `/recipe-note <public id> <note>`
+  - new switch branches and HTTP nodes for `/recipes/link` and `/recipes/note`
+- Updated Recipes debug UI page:
+  - added recipe link action on recipe detail
+  - added `See Also` list rendering in recipe detail
+  - note append remains Telegram-only (no UI action added)
+- Added/updated coverage:
+  - backend API contract tests for `/recipes/link` and `/recipes/note`
+  - recipe input parser tests for link/note payloads
+  - n8n parser tests for `/recipe-link` and `/recipe-note`
+  - n8n recipe formatter tests for See Also rendering
+
+### Surfaces changed
+- schema/migrations
+- backend API contracts
+- n8n Telegram command workflow
+- debug UI recipes page
+- PRD and contract documentation
+
+### PRDs impacted
+- `docs/PRD/recipes-prd.md`
+- `docs/PRD/recipes-work-packages.md`
+
+### Contract docs impacted
+- `docs/api.md`
+- `docs/api_recipes.md`
+- `docs/database_schema.md`
+- `docs/n8n_backend_contract_map.md`
+- `docs/test_mode_exemptions.md`
+- `docs/backend_db_store_map.md`
+- `docs/backend_route_registry.json`
+- `docs/backend_test_surface_matrix.md`
+
 ## 2026-04-02 — Recipes V1 surface (schema + API + Telegram + debug UI)
 
 ### What changed

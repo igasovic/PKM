@@ -46,6 +46,8 @@ describe('n8n command parser', () => {
     expect(out._reply_now).toBe(true);
     expect(out.telegram_chat_id).toBe(1509032341);
     expect(text).toContain('/distill-run [--batch|--sync]');
+    expect(text).toContain('/recipe-link <public_id_1> <public_id_2>');
+    expect(text).toContain('/recipe-note <public_id> <note>');
     expect(text).toContain('append --help');
   });
 
@@ -140,5 +142,26 @@ describe('n8n command parser', () => {
     expect(out.capture_text).toContain('# Lemon Pasta');
     expect(out.capture_text).toContain('## Ingredients');
     expect(out.capture_text).toContain('## Instructions');
+  });
+
+  test('/recipe-link routes to recipe_link with normalized ids', async () => {
+    const out = await runParser('/recipe-link r2 R123');
+    expect(out.cmd).toBe('recipe_link');
+    expect(out.public_id_1).toBe('R2');
+    expect(out.public_id_2).toBe('R123');
+  });
+
+  test('/recipe-note routes to recipe_note with id and note payload', async () => {
+    const out = await runParser('/recipe-note r123 this is a very important note.');
+    expect(out.cmd).toBe('recipe_note');
+    expect(out.public_id).toBe('R123');
+    expect(out.note).toBe('this is a very important note.');
+  });
+
+  test('/recipe-note without note returns command usage', async () => {
+    const out = await runParser('/recipe-note R9');
+    const text = unescapeMdv2(out.telegram_message);
+    expect(out._reply_now).toBe(true);
+    expect(text).toContain('/recipe-note <R<number>> <note text>');
   });
 });

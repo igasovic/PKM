@@ -134,6 +134,26 @@ CREATE TABLE ${schema}.recipes (
   await pool.query(recipesTableSql('pkm'));
   await pool.query(recipesTableSql('pkm_test'));
   await pool.query(`
+CREATE TABLE pkm.recipe_links (
+  recipe_id_a bigint NOT NULL REFERENCES pkm.recipes(id) ON DELETE CASCADE,
+  recipe_id_b bigint NOT NULL REFERENCES pkm.recipes(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (recipe_id_a, recipe_id_b),
+  CONSTRAINT pkm_recipe_links_order_chk CHECK (recipe_id_a < recipe_id_b)
+);
+`.trim());
+  await pool.query(`
+CREATE TABLE pkm_test.recipe_links (
+  recipe_id_a bigint NOT NULL REFERENCES pkm_test.recipes(id) ON DELETE CASCADE,
+  recipe_id_b bigint NOT NULL REFERENCES pkm_test.recipes(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (recipe_id_a, recipe_id_b),
+  CONSTRAINT pkm_test_recipe_links_order_chk CHECK (recipe_id_a < recipe_id_b)
+);
+`.trim());
+  await pool.query(`
 CREATE TABLE pkm.runtime_config (
   key text PRIMARY KEY,
   value jsonb NOT NULL,
@@ -451,5 +471,72 @@ describeIntegration('Postgres-backed DB store integration', () => {
     expect(result.top_hit).toBeTruthy();
     expect(result.alternatives).toHaveLength(4);
     expect(result.total_candidates).toBe(5);
+  });
+
+  test('recipes-store link and append note update bidirectional links and note tail', async () => {
+    const {
+      createRecipe,
+      getRecipeByPublicId,
+      linkRecipes,
+      appendRecipeNote,
+    } = require('../../src/server/db/recipes-store.js');
+    await setTestMode(adminPool, false);
+
+    const payloadBase = {
+      servings: 2,
+      ingredients: ['tomato', 'beef'],
+      instructions: ['cook'],
+      source: 'telegram',
+      cuisine: 'italian',
+      protein: 'beef',
+      prep_time_minutes: 10,
+      cook_time_minutes: 25,
+      difficulty: 'medium',
+      tags: ['dinner'],
+      url_canonical: null,
+      overnight: false,
+      metadata: null,
+      parser_meta: null,
+      requested_status: null,
+    };
+
+    await createRecipe({
+      ...payloadBase,
+      title: 'Ragu Bolognese',
+      title_normalized: 'ragu bolognese',
+      notes: 'Family favorite',
+      capture_text: '# Ragu Bolognese',
+      search_text: 'Ragu Bolognese tomato beef cook',
+    });
+    await createRecipe({
+      ...payloadBase,
+      title: 'Pico de Gallo',
+      title_normalized: 'pico de gallo',
+      notes: null,
+      capture_text: '# Pico de Gallo',
+      search_text: 'Pico de Gallo tomato',
+    });
+
+    const linked = await linkRecipes('R1', 'R2');
+    expect(linked.public_id).toBe('R1');
+    expect(linked.linked_recipes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ public_id: 'R2', title: 'Pico de Gallo' }),
+      ])
+    );
+
+    const linkedBack = await getRecipeByPublicId('R2', { includeArchived: true });
+    expect(linkedBack.linked_recipes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ public_id: 'R1', title: 'Ragu Bolognese' }),
+      ])
+    );
+
+    await linkRecipes('R2', 'R1');
+    const linksCount = await queryOne(adminPool, 'SELECT COUNT(*)::int AS count FROM pkm.recipe_links');
+    expect(linksCount.count).toBe(1);
+
+    const updated = await appendRecipeNote('R1', 'This is a very important note.');
+    expect(updated.notes).toBe('Family favorite\nThis is a very important note.');
   });
 });

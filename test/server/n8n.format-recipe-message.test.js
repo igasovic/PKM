@@ -21,6 +21,10 @@ describe('n8n format-recipe-message', () => {
         notes: 'Finish with parmesan',
         review_reasons: ['missing_protein'],
         tags: ['weeknight', 'pasta'],
+        linked_recipes: [
+          { public_id: 'R2', title: 'Ragu Bolognese' },
+          { public_id: 'R123', title: 'Pico de Gallo' },
+        ],
       },
     });
 
@@ -34,6 +38,9 @@ describe('n8n format-recipe-message', () => {
     expect(message).toContain('*Instructions*');
     expect(message).toContain('1\\. Boil pasta');
     expect(message).toContain('\\#weeknight');
+    expect(message).toContain('*See Also*');
+    expect(message).toContain('\\- Ragu Bolognese \\(\\#R2\\)');
+    expect(message).toContain('\\- Pico de Gallo \\(\\#R123\\)');
   });
 
   test('formats search payload without top hit as no-match', async () => {

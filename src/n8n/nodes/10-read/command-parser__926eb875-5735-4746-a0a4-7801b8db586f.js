@@ -61,6 +61,8 @@ const defaults = {
   recipe: { days: null, limit: null },
   recipes: { days: null, limit: null },
   recipesave: { days: null, limit: null },
+  recipelink: { days: null, limit: null },
+  recipenote: { days: null, limit: null },
   delete: { days: null, limit: null },
   move: { days: null, limit: null },
   debug: { days: null, limit: null },
@@ -77,6 +79,10 @@ const cmdAlias = {
   'distill_run': 'distillrun',
   'recipe-save': 'recipesave',
   'recipe_save': 'recipesave',
+  'recipe-link': 'recipelink',
+  'recipe_link': 'recipelink',
+  'recipe-note': 'recipenote',
+  'recipe_note': 'recipenote',
 };
 const cmd = cmdAlias[cmdRaw] || cmdRaw;
 const hasHelpFlag = /(?:^|\s)(?:--help|-h)(?:\s|$)/i.test(text);
@@ -89,6 +95,8 @@ const HELP_OVERVIEW =
   `/recipe lemon pasta\n` +
   `/recipes lemon pasta\n` +
   `/recipe-save <structured_recipe_text>\n` +
+  `/recipe-link <public_id_1> <public_id_2>\n` +
+  `/recipe-note <public_id> <note>\n` +
   `/last "phrase" [--days N] [--limit M]\n` +
   `/find "needle" [--days N] [--limit M]\n` +
   `/continue topic [--days N] [--limit M]\n` +
@@ -107,6 +115,8 @@ const COMMAND_HELP = {
   recipe: `Usage:\n/recipe <R<number>|query>\nExamples:\n/recipe R17\n/recipe lemon pasta`,
   recipes: `Usage:\n/recipes <query>\nExample:\n/recipes lemon pasta`,
   recipesave: `Usage:\n/recipe-save <structured recipe text>\nExample:\n/recipe-save # Lemon Pasta\\n\\n- Servings: 4\\n\\n## Ingredients\\n- pasta\\n\\n## Instructions\\n1. boil`,
+  recipelink: `Usage:\n/recipe-link <R<number>> <R<number>>\nExamples:\n/recipe-link R2 R123`,
+  recipenote: `Usage:\n/recipe-note <R<number>> <note text>\nExamples:\n/recipe-note R123 This is a very important note.`,
   last: `Usage:\n/last <query> [--days N] [--limit M]\nExamples:\n/last "LangGraph"\n/last agents --days 30 --limit 5`,
   find: `Usage:\n/find <query> [--days N] [--limit M]\nExamples:\n/find "currentness_mismatch"\n/find litellm --days 90`,
   continue: `Usage:\n/continue <query> [--days N] [--limit M]\nExample:\n/continue tier2 retries --days 30`,
@@ -192,6 +202,46 @@ if (cmd === 'recipesave') {
       cmd: 'recipe_create',
       capture_text,
       source: 'telegram',
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
+    },
+  }];
+}
+
+// Special case: /recipe-link <R<number>> <R<number>>
+if (cmd === 'recipelink') {
+  const mLink = text.match(/^\/[a-zA-Z][a-zA-Z0-9_-]*\s+(R\d+)\s+(R\d+)\s*$/i);
+  if (!mLink?.[1] || !mLink?.[2]) {
+    return replyNow(telegram_chat_id, usageFor('recipelink'));
+  }
+  return [{
+    json: {
+      cmd: 'recipe_link',
+      public_id_1: String(mLink[1]).toUpperCase(),
+      public_id_2: String(mLink[2]).toUpperCase(),
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
+    },
+  }];
+}
+
+// Special case: /recipe-note <R<number>> <note text>
+if (cmd === 'recipenote') {
+  const mNote = text.match(/^\/[a-zA-Z][a-zA-Z0-9_-]*\s+(R\d+)\s+([\s\S]+)$/i);
+  if (!mNote?.[1] || !mNote?.[2]) {
+    return replyNow(telegram_chat_id, usageFor('recipenote'));
+  }
+  const note = String(mNote[2]).trim();
+  if (!note) {
+    return replyNow(telegram_chat_id, usageFor('recipenote'));
+  }
+  return [{
+    json: {
+      cmd: 'recipe_note',
+      public_id: String(mNote[1]).toUpperCase(),
+      note,
       telegram_chat_id,
       smoke_mode,
       smoke_case,

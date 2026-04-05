@@ -53,6 +53,12 @@ async function getRecipesTableFromActiveConfig() {
   return sb.qualifiedTable(schema, 'recipes');
 }
 
+async function getRecipeLinksTableFromActiveConfig() {
+  const config = await getConfigWithTestMode();
+  const schema = resolveSchemaFromConfig(config);
+  return sb.qualifiedTable(schema, 'recipe_links');
+}
+
 function parseReviewReasons(metadata) {
   if (!metadata || typeof metadata !== 'object') return [];
   const review = metadata.review;
@@ -64,9 +70,19 @@ function parseReviewReasons(metadata) {
     .filter(Boolean);
 }
 
-function mapRecipeRow(row) {
+function mapLinkedRecipeRow(row) {
+  if (!row || typeof row !== 'object') return null;
+  return {
+    public_id: row.public_id,
+    title: row.title,
+    status: row.status,
+  };
+}
+
+function mapRecipeRow(row, opts = {}) {
   if (!row || typeof row !== 'object') return null;
   const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata : null;
+  const linkedRecipes = Array.isArray(opts.linked_recipes) ? opts.linked_recipes : [];
   return {
     id: row.id,
     public_id: row.public_id,
@@ -93,6 +109,7 @@ function mapRecipeRow(row) {
     capture_text: row.capture_text,
     overnight: !!row.overnight,
     review_reasons: parseReviewReasons(metadata),
+    linked_recipes: linkedRecipes,
   };
 }
 
@@ -132,9 +149,63 @@ function buildDuplicateTitleError(existingPublicId) {
   return err;
 }
 
+function buildRecipeNotFoundError(publicId) {
+  const err = new Error(`recipe not found: ${publicId}`);
+  err.statusCode = 404;
+  err.code = 'recipe_not_found';
+  return err;
+}
+
+async function listLinkedRecipesByRecipeId(recipeId, opts = {}) {
+  const table = opts.table || await getRecipesTableFromActiveConfig();
+  const linksTable = opts.linksTable || await getRecipeLinksTableFromActiveConfig();
+  const sql = `
+    SELECT
+      r.public_id,
+      r.title,
+      r.status
+    FROM ${linksTable} l
+    JOIN ${table} r
+      ON r.id = CASE
+        WHEN l.recipe_id_a = $1 THEN l.recipe_id_b
+        ELSE l.recipe_id_a
+      END
+    WHERE l.recipe_id_a = $1 OR l.recipe_id_b = $1
+    ORDER BY lower(r.title) ASC, r.public_id ASC
+  `;
+
+  try {
+    const result = await traceDb('recipes_list_links', {
+      table,
+      links_table: linksTable,
+      recipe_id: recipeId,
+    }, () => getPool().query(sql, [recipeId]));
+    return Array.isArray(result.rows)
+      ? result.rows.map((row) => mapLinkedRecipeRow(row)).filter(Boolean)
+      : [];
+  } catch (err) {
+    throw wrapRecipesTableError(err, `${table} / ${linksTable}`);
+  }
+}
+
+async function getRecipeIdentityByPublicId(publicId, opts = {}) {
+  const table = opts.table || await getRecipesTableFromActiveConfig();
+  const sql = `SELECT id, public_id, title, status FROM ${table} WHERE public_id = $1 LIMIT 1`;
+  try {
+    const result = await traceDb('recipes_get_identity_by_public_id', {
+      table,
+      public_id: publicId,
+    }, () => getPool().query(sql, [publicId]));
+    return result.rows && result.rows[0] ? result.rows[0] : null;
+  } catch (err) {
+    throw wrapRecipesTableError(err, table);
+  }
+}
+
 async function getRecipeByPublicId(publicId, opts = {}) {
   const includeArchived = opts.includeArchived !== false;
   const table = opts.table || await getRecipesTableFromActiveConfig();
+  const linksTable = opts.linksTable || await getRecipeLinksTableFromActiveConfig();
   const filters = ['public_id = $1'];
   if (!includeArchived) {
     filters.push(`status <> 'archived'`);
@@ -143,11 +214,15 @@ async function getRecipeByPublicId(publicId, opts = {}) {
   try {
     const result = await traceDb('recipes_get_by_public_id', {
       table,
+      links_table: linksTable,
       include_archived: includeArchived,
     }, () => getPool().query(sql, [publicId]));
-    return result.rows && result.rows[0] ? mapRecipeRow(result.rows[0]) : null;
+    if (!result.rows || !result.rows[0]) return null;
+    const row = result.rows[0];
+    const linkedRecipes = await listLinkedRecipesByRecipeId(row.id, { table, linksTable });
+    return mapRecipeRow(row, { linked_recipes: linkedRecipes });
   } catch (err) {
-    throw wrapRecipesTableError(err, table);
+    throw wrapRecipesTableError(err, `${table} / ${linksTable}`);
   }
 }
 
@@ -289,7 +364,8 @@ function buildMergedRecipe(current, incoming, opts = {}) {
   return merged;
 }
 
-async function persistUpdatedRecipe(table, publicId, merged) {
+async function persistUpdatedRecipe(table, publicId, merged, opts = {}) {
+  const linksTable = opts.linksTable || await getRecipeLinksTableFromActiveConfig();
   const sql = `
     UPDATE ${table}
     SET
@@ -342,16 +418,20 @@ async function persistUpdatedRecipe(table, publicId, merged) {
 
   const result = await traceDb('recipes_update', {
     table,
+    links_table: linksTable,
     status: merged.status,
   }, () => getPool().query(sql, params));
 
   if (!result.rows || !result.rows[0]) return null;
-  return mapRecipeRow(result.rows[0]);
+  const row = result.rows[0];
+  const linkedRecipes = await listLinkedRecipesByRecipeId(row.id, { table, linksTable });
+  return mapRecipeRow(row, { linked_recipes: linkedRecipes });
 }
 
 async function patchRecipe(publicId, patch) {
   const table = await getRecipesTableFromActiveConfig();
-  const current = await getRecipeByPublicId(publicId, { includeArchived: true, table });
+  const linksTable = await getRecipeLinksTableFromActiveConfig();
+  const current = await getRecipeByPublicId(publicId, { includeArchived: true, table, linksTable });
   if (!current) return null;
 
   let merged;
@@ -362,7 +442,7 @@ async function patchRecipe(publicId, patch) {
   }
 
   try {
-    return await persistUpdatedRecipe(table, publicId, merged);
+    return await persistUpdatedRecipe(table, publicId, merged, { linksTable });
   } catch (err) {
     if (err && err.code === '23505') {
       const existing = await lookupExistingPublicIdByTitleNormalized(table, merged.title_normalized, publicId);
@@ -374,7 +454,8 @@ async function patchRecipe(publicId, patch) {
 
 async function overwriteRecipe(publicId, payload) {
   const table = await getRecipesTableFromActiveConfig();
-  const current = await getRecipeByPublicId(publicId, { includeArchived: true, table });
+  const linksTable = await getRecipeLinksTableFromActiveConfig();
+  const current = await getRecipeByPublicId(publicId, { includeArchived: true, table, linksTable });
   if (!current) return null;
 
   let merged;
@@ -385,7 +466,7 @@ async function overwriteRecipe(publicId, payload) {
   }
 
   try {
-    return await persistUpdatedRecipe(table, publicId, merged);
+    return await persistUpdatedRecipe(table, publicId, merged, { linksTable });
   } catch (err) {
     if (err && err.code === '23505') {
       const existing = await lookupExistingPublicIdByTitleNormalized(table, merged.title_normalized, publicId);
@@ -393,6 +474,51 @@ async function overwriteRecipe(publicId, payload) {
     }
     throw wrapRecipesTableError(err, table);
   }
+}
+
+async function linkRecipes(publicId1, publicId2) {
+  const table = await getRecipesTableFromActiveConfig();
+  const linksTable = await getRecipeLinksTableFromActiveConfig();
+  const left = await getRecipeIdentityByPublicId(publicId1, { table });
+  if (!left) throw buildRecipeNotFoundError(publicId1);
+  const right = await getRecipeIdentityByPublicId(publicId2, { table });
+  if (!right) throw buildRecipeNotFoundError(publicId2);
+  if (left.id === right.id) {
+    throw badRequest('cannot link a recipe to itself');
+  }
+
+  const recipeIdA = Math.min(left.id, right.id);
+  const recipeIdB = Math.max(left.id, right.id);
+  const sql = `
+    INSERT INTO ${linksTable} (recipe_id_a, recipe_id_b, created_at, updated_at)
+    VALUES ($1, $2, now(), now())
+    ON CONFLICT (recipe_id_a, recipe_id_b)
+    DO UPDATE SET updated_at = now()
+  `;
+
+  try {
+    await traceDb('recipes_link', {
+      table,
+      links_table: linksTable,
+      recipe_id_a: recipeIdA,
+      recipe_id_b: recipeIdB,
+    }, () => getPool().query(sql, [recipeIdA, recipeIdB]));
+  } catch (err) {
+    throw wrapRecipesTableError(err, `${table} / ${linksTable}`);
+  }
+
+  return getRecipeByPublicId(publicId1, { includeArchived: true, table, linksTable });
+}
+
+async function appendRecipeNote(publicId, note) {
+  const table = await getRecipesTableFromActiveConfig();
+  const linksTable = await getRecipeLinksTableFromActiveConfig();
+  const current = await getRecipeByPublicId(publicId, { includeArchived: true, table, linksTable });
+  if (!current) return null;
+
+  const nextNotes = current.notes ? `${current.notes}\n${note}` : note;
+  const merged = buildMergedRecipe(current, { notes: nextNotes }, { overwrite: false });
+  return persistUpdatedRecipe(table, publicId, merged, { linksTable });
 }
 
 async function searchRecipes(opts) {
@@ -528,6 +654,8 @@ module.exports = {
   createRecipe,
   patchRecipe,
   overwriteRecipe,
+  linkRecipes,
+  appendRecipeNote,
   searchRecipes,
   listReviewQueue,
 };

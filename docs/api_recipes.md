@@ -35,6 +35,8 @@
 | `POST /recipes/get` | internal | `/recipe R<number>` flow, debug UI | direct lookup by `public_id`; includes archived |
 | `POST /recipes/patch` | internal | debug UI, operator tooling | partial updates; status recomputed except archived-preserve rule |
 | `POST /recipes/overwrite` | internal | debug UI, operator tooling | full overwrite; required fields enforced |
+| `POST /recipes/link` | internal | `/recipe-link` workflow, debug UI | idempotent bidirectional link between exactly two recipes |
+| `POST /recipes/note` | internal | `/recipe-note` workflow | append-only note path; auto-capitalizes first letter |
 | `GET /recipes/review` | internal | debug UI, operator tooling | review queue of `needs_review` rows |
 
 ## Shared Rules
@@ -69,6 +71,8 @@
 - `/recipe <query>` -> `POST /recipes/search`
 - `/recipes <query>` -> `POST /recipes/search`
 - `/recipe-save <structured_recipe_text>` -> `POST /recipes/create`
+- `/recipe-link <public_id_1> <public_id_2>` -> `POST /recipes/link`
+- `/recipe-note <public_id> <note>` -> `POST /recipes/note`
 
 ## `POST /recipes/create`
 
@@ -155,6 +159,9 @@ Request:
 
 Response `200`: full recipe payload.
 
+Full recipe payload now also includes:
+- `linked_recipes`: array of linked recipe summaries (`public_id`, `title`, `status`)
+
 Response `404`: not found.
 
 ## `POST /recipes/patch`
@@ -193,6 +200,45 @@ Request:
 ```
 
 Response `200`: full recipe payload.
+
+## `POST /recipes/link`
+
+Create (or refresh) a bidirectional link between two recipes.
+
+Request:
+```json
+{
+  "public_id_1": "R2",
+  "public_id_2": "R123"
+}
+```
+
+Response `200`: full recipe payload for `public_id_1`, including updated `linked_recipes`.
+
+Response `400`: invalid id or self-link attempt.
+
+Response `404`: one of the recipe ids does not exist.
+
+## `POST /recipes/note`
+
+Append one note line/paragraph to the bottom of an existing recipe's notes.
+
+Request:
+```json
+{
+  "public_id": "R123",
+  "note": "this is a very important note."
+}
+```
+
+Behavior:
+- note text is append-only through this endpoint
+- first letter is auto-capitalized (`this...` -> `This...`)
+- existing note text is preserved and new note is appended to the bottom
+
+Response `200`: full updated recipe payload.
+
+Response `404`: recipe not found.
 
 ## `GET /recipes/review`
 

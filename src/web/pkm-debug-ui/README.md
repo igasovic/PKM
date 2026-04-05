@@ -19,6 +19,7 @@ Local React + Tailwind GUI for:
   - `POST /recipes/get`
   - `POST /recipes/patch`
   - `POST /recipes/overwrite`
+  - `POST /recipes/link`
   - `GET /recipes/review`
 - Debug page depends on:
   - `GET /debug/run/:run_id`
@@ -91,6 +92,8 @@ This keeps frontend requests relative and avoids backend CORS changes.
 - Direct lookup by public id (`POST /recipes/get`), including archived rows.
 - One-shot capture create panel (`POST /recipes/create`) from structured/semi-structured recipe text.
 - Patch and overwrite editors (`POST /recipes/patch`, `POST /recipes/overwrite`).
+- Link action for `See Also` relationships (`POST /recipes/link`).
+- Recipe detail displays linked recipes in a `See Also` list.
 - Review queue loader (`GET /recipes/review`) for `needs_review` rows.
 
 ## Optional SSH tunnel (if LAN is blocked)

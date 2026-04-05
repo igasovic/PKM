@@ -1,4 +1,4 @@
-# PKM Database Schema v2.7 (Observed + Required Runtime Tables)
+# PKM Database Schema v2.8 (Observed + Required Runtime Tables)
 
 ## Purpose
 - define the authoritative database schemas, tables, grants, and lifecycle notes used by PKM
@@ -21,7 +21,7 @@
 - any table, index, grant, mirror rule, or prod/test lifecycle expectation changes
 - DB-backed operational behavior changes in a way that affects API contracts
 
-**Observed on:** 2026-04-02 (from `psql` introspection against database `pkm` plus recipes migration contract).
+**Observed on:** 2026-04-05 (from `psql` introspection against database `pkm` plus recipes migration contracts).
 
 This file is meant to be a **human + agent** reference:
 - what exists (schemas/tables)
@@ -35,7 +35,7 @@ This file is meant to be a **human + agent** reference:
 | Table group | Scope | Primary use |
 |---|---|---|
 | `entries`, `idempotency_policies` | mirrored in `pkm` and `pkm_test` | core ingest, dedupe, read and enrichment lifecycle |
-| `recipes` | mirrored in `pkm` and `pkm_test` | recipe capture, retrieval, and review queue lifecycle |
+| `recipes`, `recipe_links` | mirrored in `pkm` and `pkm_test` | recipe capture, retrieval, review queue, and bidirectional see-also links |
 | `runtime_config`, `failure_packs`, calendar tables | prod-only | runtime toggles, failure diagnostics, calendar business logs |
 | `t1_*`, `t2_*` batch tables | mirrored in `pkm` and `pkm_test` | durable batch orchestration and status visibility |
 
@@ -46,6 +46,7 @@ This file is meant to be a **human + agent** reference:
 | `entries` | `pgadmin` | backend via `pkm_ingest` | backend, `pkm_read` | yes | not explicitly bounded |
 | `idempotency_policies` | `pgadmin` | migrations / admin setup | backend | yes | not explicitly bounded |
 | `recipes` | `pgadmin` | backend recipe routes via `pkm_ingest` | backend, `pkm_read` | yes | not explicitly bounded |
+| `recipe_links` | `pgadmin` | backend recipe link routes via `pkm_ingest` | backend, `pkm_read` | yes | not explicitly bounded |
 | `runtime_config` | `pgadmin` | backend | backend, `pkm_read`, `n8n` | no | not explicitly bounded |
 | `pipeline_events` | `pgadmin` | backend | debug tools / admin flows | no | daily prune; default `30` days |
 | `failure_packs` | `pgadmin` | backend / WF99 path | admin debug flows | no | not documented here |
@@ -61,8 +62,8 @@ This file is meant to be a **human + agent** reference:
 | Role | Purpose | Notes |
 |---|---|---|
 | `pgadmin` | DB owner / superuser | Owns schemas `pkm`, `pkm_test` and all objects. |
-| `pkm_ingest` | Application write role | Has broad CRUD on most tables (including `entries` and `recipes` in both schemas and Tier-1 batch tables). |
-| `pkm_read` | Read-only role | Has `SELECT` on `pkm.entries`, `pkm_test.entries`, `pkm.recipes`, `pkm_test.recipes`, and `pkm.runtime_config`. No access to Tier-1 batch tables or idempotency tables (as currently granted). |
+| `pkm_ingest` | Application write role | Has broad CRUD on most tables (including `entries`, `recipes`, and `recipe_links` in both schemas and Tier-1 batch tables). |
+| `pkm_read` | Read-only role | Has `SELECT` on `pkm.entries`, `pkm_test.entries`, `pkm.recipes`, `pkm_test.recipes`, `pkm.recipe_links`, `pkm_test.recipe_links`, and `pkm.runtime_config`. No access to Tier-1 batch tables or idempotency tables (as currently granted). |
 | `n8n` | n8n DB role | Has `USAGE` on schema `pkm` and `SELECT` on `pkm.runtime_config` only. No access to entries tables. |
 
 ### Database-level access (database `pkm`)
@@ -102,6 +103,7 @@ Schema grants (current):
 - `entries` (~1232 kB)
 - `idempotency_policies` (~16 kB)
 - `recipes` (size varies by recipe volume)
+- `recipe_links` (size varies by recipe-link volume)
 - `pipeline_events` (size varies by retention)
 - `failure_packs` (size varies by failure volume)
 - `runtime_config` (~16 kB)
@@ -118,6 +120,7 @@ Schema grants (current):
 - `entries` (~488 kB)
 - `idempotency_policies` (~16 kB)
 - `recipes` (size varies by recipe volume)
+- `recipe_links` (size varies by recipe-link volume)
 - `t1_batches` (~8192 bytes)
 - `t1_batch_items` (~8192 bytes)
 - `t1_batch_item_results` (~8192 bytes)
@@ -135,6 +138,7 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 |---|---|---|---|---|
 | `pkm.entries` | RIUD + TRUNCATE/REF/… | RIUD | R | — |
 | `pkm.recipes` | full | RIUD | R | — |
+| `pkm.recipe_links` | full | RIUD | R | — |
 | `pkm.pipeline_events` | full | RIUD | — | — |
 | `pkm.failure_packs` | full | RIUD | — | — |
 | `pkm.runtime_config` | full | RIUD | R | R |
@@ -154,6 +158,7 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 |---|---|---|---|
 | `pkm_test.entries` | full | RIUD | R |
 | `pkm_test.recipes` | full | RIUD | R |
+| `pkm_test.recipe_links` | full | RIUD | R |
 | `pkm_test.idempotency_policies` | full | RIUD | — |
 | `pkm_test.t1_batches` | full | RIUD | — |
 | `pkm_test.t1_batch_items` | full | RIUD | — |
@@ -212,6 +217,7 @@ Mirrored between `pkm` and `pkm_test`:
 - `entries`
 - `idempotency_policies`
 - `recipes`
+- `recipe_links`
 - `t1_batches`
 - `t1_batch_items`
 - `t1_batch_item_results`
@@ -231,7 +237,7 @@ Mirrored between `pkm` and `pkm_test`:
 ### Practical consequences for `/db/delete` and `/db/move`
 
 - `pkm_ingest` now has RIUD on both `pkm.entries` and `pkm_test.entries`, so `/db/delete` and `/db/move` can run directly under app role permissions.
-- Recipe endpoints follow the same active-schema routing pattern and write to either `pkm.recipes` or `pkm_test.recipes` based on persisted test mode.
+- Recipe endpoints follow the same active-schema routing pattern and write/read either `pkm.recipes` and `pkm.recipe_links` or `pkm_test.recipes` and `pkm_test.recipe_links` based on persisted test mode.
 - API edge still enforces admin authentication (`PKM_ADMIN_SECRET`) for these operations.
 
 ---
@@ -380,6 +386,36 @@ Dedicated recipe capture/retrieval storage for `/recipes/*` backend contracts an
 - `pkm_ingest`: `SELECT, INSERT, UPDATE, DELETE` on `pkm.recipes` and `pkm_test.recipes`
 - `pkm_ingest`: `USAGE, SELECT` on `pkm.recipes_id_seq` and `pkm_test.recipes_id_seq`
 - `pkm_read`: `SELECT` on `pkm.recipes` and `pkm_test.recipes`
+
+---
+
+### `pkm.recipe_links` / `pkm_test.recipe_links`
+
+**Purpose**
+Bidirectional link table for recipe-to-recipe relationships used by `/recipes/link` and See Also rendering.
+
+**Columns**
+
+| Column | Type | Nullable | Default / Generated | Notes |
+|---|---|---:|---|---|
+| `recipe_id_a` | bigint | no |  | FK to `recipes.id` (ordered lower id) |
+| `recipe_id_b` | bigint | no |  | FK to `recipes.id` (ordered higher id) |
+| `created_at` | timestamptz | no | `now()` | link creation time |
+| `updated_at` | timestamptz | no | `now()` | last touch time (idempotent relink refreshes this) |
+
+**Constraints**
+- PK: `(recipe_id_a, recipe_id_b)`
+- FK: `recipe_id_a` -> `recipes(id)` with `ON DELETE CASCADE`
+- FK: `recipe_id_b` -> `recipes(id)` with `ON DELETE CASCADE`
+- CHECK: `recipe_id_a < recipe_id_b` (canonical unordered pair)
+
+**Indexes**
+- `(recipe_id_a)`
+- `(recipe_id_b)`
+
+**Grants**
+- `pkm_ingest`: `SELECT, INSERT, UPDATE, DELETE` on `pkm.recipe_links` and `pkm_test.recipe_links`
+- `pkm_read`: `SELECT` on `pkm.recipe_links` and `pkm_test.recipe_links`
 
 ---
 

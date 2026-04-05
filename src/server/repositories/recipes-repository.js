@@ -8,5 +8,7 @@ module.exports = {
   getRecipeByPublicId: (...args) => recipesStore.getRecipeByPublicId(...args),
   patchRecipe: (...args) => recipesStore.patchRecipe(...args),
   overwriteRecipe: (...args) => recipesStore.overwriteRecipe(...args),
+  linkRecipes: (...args) => recipesStore.linkRecipes(...args),
+  appendRecipeNote: (...args) => recipesStore.appendRecipeNote(...args),
   listReviewQueue: (...args) => recipesStore.listReviewQueue(...args),
 };
