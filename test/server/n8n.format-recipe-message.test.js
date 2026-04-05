@@ -29,7 +29,7 @@ describe('n8n format-recipe-message', () => {
     const message = out[0].json.telegram_message;
     expect(message).toContain('*Recipe*');
     expect(message).toContain('Lemon Pasta');
-    expect(message).toContain('\\(#R42\\)');
+    expect(message).toContain('\\(\\#R42\\)');
     expect(message).toContain('*Ingredients*');
     expect(message).toContain('*Instructions*');
     expect(message).toContain('1\\. Boil pasta');

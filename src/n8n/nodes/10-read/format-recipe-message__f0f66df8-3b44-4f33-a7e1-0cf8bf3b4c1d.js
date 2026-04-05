@@ -22,7 +22,7 @@ function recipeHeader(recipe) {
   const status = asText(recipe.status) || 'active';
 
   const lines = [
-    `${bold(title)} ${publicId ? `\\(#${mdv2(publicId)}\\)` : ''}`.trim(),
+    `${bold(title)} ${publicId ? `\\(\\#${mdv2(publicId)}\\)` : ''}`.trim(),
     `Status: ${mdv2(status)}`,
   ];
 

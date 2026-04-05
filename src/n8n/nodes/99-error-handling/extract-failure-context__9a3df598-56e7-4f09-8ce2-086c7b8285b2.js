@@ -73,6 +73,10 @@ module.exports = async function run(ctx) {
     || asText(e.trigger && e.trigger.error && e.trigger.error.message)
     || 'unknown error';
 
+  const errorDescription = asText(e.error && e.error.description)
+    || asText(e.execution && e.execution.error && e.execution.error.description)
+    || asText(findFirstValueByKey(e, 'description'));
+
   const stack = asText(e.execution && e.execution.error && e.execution.error.stack)
     || asText(e.error && e.error.stack);
 
@@ -86,6 +90,23 @@ module.exports = async function run(ctx) {
     || asText(e.execution && e.lastNodeExecuted)
     || asText(e.trigger && e.mode)
     || 'unknown-node';
+
+  const isTelegramNode = /telegram/i.test(nodeName) || /Telegram(?:\/|\\).+\.ts/i.test(stack);
+  const telegramReservedMatch = errorDescription.match(/can't parse entities:\s*Character '([^']+)' is reserved and must be escaped/i);
+  const isTelegramMarkdownParseError = isTelegramNode && /can't parse entities/i.test(errorDescription);
+  const isGenericBadRequest = /^Bad request - please check your parameters$/i.test(message);
+  const enrichedMessage = (isTelegramMarkdownParseError && isGenericBadRequest)
+    ? `${message}: ${errorDescription}`
+    : message;
+
+  const telegramError = (isTelegramNode && (errorDescription || isGenericBadRequest))
+    ? {
+      provider: 'telegram',
+      api_description: errorDescription || null,
+      is_markdownv2_parse_error: isTelegramMarkdownParseError,
+      reserved_character: telegramReservedMatch ? asText(telegramReservedMatch[1]) : null,
+    }
+    : null;
 
   const time = asText(e.execution && e.startedAt)
     || asText(e.execution && e.startTime)
@@ -113,8 +134,10 @@ module.exports = async function run(ctx) {
       workflow_name: workflowName,
       workflow_id: workflowId || null,
       node_name: nodeName,
-      error_message: message,
+      error_message: enrichedMessage,
       error_stack: stack || null,
+      error_description: errorDescription || null,
+      telegram_error: telegramError,
       failed_at: time,
       execution_id: execId,
       execution_url: execUrl || null,

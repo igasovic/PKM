@@ -6,7 +6,7 @@
         [
           {
             "index": 0,
-            "node": "Ensure Telegram Outbound",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -28,7 +28,7 @@
         [
           {
             "index": 0,
-            "node": "Ensure Telegram Outbound",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -39,7 +39,7 @@
         [
           {
             "index": 0,
-            "node": "Ensure Telegram Outbound",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -50,7 +50,7 @@
         [
           {
             "index": 0,
-            "node": "Ensure Telegram Outbound",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -61,7 +61,7 @@
         [
           {
             "index": 0,
-            "node": "Ensure Telegram Outbound",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -72,7 +72,7 @@
         [
           {
             "index": 0,
-            "node": "Ensure Telegram Outbound",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -83,7 +83,7 @@
         [
           {
             "index": 0,
-            "node": "Ensure Telegram Outbound",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -94,7 +94,7 @@
         [
           {
             "index": 0,
-            "node": "Ensure Telegram Outbound",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ]
@@ -117,7 +117,7 @@
         [
           {
             "index": 0,
-            "node": "Ensure Telegram Outbound",
+            "node": "Send MarkdownV2 Message",
             "type": "main"
           }
         ],
@@ -408,19 +408,8 @@
         [
           {
             "index": 0,
-            "node": "Ensure Telegram Outbound",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Ensure Telegram Outbound": {
-      "main": [
-        [
-          {
             "node": "Send MarkdownV2 Message",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -989,7 +978,7 @@
         },
         "workflowId": {
           "__rl": true,
-          "cachedResultName": "PKM \u2014 Retrieval Config",
+          "cachedResultName": "PKM — Retrieval Config",
           "cachedResultUrl": "/workflow/Ue-cGR6_WP4Fe5C19tA28",
           "mode": "list",
           "value": "Ue-cGR6_WP4Fe5C19tA28"
@@ -1462,19 +1451,6 @@
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
-    },
-    {
-      "id": "9d9f8b6a-2b9c-4f2d-8e1a-f2d8b6f09c11",
-      "name": "Ensure Telegram Outbound",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1904,
-        880
-      ],
-      "parameters": {
-        "jsCode": "const msg = String($json.telegram_message || '').trim();\nconst chat = String(\n  $json.telegram_chat_id\n  || (($json.message && $json.message.chat && $json.message.chat.id) || '')\n  || (($node['Command Parser'] && $node['Command Parser'].json && $node['Command Parser'].json.telegram_chat_id) || '')\n  || ($env.TELEGRAM_ADMIN_CHAT_ID || '')\n).trim();\nif (!msg || !chat) {\n  return [];\n}\nreturn [{ json: { ...$json, telegram_chat_id: chat, telegram_message: msg } }];"
-      }
     }
   ],
   "settings": {

@@ -112,6 +112,12 @@ Response:
   }
 }
 ```
+
+Notes:
+- For node/provider-specific diagnostics, `pack.failure` may include additional optional fields.
+- Telegram node parse failures may include:
+  - `error_description`: raw Telegram API description when available
+  - `telegram_error`: object with provider diagnostics (for example `is_markdownv2_parse_error`, `reserved_character`)
 Notes:
 - The backend query returns exactly one row.
 - `result.meta.found` and `result.row.found` indicate hit/miss.

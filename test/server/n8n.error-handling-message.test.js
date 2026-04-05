@@ -56,6 +56,40 @@ describe('n8n wf99 error handling nodes', () => {
     expect(out[0].json.ignore_rule_id).toBe('wf04_gateway_timeout_retry_later');
   });
 
+  test('extract failure context preserves Telegram parse-entity details for MarkdownV2 failures', async () => {
+    const out = await extractFailureContext({
+      $json: {
+        workflow: {
+          id: 'dq9Nex-IR8AToJvHksphj',
+          name: '10 Read',
+        },
+        execution: {
+          id: '4428',
+          error: {
+            message: 'Bad request - please check your parameters',
+            description: "Bad Request: can't parse entities: Character '#' is reserved and must be escaped with the preceding '\\\\'",
+            stack: 'NodeApiError: Bad request - please check your parameters\\n    at ExecuteContext.apiRequest (/usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/nodes/Telegram/GenericFunctions.ts:230:9)',
+          },
+        },
+        error: {
+          node: {
+            name: 'Send MarkdownV2 Message',
+          },
+        },
+      },
+    });
+
+    expect(out).toHaveLength(1);
+    expect(out[0].json.error_message).toContain("can't parse entities");
+    expect(out[0].json.error_description).toContain("Character '#'");
+    expect(out[0].json.telegram_error).toEqual({
+      provider: 'telegram',
+      api_description: "Bad Request: can't parse entities: Character '#' is reserved and must be escaped with the preceding '\\\\'",
+      is_markdownv2_parse_error: true,
+      reserved_character: '#',
+    });
+  });
+
   test('smoke cleanup path still reports cleanup details in composed message', async () => {
     const requests = [];
 
