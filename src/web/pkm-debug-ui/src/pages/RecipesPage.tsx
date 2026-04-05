@@ -215,7 +215,7 @@ export function RecipesPage() {
           <input
             value={lookupId}
             onChange={(event) => setLookupId(event.target.value.toUpperCase())}
-            placeholder="R42"
+            placeholder="R17"
             className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500 placeholder:text-slate-500 focus:ring"
           />
           <button
@@ -227,7 +227,7 @@ export function RecipesPage() {
             Get By ID
           </button>
           <div className="rounded border border-slate-800 bg-slate-950/40 px-3 py-2 text-xs text-slate-400">
-            /recipe R42 compatible lookup
+            /recipe R&lt;number&gt; compatible lookup
           </div>
         </div>
 

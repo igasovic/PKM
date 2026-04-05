@@ -9,7 +9,16 @@ Rules:
 - Output only the formatted recipe Markdown. No intro, no explanation, no code fences.
 - Keep section names exactly as shown.
 - Keep ingredient and instruction ordering faithful to the source.
-- If a field is unknown, omit that metadata line.
+- Required metadata lines (must always be present to avoid `needs_review` on create):
+  - `Servings` (integer >= 1)
+  - `Cuisine` (text; use `unknown` if not provided)
+  - `Protein` (text; use `unknown` if not provided)
+  - `Prep time` (integer minutes; use `0` if unknown)
+  - `Cook time` (integer minutes; use `0` if unknown)
+  - `Difficulty` (text; use `unknown` if not provided)
+- Optional metadata lines:
+  - `Tags`, `Overnight`, `URL`
+- If an optional metadata field is unknown, omit that metadata line.
 - Notes section is optional.
 
 Required structure:

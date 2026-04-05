@@ -115,10 +115,10 @@ describe('n8n command parser', () => {
     expect(unescapeMdv2(out.telegram_message)).toContain('calendar-only access');
   });
 
-  test('/recipe R42 routes to recipe_get with normalized public id', async () => {
-    const out = await runParser('/recipe r42');
+  test('/recipe R17 routes to recipe_get with normalized public id', async () => {
+    const out = await runParser('/recipe r17');
     expect(out.cmd).toBe('recipe_get');
-    expect(out.public_id).toBe('R42');
+    expect(out.public_id).toBe('R17');
   });
 
   test('/recipe <query> routes to recipe_search', async () => {

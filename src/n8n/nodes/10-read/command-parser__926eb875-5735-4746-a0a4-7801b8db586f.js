@@ -85,7 +85,7 @@ const HELP_OVERVIEW =
   `Commands:\n` +
   `/help\n` +
   `/pull <id> [--excerpt]\n` +
-  `/recipe R42\n` +
+  `/recipe R<number>\n` +
   `/recipe lemon pasta\n` +
   `/recipes lemon pasta\n` +
   `/recipe-save <structured_recipe_text>\n` +
@@ -104,7 +104,7 @@ const HELP_OVERVIEW =
 const COMMAND_HELP = {
   help: HELP_OVERVIEW,
   pull: `Usage:\n/pull <id> [--excerpt]\n/pull --help`,
-  recipe: `Usage:\n/recipe <R<number>|query>\nExamples:\n/recipe R42\n/recipe lemon pasta`,
+  recipe: `Usage:\n/recipe <R<number>|query>\nExamples:\n/recipe R17\n/recipe lemon pasta`,
   recipes: `Usage:\n/recipes <query>\nExample:\n/recipes lemon pasta`,
   recipesave: `Usage:\n/recipe-save <structured recipe text>\nExample:\n/recipe-save # Lemon Pasta\\n\\n- Servings: 4\\n\\n## Ingredients\\n- pasta\\n\\n## Instructions\\n1. boil`,
   last: `Usage:\n/last <query> [--days N] [--limit M]\nExamples:\n/last "LangGraph"\n/last agents --days 30 --limit 5`,

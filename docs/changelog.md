@@ -11,7 +11,7 @@
   - Debug UI `Recipes` page (`/recipes`) with search/get/create-from-capture/patch/overwrite/review queue
   - Vite debug proxy routing for `/recipes/*`
 - Added Telegram recipe command path in `10 Read` workflow:
-  - `/recipe R42` direct lookup
+  - `/recipe R<number>` direct lookup
   - `/recipe <query>` and `/recipes <query>` lexical search
   - `/recipe-save <structured_recipe_text>` capture create path
   - new recipe formatter node wiring for Telegram output

@@ -32,7 +32,7 @@
 |---|---|---|---|
 | `POST /recipes/create` | internal | recipe capture workflows, debug UI | supports structured fields or `capture_text` one-shot parsing |
 | `POST /recipes/search` | internal | recipe retrieval workflows, debug UI | returns top hit + alternatives; excludes archived |
-| `POST /recipes/get` | internal | `/recipe R42` flow, debug UI | direct lookup by `public_id`; includes archived |
+| `POST /recipes/get` | internal | `/recipe R<number>` flow, debug UI | direct lookup by `public_id`; includes archived |
 | `POST /recipes/patch` | internal | debug UI, operator tooling | partial updates; status recomputed except archived-preserve rule |
 | `POST /recipes/overwrite` | internal | debug UI, operator tooling | full overwrite; required fields enforced |
 | `GET /recipes/review` | internal | debug UI, operator tooling | review queue of `needs_review` rows |
@@ -65,7 +65,7 @@
 
 ## Telegram Command Mapping (V1)
 
-- `/recipe R42` -> `POST /recipes/get`
+- `/recipe R<number>` -> `POST /recipes/get`
 - `/recipe <query>` -> `POST /recipes/search`
 - `/recipes <query>` -> `POST /recipes/search`
 - `/recipe-save <structured_recipe_text>` -> `POST /recipes/create`
@@ -102,7 +102,7 @@ Request body (one-shot capture):
 Response `200` (full payload):
 ```json
 {
-  "public_id": "R42",
+  "public_id": "R17",
   "title": "Lemon Pasta",
   "status": "needs_review",
   "review_reasons": ["missing_protein"]
@@ -126,7 +126,7 @@ Response `200`:
 {
   "query": "lemon pasta",
   "top_hit": {
-    "public_id": "R42",
+    "public_id": "R17",
     "title": "Lemon Pasta",
     "status": "active"
   },
@@ -149,7 +149,7 @@ Get recipe by `public_id`.
 Request:
 ```json
 {
-  "public_id": "R42"
+  "public_id": "R17"
 }
 ```
 
@@ -164,7 +164,7 @@ Patch selected fields.
 Request:
 ```json
 {
-  "public_id": "R42",
+  "public_id": "R17",
   "patch": {
     "cuisine": "Italian",
     "difficulty": "Easy"
@@ -181,7 +181,7 @@ Overwrite recipe content with a full payload.
 Request:
 ```json
 {
-  "public_id": "R42",
+  "public_id": "R17",
   "recipe": {
     "title": "Lemon Pasta",
     "servings": 4,
@@ -207,7 +207,7 @@ Response `200`:
   "rows": [
     {
       "id": 42,
-      "public_id": "R42",
+      "public_id": "R17",
       "title": "Lemon Pasta",
       "status": "needs_review",
       "review_reasons": ["missing_protein"],

@@ -142,7 +142,7 @@ Ship the first user-facing capture and retrieval path via Telegram.
 
 ### In scope
 - one-shot paste capture only
-- `/recipe R42` direct lookup
+- `/recipe R<number>` direct lookup
 - recipe search command/path for vague-memory retrieval
 - Telegram response rendering for:
   - create confirmation
@@ -159,7 +159,7 @@ Ship the first user-facing capture and retrieval path via Telegram.
 ### Acceptance
 - structured paste works end to end
 - semi-structured paste rejects ambiguous/incomplete required sections
-- `/recipe R42` works end to end
+- `/recipe R<number>` works end to end
 - search returns top result plus two alternatives in Telegram-safe format
 
 ### Risks to watch
@@ -252,7 +252,7 @@ Make the surface safe to evolve after V1.
 - review-state recomputation is deterministic
 - archived exclusion in search is covered
 - duplicate-title behavior is covered
-- `/recipe R42` path is covered
+- `/recipe R<number>` path is covered
 
 ### Risks to watch
 - relying on manual validation only
@@ -275,7 +275,7 @@ V1 is ready when all of the below are true:
 - recipe APIs exist and are documented with examples
 - duplicate title, review state, and archived visibility rules are enforced
 - Debug UI Recipes page works
-- Telegram capture and `/recipe R42` work end to end
+- Telegram capture and `/recipe R<number>` work end to end
 - acceptance criteria in PRD section 12 are satisfied
 
 ## Deferred after V1

@@ -54,7 +54,7 @@ In scope for V1:
 - recipe-specific backend API routes
 - Telegram one-shot recipe capture from structured or semi-structured pasted text
 - lexical search over title, ingredients, and selected static metadata columns
-- direct retrieval by public recipe ID (`R42` shape)
+- direct retrieval by public recipe ID (`R<number>` shape)
 - full overwrite and patch update APIs
 - review queue support for incomplete non-required metadata
 - debug UI page for searching, reading, and updating recipes
@@ -168,7 +168,7 @@ Debug UI gets a dedicated **Recipes** page for search/read/update support. The d
 6. Telegram renders the same compact/full recipe card shape used for direct lookup.
 
 ### 7.3 V1 direct lookup flow
-1. User sends `/recipe R42`.
+1. User sends `/recipe R<number>`.
 2. n8n resolves the command and calls recipe get-by-public-id API.
 3. Backend returns the full recipe object.
 4. Telegram renders the user-facing recipe card with all ingredients, instructions, and notes.
@@ -315,7 +315,7 @@ Purpose:
 - fetch a recipe by `public_id`
 
 Behavior:
-- supports `/recipe R42`
+- supports `/recipe R<number>`
 - returns full recipe object including archived rows
 
 ### 9.4 Update APIs
@@ -351,7 +351,7 @@ The debug UI should consume full backend recipe payloads, including `search_text
 
 ### 9.7 Direct Telegram command contract
 Initial direct command:
-- `/recipe R42`
+- `/recipe R<number>`
 
 Other Telegram search/capture commands remain implementation-defined in V1 and should be finalized in API/examples before coding.
 
@@ -454,8 +454,8 @@ Rollback scope:
 ### 12.2 Retrieval acceptance
 - lexical search returns one best full hit plus two compact alternatives
 - archived rows do not appear in normal search
-- `/recipe R42` returns the target recipe card if it exists
-- `/recipe R42` can return archived rows
+- `/recipe R<number>` returns the target recipe card if it exists
+- `/recipe R<number>` can return archived rows
 
 ### 12.3 Update acceptance
 - patch and overwrite paths both work
@@ -464,7 +464,7 @@ Rollback scope:
 
 ### 12.4 UX acceptance
 User-facing recipe card includes:
-- title and `#R42`
+- title and `#R<number>`
 - review badge when `needs_review`
 - servings / cuisine / protein / difficulty when present
 - prep / cook / total time when present
