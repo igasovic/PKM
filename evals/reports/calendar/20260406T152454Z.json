@@ -1,0 +1,2000 @@
+{
+  "metadata": {
+    "surface": "calendar_normalize",
+    "timestamp": "20260406T152454Z",
+    "backend_url": "http://127.0.0.1:3010",
+    "fixture_files": [
+      "evals/calendar/fixtures/gold/normalize.json"
+    ],
+    "selected_cases": 48,
+    "targets": {
+      "field_extraction_gte": 0.95,
+      "clarification_accuracy_gte": 0.97,
+      "deterministic_correctness_eq": 1
+    },
+    "non_gating": true
+  },
+  "summary": {
+    "total": 48,
+    "passed": 22,
+    "failed": 26,
+    "accuracy": 0.4583333333333333,
+    "field_extraction": 0.815,
+    "clarification_accuracy": 0.7,
+    "deterministic_correctness": 0.2,
+    "failure_groups": {
+      "bad_clarification_decision": [
+        {
+          "case_id": "N-CLAR-002",
+          "name": "dentist missing time",
+          "bucket": "clarification",
+          "failure_tags": [
+            "bad_clarification_decision"
+          ],
+          "run_id": "eval.calendar.20260406T152454Z.N-CLAR-002",
+          "expect": {
+            "status": "needs_clarification",
+            "missing_fields_includes": [
+              "start_time"
+            ]
+          },
+          "expected_status": "needs_clarification",
+          "actual_status": "ready_to_create",
+          "actual_missing_fields": [],
+          "llm_confidence": 0.3,
+          "llm_used": true,
+          "observability_ok": true,
+          "pass": false,
+          "assertions_total": 2,
+          "assertions_passed": 0,
+          "assertion_details": [
+            {
+              "field": "missing_fields_includes",
+              "ok": false
+            }
+          ]
+        }
+      ],
+      "high_confidence_errors": [],
+      "missing_observability": []
+    },
+    "bucket_summary": [
+      {
+        "bucket": "clean",
+        "total": 28,
+        "passed": 13,
+        "accuracy": 0.4642857142857143
+      },
+      {
+        "bucket": "clarification",
+        "total": 10,
+        "passed": 7,
+        "accuracy": 0.7
+      },
+      {
+        "bucket": "rejection_edge",
+        "total": 10,
+        "passed": 2,
+        "accuracy": 0.2
+      }
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "N-CLEAN-001",
+      "name": "mila dentist default med duration",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-001",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "MED",
+        "duration_minutes": 60,
+        "subject_people_tag": "M",
+        "logical_color": "purple"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 5,
+      "assertions_passed": 5,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-002",
+      "name": "home no padding explicit duration",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-002",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "MED",
+        "duration_minutes": 90,
+        "padded": false,
+        "subject_people_tag": "M",
+        "logical_color": "purple"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 6,
+      "assertions_passed": 6,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "padded",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-003",
+      "name": "louie vet default dog duration",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-003",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "DOG",
+        "duration_minutes": 60,
+        "subject_people_tag": "L",
+        "logical_color": "orange"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 3,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": false
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-004",
+      "name": "family birthday collapse",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-004",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "EVT",
+        "duration_minutes": 180,
+        "subject_people_tag": "FAM",
+        "logical_color": "green"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 4,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-005",
+      "name": "igor danijela meeting admin",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-005",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "ADM",
+        "duration_minutes": 30,
+        "subject_people_tag": "Ig,D",
+        "logical_color": "blue"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.45,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 4,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-006",
+      "name": "school meeting kid category",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-006",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "KID",
+        "duration_minutes": 45,
+        "subject_people_tag": "Iv",
+        "logical_color": "yellow"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 4,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-007",
+      "name": "trip two hours",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-007",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "TRV",
+        "duration_minutes": 120,
+        "subject_people_tag": "Ig",
+        "logical_color": "blue"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 5,
+      "assertions_passed": 5,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-008",
+      "name": "home cleaning category",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-008",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "HOME",
+        "duration_minutes": 60,
+        "padded": false,
+        "subject_people_tag": "D",
+        "logical_color": "white"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 6,
+      "assertions_passed": 6,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "padded",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-009",
+      "name": "swim practice kids default duration",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-009",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "KID",
+        "duration_minutes": 60,
+        "subject_people_tag": "M",
+        "logical_color": "purple"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 3,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": false
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-010",
+      "name": "iso date doctor checkup",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-010",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "MED",
+        "duration_minutes": 60,
+        "subject_people_tag": "M",
+        "logical_color": "purple"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 5,
+      "assertions_passed": 5,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-011",
+      "name": "admin paperwork call",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-011",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "ADM",
+        "duration_minutes": 30,
+        "subject_people_tag": "Ig",
+        "logical_color": "blue"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.4,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 3,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": false
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-012",
+      "name": "family concert explicit people",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-012",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "EVT",
+        "duration_minutes": 120,
+        "subject_people_tag": "FAM",
+        "logical_color": "green"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 5,
+      "assertions_passed": 5,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-013",
+      "name": "house repair at home",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-013",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "HOME",
+        "duration_minutes": 60,
+        "padded": false,
+        "subject_people_tag": "D",
+        "logical_color": "white"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 6,
+      "assertions_passed": 6,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "padded",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-014",
+      "name": "birthday override single person",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-014",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "EVT",
+        "duration_minutes": 180,
+        "subject_people_tag": "Iv",
+        "logical_color": "yellow"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 4,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-015",
+      "name": "louie walk default dog",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-015",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "DOG",
+        "duration_minutes": 60,
+        "subject_people_tag": "L",
+        "logical_color": "orange"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 3,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": false
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-016",
+      "name": "maps google location preserved",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-016",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "MED",
+        "duration_minutes": 60,
+        "location_prefix": "https://www.google.com/maps",
+        "subject_people_tag": "M",
+        "logical_color": "purple"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 6,
+      "assertions_passed": 6,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "location_prefix",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-017",
+      "name": "airport trip early",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-017",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "TRV",
+        "duration_minutes": 120,
+        "subject_people_tag": "Ig",
+        "logical_color": "blue"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.4,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 5,
+      "assertions_passed": 5,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-018",
+      "name": "school parent meeting with two people",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-018",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "KID",
+        "duration_minutes": 60,
+        "subject_people_tag": "Iv,D",
+        "logical_color": "yellow"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.5,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 3,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": false
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-019",
+      "name": "family event explicit hours",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-019",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "EVT",
+        "duration_minutes": 180,
+        "subject_people_tag": "FAM",
+        "logical_color": "green"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 4,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-020",
+      "name": "meeting with iso and duration",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-020",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "ADM",
+        "duration_minutes": 45,
+        "subject_people_tag": "Ig",
+        "logical_color": "blue"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 4,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLAR-001",
+      "name": "birthday missing time and people",
+      "bucket": "clarification",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLAR-001",
+      "expect": {
+        "status": "needs_clarification",
+        "missing_fields_includes": [
+          "start_time",
+          "people"
+        ]
+      },
+      "expected_status": "needs_clarification",
+      "actual_status": "needs_clarification",
+      "actual_missing_fields": [
+        "start_time",
+        "people"
+      ],
+      "llm_confidence": 0.3,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 2,
+      "assertions_passed": 2,
+      "assertion_details": [
+        {
+          "field": "missing_fields_includes",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLAR-002",
+      "name": "dentist missing time",
+      "bucket": "clarification",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLAR-002",
+      "expect": {
+        "status": "needs_clarification",
+        "missing_fields_includes": [
+          "start_time"
+        ]
+      },
+      "expected_status": "needs_clarification",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.3,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 2,
+      "assertions_passed": 0,
+      "assertion_details": [
+        {
+          "field": "missing_fields_includes",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLAR-003",
+      "name": "time only missing title and people",
+      "bucket": "clarification",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLAR-003",
+      "expect": {
+        "status": "needs_clarification",
+        "missing_fields_includes": [
+          "title",
+          "people"
+        ]
+      },
+      "expected_status": "needs_clarification",
+      "actual_status": "needs_clarification",
+      "actual_missing_fields": [
+        "title",
+        "people"
+      ],
+      "llm_confidence": 0.4,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 2,
+      "assertions_passed": 2,
+      "assertion_details": [
+        {
+          "field": "missing_fields_includes",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLAR-004",
+      "name": "cal prefix insufficient details",
+      "bucket": "clarification",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLAR-004",
+      "expect": {
+        "status": "needs_clarification",
+        "missing_fields_includes": [
+          "date",
+          "start_time",
+          "people"
+        ]
+      },
+      "expected_status": "needs_clarification",
+      "actual_status": "needs_clarification",
+      "actual_missing_fields": [
+        "start_time",
+        "people"
+      ],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 2,
+      "assertions_passed": 1,
+      "assertion_details": [
+        {
+          "field": "missing_fields_includes",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLAR-005",
+      "name": "next week unsupported granularity",
+      "bucket": "clarification",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLAR-005",
+      "expect": {
+        "status": "needs_clarification",
+        "missing_fields_includes": [
+          "date",
+          "start_time",
+          "people"
+        ]
+      },
+      "expected_status": "needs_clarification",
+      "actual_status": "needs_clarification",
+      "actual_missing_fields": [
+        "date",
+        "start_time",
+        "people"
+      ],
+      "llm_confidence": 0.4,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 2,
+      "assertions_passed": 2,
+      "assertion_details": [
+        {
+          "field": "missing_fields_includes",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLAR-006",
+      "name": "appointment weekday no time",
+      "bucket": "clarification",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLAR-006",
+      "expect": {
+        "status": "needs_clarification",
+        "missing_fields_includes": [
+          "start_time"
+        ]
+      },
+      "expected_status": "needs_clarification",
+      "actual_status": "needs_clarification",
+      "actual_missing_fields": [
+        "start_time"
+      ],
+      "llm_confidence": 0.25,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 2,
+      "assertions_passed": 2,
+      "assertion_details": [
+        {
+          "field": "missing_fields_includes",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLAR-007",
+      "name": "party missing time only",
+      "bucket": "clarification",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLAR-007",
+      "expect": {
+        "status": "needs_clarification",
+        "missing_fields_includes": [
+          "start_time"
+        ]
+      },
+      "expected_status": "needs_clarification",
+      "actual_status": "needs_clarification",
+      "actual_missing_fields": [
+        "start_time"
+      ],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 2,
+      "assertions_passed": 2,
+      "assertion_details": [
+        {
+          "field": "missing_fields_includes",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLAR-008",
+      "name": "louie walk missing date and time",
+      "bucket": "clarification",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLAR-008",
+      "expect": {
+        "status": "needs_clarification",
+        "missing_fields_includes": [
+          "date",
+          "start_time"
+        ]
+      },
+      "expected_status": "needs_clarification",
+      "actual_status": "needs_clarification",
+      "actual_missing_fields": [
+        "start_time"
+      ],
+      "llm_confidence": 0.5,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 2,
+      "assertions_passed": 1,
+      "assertion_details": [
+        {
+          "field": "missing_fields_includes",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLAR-009",
+      "name": "home cleaning no time",
+      "bucket": "clarification",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLAR-009",
+      "expect": {
+        "status": "needs_clarification",
+        "missing_fields_includes": [
+          "start_time"
+        ]
+      },
+      "expected_status": "needs_clarification",
+      "actual_status": "needs_clarification",
+      "actual_missing_fields": [
+        "start_time"
+      ],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 2,
+      "assertions_passed": 2,
+      "assertion_details": [
+        {
+          "field": "missing_fields_includes",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLAR-010",
+      "name": "swim practice missing people and time",
+      "bucket": "clarification",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLAR-010",
+      "expect": {
+        "status": "needs_clarification",
+        "missing_fields_includes": [
+          "start_time",
+          "people"
+        ]
+      },
+      "expected_status": "needs_clarification",
+      "actual_status": "needs_clarification",
+      "actual_missing_fields": [
+        "start_time",
+        "people"
+      ],
+      "llm_confidence": 0.4,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 2,
+      "assertions_passed": 2,
+      "assertion_details": [
+        {
+          "field": "missing_fields_includes",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-EDGE-001",
+      "name": "all-day medical rejected",
+      "bucket": "rejection_edge",
+      "failure_tags": [
+        "deterministic_correctness"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-EDGE-001",
+      "expect": {
+        "status": "rejected",
+        "reason_code": "all_day_not_supported"
+      },
+      "expected_status": "rejected",
+      "actual_status": "rejected",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.7,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 2,
+      "assertions_passed": 1,
+      "assertion_details": [
+        {
+          "field": "reason_code",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "case_id": "N-EDGE-002",
+      "name": "all day family birthday rejected",
+      "bucket": "rejection_edge",
+      "failure_tags": [
+        "deterministic_correctness"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-EDGE-002",
+      "expect": {
+        "status": "rejected",
+        "reason_code": "all_day_not_supported"
+      },
+      "expected_status": "rejected",
+      "actual_status": "rejected",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.4,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 2,
+      "assertions_passed": 1,
+      "assertion_details": [
+        {
+          "field": "reason_code",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "case_id": "N-EDGE-003",
+      "name": "all-day school rejected",
+      "bucket": "rejection_edge",
+      "failure_tags": [
+        "deterministic_correctness"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-EDGE-003",
+      "expect": {
+        "status": "rejected",
+        "reason_code": "all_day_not_supported"
+      },
+      "expected_status": "rejected",
+      "actual_status": "rejected",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.4,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 2,
+      "assertions_passed": 1,
+      "assertion_details": [
+        {
+          "field": "reason_code",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "case_id": "N-EDGE-004",
+      "name": "all day travel rejected",
+      "bucket": "rejection_edge",
+      "failure_tags": [
+        "deterministic_correctness"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-EDGE-004",
+      "expect": {
+        "status": "rejected",
+        "reason_code": "all_day_not_supported"
+      },
+      "expected_status": "rejected",
+      "actual_status": "rejected",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 2,
+      "assertions_passed": 1,
+      "assertion_details": [
+        {
+          "field": "reason_code",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "case_id": "N-EDGE-005",
+      "name": "all-day vet rejected",
+      "bucket": "rejection_edge",
+      "failure_tags": [
+        "deterministic_correctness"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-EDGE-005",
+      "expect": {
+        "status": "rejected",
+        "reason_code": "all_day_not_supported"
+      },
+      "expected_status": "rejected",
+      "actual_status": "rejected",
+      "actual_missing_fields": [],
+      "llm_confidence": 0,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 2,
+      "assertions_passed": 1,
+      "assertion_details": [
+        {
+          "field": "reason_code",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "case_id": "N-EDGE-006",
+      "name": "home edge still creates",
+      "bucket": "rejection_edge",
+      "failure_tags": [
+        "deterministic_correctness"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-EDGE-006",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "MED",
+        "duration_minutes": 60,
+        "padded": false,
+        "subject_people_tag": "M",
+        "logical_color": "purple"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.75,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 6,
+      "assertions_passed": 5,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "padded",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-EDGE-007",
+      "name": "apple maps edge location",
+      "bucket": "rejection_edge",
+      "failure_tags": [
+        "deterministic_correctness"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-EDGE-007",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "MED",
+        "location_prefix": "https://maps.apple.com",
+        "subject_people_tag": "M",
+        "logical_color": "purple"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 5,
+      "assertions_passed": 5,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "location_prefix",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-EDGE-008",
+      "name": "family birthday edge color",
+      "bucket": "rejection_edge",
+      "failure_tags": [
+        "deterministic_correctness"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-EDGE-008",
+      "expect": {
+        "status": "ready_to_create",
+        "subject_people_tag": "FAM",
+        "logical_color": "green",
+        "duration_minutes": 180
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 4,
+      "assertions_passed": 4,
+      "assertion_details": [
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-EDGE-009",
+      "name": "late night trip crossing day",
+      "bucket": "rejection_edge",
+      "failure_tags": [
+        "deterministic_correctness"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-EDGE-009",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "TRV",
+        "duration_minutes": 120,
+        "subject_people_tag": "Ig",
+        "logical_color": "blue"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.7,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 4,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-EDGE-010",
+      "name": "24h style meeting edge",
+      "bucket": "rejection_edge",
+      "failure_tags": [
+        "deterministic_correctness"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-EDGE-010",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "ADM",
+        "subject_people_tag": "Ig",
+        "logical_color": "blue"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 4,
+      "assertions_passed": 3,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-021",
+      "name": "plain text location preserved",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-021",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "MED",
+        "duration_minutes": 60,
+        "padded": true,
+        "subject_people_tag": "M",
+        "logical_color": "purple"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 6,
+      "assertions_passed": 6,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "padded",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-022",
+      "name": "padded true default no location",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-022",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "ADM",
+        "duration_minutes": 30,
+        "padded": true,
+        "subject_people_tag": "D",
+        "logical_color": "white"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.65,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 6,
+      "assertions_passed": 6,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "padded",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-023",
+      "name": "danijela at home no padding",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-023",
+      "expect": {
+        "status": "ready_to_create",
+        "padded": false,
+        "subject_people_tag": "D",
+        "logical_color": "white"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 4,
+      "assertions_passed": 3,
+      "assertion_details": [
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "padded",
+          "ok": false
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-024",
+      "name": "louie grooming padded true",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-024",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "DOG",
+        "duration_minutes": 60,
+        "padded": true,
+        "subject_people_tag": "L",
+        "logical_color": "orange"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 6,
+      "assertions_passed": 6,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "padded",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-025",
+      "name": "multi-person non-family first person color",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-025",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "KID",
+        "duration_minutes": 60,
+        "subject_people_tag": "M,Iv",
+        "logical_color": "purple"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 3,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": false
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-026",
+      "name": "school class photo SCH category",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-026",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "SCH",
+        "duration_minutes": 60,
+        "subject_people_tag": "M",
+        "logical_color": "purple"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.6,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": true,
+      "assertions_total": 5,
+      "assertions_passed": 5,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": true
+        },
+        {
+          "field": "duration_minutes",
+          "ok": true
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-027",
+      "name": "school egg hunt day SCH category",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-027",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "SCH",
+        "duration_minutes": 60,
+        "subject_people_tag": "Iv",
+        "logical_color": "yellow"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 1,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": false
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": false
+        },
+        {
+          "field": "logical_color",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "case_id": "N-CLEAN-028",
+      "name": "neighborhood block party OTH category",
+      "bucket": "clean",
+      "failure_tags": [
+        "field_extraction"
+      ],
+      "run_id": "eval.calendar.20260406T152454Z.N-CLEAN-028",
+      "expect": {
+        "status": "ready_to_create",
+        "category_code": "OTH",
+        "duration_minutes": 60,
+        "subject_people_tag": "Ig,D",
+        "logical_color": "blue"
+      },
+      "expected_status": "ready_to_create",
+      "actual_status": "ready_to_create",
+      "actual_missing_fields": [],
+      "llm_confidence": 0.2,
+      "llm_used": true,
+      "observability_ok": true,
+      "pass": false,
+      "assertions_total": 5,
+      "assertions_passed": 3,
+      "assertion_details": [
+        {
+          "field": "category_code",
+          "ok": false
+        },
+        {
+          "field": "duration_minutes",
+          "ok": false
+        },
+        {
+          "field": "subject_people_tag",
+          "ok": true
+        },
+        {
+          "field": "logical_color",
+          "ok": true
+        }
+      ]
+    }
+  ]
+}
