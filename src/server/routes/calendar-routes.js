@@ -252,6 +252,7 @@ async function handleCalendarRoutes(ctx) {
       json(res, 200, {
         request_id: request.request_id,
         status: normalized.status,
+        ...(normalized.reason_code ? { reason_code: normalized.reason_code } : {}),
         missing_fields: normalized.missing_fields || [],
         clarification_question: normalized.clarification_question || null,
         normalized_event: normalized.normalized_event || null,

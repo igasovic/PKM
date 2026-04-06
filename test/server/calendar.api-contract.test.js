@@ -487,6 +487,59 @@ describe('calendar API contract', () => {
     });
   });
 
+  test('POST /calendar/normalize returns reason_code for deterministic rejected normalize result', async () => {
+    calendarRepoMock.upsertCalendarRequest.mockResolvedValue({
+      request_id: '5f78c523-eed7-46fa-bad6-a3fce753b95e',
+      status: 'received',
+      raw_text: 'all-day Mila doctor appointment tomorrow',
+      clarification_turns: [],
+    });
+    normalizeMock.mockReturnValue({
+      status: 'rejected',
+      reason_code: 'all_day_not_supported',
+      missing_fields: [],
+      clarification_question: null,
+      normalized_event: null,
+      warning_codes: [],
+      message: 'All-day event creation is not supported in v1. Please provide a start time and duration.',
+    });
+    calendarRepoMock.updateCalendarRequestById.mockResolvedValue({
+      request_id: '5f78c523-eed7-46fa-bad6-a3fce753b95e',
+      status: 'ignored',
+    });
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/calendar/normalize',
+      JSON.stringify({
+        raw_text: 'all-day Mila doctor appointment tomorrow',
+        actor_code: 'igor',
+        source: { chat_id: '1509032341', message_id: '903' },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      }
+    );
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({
+      request_id: '5f78c523-eed7-46fa-bad6-a3fce753b95e',
+      status: 'rejected',
+      reason_code: 'all_day_not_supported',
+      missing_fields: [],
+      clarification_question: null,
+      normalized_event: null,
+      warning_codes: [],
+      message: 'All-day event creation is not supported in v1. Please provide a start time and duration.',
+      request_status: 'ignored',
+    });
+  });
+
   test('POST /calendar/normalize returns rejected payload for malformed request instead of HTTP 400', async () => {
     await startServerWithMocks();
     if (listenDenied) return;

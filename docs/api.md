@@ -61,7 +61,7 @@ The machine-readable route ownership registry lives in `docs/backend_route_regis
 |---|---|---|---|
 | `docs/api_control.md` | health, internal ChatGPT actions, config, debug routes | operators, UI, n8n admin flows | includes run correlation conventions |
 | `docs/api_ingest.md` | normalization, Tier-1 enrichment, batch status, backlog import | n8n ingest flows, backend orchestration | batch table definitions live in `docs/database_schema.md` |
-| `docs/api_calendar.md` | calendar route / normalize / finalize / observe | n8n calendar workflows | admin-protected business-log surface |
+| `docs/api_calendar.md` | calendar route / normalize / finalize / observe | n8n calendar workflows | admin-protected business-log surface; normalize rejected responses may include `reason_code` |
 | `docs/api_distill.md` | Tier-2 sync / plan / run | operators, n8n, backend control plane | async status surfaces are documented in `docs/api_ingest.md` |
 | `docs/api_read_write.md` | `/db/*` read, insert, update, delete, move | n8n and internal tooling | includes `/db/*` response-shape rules |
 | `docs/api_recipes.md` | `/recipes/*` create/search/get/update/review/link/note | Telegram recipe workflows, debug UI, operators | includes `/recipe`, `/recipe-link`, and `/recipe-note` command expectations |
