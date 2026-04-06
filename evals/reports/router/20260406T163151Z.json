@@ -1,0 +1,1448 @@
+{
+  "metadata": {
+    "surface": "router",
+    "timestamp": "20260406T163151Z",
+    "backend_url": "http://127.0.0.1:3010",
+    "fixture_files": [
+      "evals/router/fixtures/gold/stateless.json",
+      "evals/router/fixtures/gold/stateful.json"
+    ],
+    "selected_stateless": 61,
+    "selected_stateful": 8,
+    "targets": {
+      "accuracy_gte": 0.95,
+      "calendar_create_precision_gte": 0.98,
+      "ambiguous_recall_gte": 0.93
+    },
+    "non_gating": true
+  },
+  "summary": {
+    "total": 69,
+    "passed": 63,
+    "failed": 6,
+    "accuracy": 0.9130434782608695,
+    "precision_calendar_create": 0.9166666666666666,
+    "ambiguous_recall": 0.8666666666666667,
+    "confusion": {
+      "labels": [
+        "pkm_capture",
+        "calendar_create",
+        "calendar_query",
+        "ambiguous"
+      ],
+      "matrix": {
+        "pkm_capture": {
+          "pkm_capture": 18,
+          "calendar_create": 0,
+          "calendar_query": 1,
+          "ambiguous": 0
+        },
+        "calendar_create": {
+          "pkm_capture": 0,
+          "calendar_create": 22,
+          "calendar_query": 0,
+          "ambiguous": 0
+        },
+        "calendar_query": {
+          "pkm_capture": 0,
+          "calendar_create": 0,
+          "calendar_query": 10,
+          "ambiguous": 3
+        },
+        "ambiguous": {
+          "pkm_capture": 0,
+          "calendar_create": 2,
+          "calendar_query": 0,
+          "ambiguous": 13
+        }
+      }
+    },
+    "failure_groups": {
+      "false_positive_calendar_create": [
+        {
+          "case_id": "R-AMB-010",
+          "name": "book calendar appointment",
+          "bucket": "ambiguous",
+          "mode": "stateless",
+          "failure_tags": [
+            "bad_clarification_decision"
+          ],
+          "run_id": "eval.router.20260406T163151Z.R-AMB-010",
+          "expected_route": "ambiguous",
+          "actual_route": "calendar_create",
+          "confidence": 0.84,
+          "request_id": "59b4c0c9-051c-46b8-a103-cf42d4697d03",
+          "pass": false,
+          "observability_ok": true,
+          "duration_ms": 675
+        },
+        {
+          "case_id": "R-AMB-016",
+          "name": "question for availability",
+          "bucket": "ambiguous",
+          "mode": "stateless",
+          "failure_tags": [
+            "bad_clarification_decision"
+          ],
+          "run_id": "eval.router.20260406T163151Z.R-AMB-016",
+          "expected_route": "ambiguous",
+          "actual_route": "calendar_create",
+          "confidence": 0.92,
+          "request_id": "d08d0d35-cb1a-4de3-9a86-e471487d2da0",
+          "pass": false,
+          "observability_ok": true,
+          "duration_ms": 670
+        }
+      ],
+      "bad_clarification_decision": [
+        {
+          "case_id": "R-OBV-006",
+          "name": "weekday list query",
+          "bucket": "obvious",
+          "mode": "stateless",
+          "failure_tags": [
+            "baseline_route"
+          ],
+          "run_id": "eval.router.20260406T163151Z.R-OBV-006",
+          "expected_route": "calendar_query",
+          "actual_route": "ambiguous",
+          "confidence": 0.5,
+          "request_id": "18f1a313-2f18-4e3b-952c-93baf5b49a0e",
+          "pass": false,
+          "observability_ok": true,
+          "duration_ms": 922
+        },
+        {
+          "case_id": "R-OBV-020",
+          "name": "explicit query with events",
+          "bucket": "obvious",
+          "mode": "stateless",
+          "failure_tags": [
+            "baseline_route"
+          ],
+          "run_id": "eval.router.20260406T163151Z.R-OBV-020",
+          "expected_route": "calendar_query",
+          "actual_route": "ambiguous",
+          "confidence": 0.5,
+          "request_id": "6b27db0a-2ba1-4bd7-bf25-384b7543be42",
+          "pass": false,
+          "observability_ok": true,
+          "duration_ms": 782
+        },
+        {
+          "case_id": "R-OBV-030",
+          "name": "short and clear",
+          "bucket": "obvious",
+          "mode": "stateless",
+          "failure_tags": [
+            "baseline_route"
+          ],
+          "run_id": "eval.router.20260406T163151Z.R-OBV-030",
+          "expected_route": "calendar_query",
+          "actual_route": "ambiguous",
+          "confidence": 0.5,
+          "request_id": "1575e29d-2fea-4019-8f73-3e008585f619",
+          "pass": false,
+          "observability_ok": true,
+          "duration_ms": 699
+        },
+        {
+          "case_id": "R-AMB-010",
+          "name": "book calendar appointment",
+          "bucket": "ambiguous",
+          "mode": "stateless",
+          "failure_tags": [
+            "bad_clarification_decision"
+          ],
+          "run_id": "eval.router.20260406T163151Z.R-AMB-010",
+          "expected_route": "ambiguous",
+          "actual_route": "calendar_create",
+          "confidence": 0.84,
+          "request_id": "59b4c0c9-051c-46b8-a103-cf42d4697d03",
+          "pass": false,
+          "observability_ok": true,
+          "duration_ms": 675
+        },
+        {
+          "case_id": "R-AMB-016",
+          "name": "question for availability",
+          "bucket": "ambiguous",
+          "mode": "stateless",
+          "failure_tags": [
+            "bad_clarification_decision"
+          ],
+          "run_id": "eval.router.20260406T163151Z.R-AMB-016",
+          "expected_route": "ambiguous",
+          "actual_route": "calendar_create",
+          "confidence": 0.92,
+          "request_id": "d08d0d35-cb1a-4de3-9a86-e471487d2da0",
+          "pass": false,
+          "observability_ok": true,
+          "duration_ms": 670
+        }
+      ],
+      "high_confidence_errors": [
+        {
+          "case_id": "R-AMB-016",
+          "name": "question for availability",
+          "bucket": "ambiguous",
+          "mode": "stateless",
+          "failure_tags": [
+            "bad_clarification_decision"
+          ],
+          "run_id": "eval.router.20260406T163151Z.R-AMB-016",
+          "expected_route": "ambiguous",
+          "actual_route": "calendar_create",
+          "confidence": 0.92,
+          "request_id": "d08d0d35-cb1a-4de3-9a86-e471487d2da0",
+          "pass": false,
+          "observability_ok": true,
+          "duration_ms": 670
+        },
+        {
+          "case_id": "R-ADV-010",
+          "name": "weekday and plan noun",
+          "bucket": "adversarial_edge",
+          "mode": "stateless",
+          "failure_tags": [
+            "false_positive_calendar_create"
+          ],
+          "run_id": "eval.router.20260406T163151Z.R-ADV-010",
+          "expected_route": "pkm_capture",
+          "actual_route": "calendar_query",
+          "confidence": 0.9,
+          "request_id": "37f68eb2-c178-41b2-9751-3b9e75750d39",
+          "pass": false,
+          "observability_ok": true,
+          "duration_ms": 650
+        }
+      ],
+      "missing_observability": []
+    },
+    "bucket_summary": [
+      {
+        "bucket": "obvious",
+        "total": 31,
+        "passed": 28,
+        "accuracy": 0.9032258064516129
+      },
+      {
+        "bucket": "ambiguous",
+        "total": 15,
+        "passed": 13,
+        "accuracy": 0.8666666666666667
+      },
+      {
+        "bucket": "adversarial_edge",
+        "total": 15,
+        "passed": 14,
+        "accuracy": 0.9333333333333333
+      },
+      {
+        "bucket": "stateful_continuation",
+        "total": 8,
+        "passed": 8,
+        "accuracy": 1
+      }
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "R-OBV-001",
+      "name": "pkm prefix override",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "prefix_override"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-001",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 1,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 2370
+    },
+    {
+      "case_id": "R-OBV-002",
+      "name": "slash command passthrough",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "slash_passthrough"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-002",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.99,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 729
+    },
+    {
+      "case_id": "R-OBV-003",
+      "name": "cal prefix create",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "prefix_override"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-003",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 1,
+      "request_id": "932586b6-08e8-4347-9a7b-0df1a9cf94ec",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 763
+    },
+    {
+      "case_id": "R-OBV-004",
+      "name": "cal prefix query",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "prefix_override"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-004",
+      "expected_route": "calendar_query",
+      "actual_route": "calendar_query",
+      "confidence": 0.96,
+      "request_id": "1f34fcbb-1883-4522-9fde-acc35179103d",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 930
+    },
+    {
+      "case_id": "R-OBV-005",
+      "name": "obvious calendar query tomorrow",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-005",
+      "expected_route": "calendar_query",
+      "actual_route": "calendar_query",
+      "confidence": 0.9,
+      "request_id": "336f867f-9e83-43f3-b15c-f5ab19728651",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 1105
+    },
+    {
+      "case_id": "R-OBV-006",
+      "name": "weekday list query",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-006",
+      "expected_route": "calendar_query",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "18f1a313-2f18-4e3b-952c-93baf5b49a0e",
+      "pass": false,
+      "observability_ok": true,
+      "duration_ms": 922
+    },
+    {
+      "case_id": "R-OBV-007",
+      "name": "calendar question sunday",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-007",
+      "expected_route": "calendar_query",
+      "actual_route": "calendar_query",
+      "confidence": 0.9,
+      "request_id": "efefb31c-0d8f-471e-8ead-f0ac12f4072e",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 758
+    },
+    {
+      "case_id": "R-OBV-008",
+      "name": "anything planned query",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-008",
+      "expected_route": "calendar_query",
+      "actual_route": "calendar_query",
+      "confidence": 0.9,
+      "request_id": "ada07c4e-44f6-42fb-98f6-d35ddcf8fb22",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 725
+    },
+    {
+      "case_id": "R-OBV-009",
+      "name": "dentist create",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-009",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.84,
+      "request_id": "43f2fde8-b362-4e51-8f70-43bd2a1ad98a",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 781
+    },
+    {
+      "case_id": "R-OBV-010",
+      "name": "vet create",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-010",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.84,
+      "request_id": "07c24457-341c-4b8e-aea8-ec582faaac8c",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 698
+    },
+    {
+      "case_id": "R-OBV-011",
+      "name": "appointment create",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-011",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.84,
+      "request_id": "f02e94c4-2832-4421-8614-c7dd7c1702d2",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 708
+    },
+    {
+      "case_id": "R-OBV-012",
+      "name": "birthday create",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-012",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.84,
+      "request_id": "ae614082-5b76-4c55-ac64-c0b9b1d493d3",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 710
+    },
+    {
+      "case_id": "R-OBV-013",
+      "name": "iso-date create",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-013",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.84,
+      "request_id": "3cc83a1f-e2c2-4564-8c71-82ef43e6b276",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 690
+    },
+    {
+      "case_id": "R-OBV-014",
+      "name": "create verb create",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-014",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.92,
+      "request_id": "98ffbf3d-3b81-4d3c-b63a-138683f5976e",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 695
+    },
+    {
+      "case_id": "R-OBV-015",
+      "name": "remind create",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-015",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.84,
+      "request_id": "92222e96-a993-4fb5-8ca5-1c74fdecaaad",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 728
+    },
+    {
+      "case_id": "R-OBV-016",
+      "name": "book create",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-016",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.84,
+      "request_id": "86795822-0fbb-4e70-ad3c-62653136e7b0",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 672
+    },
+    {
+      "case_id": "R-OBV-017",
+      "name": "show calendar monday",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-017",
+      "expected_route": "calendar_query",
+      "actual_route": "calendar_query",
+      "confidence": 0.9,
+      "request_id": "fdf03280-ab34-4c89-8bdf-76fde235ed60",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 683
+    },
+    {
+      "case_id": "R-OBV-018",
+      "name": "calendar tomorrow query",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-018",
+      "expected_route": "calendar_query",
+      "actual_route": "calendar_query",
+      "confidence": 0.9,
+      "request_id": "b899fce0-a246-473e-9480-50ea78609bea",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 680
+    },
+    {
+      "case_id": "R-OBV-019",
+      "name": "pkm prefix calendar-looking text",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "prefix_override"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-019",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 1,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 690
+    },
+    {
+      "case_id": "R-OBV-020",
+      "name": "explicit query with events",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-020",
+      "expected_route": "calendar_query",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "6b27db0a-2ba1-4bd7-bf25-384b7543be42",
+      "pass": false,
+      "observability_ok": true,
+      "duration_ms": 782
+    },
+    {
+      "case_id": "R-OBV-021",
+      "name": "Cal prefix query #2",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "prefix_override"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-021",
+      "expected_route": "calendar_query",
+      "actual_route": "calendar_query",
+      "confidence": 0.96,
+      "request_id": "5df1739f-4919-4910-bb93-f567a737c7cb",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 698
+    },
+    {
+      "case_id": "R-OBV-022",
+      "name": "appointment create #2",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-022",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.84,
+      "request_id": "d172ba2e-2142-4b37-b0ee-37abded5437d",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 720
+    },
+    {
+      "case_id": "R-OBV-023",
+      "name": "pkm prefix calendar-looking text #2",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "prefix_override"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-023",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 1,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 683
+    },
+    {
+      "case_id": "R-OBV-024",
+      "name": "google maps",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "url"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-024",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.95,
+      "request_id": "74fc9269-7a41-4edd-b2be-b86f48ff1a81",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 697
+    },
+    {
+      "case_id": "R-OBV-025",
+      "name": "google maps #2",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "url"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-025",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.95,
+      "request_id": "b3ecb39f-3837-48f4-9ea1-14988e31c21f",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 663
+    },
+    {
+      "case_id": "R-OBV-026",
+      "name": "apple maps",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "url"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-026",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.95,
+      "request_id": "01840e1c-d217-487d-ae87-33fd7e979c3d",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 677
+    },
+    {
+      "case_id": "R-OBV-028",
+      "name": "webpage",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "url"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-028",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.62,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 727
+    },
+    {
+      "case_id": "R-OBV-027",
+      "name": "apple maps #2",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "url"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-027",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.95,
+      "request_id": "f4971794-495d-4492-a3cc-566836680f55",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 684
+    },
+    {
+      "case_id": "R-OBV-029",
+      "name": "short",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-029",
+      "expected_route": "calendar_query",
+      "actual_route": "calendar_query",
+      "confidence": 0.9,
+      "request_id": "11bfcd38-3a5b-4baa-b15e-ace46b62fba3",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 738
+    },
+    {
+      "case_id": "R-OBV-030",
+      "name": "short and clear",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "baseline_route"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-OBV-030",
+      "expected_route": "calendar_query",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "1575e29d-2fea-4019-8f73-3e008585f619",
+      "pass": false,
+      "observability_ok": true,
+      "duration_ms": 699
+    },
+    {
+      "case_id": "R-AMB-001",
+      "name": "calendar tomorrow with time",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-001",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "e4fa48c3-07a1-4edb-87e4-534f1f27959b",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 731
+    },
+    {
+      "case_id": "R-AMB-002",
+      "name": "schedule request with can you",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-002",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "aa494dee-65d7-4304-9b8f-d954be142083",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 742
+    },
+    {
+      "case_id": "R-AMB-003",
+      "name": "set schedule tomorrow",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-003",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "6389526d-0cc2-4bc7-9132-c17bc1256f3e",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 710
+    },
+    {
+      "case_id": "R-AMB-004",
+      "name": "do we have dentist tomorrow at time",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-004",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "d45caa6a-6cdd-499e-b37e-0fbebfd59e37",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 725
+    },
+    {
+      "case_id": "R-AMB-005",
+      "name": "calendar friday meeting with time",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-005",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "590411ce-6100-4bfe-b760-bb9ba695f22e",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 692
+    },
+    {
+      "case_id": "R-AMB-006",
+      "name": "what should I put on calendar with time",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-006",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "6bc2b034-dfc0-4632-8bf5-a6694333a7c6",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 787
+    },
+    {
+      "case_id": "R-AMB-007",
+      "name": "schedule calendar event",
+      "bucket": "obvious",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-007",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.92,
+      "request_id": "29373dc9-73bc-4cae-ae6e-49cec97dd9fc",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 688
+    },
+    {
+      "case_id": "R-AMB-008",
+      "name": "list plans with create signal",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-008",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "31cad5ea-7eae-442c-aeaf-a5b5fc7ae72f",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 692
+    },
+    {
+      "case_id": "R-AMB-009",
+      "name": "events tomorrow add vet",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-009",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "032d2403-ec55-40f0-ab99-481903c58657",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 727
+    },
+    {
+      "case_id": "R-AMB-010",
+      "name": "book calendar appointment",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-010",
+      "expected_route": "ambiguous",
+      "actual_route": "calendar_create",
+      "confidence": 0.84,
+      "request_id": "59b4c0c9-051c-46b8-a103-cf42d4697d03",
+      "pass": false,
+      "observability_ok": true,
+      "duration_ms": 675
+    },
+    {
+      "case_id": "R-AMB-011",
+      "name": "show schedule with party time",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-011",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "e7109713-a040-4f59-8716-da3dbae1bb20",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 711
+    },
+    {
+      "case_id": "R-AMB-012",
+      "name": "calendar monday trip time",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-012",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "553aca79-eb8b-4eed-bae8-8836a0126b43",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 724
+    },
+    {
+      "case_id": "R-AMB-013",
+      "name": "anything on calendar with time",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-013",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "8af99fd5-811b-48f1-825b-84d411389a97",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 735
+    },
+    {
+      "case_id": "R-AMB-014",
+      "name": "plans friday doctor time",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-014",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "09cd81b8-ef37-4f29-a1ec-3006aa1d2cf2",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 745
+    },
+    {
+      "case_id": "R-AMB-015",
+      "name": "iso datetime meeting with calendar",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-015",
+      "expected_route": "ambiguous",
+      "actual_route": "ambiguous",
+      "confidence": 0.5,
+      "request_id": "7801e32a-2f69-444c-b6b6-653102067c94",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 750
+    },
+    {
+      "case_id": "R-AMB-016",
+      "name": "question for availability",
+      "bucket": "ambiguous",
+      "mode": "stateless",
+      "failure_tags": [
+        "bad_clarification_decision"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-AMB-016",
+      "expected_route": "ambiguous",
+      "actual_route": "calendar_create",
+      "confidence": 0.92,
+      "request_id": "d08d0d35-cb1a-4de3-9a86-e471487d2da0",
+      "pass": false,
+      "observability_ok": true,
+      "duration_ms": 670
+    },
+    {
+      "case_id": "R-ADV-001",
+      "name": "plain note no routing cues",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "false_positive_calendar_create"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-001",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.62,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 721
+    },
+    {
+      "case_id": "R-ADV-002",
+      "name": "date word only",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "false_positive_calendar_create"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-002",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.62,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 690
+    },
+    {
+      "case_id": "R-ADV-003",
+      "name": "calendar-like plural noun",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "false_positive_calendar_create"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-003",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.62,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 680
+    },
+    {
+      "case_id": "R-ADV-004",
+      "name": "calzone false friend",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "false_positive_calendar_create"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-004",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.62,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 732
+    },
+    {
+      "case_id": "R-ADV-005",
+      "name": "eventful adjective",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "false_positive_calendar_create"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-005",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.62,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 734
+    },
+    {
+      "case_id": "R-ADV-006",
+      "name": "calendar generic statement",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "adversarial_query"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-006",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.62,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 689
+    },
+    {
+      "case_id": "R-ADV-007",
+      "name": "what is today",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "adversarial_query"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-007",
+      "expected_route": "calendar_query",
+      "actual_route": "calendar_query",
+      "confidence": 0.9,
+      "request_id": "202d65a8-0ca1-427b-877f-ea1bcb9a9908",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 679
+    },
+    {
+      "case_id": "R-ADV-008",
+      "name": "meeting without date time",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "false_positive_calendar_create"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-008",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.62,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 706
+    },
+    {
+      "case_id": "R-ADV-009",
+      "name": "meeting with time no date",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "adversarial_create"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-009",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.84,
+      "request_id": "af3a5fb9-bcfc-4ca9-b786-e8fc30ddffd9",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 671
+    },
+    {
+      "case_id": "R-ADV-010",
+      "name": "weekday and plan noun",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "false_positive_calendar_create"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-010",
+      "expected_route": "pkm_capture",
+      "actual_route": "calendar_query",
+      "confidence": 0.9,
+      "request_id": "37f68eb2-c178-41b2-9751-3b9e75750d39",
+      "pass": false,
+      "observability_ok": true,
+      "duration_ms": 650
+    },
+    {
+      "case_id": "R-ADV-011",
+      "name": "show me generic",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "false_positive_calendar_create"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-011",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.62,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 697
+    },
+    {
+      "case_id": "R-ADV-012",
+      "name": "slash status command",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "slash_passthrough"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-012",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.99,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 722
+    },
+    {
+      "case_id": "R-ADV-013",
+      "name": "cal prefix without details",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "prefix_override"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-013",
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 1,
+      "request_id": "da20d39e-523b-4202-b729-03fee1c04350",
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 650
+    },
+    {
+      "case_id": "R-ADV-014",
+      "name": "pkm prefix with create words",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "prefix_override"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-014",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 1,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 670
+    },
+    {
+      "case_id": "R-ADV-015",
+      "name": "events stressful statement",
+      "bucket": "adversarial_edge",
+      "mode": "stateless",
+      "failure_tags": [
+        "adversarial_query"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-ADV-015",
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.62,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true,
+      "duration_ms": 703
+    },
+    {
+      "case_id": "R-STATE-001",
+      "name": "continuation answer routes to calendar_create",
+      "bucket": "stateful_continuation",
+      "mode": "stateful",
+      "failure_tags": [
+        "stateful_continuation"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-STATE-001.route",
+      "setup_run_id": "eval.router.20260406T163151Z.R-STATE-001.setup",
+      "setup_expected_status": "needs_clarification",
+      "setup_actual_status": "needs_clarification",
+      "setup_ok": true,
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.99,
+      "request_id": "0731d000-fa30-4506-a2df-3b7226340419",
+      "pass": true,
+      "observability_ok": true
+    },
+    {
+      "case_id": "R-STATE-002",
+      "name": "continuation with actor answer",
+      "bucket": "stateful_continuation",
+      "mode": "stateful",
+      "failure_tags": [
+        "stateful_continuation"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-STATE-002.route",
+      "setup_run_id": "eval.router.20260406T163151Z.R-STATE-002.setup",
+      "setup_expected_status": "needs_clarification",
+      "setup_actual_status": "needs_clarification",
+      "setup_ok": true,
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.99,
+      "request_id": "817f1ca1-8f61-4fae-ba05-53c2d4060984",
+      "pass": true,
+      "observability_ok": true
+    },
+    {
+      "case_id": "R-STATE-003",
+      "name": "structured pkm prefix bypasses continuation",
+      "bucket": "stateful_continuation",
+      "mode": "stateful",
+      "failure_tags": [
+        "stateful_continuation"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-STATE-003.route",
+      "setup_run_id": "eval.router.20260406T163151Z.R-STATE-003.setup",
+      "setup_expected_status": "needs_clarification",
+      "setup_actual_status": "needs_clarification",
+      "setup_ok": true,
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 1,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true
+    },
+    {
+      "case_id": "R-STATE-004",
+      "name": "slash command bypasses continuation",
+      "bucket": "stateful_continuation",
+      "mode": "stateful",
+      "failure_tags": [
+        "stateful_continuation"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-STATE-004.route",
+      "setup_run_id": "eval.router.20260406T163151Z.R-STATE-004.setup",
+      "setup_expected_status": "needs_clarification",
+      "setup_actual_status": "needs_clarification",
+      "setup_ok": true,
+      "expected_route": "pkm_capture",
+      "actual_route": "pkm_capture",
+      "confidence": 0.99,
+      "request_id": null,
+      "pass": true,
+      "observability_ok": true
+    },
+    {
+      "case_id": "R-STATE-005",
+      "name": "unstructured short follow-up uses continuation",
+      "bucket": "stateful_continuation",
+      "mode": "stateful",
+      "failure_tags": [
+        "stateful_continuation"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-STATE-005.route",
+      "setup_run_id": "eval.router.20260406T163151Z.R-STATE-005.setup",
+      "setup_expected_status": "needs_clarification",
+      "setup_actual_status": "needs_clarification",
+      "setup_ok": true,
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.99,
+      "request_id": "e397dce3-09a2-4b4d-9eb2-023ee89bf00c",
+      "pass": true,
+      "observability_ok": true
+    },
+    {
+      "case_id": "R-STATE-006",
+      "name": "structured cal prefix stays query",
+      "bucket": "stateful_continuation",
+      "mode": "stateful",
+      "failure_tags": [
+        "stateful_continuation"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-STATE-006.route",
+      "setup_run_id": "eval.router.20260406T163151Z.R-STATE-006.setup",
+      "setup_expected_status": "needs_clarification",
+      "setup_actual_status": "needs_clarification",
+      "setup_ok": true,
+      "expected_route": "calendar_query",
+      "actual_route": "calendar_query",
+      "confidence": 0.96,
+      "request_id": "effb7688-e032-43ee-8650-110ad4fcbf6b",
+      "pass": true,
+      "observability_ok": true
+    },
+    {
+      "case_id": "R-STATE-007",
+      "name": "time-only follow-up uses continuation",
+      "bucket": "stateful_continuation",
+      "mode": "stateful",
+      "failure_tags": [
+        "stateful_continuation"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-STATE-007.route",
+      "setup_run_id": "eval.router.20260406T163151Z.R-STATE-007.setup",
+      "setup_expected_status": "needs_clarification",
+      "setup_actual_status": "needs_clarification",
+      "setup_ok": true,
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.99,
+      "request_id": "a208b0ac-fb03-41cb-a231-cfb442fb76eb",
+      "pass": true,
+      "observability_ok": true
+    },
+    {
+      "case_id": "R-STATE-008",
+      "name": "query-looking follow-up still continuation",
+      "bucket": "stateful_continuation",
+      "mode": "stateful",
+      "failure_tags": [
+        "stateful_continuation"
+      ],
+      "run_id": "eval.router.20260406T163151Z.R-STATE-008.route",
+      "setup_run_id": "eval.router.20260406T163151Z.R-STATE-008.setup",
+      "setup_expected_status": "needs_clarification",
+      "setup_actual_status": "needs_clarification",
+      "setup_ok": true,
+      "expected_route": "calendar_create",
+      "actual_route": "calendar_create",
+      "confidence": 0.99,
+      "request_id": "a6b75a46-6032-4b19-bf44-6a26af341a24",
+      "pass": true,
+      "observability_ok": true
+    }
+  ]
+}
