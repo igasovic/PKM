@@ -22,6 +22,7 @@ function buildSignals(rawText) {
   const hasQueryCue = /\b(what|show|list|do we have|have we got|anything|check)\b/.test(s);
   const hasScheduleNoun = /\b(events?|schedule)\b/.test(s);
   const hasPlanNoun = /\bplans?\b/.test(s);
+  const hasPlansPlural = /\bplans\b/.test(s);
   const hasEventWord = /\bevents?\b/.test(s);
   const hasQuestionMark = /\?/.test(s);
 
@@ -41,6 +42,7 @@ function buildSignals(rawText) {
     isTemporalOnlyShort
     || (hasQueryCue && (hasTemporalRef || hasCalendarWord || hasScheduleNoun || hasPlanNoun))
     || (hasScheduleNoun && hasTemporalRef)
+    || (hasPlansPlural && hasTemporalRef)
     || calendarCommandQuery
   );
 
@@ -128,6 +130,15 @@ function classifyByRules(input, opts) {
       route: 'calendar_create',
       confidence: 0.95,
       rule_id: 'maps_url_create',
+    };
+  }
+
+  if (/^schedule\s+(today|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\??$/.test(s)) {
+    return {
+      resolved: true,
+      route: 'calendar_query',
+      confidence: 0.88,
+      rule_id: 'short_schedule_temporal_query',
     };
   }
 

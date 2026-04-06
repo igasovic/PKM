@@ -60,6 +60,31 @@
     "expect": { "route": "pkm_capture" }
   },
   {
+    "name": "two-word events monday query",
+    "input": { "text": "events monday" },
+    "expect": { "route": "calendar_query" }
+  },
+  {
+    "name": "two-word calendar friday query",
+    "input": { "text": "calendar friday" },
+    "expect": { "route": "calendar_query" }
+  },
+  {
+    "name": "two-word plans today query",
+    "input": { "text": "plans today" },
+    "expect": { "route": "calendar_query" }
+  },
+  {
+    "name": "two-word schedule today query",
+    "input": { "text": "schedule today" },
+    "expect": { "route": "calendar_query" }
+  },
+  {
+    "name": "two-word meeting tomorrow create",
+    "input": { "text": "meeting tomorrow" },
+    "expect": { "route": "calendar_create" }
+  },
+  {
     "name": "explicit create event avoids ambiguous",
     "input": { "text": "create family event tomorrow at 7:00p" },
     "expect": { "route": "calendar_create" }

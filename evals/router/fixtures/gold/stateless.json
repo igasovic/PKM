@@ -420,6 +420,76 @@
     }
   },
   {
+    "case_id": "R-OBV-031",
+    "name": "events monday",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "events monday"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-032",
+    "name": "calendar friday",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "calendar friday"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-033",
+    "name": "plans today",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "plans today"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-034",
+    "name": "schedule today",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "schedule today"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-035",
+    "name": "meeting tomorrow",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "meeting tomorrow"
+    },
+    "expect": {
+      "route": "calendar_create"
+    }
+  },
+  {
     "case_id": "R-AMB-001",
     "name": "calendar tomorrow with time",
     "bucket": "ambiguous",
