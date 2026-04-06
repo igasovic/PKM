@@ -62,10 +62,12 @@ function renderFullRecipe(recipe) {
   const ingredients = safeArray(recipe.ingredients).map((item) => asText(item)).filter(Boolean);
   const instructions = safeArray(recipe.instructions).map((item) => asText(item)).filter(Boolean);
   const notes = asText(recipe.notes);
+  const url = asText(recipe.url_canonical || recipe.url);
 
   const lines = [
     bold('Recipe'),
     ...recipeHeader(recipe),
+    ...(url ? [`URL: ${mdv2(url)}`] : []),
     '',
     bold('Ingredients'),
     ...(ingredients.length ? ingredients.map((item) => bullet(item)) : [bullet('none')]),
