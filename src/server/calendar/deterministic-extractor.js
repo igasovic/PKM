@@ -222,11 +222,13 @@ function detectPeople(rawText, config) {
 
 function detectCategory(rawText, config) {
   const s = lower(rawText);
+  const people = detectPeople(rawText, config);
+  const isLouieOnly = people.length === 1 && people[0] === 'L';
   const keywords = [
     { k: 'MED', words: ['doctor', 'dentist', 'medical', 'clinic', 'checkup', 'appointment', 'appt'] },
     { k: 'SCH', words: ['school', 'class', 'photo', 'egg hunt'] },
     { k: 'KID', words: ['kid', 'kids', 'swim', 'soccer', 'practice'] },
-    { k: 'DOG', words: ['dog', 'vet', 'walk'] },
+    { k: 'DOG', words: ['dog', 'vet', 'walk', 'groom', 'grooming', 'pet'] },
     { k: 'TRV', words: ['trip', 'flight', 'travel', 'airport'] },
     { k: 'ADM', words: ['paperwork', 'admin', 'meeting', 'call'] },
     { k: 'HOME', words: ['home', 'house', 'repair', 'cleaning'] },
@@ -235,6 +237,7 @@ function detectCategory(rawText, config) {
   for (const row of keywords) {
     if (row.words.some((w) => new RegExp(`\\b${w}\\b`, 'i').test(s))) return row.k;
   }
+  if (isLouieOnly) return 'DOG';
   return config.categories.OTH ? 'OTH' : null;
 }
 
@@ -242,8 +245,21 @@ function detectLocation(rawText) {
   const s = text(rawText);
   const maps = s.match(/\bhttps?:\/\/[^\s<>()]*(google\.[^\s<>()]*\/maps|maps\.apple\.com)[^\s<>()]*/i);
   if (maps) return maps[0];
-  const at = s.match(/\bat\s+([A-Za-z0-9][A-Za-z0-9 ,.'-]{1,120})$/i);
-  if (at) return text(at[1]);
+  const withoutAtTime = s
+    .replace(/\bat\s+\d{1,2}(?::\d{2})?\s*(?:a|p|am|pm)\b/ig, ' ')
+    .replace(/\bat\s+(?:[01]?\d|2[0-3]):[0-5]\d\b/ig, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (/\bat\s+home\b/i.test(withoutAtTime)) return 'home';
+
+  const atMatches = Array.from(withoutAtTime.matchAll(/\bat\s+([A-Za-z0-9][A-Za-z0-9 ,.'-]{1,120})/ig));
+  if (atMatches.length) {
+    const last = text(atMatches[atMatches.length - 1][1]);
+    if (!last) return null;
+    const cleaned = text(last.replace(/\s+(for|with|on)\b.*$/i, ''));
+    if (cleaned) return cleaned;
+  }
   return null;
 }
 

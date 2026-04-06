@@ -149,6 +149,32 @@ describe('calendar-service', () => {
     expect(out.normalized_event.block_window.padded).toBe(false);
   });
 
+  test('normalizeCalendarRequestDeterministic parses time before location and still detects home', () => {
+    const out = normalizeCalendarRequestDeterministic({
+      raw_text: 'Mila dentist tomorrow at home at 3pm for 60 min',
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.location).toBe('home');
+    expect(out.normalized_event.block_window.padded).toBe(false);
+  });
+
+  test('normalizeCalendarRequestDeterministic does not treat homesense as home literal', () => {
+    const out = normalizeCalendarRequestDeterministic({
+      raw_text: 'Danijela meeting friday 3pm at homesense',
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.location).toBe('homesense');
+    expect(out.normalized_event.block_window.padded).toBe(true);
+  });
+
+  test('normalizeCalendarRequestDeterministic maps louie-only event without explicit keyword to DOG', () => {
+    const out = normalizeCalendarRequestDeterministic({
+      raw_text: 'Louie store friday at 2:00p',
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.category_code).toBe('DOG');
+  });
+
   test('normalizeCalendarRequestDeterministic ignores llm date when raw text lacks date evidence', () => {
     const out = normalizeCalendarRequestDeterministic({
       raw_text: 'cal: family meeting',

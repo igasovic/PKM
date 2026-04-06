@@ -103,7 +103,7 @@
     "expect": {
       "status": "ready_to_create",
       "category_code": "SCH",
-      "duration_minutes": 60,
+      "duration_minutes": 45,
       "subject_people_tag": "Iv",
       "logical_color": "yellow"
     }
@@ -722,6 +722,25 @@
       "padded": false,
       "subject_people_tag": "M",
       "logical_color": "purple"
+    }
+  },
+  {
+    "case_id": "N-EDGE-012",
+    "name": "homesense should not disable padding",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "Danijela meeting friday 3pm at homesense"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "ADM",
+      "duration_minutes": 30,
+      "padded": true,
+      "subject_people_tag": "D",
+      "logical_color": "white"
     }
   },
   {
