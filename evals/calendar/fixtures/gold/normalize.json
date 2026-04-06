@@ -102,8 +102,8 @@
     },
     "expect": {
       "status": "ready_to_create",
-      "category_code": "KID",
-      "duration_minutes": 45,
+      "category_code": "SCH",
+      "duration_minutes": 60,
       "subject_people_tag": "Iv",
       "logical_color": "yellow"
     }
@@ -321,7 +321,7 @@
     },
     "expect": {
       "status": "ready_to_create",
-      "category_code": "KID",
+      "category_code": "SCH",
       "duration_minutes": 60,
       "subject_people_tag": "Iv,D",
       "logical_color": "yellow"
@@ -706,6 +706,25 @@
     }
   },
   {
+    "case_id": "N-EDGE-011",
+    "name": "home edge still creates 2nd variant",
+    "bucket": "rejection_edge",
+    "failure_tags": [
+      "deterministic_correctness"
+    ],
+    "input": {
+      "raw_text": "Mila dentist tomorrow at home at 3pm for 60 min"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "MED",
+      "duration_minutes": 60,
+      "padded": false,
+      "subject_people_tag": "M",
+      "logical_color": "purple"
+    }
+  },
+  {
     "case_id": "N-CLEAN-021",
     "name": "plain text location preserved",
     "bucket": "clean",
@@ -845,10 +864,29 @@
     },
     "expect": {
       "status": "ready_to_create",
-      "category_code": "OTH",
-      "duration_minutes": 60,
+      "category_code": "EVT",
+      "duration_minutes": 120,
       "subject_people_tag": "Ig,D",
       "logical_color": "blue"
+    }
+  },
+  {
+    "case_id": "N-CLEAN-029",
+    "name": "family people do not force category",
+    "bucket": "clean",
+    "failure_tags": [
+      "field_extraction"
+    ],
+    "input": {
+      "raw_text": "Mila Danijela Igor Louie appointment tomorrow at 3:00p for 90 min"
+    },
+    "expect": {
+      "status": "ready_to_create",
+      "category_code": "MED",
+      "duration_minutes": 90,
+      "padded": true,
+      "subject_people_tag": "FAM",
+      "logical_color": "green"
     }
   }
 ]

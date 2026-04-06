@@ -116,6 +116,18 @@ function detectDateLocal(rawText, timezone) {
   return null;
 }
 
+function hasDateEvidence(rawText) {
+  const s = lower(rawText);
+  if (/\b\d{4}-\d{2}-\d{2}\b/.test(s)) return true;
+  if (/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/.test(s)) return true;
+  if (/\b(today|tomorrow)\b/.test(s)) return true;
+  if (/\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/.test(s)) return true;
+  if (/\b(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)\b/.test(s)) {
+    return true;
+  }
+  return false;
+}
+
 function detectTimeLocal(rawText) {
   const s = lower(rawText);
   const twelve = s.match(/\b(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)\b/);
@@ -212,8 +224,9 @@ function detectCategory(rawText, config) {
   const s = lower(rawText);
   const keywords = [
     { k: 'MED', words: ['doctor', 'dentist', 'medical', 'clinic', 'checkup', 'appointment', 'appt'] },
-    { k: 'KID', words: ['kid', 'kids', 'school', 'swim', 'soccer', 'practice'] },
-    { k: 'DOG', words: ['dog', 'louie', 'vet', 'walk'] },
+    { k: 'SCH', words: ['school', 'class', 'photo', 'egg hunt'] },
+    { k: 'KID', words: ['kid', 'kids', 'swim', 'soccer', 'practice'] },
+    { k: 'DOG', words: ['dog', 'vet', 'walk'] },
     { k: 'TRV', words: ['trip', 'flight', 'travel', 'airport'] },
     { k: 'ADM', words: ['paperwork', 'admin', 'meeting', 'call'] },
     { k: 'HOME', words: ['home', 'house', 'repair', 'cleaning'] },
@@ -263,7 +276,7 @@ function resolveSubjectPeopleTag(peopleCodes, config) {
     return ra - rb;
   });
   const familyAlias = text(config.people && config.people.family_alias) || 'FAM';
-  if (unique.length && order.length && unique.length === order.length && order.every((c) => unique.includes(c))) {
+  if (unique.length >= 3) {
     return familyAlias;
   }
   return unique.join(',');
@@ -421,7 +434,8 @@ function buildDeterministicDraft(input, config) {
 
   const categoryFromLlm = normalizeCategoryCode(llm && llm.category_code, config);
   const peopleFromLlm = normalizePeopleCodes(llm && llm.people_codes, config);
-  const dateFromLlm = normalizeDateLocal(llm && (llm.date_local || llm.date));
+  const llmDateCandidate = normalizeDateLocal(llm && (llm.date_local || llm.date));
+  const dateFromLlm = hasDateEvidence(mergedText) ? llmDateCandidate : null;
   const startFromLlm = normalizeTimeLocal(llm && (llm.start_time_local || llm.start_time));
   const durationFromLlm = normalizeDurationMinutes(llm && llm.duration_minutes);
   const endDateFromLlm = normalizeDateLocal(llm && llm.end_date_local);

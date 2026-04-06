@@ -37,7 +37,7 @@
     "input": { "raw_text": "Igor Louie Mila meeting tomorrow at 9:00a" },
     "expect": {
       "status": "ready_to_create",
-      "subject_people_tag": "M,L,Ig"
+      "subject_people_tag": "FAM"
     }
   },
   {

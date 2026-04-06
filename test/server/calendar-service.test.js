@@ -120,6 +120,23 @@ describe('calendar-service', () => {
     expect(out.normalized_event.start_time_local).toBe('09:00');
   });
 
+  test('normalizeCalendarRequestDeterministic maps school/class terms to SCH', () => {
+    const out = normalizeCalendarRequestDeterministic({
+      raw_text: 'Mila class photo tomorrow at 8:30a',
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.category_code).toBe('SCH');
+  });
+
+  test('normalizeCalendarRequestDeterministic marks 3+ family names as FAM people tag without forcing category', () => {
+    const out = normalizeCalendarRequestDeterministic({
+      raw_text: 'Mila Iva Igor birthday tomorrow at 1:00p',
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.category_code).toBe('EVT');
+    expect(out.normalized_event.subject_people_tag).toBe('FAM');
+  });
+
   test('normalizeCalendarRequestDeterministic keeps home no-padding from raw text when llm location conflicts', () => {
     const out = normalizeCalendarRequestDeterministic({
       raw_text: 'Mila dentist tomorrow at 3:00p for 60 min at home',
@@ -130,5 +147,17 @@ describe('calendar-service', () => {
     expect(out.status).toBe('ready_to_create');
     expect(out.normalized_event.location).toBe('home');
     expect(out.normalized_event.block_window.padded).toBe(false);
+  });
+
+  test('normalizeCalendarRequestDeterministic ignores llm date when raw text lacks date evidence', () => {
+    const out = normalizeCalendarRequestDeterministic({
+      raw_text: 'cal: family meeting',
+      llm_extraction: {
+        date_local: '2026-04-10',
+        start_time_local: '15:00',
+      },
+    });
+    expect(out.status).toBe('needs_clarification');
+    expect(out.missing_fields).toEqual(expect.arrayContaining(['date', 'people']));
   });
 });

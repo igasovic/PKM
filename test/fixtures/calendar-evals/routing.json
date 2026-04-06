@@ -45,8 +45,33 @@
     "expect": { "route": "calendar_query" }
   },
   {
+    "name": "two-word events tomorrow query",
+    "input": { "text": "events tomorrow" },
+    "expect": { "route": "calendar_query" }
+  },
+  {
+    "name": "two-word calendar today query",
+    "input": { "text": "calendar today" },
+    "expect": { "route": "calendar_query" }
+  },
+  {
+    "name": "two-word plan friday stays pkm",
+    "input": { "text": "plan friday" },
+    "expect": { "route": "pkm_capture" }
+  },
+  {
     "name": "explicit create event avoids ambiguous",
     "input": { "text": "create family event tomorrow at 7:00p" },
     "expect": { "route": "calendar_create" }
+  },
+  {
+    "name": "can we create request is ambiguous",
+    "input": { "text": "can we book calendar appointment tomorrow 11am" },
+    "expect": { "route": "ambiguous" }
+  },
+  {
+    "name": "can i create request is ambiguous",
+    "input": { "text": "can I create an event tomorrow at 5p" },
+    "expect": { "route": "ambiguous" }
   }
 ]

@@ -17,10 +17,11 @@ function buildSignals(rawText) {
   const hasTimeLike = /\b(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)\b/.test(s) || /\b([01]?\d|2[0-3]):([0-5]\d)\b/.test(s);
   const hasTemporalRef = hasDateWord || hasWeekday || hasDateLike;
 
-  const hasCreateVerb = /\b(add|create|schedule|book|put|set|remind|appointment|appt|dentist|doctor|meeting|party|practice|trip|flight|birthday|events?)\b/.test(s);
+  const hasCreateVerb = /\b(add|create|schedule|book|put|set|remind|appointment|appt|dentist|doctor|meeting|party|practice|trip|flight|birthday)\b/.test(s);
   const hasCreateFrameVerb = /\b(add|create|schedule|book|put|set|remind)\b/.test(s);
   const hasQueryCue = /\b(what|show|list|do we have|have we got|anything|check)\b/.test(s);
-  const hasScheduleNoun = /\b(events?|schedule|plans?)\b/.test(s);
+  const hasScheduleNoun = /\b(events?|schedule)\b/.test(s);
+  const hasPlanNoun = /\bplans?\b/.test(s);
   const hasEventWord = /\bevents?\b/.test(s);
   const hasQuestionMark = /\?/.test(s);
 
@@ -38,7 +39,7 @@ function buildSignals(rawText) {
 
   const querySignal = (
     isTemporalOnlyShort
-    || (hasQueryCue && (hasTemporalRef || hasCalendarWord || hasScheduleNoun))
+    || (hasQueryCue && (hasTemporalRef || hasCalendarWord || hasScheduleNoun || hasPlanNoun))
     || (hasScheduleNoun && hasTemporalRef)
     || calendarCommandQuery
   );
@@ -61,6 +62,8 @@ function buildSignals(rawText) {
     hasCreateVerb,
     hasQueryCue,
     hasScheduleNoun,
+    hasPlanNoun,
+    hasCalendarWord,
   };
 }
 
@@ -129,6 +132,18 @@ function classifyByRules(input, opts) {
   }
 
   const signals = buildSignals(rawText);
+  const hasCanModal = /\bcan\s+(i|we)\b/.test(s);
+
+  if (hasCanModal && signals.createSignal) {
+    return {
+      resolved: true,
+      route: 'ambiguous',
+      confidence: 0.5,
+      rule_id: 'modal_create_ambiguous',
+      signals,
+    };
+  }
+
   const explicitCreateEvent = /\b(create|schedule)\b[\s\S]*\bevent\b/.test(s)
     && (signals.hasDateWord || signals.hasWeekday || signals.hasDateLike || signals.hasTimeLike);
 
