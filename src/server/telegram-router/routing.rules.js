@@ -15,21 +15,39 @@ function buildSignals(rawText) {
   const hasDateWord = /\b(today|tomorrow)\b/.test(s);
   const hasDateLike = /\b\d{4}-\d{2}-\d{2}\b/.test(s) || /\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/.test(s);
   const hasTimeLike = /\b(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)\b/.test(s) || /\b([01]?\d|2[0-3]):([0-5]\d)\b/.test(s);
+  const hasTemporalRef = hasDateWord || hasWeekday || hasDateLike;
 
-  const hasCreateVerb = /\b(add|create|schedule|book|put|set|plan|remind|appointment|appt|dentist|doctor|meeting|party|practice|trip|flight|birthday)\b/.test(s);
-  const hasQueryVerb = /\b(what|show|list|do we have|have we got|anything|events?|schedule|calendar|cal|plans?)\b/.test(s);
+  const hasCreateVerb = /\b(add|create|schedule|book|put|set|remind|appointment|appt|dentist|doctor|meeting|party|practice|trip|flight|birthday|events?)\b/.test(s);
+  const hasCreateFrameVerb = /\b(add|create|schedule|book|put|set|remind)\b/.test(s);
+  const hasQueryCue = /\b(what|show|list|do we have|have we got|anything|check)\b/.test(s);
+  const hasScheduleNoun = /\b(events?|schedule|plans?)\b/.test(s);
+  const hasEventWord = /\bevents?\b/.test(s);
+  const hasQuestionMark = /\?/.test(s);
 
-  const hasCalendarWord = /\b(calendar|cal|events?)\b/.test(s);
+  const hasCalendarWord = /\b(calendar|cal)\b/.test(s);
+  const isTemporalOnlyShort = /^(today|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\??$/.test(s);
+  const startsWithCalendarCommand = /^\/?(calendar|cal|status)\b/.test(s);
+  const calendarCommandQuery = startsWithCalendarCommand && (
+    hasTemporalRef
+    || hasQuestionMark
+    || hasQueryCue
+    || s === 'calendar'
+    || s === 'cal'
+    || s === 'status'
+  );
 
   const querySignal = (
-    (hasQueryVerb && (hasDateWord || hasWeekday || hasCalendarWord || hasDateLike))
-    || /^\/?(calendar|status)\b/.test(s)
+    isTemporalOnlyShort
+    || (hasQueryCue && (hasTemporalRef || hasCalendarWord || hasScheduleNoun))
+    || (hasScheduleNoun && hasTemporalRef)
+    || calendarCommandQuery
   );
 
   const createSignal = (
-    (hasCreateVerb && (hasDateWord || hasWeekday || hasDateLike || hasTimeLike))
-    || (hasTimeLike && (hasDateWord || hasWeekday || hasDateLike))
+    (hasCreateVerb && (hasTemporalRef || hasTimeLike))
+    || (hasTimeLike && hasTemporalRef)
     || (hasTimeLike && /(dentist|doctor|appointment|appt|meeting|party|practice|trip|flight|birthday)\b/.test(s))
+    || (hasCreateFrameVerb && hasEventWord && (hasTemporalRef || hasTimeLike))
     || /^cal:\s*/.test(s)
   );
 
@@ -41,7 +59,8 @@ function buildSignals(rawText) {
     hasDateLike,
     hasTimeLike,
     hasCreateVerb,
-    hasQueryVerb,
+    hasQueryCue,
+    hasScheduleNoun,
   };
 }
 
@@ -100,7 +119,28 @@ function classifyByRules(input, opts) {
     };
   }
 
+  if (/^https?:\/\/(?:maps\.app\.goo\.gl\/|(?:www\.)?google\.com\/maps(?:\/|$)|maps\.apple(?:\.com)?\/)/.test(s)) {
+    return {
+      resolved: true,
+      route: 'calendar_create',
+      confidence: 0.95,
+      rule_id: 'maps_url_create',
+    };
+  }
+
   const signals = buildSignals(rawText);
+  const explicitCreateEvent = /\b(create|schedule)\b[\s\S]*\bevent\b/.test(s)
+    && (signals.hasDateWord || signals.hasWeekday || signals.hasDateLike || signals.hasTimeLike);
+
+  if (explicitCreateEvent) {
+    return {
+      resolved: true,
+      route: 'calendar_create',
+      confidence: 0.92,
+      rule_id: 'explicit_create_event',
+      signals,
+    };
+  }
 
   if (signals.querySignal && !signals.createSignal) {
     return {

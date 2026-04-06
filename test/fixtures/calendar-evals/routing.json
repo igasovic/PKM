@@ -28,5 +28,25 @@
     "name": "ambiguous mixed query and create signals",
     "input": { "text": "calendar tomorrow 3pm" },
     "expect": { "route": "ambiguous" }
+  },
+  {
+    "name": "maps url defaults to calendar create",
+    "input": { "text": "https://maps.app.goo.gl/AxP18sEiQegN4Yva7" },
+    "expect": { "route": "calendar_create" }
+  },
+  {
+    "name": "declarative calendar statement stays pkm",
+    "input": { "text": "calendar is chaotic lately" },
+    "expect": { "route": "pkm_capture" }
+  },
+  {
+    "name": "short temporal query",
+    "input": { "text": "tomorrow" },
+    "expect": { "route": "calendar_query" }
+  },
+  {
+    "name": "explicit create event avoids ambiguous",
+    "input": { "text": "create family event tomorrow at 7:00p" },
+    "expect": { "route": "calendar_create" }
   }
 ]
