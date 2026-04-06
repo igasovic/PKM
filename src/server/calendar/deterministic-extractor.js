@@ -433,18 +433,28 @@ function buildDeterministicDraft(input, config) {
     endTimeFromLlm
   );
 
-  const category_code = categoryFromLlm || detectCategory(mergedText, config);
-  const people_codes = peopleFromLlm.length ? peopleFromLlm : detectPeople(mergedText, config);
-  const date_local = dateFromLlm || detectDateLocal(mergedText, timezone);
-  const start_time_local = startFromLlm || detectTimeLocal(mergedText);
+  const categoryDetected = detectCategory(mergedText, config);
+  const peopleDetected = detectPeople(mergedText, config);
+  const dateDetected = detectDateLocal(mergedText, timezone);
+  const startDetected = detectTimeLocal(mergedText);
+  const locationDetected = detectLocation(mergedText);
 
-  let duration_minutes = durationFromLlm || durationFromEnd;
-  if (!duration_minutes && category_code) {
+  // Deterministic extraction from user text wins over LLM proposals for core fields.
+  const category_code = categoryDetected || categoryFromLlm;
+  const people_codes = peopleDetected.length ? peopleDetected : peopleFromLlm;
+  const date_local = dateDetected || dateFromLlm;
+  const start_time_local = startDetected || startFromLlm;
+
+  let duration_minutes = null;
+  if (category_code) {
     duration_minutes = detectDurationMinutes(mergedText, category_code, config);
+  }
+  if (!duration_minutes) {
+    duration_minutes = durationFromLlm || durationFromEnd;
   }
 
   const title = text(llm && llm.title) || deriveTitle(mergedText);
-  const location = text(llm && llm.location) || detectLocation(mergedText);
+  const location = locationDetected || text(llm && llm.location);
 
   return {
     timezone,

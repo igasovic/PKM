@@ -167,6 +167,7 @@ Response (`rejected`):
 {
   "request_id": "f12556d4-c454-4885-a89c-d61dc28db3fd",
   "status": "rejected",
+  "reason_code": "all_day_not_supported",
   "missing_fields": [],
   "clarification_question": null,
   "normalized_event": null,
@@ -177,6 +178,7 @@ Response (`rejected`):
 ```
 
 `rejected` may also be returned for access policy reasons (for example, sender not in calendar allowlist).
+When available, `reason_code` is included to support deterministic branching in workflows/evals.
 
 ### `POST /calendar/finalize`
 Persists final create outcome after n8n Google Calendar write.

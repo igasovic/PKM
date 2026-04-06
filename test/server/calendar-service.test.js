@@ -105,4 +105,30 @@ describe('calendar-service', () => {
     expect(out.status).toBe('ready_to_create');
     expect(out.normalized_event.title).toBe('Louie store');
   });
+
+  test('normalizeCalendarRequestDeterministic prefers deterministic category and duration over conflicting llm extraction', () => {
+    const out = normalizeCalendarRequestDeterministic({
+      raw_text: 'Louie vet friday at 9:00a',
+      llm_extraction: {
+        category_code: 'MED',
+        duration_minutes: 30,
+      },
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.category_code).toBe('DOG');
+    expect(out.normalized_event.duration_minutes).toBe(60);
+    expect(out.normalized_event.start_time_local).toBe('09:00');
+  });
+
+  test('normalizeCalendarRequestDeterministic keeps home no-padding from raw text when llm location conflicts', () => {
+    const out = normalizeCalendarRequestDeterministic({
+      raw_text: 'Mila dentist tomorrow at 3:00p for 60 min at home',
+      llm_extraction: {
+        location: 'Clinic',
+      },
+    });
+    expect(out.status).toBe('ready_to_create');
+    expect(out.normalized_event.location).toBe('home');
+    expect(out.normalized_event.block_window.padded).toBe(false);
+  });
 });
