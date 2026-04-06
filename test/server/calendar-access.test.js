@@ -47,9 +47,22 @@ describe('calendar access policy', () => {
     expect(route.clarification_question).toContain('calendar-only access');
   });
 
+  test('applyRouteAccessPolicy downgrades recipe search for calendar-only user', () => {
+    const route = applyRouteAccessPolicy(
+      { route: 'recipe_search', confidence: 0.9, recipe_query: 'pasta' },
+      {
+        enforce: true,
+        calendar_allowed: true,
+        pkm_allowed: false,
+        reason_code: 'telegram_user_not_pkm_allowed',
+      }
+    );
+    expect(route.route).toBe('ambiguous');
+    expect(route.clarification_question).toContain('calendar-only access');
+  });
+
   test('calendarAccessMessage reports non-calendar sender', () => {
     expect(calendarAccessMessage({ reason_code: 'telegram_user_not_calendar_allowed' }))
       .toContain('not allowed');
   });
 });
-

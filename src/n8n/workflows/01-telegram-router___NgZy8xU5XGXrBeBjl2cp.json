@@ -177,6 +177,13 @@
             "node": "Format Ambiguous Message",
             "type": "main"
           }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Prepare Recipe Read Message",
+            "type": "main"
+          }
         ]
       ]
     },
@@ -197,6 +204,17 @@
           {
             "index": 0,
             "node": "Prepare Route Input",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Prepare Recipe Read Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Call 'PKM Read'",
             "type": "main"
           }
         ]
@@ -573,6 +591,30 @@
               },
               "outputKey": "ambiguous",
               "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "c6ca0a9a-52bb-46d1-b79f-2d825f8603d4",
+                    "leftValue": "={{ $json.route }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "recipe_search"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "recipe_search",
+              "renameOutput": true
             }
           ]
         }
@@ -705,6 +747,19 @@
       "position": [
         1792,
         160
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "94c3d41e-b7fb-4cdd-bac6-bc2a857f3f2a",
+      "name": "Prepare Recipe Read Message",
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n\nconst query = asText($json.recipe_query) || asText($json.raw_text) || 'recipe';\nconst message = ($json && $json.message && typeof $json.message === 'object') ? $json.message : {};\nconst commandText = `/recipe ${query}`;\n\nreturn [{\n  json: {\n    ...$json,\n    message: {\n      ...message,\n      text: commandText,\n    },\n    raw_text: commandText,\n    is_command: true,\n    route: 'recipe_search',\n  },\n}];\n"
+      },
+      "position": [
+        1344,
+        -256
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2

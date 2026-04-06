@@ -4,6 +4,7 @@ const ALLOWED_ROUTES = new Set([
   'pkm_capture',
   'calendar_create',
   'calendar_query',
+  'recipe_search',
   'ambiguous',
 ]);
 
@@ -48,10 +49,16 @@ function parseRoutingLlmResult(raw) {
       || 'Should I save this as a note or add it to the family calendar?';
   }
 
+  let recipeQuery = null;
+  if (route === 'recipe_search') {
+    recipeQuery = text(parsed && (parsed.recipe_query || parsed.query)) || null;
+  }
+
   return {
     route,
     confidence: clamp01(parsed && parsed.confidence, route === 'ambiguous' ? 0.5 : 0.7),
     clarification_question: clarificationQuestion,
+    recipe_query: recipeQuery,
   };
 }
 

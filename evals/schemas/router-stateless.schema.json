@@ -29,7 +29,7 @@
       "properties": {
         "route": {
           "type": "string",
-          "enum": ["pkm_capture", "calendar_create", "calendar_query", "ambiguous"]
+          "enum": ["pkm_capture", "calendar_create", "calendar_query", "recipe_search", "ambiguous"]
         }
       }
     }

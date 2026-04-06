@@ -8,6 +8,57 @@ function lower(value) {
   return text(value).toLowerCase();
 }
 
+function normalizeRecipeQuery(value) {
+  let q = text(value);
+  if (!q) return null;
+  q = q.replace(/^[`"'\s]+|[`"'\s]+$/g, '');
+  q = q.replace(/[?!.,:;]+$/g, '').trim();
+  q = q.replace(/^(?:for|of)\s+/i, '');
+  q = q.replace(/^(?:a|an|the)\s+/i, '');
+  q = q.replace(/\b(?:please|pls)\s*$/i, '').trim();
+  if (!q) return null;
+  if (/^recipes?$/i.test(q)) return null;
+  return q;
+}
+
+function extractRecipeQuery(rawText) {
+  const raw = text(rawText).replace(/\s+/g, ' ').trim();
+  if (!raw) return null;
+  if (!/\brecipes?\b/i.test(raw)) return null;
+
+  const patterns = [
+    {
+      rule_id: 'recipe_search_question_for',
+      re: /^(?:what(?:'s| is)\s+(?:the\s+)?)?recipes?\s+(?:for|to make)\s+(.+)$/i,
+    },
+    {
+      rule_id: 'recipe_search_suggest_for',
+      re: /^(?:suggest|recommend|find|show|give|share)\s+(?:me\s+)?(?:an?\s+|some\s+)?recipes?\s+(?:for|with)\s+(.+)$/i,
+    },
+    {
+      rule_id: 'recipe_search_simple_for',
+      re: /^recipes?\s+for\s+(.+)$/i,
+    },
+    {
+      rule_id: 'recipe_search_suffix',
+      re: /^(.+?)\s+recipes?$/i,
+    },
+  ];
+
+  for (const pattern of patterns) {
+    const m = raw.match(pattern.re);
+    if (!m || !m[1]) continue;
+    const query = normalizeRecipeQuery(m[1]);
+    if (!query) continue;
+    return {
+      query,
+      rule_id: pattern.rule_id,
+    };
+  }
+
+  return null;
+}
+
 function buildSignals(rawText) {
   const s = lower(rawText);
 
@@ -133,6 +184,17 @@ function classifyByRules(input, opts) {
     };
   }
 
+  const recipe = extractRecipeQuery(rawText);
+  if (recipe) {
+    return {
+      resolved: true,
+      route: 'recipe_search',
+      confidence: 0.94,
+      recipe_query: recipe.query,
+      rule_id: recipe.rule_id,
+    };
+  }
+
   if (/^schedule\s+(today|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\??$/.test(s)) {
     return {
       resolved: true,
@@ -199,4 +261,5 @@ function classifyByRules(input, opts) {
 
 module.exports = {
   classifyByRules,
+  extractRecipeQuery,
 };

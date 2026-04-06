@@ -16,6 +16,17 @@ describe('calendar graph trace surfaces', () => {
     expect(out.trace.rule_id).toBe('prefix_pkm');
   });
 
+  test('routing graph includes extracted recipe query metadata', async () => {
+    const out = await routeTelegramInputWithTrace({
+      text: 'pasta recipe',
+    });
+
+    expect(out.result.route).toBe('recipe_search');
+    expect(out.result.recipe_query).toBe('pasta');
+    expect(out.trace.route_source).toBe('rule');
+    expect(out.trace.recipe_query).toBe('pasta');
+  });
+
   test('calendar extraction graph exposes trace metadata', async () => {
     const keyBackup = process.env.LITELLM_MASTER_KEY;
     process.env.LITELLM_MASTER_KEY = '';

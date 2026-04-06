@@ -22,6 +22,21 @@ describe('calendar-service', () => {
     expect(out.route).toBe('calendar_create');
   });
 
+  test('routeTelegramInput identifies recipe search intent with extracted query', async () => {
+    const out = await routeTelegramInput({
+      text: "what's recipe for cheese quesadilla",
+    });
+    expect(out.route).toBe('recipe_search');
+    expect(out.recipe_query).toBe('cheese quesadilla');
+  });
+
+  test('routeTelegramInput keeps cooking technique note as pkm capture', async () => {
+    const out = await routeTelegramInput({
+      text: 'Braising technique: sear first, then low simmer.',
+    });
+    expect(out.route).toBe('pkm_capture');
+  });
+
   test('normalizeCalendarRequest asks clarification when fields are missing', async () => {
     const out = await normalizeCalendarRequest({
       raw_text: 'birthday party Saturday',

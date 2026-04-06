@@ -142,6 +142,41 @@ describe('calendar API contract', () => {
     });
   });
 
+  test('POST /telegram/route returns recipe_search with extracted recipe_query', async () => {
+    routeMock.mockReturnValue({
+      route: 'recipe_search',
+      confidence: 0.94,
+      recipe_query: 'coleslaw',
+    });
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/telegram/route',
+      JSON.stringify({
+        text: 'suggest me a recipe for coleslaw',
+        actor_code: 'igor',
+        source: { chat_id: '1509032341', message_id: '781' },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      }
+    );
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({
+      route: 'recipe_search',
+      confidence: 0.94,
+      recipe_query: 'coleslaw',
+      request_id: null,
+    });
+    expect(calendarRepoMock.upsertCalendarRequest).not.toHaveBeenCalled();
+  });
+
   test('POST /telegram/route routes continuation to calendar_create after structured checks', async () => {
     routeMock.mockReturnValue({
       route: 'pkm_capture',
@@ -216,6 +251,46 @@ describe('calendar API contract', () => {
       request_id: null,
     });
     expect(calendarRepoMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
+  });
+
+  test('POST /telegram/route does not override recipe_search with continuation route', async () => {
+    routeMock.mockReturnValue({
+      route: 'recipe_search',
+      confidence: 0.94,
+      recipe_query: 'cheese quesadilla',
+    });
+    calendarRepoMock.getLatestOpenCalendarRequestByChat.mockResolvedValue({
+      request_id: '1f7bccb7-9874-4f17-aaf7-d90fd7a62a4a',
+      status: 'needs_clarification',
+    });
+
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/telegram/route',
+      JSON.stringify({
+        text: "what's recipe for cheese quesadilla",
+        actor_code: 'igor',
+        source: { chat_id: '1509032341', message_id: '782' },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      }
+    );
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({
+      route: 'recipe_search',
+      confidence: 0.94,
+      recipe_query: 'cheese quesadilla',
+      request_id: null,
+    });
+    expect(calendarRepoMock.getLatestOpenCalendarRequestByChat).toHaveBeenCalledWith('1509032341');
+    expect(calendarRepoMock.upsertCalendarRequest).not.toHaveBeenCalled();
   });
 
   test('POST /telegram/route reuses open request for explicit cal prefix to avoid unique-chat conflicts', async () => {

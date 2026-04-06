@@ -63,11 +63,16 @@ Possible routes:
 - `pkm_capture`
 - `calendar_create`
 - `calendar_query`
+- `recipe_search`
 - `ambiguous`
+
+For `recipe_search`, response also includes:
+- `recipe_query` (normalized search query text)
 
 Continuation rule:
 - for non-structured text (not starting with `/`, `cal:`, or `pkm:`), router checks latest open calendar clarification request in chat
 - if one exists, router forces `calendar_create` and returns the existing `request_id`
+- exception: when router resolves `recipe_search`, continuation override is not applied
 - structured inputs are never continuation-overridden
 
 For `ambiguous`, response may include:

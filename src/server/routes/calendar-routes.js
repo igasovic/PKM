@@ -61,7 +61,7 @@ async function handleCalendarRoutes(ctx) {
       const openRequestForChat = chatId
         ? await calendarRepository.getLatestOpenCalendarRequestByChat(chatId)
         : null;
-      const continuationRequest = (!structuredInput && openRequestForChat)
+      const continuationRequest = (!structuredInput && openRequestForChat && routeResult.route !== 'recipe_search')
         ? openRequestForChat
         : null;
       const continuationRoute = continuationRequest

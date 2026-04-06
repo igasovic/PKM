@@ -83,7 +83,7 @@ function applyRouteAccessPolicy(routeResult, access) {
   if (!routeName) return route;
   if (!access || access.enforce !== true) return route;
 
-  if (routeName === 'pkm_capture' && !access.pkm_allowed) {
+  if ((routeName === 'pkm_capture' || routeName === 'recipe_search') && !access.pkm_allowed) {
     return {
       route: 'ambiguous',
       confidence: 1,
@@ -109,4 +109,3 @@ module.exports = {
   applyRouteAccessPolicy,
   calendarAccessMessage,
 };
-

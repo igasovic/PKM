@@ -922,5 +922,117 @@
     "expect": {
       "route": "pkm_capture"
     }
+  },
+  {
+    "case_id": "R-OBV-036",
+    "name": "recipe suffix query pasta",
+    "bucket": "obvious",
+    "failure_tags": [
+      "recipe_query_extraction"
+    ],
+    "input": {
+      "text": "pasta recipe"
+    },
+    "expect": {
+      "route": "recipe_search"
+    }
+  },
+  {
+    "case_id": "R-OBV-037",
+    "name": "recipe for cheese quesadilla",
+    "bucket": "obvious",
+    "failure_tags": [
+      "recipe_query_extraction"
+    ],
+    "input": {
+      "text": "what's recipe for cheese quesadilla"
+    },
+    "expect": {
+      "route": "recipe_search"
+    }
+  },
+  {
+    "case_id": "R-OBV-038",
+    "name": "suggest recipe for coleslaw",
+    "bucket": "obvious",
+    "failure_tags": [
+      "recipe_query_extraction"
+    ],
+    "input": {
+      "text": "suggest me a recipe for coleslaw"
+    },
+    "expect": {
+      "route": "recipe_search"
+    }
+  },
+  {
+    "case_id": "R-OBV-039",
+    "name": "find recipe for chicken tikka masala",
+    "bucket": "obvious",
+    "failure_tags": [
+      "recipe_query_extraction"
+    ],
+    "input": {
+      "text": "find recipe for chicken tikka masala"
+    },
+    "expect": {
+      "route": "recipe_search"
+    }
+  },
+  {
+    "case_id": "R-OBV-040",
+    "name": "recommend recipe for lentil soup",
+    "bucket": "obvious",
+    "failure_tags": [
+      "recipe_query_extraction"
+    ],
+    "input": {
+      "text": "recommend a recipe for lentil soup"
+    },
+    "expect": {
+      "route": "recipe_search"
+    }
+  },
+  {
+    "case_id": "R-AMB-017",
+    "name": "recipe ask missing dish suggest",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "suggest me a recipe"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-AMB-018",
+    "name": "recipe ask missing dish what should i make",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "what recipe should I make"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+  {
+    "case_id": "R-ADV-016",
+    "name": "cooking technique note should remain pkm",
+    "bucket": "adversarial_edge",
+    "failure_tags": [
+      "false_positive_recipe_search"
+    ],
+    "input": {
+      "text": "braising technique: sear first, then low simmer"
+    },
+    "expect": {
+      "route": "pkm_capture"
+    }
   }
 ]

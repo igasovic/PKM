@@ -3,6 +3,7 @@
 const { loadInlineCodeNode, requireExternalizedNode } = require('./n8n-node-loader');
 
 const prepareRouteInput = loadInlineCodeNode('01-telegram-router', 'Prepare Route Input');
+const prepareRecipeReadMessage = loadInlineCodeNode('01-telegram-router', 'Prepare Recipe Read Message');
 const buildNormalizeRequest = loadInlineCodeNode('30-calendar-create', 'Build Normalize Request');
 const buildGoogleEventPayload = requireExternalizedNode('30-calendar-create', 'build-google-event-payload');
 const prepareConflictContext = requireExternalizedNode('30-calendar-create', 'prepare-conflict-context');
@@ -62,6 +63,40 @@ describe('n8n calendar router/create helpers', () => {
 
     const row = out[0].json;
     expect(row.route_hint).toBe('pkm_capture');
+  });
+
+  test('prepare recipe read message rewrites route output into /recipe command', async () => {
+    const out = await prepareRecipeReadMessage({
+      $json: {
+        route: 'recipe_search',
+        recipe_query: 'cheese quesadilla',
+        raw_text: "what's recipe for cheese quesadilla",
+        message: {
+          text: "what's recipe for cheese quesadilla",
+        },
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.raw_text).toBe('/recipe cheese quesadilla');
+    expect(row.is_command).toBe(true);
+    expect(row.message.text).toBe('/recipe cheese quesadilla');
+  });
+
+  test('prepare recipe read message falls back to raw text when recipe_query is missing', async () => {
+    const out = await prepareRecipeReadMessage({
+      $json: {
+        route: 'recipe_search',
+        raw_text: 'pasta recipe',
+        message: {
+          text: 'pasta recipe',
+        },
+      },
+    });
+
+    const row = out[0].json;
+    expect(row.raw_text).toBe('/recipe pasta recipe');
+    expect(row.message.text).toBe('/recipe pasta recipe');
   });
 
   test('build normalize request strips cal prefix and keeps source ids', async () => {

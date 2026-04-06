@@ -98,5 +98,20 @@
     "name": "can i create request is ambiguous",
     "input": { "text": "can I create an event tomorrow at 5p" },
     "expect": { "route": "ambiguous" }
+  },
+  {
+    "name": "recipe suffix query routes to recipe search",
+    "input": { "text": "pasta recipe" },
+    "expect": { "route": "recipe_search" }
+  },
+  {
+    "name": "recipe for query routes to recipe search",
+    "input": { "text": "what's recipe for cheese quesadilla" },
+    "expect": { "route": "recipe_search" }
+  },
+  {
+    "name": "cooking technique note remains pkm capture",
+    "input": { "text": "braising technique: sear first, then low simmer" },
+    "expect": { "route": "pkm_capture" }
   }
 ]

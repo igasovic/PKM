@@ -252,6 +252,7 @@ The backend router should classify into:
 - `pkm_capture`
 - `calendar_create`
 - `calendar_query`
+- `recipe_search`
 - `ambiguous`
 
 Routing outcomes:
@@ -259,6 +260,7 @@ Routing outcomes:
 - `pkm_capture` → existing `02 Telegram Capture`
 - `calendar_create` → workflow `30 Calendar Create`
 - `calendar_query` → workflow `31 Calendar Read`
+- `recipe_search` → recipe retrieval path via `10 Read` (`/recipe <query>`)
 - `ambiguous` → one fluent clarification message in Telegram
 
 ### 8.2 Workflow B — `30 Calendar Create`
@@ -832,7 +834,7 @@ Security requirement for v1:
 
 Purpose:
 
-- classify non-command Telegram input into `pkm_capture`, `calendar_create`, `calendar_query`, or `ambiguous`
+- classify non-command Telegram input into `pkm_capture`, `calendar_create`, `calendar_query`, `recipe_search`, or `ambiguous`
 
 High-level input:
 
@@ -847,6 +849,7 @@ High-level output:
 - route
 - confidence
 - optional clarification question
+- optional `recipe_query` when `route=recipe_search`
 
 #### `POST /calendar/normalize`
 

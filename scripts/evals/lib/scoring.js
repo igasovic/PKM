@@ -16,7 +16,7 @@ function groupBy(list, keyFn) {
 }
 
 function buildRouteConfusion(results) {
-  const labels = ['pkm_capture', 'calendar_create', 'calendar_query', 'ambiguous'];
+  const labels = ['pkm_capture', 'calendar_create', 'calendar_query', 'recipe_search', 'ambiguous'];
   const matrix = {};
   for (const exp of labels) {
     matrix[exp] = {};

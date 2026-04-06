@@ -4,7 +4,7 @@ const { getConfig } = require('../../libs/config.js');
 const { LiteLLMClient } = require('../litellm-client.js');
 const { getLogger } = require('../logger/index.js');
 const { getRunContext } = require('../logger/context.js');
-const { classifyByRules } = require('./routing.rules.js');
+const { classifyByRules, extractRecipeQuery } = require('./routing.rules.js');
 const { buildRoutingSystemPrompt, buildRoutingUserPrompt } = require('./routing.prompt.js');
 const { parseRoutingLlmResult } = require('./routing.schema.js');
 const { hasLiteLLMKey } = require('../runtime-env.js');
@@ -17,6 +17,13 @@ let litellmClient = null;
 
 function text(value) {
   return String(value === undefined || value === null ? '' : value).trim();
+}
+
+function extractRecipeQueryText(rawText) {
+  const out = extractRecipeQuery(rawText);
+  if (!out) return null;
+  if (typeof out === 'string') return text(out) || null;
+  return text(out.query) || null;
 }
 
 function buildClarificationQuestion() {
@@ -171,6 +178,14 @@ function parseRouteResultNode(state) {
     if (rule.route === 'ambiguous') {
       output.clarification_question = buildClarificationQuestion();
     }
+    if (rule.route === 'recipe_search') {
+      output.recipe_query = text(rule.recipe_query) || extractRecipeQueryText(state && state.loaded && state.loaded.raw_text);
+      if (!output.recipe_query) {
+        output.route = 'ambiguous';
+        output.confidence = 0.5;
+        output.clarification_question = 'Which recipe should I search for?';
+      }
+    }
     return {
       parsed: {
         ...output,
@@ -183,6 +198,19 @@ function parseRouteResultNode(state) {
   if (!llm.skipped && text(llm.text)) {
     try {
       const parsed = parseRoutingLlmResult(llm.text);
+      if (parsed.route === 'recipe_search') {
+        parsed.recipe_query = text(parsed.recipe_query) || extractRecipeQueryText(state && state.loaded && state.loaded.raw_text);
+        if (!parsed.recipe_query) {
+          return {
+            parsed: {
+              route: 'ambiguous',
+              confidence: 0.5,
+              clarification_question: 'Which recipe should I search for?',
+              route_source: 'fallback_ambiguous_recipe_query_missing',
+            },
+          };
+        }
+      }
       return {
         parsed: {
           ...parsed,
@@ -192,6 +220,19 @@ function parseRouteResultNode(state) {
     } catch (_err) {
       // Keep fallback behavior below.
     }
+  }
+
+  const fallbackRecipeQuery = extractRecipeQueryText(state && state.loaded && state.loaded.raw_text);
+  if (fallbackRecipeQuery) {
+    return {
+      parsed: {
+        route: 'recipe_search',
+        confidence: 0.82,
+        recipe_query: fallbackRecipeQuery,
+        clarification_question: null,
+        route_source: 'fallback_recipe_search',
+      },
+    };
   }
 
   const signals = rule && rule.signals && typeof rule.signals === 'object' ? rule.signals : {};
@@ -228,6 +269,9 @@ function writeLogNode(state) {
   if (parsed.route === 'ambiguous') {
     output.clarification_question = text(parsed.clarification_question) || buildClarificationQuestion();
   }
+  if (parsed.route === 'recipe_search') {
+    output.recipe_query = text(parsed.recipe_query) || null;
+  }
 
   return {
     output,
@@ -238,6 +282,7 @@ function writeLogNode(state) {
       llm_reason: text(llm.reason) || null,
       llm_model: text(llm.model) || null,
       llm_error: text(llm.error) || null,
+      recipe_query: parsed.route === 'recipe_search' ? (text(parsed.recipe_query) || null) : null,
     },
   };
 }

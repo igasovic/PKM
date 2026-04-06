@@ -1,5 +1,39 @@
 # changelog
 
+## 2026-04-06 — WF1 unstructured recipe-search routing
+
+### What changed
+- Expanded backend Telegram router (`POST /telegram/route`) with a new retrieval route:
+  - `route: recipe_search`
+  - `recipe_query` extraction from unstructured text (examples: `pasta recipe`, `what's recipe for cheese quesadilla`)
+- Added deterministic and LLM routing support for recipe-search intent while preserving:
+  - calendar create/query routing
+  - PKM capture behavior for cooking-technique notes that are not recipe lookups
+- Updated `01 Telegram Router` workflow wiring:
+  - new `recipe_search` branch
+  - branch rewrites routed payload into `/recipe <recipe_query>` and forwards to `10 Read`
+- Added tests and eval coverage:
+  - backend router/service/API/access-policy tests
+  - WF1 inline-node tests for recipe branch rewrite behavior
+  - 8 new router eval fixtures:
+    - 5 obvious recipe-search
+    - 2 ambiguous missing-dish recipe asks
+    - 1 adversarial cooking-technique PKM capture
+
+### Surfaces changed
+- backend routing contract and route policy
+- WF1 n8n routing workflow
+- router eval corpus/schema/scoring
+- recipe and calendar PRD/API docs
+
+### PRDs impacted
+- `docs/PRD/recipes-prd.md`
+- `docs/PRD/family-calendar-PRD.md`
+
+### Contract docs impacted
+- `docs/api_calendar.md`
+- `docs/changelog.md`
+
 ## 2026-04-05 — Recipe links + append-note command
 
 ### What changed

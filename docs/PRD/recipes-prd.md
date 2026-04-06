@@ -78,6 +78,10 @@ The recipes V1 surface is implemented and documented:
 - backend `/recipes/*` endpoints for create/search/get/patch/overwrite/review
 - debug UI `/recipes` operator page
 - Telegram command path in `10 Read` (`/recipe`, `/recipes`, `/recipe-save`, `/recipe-link`, `/recipe-note`)
+- unstructured Telegram recipe retrieval routing in `01 Telegram Router` via backend `POST /telegram/route`:
+  - router route: `recipe_search`
+  - extracted query field: `recipe_query`
+  - WF1 rewrites to `/recipe <recipe_query>` and reuses `10 Read` search execution
 
 ### 3.2 Consequence for this PRD
 This PRD is now a canonical active-surface owner and should be updated alongside schema/API/workflow changes instead of treated as proposal-only text.
@@ -197,6 +201,16 @@ Debug UI gets a dedicated **Recipes** page for search/read/update support. The d
 1. Backend records `needs_review` when configured review-trigger fields are missing.
 2. Backend stores machine-readable review reasons in metadata JSONB.
 3. `GET /recipes/review` returns recipe ID, title, and reasons for recipes requiring follow-up.
+
+### 7.8 Unstructured recipe search routing flow
+1. User sends non-command Telegram text such as `pasta recipe` or `what's recipe for coleslaw`.
+2. `01 Telegram Router` calls backend `POST /telegram/route`.
+3. Backend deterministic router or LLM router returns:
+   - `route: recipe_search`
+   - `recipe_query: <normalized query>`
+4. WF1 rewrites the message to `/recipe <recipe_query>` and dispatches to `10 Read`.
+5. `10 Read` executes existing `recipe_search` command flow (`POST /recipes/search`), so recipe retrieval formatting remains centralized.
+6. If no usable query can be extracted, router falls back to `ambiguous` for clarification instead of guessing.
 
 ## 8. Data model / state transitions
 ### 8.1 Table choice
@@ -390,6 +404,11 @@ Additional commands in active scope:
 - `/recipe-save <structured_recipe_text>`
 - `/recipe-link <R<number>> <R<number>>`
 - `/recipe-note <R<number>> <note>`
+
+Non-command retrieval contract:
+- unstructured text that clearly requests a recipe search routes through `POST /telegram/route` as `recipe_search`
+- router returns `recipe_query` and WF1 rewrites to `/recipe <recipe_query>`
+- this is retrieval-only; it does not create/overwrite/link/note recipes
 
 ### 9.10 Input format contract for one-shot paste
 #### Canonical structured format
