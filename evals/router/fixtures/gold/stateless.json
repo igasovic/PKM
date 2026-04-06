@@ -396,10 +396,24 @@
     "name": "short",
     "bucket": "obvious",
     "failure_tags": [
-      "url"
+      "baseline_route"
     ],
     "input": {
       "text": "tomorrow"
+    },
+    "expect": {
+      "route": "calendar_query"
+    }
+  },
+  {
+    "case_id": "R-OBV-030",
+    "name": "short and clear",
+    "bucket": "obvious",
+    "failure_tags": [
+      "baseline_route"
+    ],
+    "input": {
+      "text": "events today"
     },
     "expect": {
       "route": "calendar_query"
@@ -610,6 +624,20 @@
     ],
     "input": {
       "text": "calendar 2026-04-09 14:00 meeting"
+    },
+    "expect": {
+      "route": "ambiguous"
+    }
+  },
+    {
+    "case_id": "R-AMB-016",
+    "name": "question for availability",
+    "bucket": "ambiguous",
+    "failure_tags": [
+      "bad_clarification_decision"
+    ],
+    "input": {
+      "text": "can I create an event tomorrow at 5p"
     },
     "expect": {
       "route": "ambiguous"
