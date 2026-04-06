@@ -16,30 +16,49 @@ function safeArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function formatDuration(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(String(value).trim());
+  if (!Number.isFinite(n) || n < 0) return asText(value) || null;
+  const mins = Math.trunc(n);
+  const hours = Math.floor(mins / 60);
+  const rem = mins % 60;
+  if (hours < 1) return `${mins}min`;
+  if (rem === 0) return `${hours}h`;
+  return `${hours}h${rem}min`;
+}
+
+function parseNoteLines(notes) {
+  if (Array.isArray(notes)) {
+    return notes.map((item) => asText(item)).filter(Boolean);
+  }
+  return asText(notes)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 function recipeHeader(recipe) {
   const title = asText(recipe.title) || 'Untitled recipe';
   const publicId = asText(recipe.public_id);
   const status = asText(recipe.status) || 'active';
+  const isActive = status.toLowerCase() === 'active';
 
-  const lines = [
-    `${bold(title)} ${publicId ? `\\(\\#${mdv2(publicId)}\\)` : ''}`.trim(),
-    `Status: ${mdv2(status)}`,
-  ];
+  const lines = [`${bold(title)} ${publicId ? `\\(\\#${mdv2(publicId)}\\)` : ''}`.trim()];
+  if (!isActive) {
+    lines.push(`Status: ${mdv2(status)}`);
+  }
 
   const timings = [];
-  if (recipe.prep_time_minutes !== null && recipe.prep_time_minutes !== undefined && recipe.prep_time_minutes !== '') {
-    timings.push(`prep ${mdv2(String(recipe.prep_time_minutes))}m`);
-  }
-  if (recipe.cook_time_minutes !== null && recipe.cook_time_minutes !== undefined && recipe.cook_time_minutes !== '') {
-    timings.push(`cook ${mdv2(String(recipe.cook_time_minutes))}m`);
-  }
-  if (recipe.total_time_minutes !== null && recipe.total_time_minutes !== undefined && recipe.total_time_minutes !== '') {
-    timings.push(`total ${mdv2(String(recipe.total_time_minutes))}m`);
-  }
+  const prep = formatDuration(recipe.prep_time_minutes);
+  const cook = formatDuration(recipe.cook_time_minutes);
+  const total = formatDuration(recipe.total_time_minutes);
+  if (prep) timings.push(`prep ${mdv2(prep)}`);
+  if (cook) timings.push(`cook ${mdv2(cook)}`);
+  if (total) timings.push(`total ${mdv2(total)}`);
   if (timings.length) lines.push(`Time: ${timings.join(', ')}`);
 
   const facets = [];
-  if (asText(recipe.servings)) facets.push(`servings ${mdv2(String(recipe.servings))}`);
   if (asText(recipe.cuisine)) facets.push(`cuisine ${mdv2(recipe.cuisine)}`);
   if (asText(recipe.protein)) facets.push(`protein ${mdv2(recipe.protein)}`);
   if (asText(recipe.difficulty)) facets.push(`difficulty ${mdv2(recipe.difficulty)}`);
@@ -61,15 +80,17 @@ function recipeHeader(recipe) {
 function renderFullRecipe(recipe) {
   const ingredients = safeArray(recipe.ingredients).map((item) => asText(item)).filter(Boolean);
   const instructions = safeArray(recipe.instructions).map((item) => asText(item)).filter(Boolean);
-  const notes = asText(recipe.notes);
+  const notes = parseNoteLines(recipe.notes);
   const url = asText(recipe.url_canonical || recipe.url);
+  const servings = asText(recipe.servings);
+  const ingredientsHeader = servings ? `Ingredients (${servings} servings)` : 'Ingredients';
 
   const lines = [
     bold('Recipe'),
     ...recipeHeader(recipe),
     ...(url ? [`URL: ${mdv2(url)}`] : []),
     '',
-    bold('Ingredients'),
+    bold(ingredientsHeader),
     ...(ingredients.length ? ingredients.map((item) => bullet(item)) : [bullet('none')]),
     '',
     bold('Instructions'),
@@ -78,8 +99,8 @@ function renderFullRecipe(recipe) {
       : [bullet('none')]),
   ];
 
-  if (notes) {
-    lines.push('', bold('Notes'), mdv2(notes));
+  if (notes.length) {
+    lines.push('', bold('Notes'), ...notes.map((item) => bullet(item)));
   }
 
   const seeAlso = safeArray(recipe.linked_recipes)
@@ -90,7 +111,7 @@ function renderFullRecipe(recipe) {
     for (const link of seeAlso) {
       const title = asText(link.title) || 'Untitled';
       const publicId = asText(link.public_id);
-      lines.push(`\\- ${mdv2(title)}${publicId ? ` \\(\\#${mdv2(publicId)}\\)` : ''}`);
+      lines.push(bullet(`${title}${publicId ? ` (#${publicId})` : ''}`));
     }
   }
 

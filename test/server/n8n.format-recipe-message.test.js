@@ -13,12 +13,12 @@ describe('n8n format-recipe-message', () => {
         cuisine: 'Italian',
         protein: 'None',
         difficulty: 'Easy',
-        prep_time_minutes: 15,
-        cook_time_minutes: 20,
-        total_time_minutes: 35,
+        prep_time_minutes: 45,
+        cook_time_minutes: 90,
+        total_time_minutes: 135,
         ingredients: ['300g pasta', 'lemon zest'],
         instructions: ['Boil pasta', 'Toss with lemon'],
-        notes: 'Finish with parmesan',
+        notes: 'Finish with parmesan\nServe immediately',
         review_reasons: ['missing_protein'],
         tags: ['weeknight', 'pasta'],
         url_canonical: 'https://www.youtube.com/watch?v=Es3B8Swni14',
@@ -35,16 +35,37 @@ describe('n8n format-recipe-message', () => {
     expect(message).toContain('*Recipe*');
     expect(message).toContain('Lemon Pasta');
     expect(message).toContain('\\(\\#R42\\)');
-    expect(message).toContain('*Ingredients*');
+    expect(message).toContain('Status: needs\\_review');
+    expect(message).toContain('Time: prep 45min, cook 1h30min, total 2h15min');
+    expect(message).toContain('*Ingredients \\(4 servings\\)*');
     expect(message).toContain('*Instructions*');
     expect(message).toContain('1\\. Boil pasta');
     expect(message).toContain('\\#weeknight');
     expect(message).toContain('URL: https://www\\.youtube\\.com/watch?v\\=Es3B8Swni14');
+    expect(message).toContain('*Notes*');
+    expect(message).toContain('• Finish with parmesan');
+    expect(message).toContain('• Serve immediately');
     expect(message).toContain('*See Also*');
-    expect(message).toContain('\\- Ragu Bolognese \\(\\#R2\\)');
-    expect(message).toContain('\\- Pico de Gallo \\(\\#R123\\)');
+    expect(message).toContain('• Ragu Bolognese \\(\\#R2\\)');
+    expect(message).toContain('• Pico de Gallo \\(\\#R123\\)');
     expect(message.indexOf('Tags:')).toBeLessThan(message.indexOf('URL:'));
-    expect(message.indexOf('URL:')).toBeLessThan(message.indexOf('*Ingredients*'));
+    expect(message.indexOf('URL:')).toBeLessThan(message.indexOf('*Ingredients \\(4 servings\\)*'));
+  });
+
+  test('omits status line when recipe is active', async () => {
+    const out = await formatRecipeMessage({
+      $json: {
+        public_id: 'R7',
+        title: 'Tomato Soup',
+        status: 'active',
+        servings: 2,
+        ingredients: ['tomatoes'],
+        instructions: ['Simmer'],
+      },
+    });
+
+    const message = out[0].json.telegram_message;
+    expect(message).not.toContain('Status:');
   });
 
   test('formats search payload without top hit as no-match', async () => {
