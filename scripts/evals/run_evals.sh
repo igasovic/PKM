@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SERVER_DIR="$ROOT/src/server"
+STACK_ENV_FILE_DEFAULT="/home/igasovic/stack/.env"
 
 show_help() {
   cat <<'USAGE'
@@ -92,12 +93,24 @@ if [[ "$run_router" == false && "$run_calendar" == false ]]; then
   run_calendar=true
 fi
 
+# Load PKM_ADMIN_SECRET from Pi stack .env only when caller did not pass secret.
+if [[ -z "$admin_secret" && -z "${PKM_ADMIN_SECRET:-}" && -f "$STACK_ENV_FILE_DEFAULT" ]]; then
+  loaded_secret="$(
+    sed -n 's/^[[:space:]]*PKM_ADMIN_SECRET[[:space:]]*=[[:space:]]*//p' "$STACK_ENV_FILE_DEFAULT" \
+      | head -n 1
+  )"
+  loaded_secret="${loaded_secret%\"}"
+  loaded_secret="${loaded_secret#\"}"
+  loaded_secret="${loaded_secret%\'}"
+  loaded_secret="${loaded_secret#\'}"
+  if [[ -n "$loaded_secret" ]]; then
+    admin_secret="$loaded_secret"
+  fi
+fi
+
 common_args=()
 if [[ -n "$backend_url" ]]; then
   common_args+=(--backend-url "$backend_url")
-fi
-if [[ -n "$admin_secret" ]]; then
-  common_args+=(--admin-secret "$admin_secret")
 fi
 if [[ -n "$telegram_user_id" ]]; then
   common_args+=(--telegram-user-id "$telegram_user_id")
@@ -115,6 +128,10 @@ fi
 run_eval() {
   local target="$1"
   echo "==> Running $target eval"
+  local -a env_cmd=()
+  if [[ -n "$admin_secret" ]]; then
+    env_cmd=(env "PKM_ADMIN_SECRET=$admin_secret")
+  fi
   if command -v npm >/dev/null 2>&1; then
     local cmd=(npm run "eval:${target}:live")
     if [[ ${#common_args[@]} -gt 0 ]]; then
@@ -123,7 +140,11 @@ run_eval() {
     fi
     (
       cd "$SERVER_DIR"
-      "${cmd[@]}"
+      if [[ ${#env_cmd[@]} -gt 0 ]]; then
+        "${env_cmd[@]}" "${cmd[@]}"
+      else
+        "${cmd[@]}"
+      fi
     )
     return
   fi
@@ -139,7 +160,11 @@ run_eval() {
     if [[ ${#common_args[@]} -gt 0 ]]; then
       cmd+=("${common_args[@]}")
     fi
-    "${cmd[@]}"
+    if [[ ${#env_cmd[@]} -gt 0 ]]; then
+      "${env_cmd[@]}" "${cmd[@]}"
+    else
+      "${cmd[@]}"
+    fi
     return
   fi
 
