@@ -1,8 +1,7 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
 const http = require('http');
+const { BACKEND_ROUTE_REGISTRY } = require('../../src/server/routes/backend-route-registry.js');
 
 function request(port, method, routePath, body, headers = {}) {
   return new Promise((resolve, reject) => {
@@ -169,9 +168,7 @@ describe('backend route registry smoke matrix', () => {
   }
 
   test('registry-defined n8n smoke routes return expected status', async () => {
-    const registryPath = path.join(__dirname, '../../docs/backend_route_registry.json');
-    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
-    const smokeEntries = registry.filter((entry) => entry && entry.smoke && entry.smoke.enabled);
+    const smokeEntries = BACKEND_ROUTE_REGISTRY.filter((entry) => entry && entry.smoke && entry.smoke.enabled);
 
     expect(smokeEntries.length).toBeGreaterThan(0);
 

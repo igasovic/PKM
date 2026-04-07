@@ -21,4 +21,33 @@ if [[ $# -eq 0 ]]; then
   exec "$RUNNER" --help
 fi
 
-exec "$RUNNER" "$@"
+for arg in "$@"; do
+  if [[ "$arg" == "--help" || "$arg" == "-h" ]]; then
+    exec "$RUNNER" "$@"
+  fi
+done
+
+args=("$@")
+has_backend_url=false
+has_admin_secret=false
+
+for ((i = 0; i < ${#args[@]}; i++)); do
+  case "${args[$i]}" in
+    --backend-url)
+      has_backend_url=true
+      ;;
+    --admin-secret)
+      has_admin_secret=true
+      ;;
+  esac
+done
+
+if [[ "$has_backend_url" == false ]]; then
+  args+=(--backend-url "http://127.0.0.1:3010")
+fi
+
+if [[ "$has_admin_secret" == false && -n "${PKM_ADMIN_SECRET:-}" ]]; then
+  args+=(--admin-secret "$PKM_ADMIN_SECRET")
+fi
+
+exec "$RUNNER" "${args[@]}"

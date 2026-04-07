@@ -132,14 +132,17 @@ fi
 # --------
 # 4) Docs parity: backend routes and env vars must stay reflected in docs
 # --------
+echo "==> Regenerating backend route registry from source-of-truth..."
+node "$ROOT/scripts/CI/export_backend_route_registry.js" --write
+
 echo "==> Checking backend route/doc parity..."
 python3 "$ROOT/scripts/CI/check_backend_route_docs.py"
 
 echo "==> Checking backend env/doc parity..."
 python3 "$ROOT/scripts/CI/check_backend_env_docs.py"
 
-echo "==> Checking generated backend test surface matrix..."
-python3 "$ROOT/scripts/CI/generate_backend_test_surface_matrix.py" --check
+echo "==> Regenerating backend test surface matrix..."
+python3 "$ROOT/scripts/CI/generate_backend_test_surface_matrix.py" --write
 
 # --------
 # 5) Tests: run backend Jest from src/server

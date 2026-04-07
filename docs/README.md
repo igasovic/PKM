@@ -125,8 +125,9 @@ Update architecture docs in the same change set as the code boundary they descri
 
 Generated architecture-supporting docs:
 - `docs/backend_test_surface_matrix.md` is generated from `docs/backend_route_registry.json`
-- edit the registry, then regenerate via `scripts/CI/generate_backend_test_surface_matrix.py --write`
-- CI is expected to fail if the generated matrix is stale
+- source-of-truth registry lives in `src/server/routes/backend-route-registry.js`
+- `scripts/CI/check.sh` regenerates `docs/backend_route_registry.json` and `docs/backend_test_surface_matrix.md` automatically
+- run standalone generators only when you explicitly want to refresh artifacts outside the normal check flow
 
 ## Current Constraints
 - `docs/requirements.md` and `docs/changelog.md` still contain important historical and behavioral context and must be consulted when recovering old surfaces.
