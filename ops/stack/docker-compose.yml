@@ -1,6 +1,6 @@
 services:
   homeassistant:
-    image: ghcr.io/home-assistant/home-assistant:stable
+    image: ghcr.io/home-assistant/home-assistant:2026.1.0
     container_name: homeassistant
     network_mode: host
     privileged: true
@@ -47,14 +47,14 @@ services:
       - internal
 
   cloudflared:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:2025.11.1
     container_name: cloudflared
     restart: unless-stopped
     network_mode: host
     command: tunnel --no-autoupdate run --token eyJhIjoiOWI2NzEzZTgyMWU5M2NiNDFhMGJlYjY3MjMyMzcwNmEiLCJ0IjoiYTVlNjQzZmYtYTE4Yi00YjUxLWE2NTMtMTQ1ZThiY2EyNjY2IiwicyI6IlpHRTFNems0WlRrdFlUZGhNaTAwTlRGaUxUaGhaV010TW1FeU1tRTFOMlJoWlRsbCJ9
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16.11-alpine
     container_name: postgres
     restart: unless-stopped
     env_file:
@@ -129,7 +129,7 @@ services:
       - internal
 
   litellm:
-    image: docker.litellm.ai/berriai/litellm:main-stable
+    image: docker.litellm.ai/berriai/litellm:1.81.3-stable
     container_name: litellm
     command: ["--port", "4000", "--config", "/app/config.yaml", "--detailed_debug"]
     ports:
