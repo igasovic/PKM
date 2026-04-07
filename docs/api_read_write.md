@@ -31,7 +31,7 @@
 |---|---|---|---|---|
 | Insert / update | internal | n8n, internal tooling | active schema `entries` | `test/server/idempotency.test.js`, `test/server/normalization.test.js` |
 | Delete / move | admin secret | operators, smoke harness, controlled workflows | `pkm.entries`, `pkm_test.entries` | `test/server/db.read-smoke.api-contract.test.js`, smoke-related tests |
-| Read | internal | n8n read workflows, context-pack builder | active schema `entries` | `test/server/read-sql-distill-projection.test.js`, `test/server/context-pack-builder.test.js`, `test/server/n8n.wf11-context-pack.test.js` |
+| Read | internal | n8n read workflows, PKM UI Read page, context-pack builder | active schema `entries` | `test/server/read-sql-distill-projection.test.js`, `test/server/context-pack-builder.test.js`, `test/server/n8n.wf11-context-pack.test.js` |
 
 ## Insert / Update
 
@@ -324,6 +324,7 @@ Notes:
 - Row includes `found` boolean:
   - `found=true` when the entry exists (row contains entry data).
   - `found=false` when the entry does not exist (row contains the requested `entry_id` plus null/empty content fields).
+- PKM UI Read page uses this route for manual entry pull and per-result drawer inspection.
 
 ### `POST /db/read/smoke`
 Returns smoke-marked entries for cleanup/reporting selectors.

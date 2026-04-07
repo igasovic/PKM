@@ -15,14 +15,14 @@ export default defineConfig(({ mode }) => {
       // eslint-disable-next-line no-console
       console.log(`[pkm-internal-api-proxy] enabled -> ${target}`);
       server.middlewares.use(async (req: any, res: any, next: any) => {
-        const path = String(req.url || '');
-        if (!path.startsWith('/db/') && !path.startsWith('/recipes/')) return next();
+        const requestPath = String(req.url || '');
+        if (!requestPath.startsWith('/db/') && !requestPath.startsWith('/recipes/') && !requestPath.startsWith('/chatgpt/')) return next();
         // eslint-disable-next-line no-console
-        console.log(`[pkm-internal-api-proxy] ${String(req.method || 'GET').toUpperCase()} ${path}`);
+        console.log(`[pkm-internal-api-proxy] ${String(req.method || 'GET').toUpperCase()} ${requestPath}`);
 
         try {
           const method = String(req.method || 'GET').toUpperCase();
-          const upstreamUrl = new URL(path, target).toString();
+          const upstreamUrl = new URL(requestPath, target).toString();
 
           const headers = new Headers();
           for (const [key, value] of Object.entries(req.headers || {})) {
@@ -34,6 +34,9 @@ export default defineConfig(({ mode }) => {
             } else {
               headers.set(String(key), String(value));
             }
+          }
+          if (requestPath.startsWith('/chatgpt/') && adminSecret && !headers.has('x-pkm-admin-secret')) {
+            headers.set('x-pkm-admin-secret', adminSecret);
           }
 
           let body: Buffer | undefined;

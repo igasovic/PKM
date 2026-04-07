@@ -2,6 +2,7 @@
 
 Local React + Tailwind GUI for:
 - **Read** workflows via `/db/read/*`
+- **Working Memory** lookup via `/chatgpt/working_memory`
 - **Recipes** workflows via `/recipes/*`
 - **Debug** pipeline inspection via `/debug/*`
 - **Failures** diagnostics via `/debug/failures*`
@@ -13,6 +14,9 @@ Local React + Tailwind GUI for:
   - `POST /db/read/continue`
   - `POST /db/read/find`
   - `POST /db/read/last`
+  - `POST /db/read/pull`
+- Working Memory page depends on:
+  - `POST /chatgpt/working_memory`
 - Recipes page depends on:
   - `POST /recipes/create`
   - `POST /recipes/search`
@@ -51,6 +55,7 @@ PKM_ADMIN_SECRET=replace-with-your-pkm-admin-secret
 Vite proxy forwards:
 - `/db` to `${VITE_PKM_ORIGIN}/db`
 - `/recipes` to `${VITE_PKM_ORIGIN}/recipes`
+- `/chatgpt` to `${VITE_PKM_ORIGIN}/chatgpt` and injects `x-pkm-admin-secret` from `PKM_ADMIN_SECRET`
 - `/debug` to `${VITE_PKM_ORIGIN}/debug` and injects `x-pkm-admin-secret` from `PKM_ADMIN_SECRET`
 
 This keeps frontend requests relative and avoids backend CORS changes.
@@ -58,14 +63,21 @@ This keeps frontend requests relative and avoids backend CORS changes.
 ## Features
 
 ### Read
-- Left menu navigation (`/read`, `/recipes`, `/debug`, `/failures`).
+- Left menu navigation (`/read`, `/working-memory`, `/recipes`, `/debug`, `/failures`).
 - Single-operation radio selection: `continue | find | last`.
 - Query controls: `q` (required), `days`, `limit`.
 - Sends request run id in `X-PKM-Run-Id` (`ui-read-<uuid>`).
 - Displays returned run id and quick link to open debug page for that run.
 - Result browser with per-row include checkbox and bulk actions.
+- Manual `pull` by `entry_id` and per-card top-right `Pull` actions that open a right-side drawer.
+- Drawer view uses standardized Telegram-style formatting plus expandable full JSON.
 - Context pack builder (markdown/json), live preview, and copy to clipboard.
 - Token estimation (heuristic `chars / 4`).
+
+### Working Memory
+- Side-menu route at `/working-memory`.
+- Topic lookup via admin-protected `POST /chatgpt/working_memory`.
+- Standardized Telegram-style entry view with expandable full JSON debug payload.
 
 ### Debug
 - Run lookup by run id.

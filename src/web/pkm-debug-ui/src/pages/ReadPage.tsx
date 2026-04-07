@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { EntryStandardCard } from '../components/EntryStandardCard';
+import { RightSideDrawer } from '../components/RightSideDrawer';
 import { buildContextPack, type ContextPackFormat } from '../lib/contextPack';
 import { fmtTs } from '../lib/format';
 import { createUiRunId } from '../lib/runId';
 import { normalizeReadRows } from '../lib/readNormalize';
-import { readContinue, readFind, readLast } from '../lib/readApi';
+import { readContinue, readFind, readLast, readPull } from '../lib/readApi';
 import { copyText, stableStringify } from '../lib/stable';
 import { estimateTokens } from '../lib/tokenEstimate';
 import type { ReadItem, ReadOperation } from '../types';
@@ -17,6 +19,12 @@ function parsePositiveOrNull(value: string): number | null {
   return Math.trunc(n);
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
 export function ReadPage() {
   const navigate = useNavigate();
 
@@ -26,6 +34,7 @@ export function ReadPage() {
   const [limitInput, setLimitInput] = useState('');
   const [snippetLengthInput, setSnippetLengthInput] = useState('800');
   const [format, setFormat] = useState<ContextPackFormat>('markdown');
+  const [pullEntryIdInput, setPullEntryIdInput] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +43,13 @@ export function ReadPage() {
 
   const [lastRunId, setLastRunId] = useState<string>('');
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerError, setDrawerError] = useState<string | null>(null);
+  const [pullRunId, setPullRunId] = useState<string>('');
+  const [pullTargetEntryId, setPullTargetEntryId] = useState<string>('');
+  const [pullPayload, setPullPayload] = useState<Record<string, unknown> | null>(null);
 
   const days = parsePositiveOrNull(daysInput);
   const limit = parsePositiveOrNull(limitInput);
@@ -115,6 +131,37 @@ export function ReadPage() {
       setElapsedMs(Math.round(performance.now() - start));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const pullIntoDrawer = async (entryIdValue: string) => {
+    const entryId = String(entryIdValue || '').trim();
+    if (!entryId) return;
+
+    setDrawerOpen(true);
+    setDrawerLoading(true);
+    setDrawerError(null);
+    setPullTargetEntryId(entryId);
+    setPullPayload(null);
+
+    const runId = createUiRunId('ui-pull');
+    try {
+      const out = await readPull({ entry_id: entryId }, { runId });
+      const row0 = Array.isArray(out.rows) && out.rows.length > 0
+        ? asRecord(out.rows[0])
+        : {};
+      const payload = Object.keys(row0).length > 0
+        ? row0
+        : { entry_id: entryId, found: false };
+      setPullPayload(payload);
+      setPullRunId(out.run_id || runId);
+      setPullEntryIdInput(entryId);
+    } catch (err) {
+      setPullPayload(null);
+      setPullRunId(runId);
+      setDrawerError(err instanceof Error ? err.message : 'pull failed');
+    } finally {
+      setDrawerLoading(false);
     }
   };
 
@@ -202,6 +249,26 @@ export function ReadPage() {
           )}
         </div>
 
+        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,220px)_auto_1fr]">
+          <input
+            value={pullEntryIdInput}
+            onChange={(event) => setPullEntryIdInput(event.target.value)}
+            placeholder="entry_id for /pull"
+            className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500 placeholder:text-slate-500 focus:ring"
+          />
+          <button
+            type="button"
+            className="rounded border border-indigo-500 bg-indigo-500/15 px-3 py-2 text-sm text-indigo-300 hover:bg-indigo-500/25 disabled:opacity-50"
+            onClick={() => { void pullIntoDrawer(pullEntryIdInput); }}
+            disabled={drawerLoading || !pullEntryIdInput.trim()}
+          >
+            {drawerLoading ? 'Pulling...' : 'Pull Entry'}
+          </button>
+          <div className="rounded border border-slate-800 bg-slate-950/40 px-3 py-2 text-xs text-slate-400">
+            Pull loads one entry into the right-side drawer using <code>/db/read/pull</code>.
+          </div>
+        </div>
+
         {(lastRunId || elapsedMs !== null || rows.length > 0) && (
           <div className="mt-3 text-xs text-slate-400">
             <span className="mr-3">results: {rows.length}</span>
@@ -246,10 +313,21 @@ export function ReadPage() {
                     className="mt-1"
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-300">
-                      <span>entry\_id: {item.entry_id || '-'}</span>
-                      <span>source: {item.source || '-'}</span>
-                      <span>created: {item.created_at ? fmtTs(item.created_at) : '-'}</span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-300">
+                        <span>entry\_id: {item.entry_id || '-'}</span>
+                        <span>source: {item.source || '-'}</span>
+                        <span>created: {item.created_at ? fmtTs(item.created_at) : '-'}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="rounded border border-indigo-500/70 bg-indigo-500/15 px-2 py-0.5 text-xs text-indigo-300 hover:bg-indigo-500/25 disabled:opacity-50"
+                        onClick={() => { void pullIntoDrawer(item.entry_id || item.id); }}
+                        disabled={drawerLoading}
+                        title="Pull and open in drawer"
+                      >
+                        Pull
+                      </button>
                     </div>
                     <div className="mt-1 text-sm font-medium text-slate-100">{item.title || '(no title)'}</div>
                     {item.url && (
@@ -314,6 +392,39 @@ export function ReadPage() {
           />
         </aside>
       </div>
+
+      <RightSideDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title="Pulled Entry"
+        subtitle={pullTargetEntryId ? `entry_id: ${pullTargetEntryId}${pullRunId ? ` | run_id: ${pullRunId}` : ''}` : null}
+      >
+        {drawerLoading && (
+          <div className="rounded border border-slate-800 bg-slate-900/70 px-3 py-6 text-sm text-slate-300">
+            Loading pull response...
+          </div>
+        )}
+
+        {drawerError && !drawerLoading && (
+          <div className="rounded border border-rose-700/50 bg-rose-900/20 px-3 py-2 text-sm text-rose-300">
+            {drawerError}
+          </div>
+        )}
+
+        {pullPayload && !drawerLoading && (
+          <EntryStandardCard
+            title="Standardized View (Telegram-style)"
+            payload={pullPayload}
+            fullPayload={pullPayload}
+          />
+        )}
+
+        {!drawerLoading && !drawerError && !pullPayload && (
+          <div className="rounded border border-slate-800 bg-slate-900/70 px-3 py-6 text-sm text-slate-300">
+            Pull an entry from the Read page to inspect details here.
+          </div>
+        )}
+      </RightSideDrawer>
     </div>
   );
 }

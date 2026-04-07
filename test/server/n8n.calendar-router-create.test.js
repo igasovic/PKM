@@ -32,7 +32,7 @@ describe('n8n calendar router/create helpers', () => {
     expect(row.telegram_message_id).toBe('777');
   });
 
-  test('prepare route input defaults plain text to pkm capture', async () => {
+  test('prepare route input defaults plain text to backend route', async () => {
     const out = await prepareRouteInput({
       $json: {
         message: {
@@ -45,11 +45,11 @@ describe('n8n calendar router/create helpers', () => {
     });
 
     const row = out[0].json;
-    expect(row.route_hint).toBe('pkm_capture');
+    expect(row.route_hint).toBe('backend_route');
     expect(row.is_command).toBe(false);
   });
 
-  test('prepare route input defaults link-only text to pkm capture', async () => {
+  test('prepare route input defaults link-only text to backend route', async () => {
     const out = await prepareRouteInput({
       $json: {
         message: {
@@ -62,7 +62,7 @@ describe('n8n calendar router/create helpers', () => {
     });
 
     const row = out[0].json;
-    expect(row.route_hint).toBe('pkm_capture');
+    expect(row.route_hint).toBe('backend_route');
   });
 
   test('prepare recipe read message rewrites route output into /recipe command', async () => {

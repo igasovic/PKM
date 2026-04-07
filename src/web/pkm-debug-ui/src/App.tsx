@@ -4,6 +4,7 @@ import { DebugPage } from './pages/DebugPage';
 import { FailuresPage } from './pages/FailuresPage';
 import { ReadPage } from './pages/ReadPage';
 import { RecipesPage } from './pages/RecipesPage';
+import { WorkingMemoryPage } from './pages/WorkingMemoryPage';
 
 type MenuItem = {
   id: string;
@@ -14,6 +15,7 @@ type MenuItem = {
 
 const MENU_ITEMS: MenuItem[] = [
   { id: 'read', label: 'Read', to: '/read' },
+  { id: 'working-memory', label: 'Working Memory', to: '/working-memory' },
   { id: 'recipes', label: 'Recipes', to: '/recipes' },
   { id: 'debug', label: 'Debug', to: '/debug' },
   { id: 'failures', label: 'Failures', to: '/failures' },
@@ -169,6 +171,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/read" replace />} />
               <Route path="/read" element={<ReadPage />} />
+              <Route path="/working-memory" element={<WorkingMemoryPage />} />
               <Route path="/recipes" element={<RecipesPage />} />
               <Route path="/debug" element={<DebugPage />} />
               <Route path="/debug/run/:runId" element={<DebugPage />} />

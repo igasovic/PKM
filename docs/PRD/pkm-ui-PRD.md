@@ -3,7 +3,7 @@
 Status: active  
 Surface owner: PKM debug/read UI shell and shared UI conventions  
 Scope type: backfilled baseline  
-Last verified: 2026-03-30  
+Last verified: 2026-04-07  
 Related authoritative docs: `docs/api_read_write.md`, `docs/api_control.md`, `docs/env.md`, `docs/requirements.md`  
 Related work-package doc: none
 
@@ -45,13 +45,17 @@ Current repo behavior is:
 - the fixed UI stack is React + TypeScript + TailwindCSS
 - pages currently exposed are:
   - `Read`
+  - `Working Memory`
+  - `Recipes`
   - `Debug`
   - `Failures`
-- navigation is sidebar-based with routes `/read`, `/debug`, `/debug/run/:runId`, and `/failures`
+- navigation is sidebar-based with routes `/read`, `/working-memory`, `/recipes`, `/debug`, `/debug/run/:runId`, and `/failures`
 - the UI includes a bottom-left test-mode state/toggle control
 - the UI uses backend HTTP only and does not connect directly to Postgres
-- Vite proxy forwards `/db` and `/debug` to the backend and injects the admin secret for debug routes in local development
+- Vite proxy forwards `/db`, `/recipes`, and `/chatgpt` to the backend and injects the admin secret for admin-protected routes in local development
 - current UI is dark-mode only
+- the Read page supports manual pull-by-entry-id and per-card pull actions that open a right-side detail drawer
+- pull/working-memory details use a standardized Telegram-style summary layout with expandable full JSON payload
 - the Debug page supports run lookup, recent runs, table/tree/span investigation views, and JSON copy affordances
 - the Failures page supports list filters for `workflow_name`, `node_name`, and `mode`, plus detail inspection and run jump-through
 
@@ -69,7 +73,9 @@ Current repo behavior is:
 
 ## Boundaries and callers
 Current pages and their primary dependencies:
-- Read page -> generic read APIs and shared context-pack builder
+- Read page -> generic read APIs (`continue`, `find`, `last`, `pull`) and shared context-pack builder
+- Working Memory page -> internal working-memory route (`POST /chatgpt/working_memory`)
+- Recipes page -> recipes APIs
 - Debug page -> debug run APIs
 - Failures page -> failure-pack APIs
 - Sidebar test-mode control -> test-mode endpoints
@@ -159,7 +165,7 @@ Recovered from:
 ## Validation / acceptance criteria
 This PRD remains accurate if:
 - the UI continues to use backend HTTP only
-- page structure remains centered on read/debug/failure investigation plus shell-level controls
+- page structure remains centered on read/working-memory/recipes/debug/failure investigation plus shell-level controls
 - feature behavior changes are documented in the owning feature PRDs rather than duplicated here
 
 ## Risks / open questions
@@ -167,4 +173,4 @@ This PRD remains accurate if:
 - if the UI grows beyond operator/debug use, this PRD may need a clearer user/persona and hosting section
 
 ## TBD
-- whether the UI should eventually expose `pull` or other advanced read operations directly
+- whether the PKM UI should keep working-memory access as operator-only tooling or evolve toward broader product-facing access

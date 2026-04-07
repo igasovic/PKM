@@ -3,7 +3,7 @@
 Status: active  
 Surface owner: backend working-memory/session-note artifact semantics  
 Scope type: backfilled baseline  
-Last verified: 2026-03-30  
+Last verified: 2026-04-07  
 Related authoritative docs: `docs/api_control.md`, `docs/external_api.md`, `docs/database_schema.md`, `docs/requirements.md`, `chatgpt/project_instructions.md`  
 Related work-package doc: none
 
@@ -41,6 +41,7 @@ Current repo behavior is:
 - topic-first ChatGPT workflow is documented in `chatgpt/project_instructions.md`
 - `POST /chatgpt/working_memory` is an admin-protected internal route used for topic-keyed working-memory retrieval
 - `POST /chatgpt/wrap-commit` is an admin-protected internal route used to persist one session note and one working-memory artifact in one backend flow
+- PKM UI now exposes a dedicated Working Memory page that calls `POST /chatgpt/working_memory` for operator inspection
 - wrap/commit writes exactly two artifacts:
   - session summary note
   - topic working memory
@@ -65,6 +66,7 @@ Current repo behavior is:
 Primary callers:
 - `11 ChatGPT Read Router` for the `working_memory` method
 - `05 ChatGPT Wrap Commit` for commit persistence
+- PKM UI Working Memory page for operator lookup/debug
 - backend `chatgpt-actions` adapter layer
 
 Boundary rule:
@@ -137,4 +139,4 @@ This PRD remains accurate if:
 - transport/orchestration work can easily re-absorb this surface if public integration and memory semantics are documented together again
 
 ## TBD
-- whether working-memory retrieval should ever be exposed to non-ChatGPT callers as a first-class product surface
+- whether working-memory retrieval should remain admin-only for PKM UI operators or graduate to broader non-ChatGPT caller surfaces

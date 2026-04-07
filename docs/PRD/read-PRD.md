@@ -3,7 +3,7 @@
 Status: active  
 Surface owner: backend read APIs + shared context-pack builder  
 Scope type: backfilled baseline  
-Last verified: 2026-03-30  
+Last verified: 2026-04-07  
 Related authoritative docs: `docs/api_read_write.md`, `docs/database_schema.md`, `docs/requirements.md`, `docs/n8n_node_style_guide.md`  
 Related work-package doc: none
 
@@ -42,7 +42,9 @@ This PRD does not own:
 Current repo behavior is:
 - backend exposes `continue`, `find`, `last`, and `pull` as separate internal read routes
 - `10 Read` uses those routes through backend HTTP only
-- the PKM UI Read page currently exposes `continue`, `find`, and `last`
+- the PKM UI Read page exposes `continue`, `find`, `last`, and manual/per-card `pull`
+- Read result cards include top-right pull actions that open a right-side detail drawer
+- pull drawer rendering follows a standardized Telegram-style summary layout and keeps full payload JSON behind an expandable debug section
 - context-pack generation is centralized in `src/libs/context-pack-builder.js`
 - both n8n and the PKM UI use the shared builder rather than maintaining divergent templates
 - read projections include `keywords`, and can include `distill_summary` and `distill_why_it_matters` when present
@@ -175,7 +177,6 @@ Recovered from:
 
 ## Known gaps requiring code deep-dive
 - `REVIEW_REQUIRED: verify the full command-alias grammar inside `10 Read` before rewriting user-facing command docs. This pass confirmed the canonical backend methods, but not every parser alias and operator-only shortcut exposed by the workflow node code.`
-- `REVIEW_REQUIRED: decide whether `pull` should become a first-class PKM UI operation or remain workflow-only. The backend contract is stable, but the UI intentionally exposes only `continue`, `find`, and `last` today.`
 
 ## Validation / acceptance criteria
 This PRD remains accurate if:

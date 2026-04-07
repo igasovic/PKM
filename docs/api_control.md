@@ -31,7 +31,7 @@
 | Endpoint family | Auth | Primary callers | Schema touched | Typical tests |
 |---|---|---|---|---|
 | Health | none | operators, probes | none | `test/server/control.api-contract.test.js`, `test/server.test.js` |
-| Internal ChatGPT actions | admin secret | n8n ChatGPT workflows | `pkm.entries` | `test/server/chatgpt.api-contract.test.js`, `test/server/n8n.wf11-route-read-request.test.js` |
+| Internal ChatGPT actions | admin secret | n8n ChatGPT workflows, PKM UI Working Memory page | `pkm.entries` | `test/server/chatgpt.api-contract.test.js`, `test/server/n8n.wf11-route-read-request.test.js` |
 | Config and debug | mixed; debug routes require admin secret | operators, debug UI, WF99 | `runtime_config`, `pipeline_events`, `failure_packs` | `test/server/control.api-contract.test.js`, `test/server/config-module-compat.test.js`, `test/server/failure-pack.api-contract.test.js` |
 
 ## Run ID Correlation
@@ -82,6 +82,7 @@ The workflow then builds the context pack in n8n and returns that response to Ch
 
 ### `POST /chatgpt/working_memory`
 Internal backend action route for topic-keyed working-memory retrieval.
+Used by n8n ChatGPT flows and the PKM UI Working Memory page.
 
 Headers:
 - `x-pkm-admin-secret: <secret>` (required)
