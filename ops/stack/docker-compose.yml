@@ -1,6 +1,6 @@
 services:
   homeassistant:
-    image: ghcr.io/home-assistant/home-assistant:2026.1.0
+    image: ghcr.io/home-assistant/home-assistant:2026.4.1
     container_name: homeassistant
     network_mode: host
     privileged: true
@@ -54,7 +54,7 @@ services:
     command: tunnel --no-autoupdate run --token eyJhIjoiOWI2NzEzZTgyMWU5M2NiNDFhMGJlYjY3MjMyMzcwNmEiLCJ0IjoiYTVlNjQzZmYtYTE4Yi00YjUxLWE2NTMtMTQ1ZThiY2EyNjY2IiwicyI6IlpHRTFNems0WlRrdFlUZGhNaTAwTlRGaUxUaGhaV010TW1FeU1tRTFOMlJoWlRsbCJ9
 
   postgres:
-    image: postgres:16.11-alpine
+    image: postgres:16.13-alpine
     container_name: postgres
     restart: unless-stopped
     env_file:
