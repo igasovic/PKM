@@ -129,7 +129,7 @@ services:
       - internal
 
   litellm:
-    image: docker.litellm.ai/berriai/litellm:1.81.3-stable
+    image: docker.litellm.ai/berriai/litellm:main-stable
     container_name: litellm
     command: ["--port", "4000", "--config", "/app/config.yaml", "--detailed_debug"]
     ports:
