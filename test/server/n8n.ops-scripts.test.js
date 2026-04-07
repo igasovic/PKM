@@ -70,12 +70,87 @@ function writeFakeDocker(tempRoot) {
   return binDir;
 }
 
+function writeFakeGitAndCurl(tempRoot) {
+  const binDir = path.join(tempRoot, 'bin');
+  const gitPath = path.join(binDir, 'git');
+  const curlPath = path.join(binDir, 'curl');
+  fs.mkdirSync(binDir, { recursive: true });
+
+  fs.writeFileSync(
+    gitPath,
+    [
+      '#!/usr/bin/env bash',
+      'set -euo pipefail',
+      'exit 0',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  fs.chmodSync(gitPath, 0o755);
+
+  fs.writeFileSync(
+    curlPath,
+    [
+      '#!/usr/bin/env bash',
+      'set -euo pipefail',
+      'args="$*"',
+      'if [[ "$args" == *"/api/v1/workflows?limit=1"* ]]; then',
+      '  printf "HTTP 200\\n"',
+      '  exit 0',
+      'fi',
+      'if [[ "$args" == *"/api/v1/workflows/"*"/run"* ]]; then',
+      '  out=""',
+      '  while [[ $# -gt 0 ]]; do',
+      '    if [[ "$1" == "-o" ]]; then',
+      '      out="${2:-}"',
+      '      shift 2',
+      '      continue',
+      '    fi',
+      '    shift',
+      '  done',
+      '  if [[ -n "$out" ]]; then',
+      '    printf "{\\"executionId\\":\\"smoke-exec-1\\",\\"status\\":\\"running\\"}" > "$out"',
+      '  fi',
+      '  printf "200"',
+      '  exit 0',
+      'fi',
+      'echo "unexpected curl invocation: $args" >&2',
+      'exit 1',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  fs.chmodSync(curlPath, 0o755);
+
+  return binDir;
+}
+
 describe('n8n operator scripts', () => {
   test('run_smoke.sh prints help without requiring docker', () => {
     const res = runScript(runSmokePath, ['--help']);
     expect(res.code).toBe(0);
     expect(res.stderr).toContain('Usage: scripts/n8n/run_smoke.sh');
     expect(res.stderr).toContain('SMOKE_WORKFLOW_ID');
+  });
+
+  test('run_smoke.sh triggers smoke workflow via n8n API', () => {
+    const tempRoot = makeTempRoot();
+    const binDir = writeFakeGitAndCurl(tempRoot);
+
+    const res = runScript(runSmokePath, [], {
+      PATH: `${binDir}:${process.env.PATH}`,
+      GIT_PULL_MODE: 'none',
+      N8N_API_BASE_URL: 'http://127.0.0.1:5678',
+      N8N_API_KEY: 'test-api-key',
+      SMOKE_WORKFLOW_ID: 'wf-smoke-1',
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('[smoke 2/3] Waiting for n8n API to be ready');
+    expect(res.stdout).toContain('Smoke workflow trigger accepted (HTTP 200).');
+    expect(res.stdout).toContain('"executionId":"smoke-exec-1"');
+
+    fs.rmSync(tempRoot, { recursive: true, force: true });
   });
 
   test('validate_cutover.sh validates expected runtime state against fake docker', () => {

@@ -34,7 +34,7 @@ Canonical repo locations:
 | `./scripts/n8n/sync_workflows.sh --mode full` | repo checkout with n8n API access | reconcile repo and live state end-to-end |
 | `./scripts/n8n/recreate_stack.sh` | Pi/runtime-capable shell | rebuild runners image and recreate n8n services |
 | `./scripts/n8n/validate_cutover.sh` | Pi/runtime-capable shell | validate live runtime and optional smoke path |
-| `./scripts/n8n/run_smoke.sh` | Pi/runtime-capable shell | execute smoke master workflow |
+| `./scripts/n8n/run_smoke.sh` | Pi/runtime-capable shell | trigger smoke master workflow via n8n API |
 
 ## Pre-flight Checks
 - confirm you are operating from repo root
@@ -143,7 +143,7 @@ Keep upstream launcher execution fields present for each runner too:
 ./scripts/n8n/validate_cutover.sh --with-smoke
 ```
 
-8. Run the smoke master from the Pi shell directly:
+8. Run the smoke master from the Pi shell directly (API-triggered run):
 ```bash
 ./scripts/n8n/run_smoke.sh
 ```

@@ -369,6 +369,9 @@ cat "$MIGRATION" | docker exec -i postgres psql -U "$PGUSER" -d pkm -v ON_ERROR_
 - Local shell env for n8n API automation (recommended in `~/.zshrc`):
   - `N8N_API_BASE_URL` (typically `http://127.0.0.1:5678` on Pi host)
   - `N8N_API_KEY` (user-scoped API key from n8n)
+  - recommended host-local file: `/home/igasovic/.config/pkm/n8n-api.env` (chmod `600`)
+  - recommended `~/.zshrc` line:
+    - `[ -f /home/igasovic/.config/pkm/n8n-api.env ] && source /home/igasovic/.config/pkm/n8n-api.env`
 
 ---
 
