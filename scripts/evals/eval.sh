@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+if command -v readlink >/dev/null 2>&1; then
+  RESOLVED="$(readlink -f "$SCRIPT_PATH" 2>/dev/null || true)"
+  if [[ -n "${RESOLVED:-}" ]]; then
+    SCRIPT_PATH="$RESOLVED"
+  fi
+fi
+
+ROOT="$(cd "$(dirname "$SCRIPT_PATH")/../.." && pwd)"
 RUNNER="$ROOT/scripts/evals/run_evals.sh"
 
 if [[ ! -x "$RUNNER" ]]; then
