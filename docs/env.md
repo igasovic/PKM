@@ -250,18 +250,23 @@ Instead:
 ### Networks
 - `internal` bridge network for: `postgres`, `n8n`, `n8n-runners`, `litellm`, `pkm-server`
 - host networking for: `homeassistant`, `matter-server`, `cloudflared`
+- Compose health-gated startup is enabled for core services:
+  - `postgres` and `litellm` expose container health checks
+  - `pkm-server` waits for healthy `postgres` and `litellm`
+  - `n8n` waits for healthy `postgres`
+  - `n8n-runners` waits for healthy `n8n`
 
 ### Containers (as observed)
 | Container | Image | Restart | Published ports | Network mode |
 |---|---|---|---|---|
-| `postgres` | `postgres:16-alpine` | unless-stopped | none (internal only) | `stack_internal` |
+| `postgres` | `postgres:16.13-alpine` | unless-stopped | none (internal only) | `stack_internal` |
 | `n8n` | `docker.n8n.io/n8nio/n8n:2.10.3` | unless-stopped | `127.0.0.1:5678->5678` | `stack_internal` |
 | `n8n-runners` | `pkm-n8n-runners:2.10.3` (built from repo) | unless-stopped | none (internal only) | `stack_internal` |
 | `litellm` | `docker.litellm.ai/berriai/litellm:main-stable` | unless-stopped | `0.0.0.0:4000->4000` | `stack_internal` |
 | `pkm-server` | `pkm-server` (built) | unless-stopped | `0.0.0.0:3010->8080` | `stack_internal` |
-| `homeassistant` | `ghcr.io/home-assistant/home-assistant:stable` | unless-stopped | `0.0.0.0:8123` | host |
+| `homeassistant` | `ghcr.io/home-assistant/home-assistant:2026.4.1` | unless-stopped | `0.0.0.0:8123` | host |
 | `matter-server` | `ghcr.io/home-assistant-libs/python-matter-server:stable` | unless-stopped | `0.0.0.0:5580` | host |
-| `cloudflared` | `cloudflare/cloudflared:latest` | unless-stopped | (tunnel) | host |
+| `cloudflared` | `cloudflare/cloudflared:2025.11.1` | unless-stopped | (tunnel) | host |
 
 ### Volumes / persistence (confirmed)
 - Postgres:

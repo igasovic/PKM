@@ -21,6 +21,11 @@ services:
       context: /home/igasovic/repos/n8n-workflows
       dockerfile: src/server/Dockerfile
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      litellm:
+        condition: service_healthy
     env_file:
       - .env
       - pkm-server.env
@@ -43,6 +48,18 @@ services:
       - /home/igasovic/pkm-import:/data:rw
     ports:
       - "3010:8080"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          node -e "const http=require('http');
+          const req=http.get('http://127.0.0.1:8080/ready',(res)=>process.exit(res.statusCode===200?0:1));
+          req.on('error',()=>process.exit(1));
+          req.setTimeout(2000,()=>{req.destroy();process.exit(1);});"
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     networks:
       - internal
 
@@ -70,13 +87,20 @@ services:
       - internal
     ports:
       - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d postgres -h 127.0.0.1 -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
 
   n8n:
     image: docker.n8n.io/n8nio/n8n:2.10.3
     container_name: n8n
     restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     env_file:
       - .env
       - n8n.env
@@ -99,6 +123,18 @@ services:
 
     ports:
       - "127.0.0.1:5678:5678"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          node -e "const http=require('http');
+          const req=http.get('http://127.0.0.1:5678/healthz',(res)=>process.exit(res.statusCode===200?0:1));
+          req.on('error',()=>process.exit(1));
+          req.setTimeout(2000,()=>{req.destroy();process.exit(1);});"
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
     volumes:
       - ./n8n:/home/node/.n8n
       - /home/igasovic/repos/n8n-workflows:/data:ro
@@ -112,7 +148,8 @@ services:
     container_name: n8n-runners
     restart: unless-stopped
     depends_on:
-      - n8n
+      n8n:
+        condition: service_healthy
     env_file:
       - .env
       - n8n.env
@@ -140,6 +177,17 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
     restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          python -c "import socket,sys;
+          s=socket.create_connection(('127.0.0.1',4000),2);
+          s.close();sys.exit(0)"
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     networks:
       - internal
 
