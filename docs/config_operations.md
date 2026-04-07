@@ -228,5 +228,5 @@ Keep this list updated whenever a new config-adjacent surface is discovered or o
 - `ops/stack/n8n-runners/n8n-task-runners.json`
 - `scripts/db/**`
 - `pkm.runtime_config` (runtime-mutable DB state)
-- shell exports for `N8N_API_*`
+- shell exports for `N8N_API_*` (recommended host-local source file: `/home/igasovic/.config/pkm/n8n-api.env`, sourced from `~/.zshrc`)
 - `test/smoke/config/defaults.json` (repo-owned smoke input; outside active `checkcfg` / `updatecfg` surfaces)
