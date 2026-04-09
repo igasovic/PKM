@@ -50,7 +50,6 @@ Optional:
 - `PKM_DB_SSL_REJECT_UNAUTHORIZED` (default: `true`)
 - `PKM_ADMIN_SECRET` (required for `/db/delete` and `/db/move`)
 - `PKM_DB_ADMIN_ROLE` (optional; used via `SET LOCAL ROLE` for admin DB operations)
-- `EMAIL_IMPORT_ROOT` (default: `/data`; root directory for `/import/email/mbox` reads)
 - `OPENAI_BASE_URL` (recommended: `http://litellm:4000/v1`)
 - `LITELLM_TIMEOUT_MS` (`60000` default)
 - `T1_DEFAULT_MODEL` (recommended: `t1-default`)

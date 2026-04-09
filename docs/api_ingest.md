@@ -459,10 +459,13 @@ Body:
 ```
 
 Notes:
-- `mbox_path` is required and must point to a `.mbox` file under `EMAIL_IMPORT_ROOT` (default `/data`).
+- `mbox_path` is required and must point to a `.mbox` filename available under backend import root `/data`.
+- Path resolution currently uses the filename basename only (directory segments are ignored).
 - `batch_size` is Tier‑1 enqueue size and must be between `500` and `2000` (default `500`).
 - `insert_chunk_size` controls DB insert chunking (default `200`).
+- `max_emails` is optional and must be a positive integer when provided.
 - Source for inserted rows is set to `email-batch`.
+- Retry recovery: idempotency-skipped rows with `enrichment_status = "pending"` are re-enqueued so reruns can recover rows inserted before a prior enqueue failure.
 
 Response:
 ```json

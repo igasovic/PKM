@@ -2,7 +2,7 @@
 
 const fs = require('fs/promises');
 const path = require('path');
-const { insert } = require('./db/write-store.js');
+const { insert, update } = require('./db/write-store.js');
 const { runEmailIngestionPipeline } = require('./ingestion-pipeline.js');
 const { enqueueTier1Batch } = require('./tier1-enrichment.js');
 const { braintrustSink } = require('./logger/braintrust.js');
@@ -14,6 +14,8 @@ const MIN_T1_BATCH_SIZE = 500;
 const MAX_T1_BATCH_SIZE = 2000;
 const DEFAULT_INSERT_CHUNK_SIZE = 200;
 const MAX_ERROR_SAMPLES = 50;
+const RECOVERABLE_ENRICHMENT_STATUS = 'pending';
+const ENQUEUED_ENRICHMENT_STATUS = 'queued';
 
 function normalizeNewlines(s) {
   return String(s || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -215,6 +217,22 @@ function parseInsertChunkSize(raw) {
   return n;
 }
 
+function parseMaxEmails(raw) {
+  if (raw === undefined || raw === null || raw === '') return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) {
+    throw new Error('max_emails must be a positive integer');
+  }
+  return n;
+}
+
+function shouldRecoverSkippedPendingRow(row) {
+  const action = String((row && row.action) || '').toLowerCase();
+  if (action !== 'skipped') return false;
+  const status = String((row && row.enrichment_status) || '').trim().toLowerCase();
+  return status === RECOVERABLE_ENRICHMENT_STATUS;
+}
+
 function resolveMboxPath(inputPath) {
   const raw = String(inputPath || '').trim();
   if (!raw) throw new Error('mbox_path is required');
@@ -225,7 +243,6 @@ function resolveMboxPath(inputPath) {
 
   const rootAbs = path.resolve(IMPORT_ROOT);
   const absPath = path.resolve(rootAbs, fileName);
-  console.log({ IMPORT_ROOT, raw, fileName, absPath });
   return { rootAbs, absPath, inputPath: raw };
 }
 
@@ -236,7 +253,7 @@ async function importEmailMbox(opts) {
   const batch_size = parseBatchSize(options.batch_size);
   const insert_chunk_size = parseInsertChunkSize(options.insert_chunk_size);
   const completion_window = options.completion_window || '24h';
-  const max_emails = options.max_emails ? Number(options.max_emails) : null;
+  const max_emails = parseMaxEmails(options.max_emails);
   const { rootAbs, absPath, inputPath } = resolveMboxPath(options.mbox_path || options.path);
   const relativePath = path.relative(rootAbs, absPath).replace(/\\/g, '/');
 
@@ -300,6 +317,7 @@ async function importEmailMbox(opts) {
     'author',
     'content_type',
     'clean_text',
+    'enrichment_status',
   ];
 
   const pushError = (phase, index, err) => {
@@ -314,10 +332,17 @@ async function importEmailMbox(opts) {
   const flushTierBatches = async (flushRemainder) => {
     while (tierBuffer.length >= batch_size || (flushRemainder && tierBuffer.length > 0)) {
       const take = flushRemainder ? Math.min(batch_size, tierBuffer.length) : batch_size;
-      const chunk = tierBuffer.splice(0, take);
+      const chunk = tierBuffer.slice(0, take);
+      const requests = chunk.map((item) => ({
+        custom_id: item.custom_id,
+        title: item.title || null,
+        author: item.author || null,
+        content_type: item.content_type || 'other',
+        clean_text: item.clean_text || '',
+      }));
       const result = await pipelineLogger.step(
         'email_import.enqueue_t1_batch',
-        async () => enqueueTier1Batch(chunk, {
+        async () => enqueueTier1Batch(requests, {
           completion_window,
           metadata: {
             source: 'email-batch-import',
@@ -337,7 +362,37 @@ async function importEmailMbox(opts) {
         schema: result.schema,
         request_count: result.request_count,
       });
-      summary.tier1_enqueued_items += chunk.length;
+      summary.tier1_enqueued_items += requests.length;
+      tierBuffer.splice(0, take);
+
+      const queuedItems = chunk
+        .map((row) => {
+          if (row && row.id) return { id: row.id, enrichment_status: ENQUEUED_ENRICHMENT_STATUS };
+          if (row && row.entry_id) return { entry_id: row.entry_id, enrichment_status: ENQUEUED_ENRICHMENT_STATUS };
+          return null;
+        })
+        .filter(Boolean);
+
+      if (queuedItems.length > 0) {
+        const markResult = await pipelineLogger.step(
+          'email_import.mark_enqueued_status',
+          async () => update({
+            items: queuedItems,
+            continue_on_error: true,
+            returning: ['id', 'entry_id', 'enrichment_status'],
+          }),
+          {
+            input: { rows: queuedItems.length },
+            output: (out) => ({ rowCount: out && out.rowCount ? out.rowCount : 0 }),
+          }
+        );
+        const markRows = Array.isArray(markResult && markResult.rows) ? markResult.rows : [];
+        markRows.forEach((row) => {
+          if (row && row._batch_ok === false) {
+            pushError('enqueue_mark', row._batch_index, new Error(row.error || 'failed to mark queued'));
+          }
+        });
+      }
     }
   };
 
@@ -391,7 +446,7 @@ async function importEmailMbox(opts) {
       else if (action === 'updated') summary.updated += 1;
       else summary.inserted += 1;
 
-      if (action === 'skipped') continue;
+      if (action === 'skipped' && !shouldRecoverSkippedPendingRow(row)) continue;
       const clean_text = row && row.clean_text ? String(row.clean_text) : '';
       if (!clean_text.trim()) continue;
 
@@ -399,6 +454,8 @@ async function importEmailMbox(opts) {
         ? `entry_${row.entry_id}`
         : (row.id ? `id_${row.id}` : `row_${summary.tier1_candidates}`);
       tierBuffer.push({
+        id: row.id || null,
+        entry_id: row.entry_id || null,
         custom_id,
         title: row.title || null,
         author: row.author || null,

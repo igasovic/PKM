@@ -2,6 +2,7 @@
 
 // Mock all external dependencies before requiring the module
 const mockInsert = jest.fn();
+const mockUpdate = jest.fn();
 const mockRunEmailIngestionPipeline = jest.fn();
 const mockEnqueueTier1Batch = jest.fn();
 const mockBraintrustSink = { logSuccess: jest.fn(), logError: jest.fn() };
@@ -9,6 +10,7 @@ const mockGetLogger = jest.fn();
 
 jest.mock('../../src/server/db/write-store.js', () => ({
   insert: mockInsert,
+  update: mockUpdate,
 }));
 
 jest.mock('../../src/server/ingestion-pipeline.js', () => ({
@@ -82,6 +84,18 @@ describe('email-importer', () => {
       await expect(
         importEmailMbox({ mbox_path: 'mail.mbox', insert_chunk_size: -1 })
       ).rejects.toThrow('insert_chunk_size must be a positive integer');
+    });
+
+    test('throws for non-integer max_emails', async () => {
+      await expect(
+        importEmailMbox({ mbox_path: 'mail.mbox', max_emails: 'abc' })
+      ).rejects.toThrow('max_emails must be a positive integer');
+    });
+
+    test('throws for non-positive max_emails', async () => {
+      await expect(
+        importEmailMbox({ mbox_path: 'mail.mbox', max_emails: 0 })
+      ).rejects.toThrow('max_emails must be a positive integer');
     });
   });
 
@@ -161,6 +175,10 @@ describe('email-importer', () => {
         schema: 'pkm',
         request_count: 1,
       });
+      mockUpdate.mockResolvedValue({
+        rowCount: 1,
+        rows: [{ _batch_ok: true, id: 1, entry_id: 'e1', enrichment_status: 'queued' }],
+      });
     });
 
     test('processes a single-message mbox end-to-end', async () => {
@@ -196,6 +214,16 @@ describe('email-importer', () => {
       expect(mockRunEmailIngestionPipeline).toHaveBeenCalledTimes(1);
     });
 
+    test('marks enqueued rows as queued after successful enqueue', async () => {
+      await importEmailMbox({ mbox_path: 'inbox.mbox' });
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(mockUpdate).toHaveBeenCalledWith({
+        items: [{ id: 1, enrichment_status: 'queued' }],
+        continue_on_error: true,
+        returning: ['id', 'entry_id', 'enrichment_status'],
+      });
+    });
+
     test('tracks skipped rows', async () => {
       mockInsert.mockResolvedValue({
         rowCount: 1,
@@ -205,6 +233,7 @@ describe('email-importer', () => {
             entry_id: 'e1',
             action: 'skipped',
             clean_text: 'text',
+            enrichment_status: 'done',
           },
         ],
       });
@@ -212,6 +241,45 @@ describe('email-importer', () => {
       const result = await importEmailMbox({ mbox_path: 'inbox.mbox' });
       expect(result.skipped).toBe(1);
       expect(result.inserted).toBe(0);
+    });
+
+    test('re-enqueues skipped rows that are still pending', async () => {
+      mockInsert.mockResolvedValue({
+        rowCount: 1,
+        rows: [
+          {
+            id: 2,
+            entry_id: 'e2',
+            action: 'skipped',
+            title: 'Recovered',
+            author: 'sender@example.com',
+            content_type: 'newsletter',
+            clean_text: 'recovered text',
+            enrichment_status: 'pending',
+          },
+        ],
+      });
+      mockUpdate.mockResolvedValue({
+        rowCount: 1,
+        rows: [{ _batch_ok: true, id: 2, entry_id: 'e2', enrichment_status: 'queued' }],
+      });
+
+      const result = await importEmailMbox({ mbox_path: 'inbox.mbox' });
+      expect(result.skipped).toBe(1);
+      expect(result.tier1_candidates).toBe(1);
+      expect(result.tier1_enqueued_items).toBe(1);
+      expect(mockEnqueueTier1Batch).toHaveBeenCalledWith(
+        [
+          {
+            custom_id: 'entry_e2',
+            title: 'Recovered',
+            author: 'sender@example.com',
+            content_type: 'newsletter',
+            clean_text: 'recovered text',
+          },
+        ],
+        expect.any(Object)
+      );
     });
 
     test('tracks updated rows', async () => {
@@ -252,6 +320,7 @@ describe('email-importer', () => {
     beforeEach(() => {
       fs.stat.mockResolvedValue({ isFile: () => true });
       fs.readFile.mockResolvedValue(makeMbox([singleMessage]));
+      mockUpdate.mockResolvedValue({ rowCount: 0, rows: [] });
     });
 
     test('counts normalize_errors when pipeline throws', async () => {
