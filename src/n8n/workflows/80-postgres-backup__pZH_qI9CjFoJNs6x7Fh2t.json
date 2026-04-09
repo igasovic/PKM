@@ -3,7 +3,13 @@
   "connections": {
     "Backup GDrive Daily": {
       "main": [
-        []
+        [
+          {
+            "node": "Normalize Cloud Daily Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Execute a command": {
@@ -143,6 +149,61 @@
             "index": 0,
             "node": "Normalize",
             "type": "main"
+          }
+        ]
+      ]
+    },
+    "Backup GDrive - Weekly": {
+      "main": [
+        [
+          {
+            "node": "Normalize Cloud Weekly Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backup GDrive Monthly": {
+      "main": [
+        [
+          {
+            "node": "Normalize Cloud Monthly Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Cloud Daily Success": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Cloud Weekly Success": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Cloud Monthly Success": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -556,6 +617,45 @@
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
+    },
+    {
+      "id": "3f896e93-7b9c-472f-b4da-cfae9d66b101",
+      "name": "Normalize Cloud Daily Success",
+      "parameters": {
+        "jsCode": "return [{\n  job: 'pkm_backup_gdrive_daily',\n  host: 'n8n',\n  ts: new Date().toISOString(),\n  rc: 0,\n  cmd: '81-postgres-backup-gdrive upload pkm_backup_daily.tgz',\n  status: 'ok',\n}];"
+      },
+      "position": [
+        544,
+        -976
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "dc40985f-1ce9-4f19-b47c-5ccdc3894f52",
+      "name": "Normalize Cloud Weekly Success",
+      "parameters": {
+        "jsCode": "return [{\n  job: 'pkm_backup_gdrive_weekly',\n  host: 'n8n',\n  ts: new Date().toISOString(),\n  rc: 0,\n  cmd: '81-postgres-backup-gdrive upload pkm_backup_weekly.tgz',\n  status: 'ok',\n}];"
+      },
+      "position": [
+        544,
+        -1264
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "9a27f87c-c5f7-49d6-878c-6723f108ddf3",
+      "name": "Normalize Cloud Monthly Success",
+      "parameters": {
+        "jsCode": "return [{\n  job: 'pkm_backup_gdrive_monthly',\n  host: 'n8n',\n  ts: new Date().toISOString(),\n  rc: 0,\n  cmd: '81-postgres-backup-gdrive upload pkm_backup_monthly.tgz',\n  status: 'ok',\n}];"
+      },
+      "position": [
+        544,
+        -1072
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {

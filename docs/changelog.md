@@ -1,5 +1,41 @@
 # changelog
 
+## 2026-04-08 — GDrive backup hardening (WF80/WF81)
+
+### What changed
+- Hardened `81 Postgres Backup GDrive` cleanup and retention behavior:
+  - replaced literal-template Drive query with expression-based filename lookup
+  - removed single-item delete gate and switched to deterministic duplicate cleanup:
+    - list up to 100 matching files
+    - keep newest by `modifiedTime`
+    - delete all older duplicates
+- Hardened cloud status observability in `80 Postgres Backup`:
+  - successful daily/weekly/monthly cloud uploads now write:
+    - `pkm_backup_gdrive_daily`
+    - `pkm_backup_gdrive_weekly`
+    - `pkm_backup_gdrive_monthly`
+  - status records are written into `/home/igasovic/backup/postgres/cron_status.json` through the existing SSH status writer.
+- Tightened backup summary cloud logic:
+  - cloud daily now requires same-day success (Chicago date) rather than allowing yesterday.
+  - this makes missed/failed daily cloud runs visible in the 09:00 summary.
+- Added regression coverage:
+  - workflow contract tests for WF80/WF81 backup wiring and cleanup semantics
+  - formatter test for stale cloud-daily status producing `Cloud: x`
+- Updated backup runbook docs for the captured as-built behavior and failure path.
+
+### Surfaces changed
+- n8n backup workflows (`80`, `81`)
+- n8n backup summary formatter
+- backup runbook docs
+- n8n backup test coverage
+
+### PRDs impacted
+- no PRD impact
+
+### Contract docs impacted
+- `docs/database_operations.md`
+- `docs/changelog.md`
+
 ## 2026-04-06 — WF1 unstructured recipe-search routing
 
 ### What changed

@@ -95,13 +95,18 @@ Off-site copies are pushed by n8n to Google Drive and intentionally kept to **on
   - Always uploads **daily**
   - Uploads **weekly** only on Sunday
   - Uploads **monthly** only on the 1st
-- Overwrite policy: if a file with the same name exists in the target folder, n8n deletes it and uploads the new one (ensures exactly 3 files).
+- Cleanup policy: after upload, n8n lists matching files in the target folder, keeps the newest object by `modifiedTime`, and deletes all older duplicates for that filename.
+- Cloud status policy: successful cloud cadences write `pkm_backup_gdrive_daily|weekly|monthly` status records into `/home/igasovic/backup/postgres/cron_status.json`.
 
 ### Monitoring and alerting
 
 - Cron jobs report status to n8n via local webhooks.
-- On failure, n8n sends a Telegram alert.
-- A daily **09:00** Telegram summary reports the latest status for: daily/weekly/monthly/rotation.
+- Cloud upload/cleanup failures are fail-fast in n8n and trigger WF99 immediately with workflow/node error context.
+- A daily **09:00** Telegram summary reports the latest status for: daily/weekly/monthly/cloud.
+- Cloud summary rules:
+  - cloud daily must be successful on the same Chicago calendar day
+  - cloud weekly must be successful within 7 days
+  - cloud monthly must be successful within 31 days
 
 ### Restore
 

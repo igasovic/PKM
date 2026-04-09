@@ -94,6 +94,23 @@ describe('n8n telegram display formatters', () => {
     jest.useRealTimers();
   });
 
+  test('backup summary marks cloud as failed when cloud daily is not from today', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-03-20T12:00:00-05:00'));
+    const stdout = JSON.stringify({
+      pkm_backup_daily: { status: 'ok', ts: '2026-03-20T02:10:01-05:00', rc: 0 },
+      pkm_backup_weekly: { status: 'ok', ts: '2026-03-15T02:20:01-05:00', rc: 0 },
+      pkm_backup_monthly: { status: 'ok', ts: '2026-03-01T02:25:01-05:00', rc: 0 },
+      pkm_backup_gdrive_daily: { status: 'ok', ts: '2026-03-19T03:00:00-05:00', rc: 0 },
+      pkm_backup_gdrive_weekly: { status: 'ok', ts: '2026-03-15T03:00:00-05:00', rc: 0 },
+      pkm_backup_gdrive_monthly: { status: 'ok', ts: '2026-03-01T03:00:00-05:00', rc: 0 },
+    });
+
+    const out = await backupFormat({ $json: { stdout } });
+    expect(out).toHaveLength(1);
+    expect(out[0].json.telegram_message).toContain('Cloud: x');
+    jest.useRealTimers();
+  });
+
   test('calendar create formatter uses compact three-line confirmation', async () => {
     const out = await calendarCreateFormat({
       $json: {

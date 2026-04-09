@@ -52,7 +52,7 @@ module.exports = async function run(ctx) {
   const dailyOk = isRecent(daily, 0, true);
   const weeklyOk = isRecent(weekly, 7, false);
   const monthlyOk = isRecent(monthly, 31, false);
-  const cloudOk = isRecent(cloudDaily, 1, false)
+  const cloudOk = isRecent(cloudDaily, 0, true)
     && isRecent(cloudWeekly, 7, false)
     && isRecent(cloudMonthly, 31, false);
 

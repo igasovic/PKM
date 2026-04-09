@@ -1,53 +1,13 @@
 {
   "active": true,
   "connections": {
-    "Delete Daily File": {
+    "When Executed by Another Workflow": {
       "main": [
         [
           {
-            "index": 0,
-            "node": "Merge",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "If Daily Exists": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Delete Daily File",
-            "type": "main"
-          }
-        ],
-        [
-          {
-            "index": 0,
-            "node": "Merge",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Lookup Daily Files": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "If Daily Exists",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Upload File",
-            "type": "main"
+            "node": "Read Daily Files from Disk",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -56,27 +16,49 @@
       "main": [
         [
           {
-            "index": 0,
-            "node": "Lookup Daily Files",
-            "type": "main"
-          },
-          {
-            "index": 1,
-            "node": "Merge",
-            "type": "main"
+            "node": "Upload File",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
     },
-    "When Executed by Another Workflow": {
+    "Upload File": {
       "main": [
         [
           {
-            "index": 0,
-            "node": "Read Daily Files from Disk",
-            "type": "main"
+            "node": "Lookup Daily Files",
+            "type": "main",
+            "index": 0
           }
         ]
+      ]
+    },
+    "Lookup Daily Files": {
+      "main": [
+        [
+          {
+            "node": "Build Cleanup Delete List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Cleanup Delete List": {
+      "main": [
+        [
+          {
+            "node": "Delete Daily File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Daily File": {
+      "main": [
+        []
       ]
     }
   },
@@ -84,21 +66,6 @@
   "isArchived": false,
   "name": "81 Postgres Backup GDrive",
   "nodes": [
-    {
-      "id": "2b7f982b-dbcb-4639-9015-ce9904a9115a",
-      "name": "Merge",
-      "parameters": {
-        "combineBy": "combineByPosition",
-        "mode": "combine",
-        "options": {}
-      },
-      "position": [
-        224,
-        144
-      ],
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.2
-    },
     {
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -148,29 +115,13 @@
         "queryParameters": {
           "parameters": [
             {
-              "name": "q",
-              "value": "=name = '{{ $json.filename }}' and '15rRqLnwDeNKuKRU-rGZ_PNlEwGbTgZ8f' in parents and trashed = false"
-            },
-            {
-              "name": "fields",
-              "value": "files(id,name,parents,modifiedTime,size)"
-            },
-            {
-              "name": "pageSize",
-              "value": "1"
-            },
-            {
               "name": "supportsAllDrives",
-              "value": "true"
-            },
-            {
-              "name": "includeItemsFromAllDrives",
               "value": "true"
             }
           ]
         },
         "sendQuery": true,
-        "url": "=https://www.googleapis.com/drive/v3/files/{{$json.files[0].id}}"
+        "url": "={{ $json.delete_url }}"
       },
       "position": [
         0,
@@ -196,15 +147,19 @@
           "parameters": [
             {
               "name": "q",
-              "value": "=name = '{{ $json.filename }}' and '15rRqLnwDeNKuKRU-rGZ_PNlEwGbTgZ8f' in parents and trashed = false"
+              "value": "={{ \"name = '\" + String($json.filename || '') + \"' and '15rRqLnwDeNKuKRU-rGZ_PNlEwGbTgZ8f' in parents and trashed = false\" }}"
             },
             {
               "name": "fields",
               "value": "files(id,name,parents,modifiedTime,size)"
             },
             {
+              "name": "orderBy",
+              "value": "modifiedTime desc"
+            },
+            {
               "name": "pageSize",
-              "value": "1"
+              "value": "100"
             },
             {
               "name": "supportsAllDrives",
@@ -241,49 +196,6 @@
       "typeVersion": 1.1
     },
     {
-      "id": "1205f568-efd3-4023-a4fa-f94bec869fd8",
-      "name": "If Daily Exists",
-      "parameters": {
-        "conditions": {
-          "combinator": "and",
-          "conditions": [
-            {
-              "id": "c946c55f-1754-478c-8edd-d2c53127ec2b",
-              "leftValue": "={{$json.files}}",
-              "operator": {
-                "operation": "exists",
-                "singleValue": true,
-                "type": "array"
-              },
-              "rightValue": ""
-            },
-            {
-              "id": "da06caad-3b02-4644-84ce-64b6bca18d47",
-              "leftValue": "={{$json.files.length}}",
-              "operator": {
-                "operation": "gt",
-                "type": "number"
-              },
-              "rightValue": 0
-            }
-          ],
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          }
-        },
-        "options": {}
-      },
-      "position": [
-        -224,
-        64
-      ],
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3
-    },
-    {
       "id": "71b87065-228f-42a6-b2d3-b04d46342800",
       "name": "When Executed by Another Workflow",
       "parameters": {
@@ -301,6 +213,19 @@
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
+    },
+    {
+      "id": "d4be6e11-3f40-4f5e-8e50-c00d69f16b0f",
+      "name": "Build Cleanup Delete List",
+      "parameters": {
+        "jsCode": "const files = Array.isArray($json.files) ? [...$json.files] : [];\nif (files.length <= 1) {\n  return [];\n}\n\nfiles.sort((a, b) => {\n  const at = Date.parse(String(a && a.modifiedTime ? a.modifiedTime : ''));\n  const bt = Date.parse(String(b && b.modifiedTime ? b.modifiedTime : ''));\n  if (Number.isFinite(at) && Number.isFinite(bt)) return bt - at;\n  return 0;\n});\n\nreturn files.slice(1).map((file) => ({\n  json: {\n    delete_file_id: String(file.id || ''),\n    delete_file_name: String(file.name || ''),\n    delete_modified_time: String(file.modifiedTime || ''),\n    delete_url: 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(String(file.id || '')),\n  },\n}));"
+      },
+      "position": [
+        -224,
+        224
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
