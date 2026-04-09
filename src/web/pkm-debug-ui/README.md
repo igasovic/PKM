@@ -2,6 +2,7 @@
 
 Local React + Tailwind GUI for:
 - **Read** workflows via `/db/read/*`
+- **Entities** browsing and maintenance via `/db/read/entities`, `/db/delete`, `/db/move`
 - **Working Memory** lookup via `/chatgpt/working_memory`
 - **Recipes** workflows via `/recipes/*`
 - **Debug** pipeline inspection via `/debug/*`
@@ -15,6 +16,11 @@ Local React + Tailwind GUI for:
   - `POST /db/read/find`
   - `POST /db/read/last`
   - `POST /db/read/pull`
+- Entities page depends on:
+  - `POST /db/read/entities`
+  - `POST /db/read/pull`
+  - `POST /db/delete`
+  - `POST /db/move`
 - Working Memory page depends on:
   - `POST /chatgpt/working_memory`
 - Recipes page depends on:
@@ -55,6 +61,7 @@ PKM_ADMIN_SECRET=replace-with-your-pkm-admin-secret
 Vite proxy forwards:
 - `/db` to `${VITE_PKM_ORIGIN}/db`
 - `/recipes` to `${VITE_PKM_ORIGIN}/recipes`
+- injects `x-pkm-admin-secret` from `PKM_ADMIN_SECRET` for admin-protected `/db/delete`, `/db/move`, and `/db/test-mode/toggle`
 - `/chatgpt` to `${VITE_PKM_ORIGIN}/chatgpt` and injects `x-pkm-admin-secret` from `PKM_ADMIN_SECRET`
 - `/debug` to `${VITE_PKM_ORIGIN}/debug` and injects `x-pkm-admin-secret` from `PKM_ADMIN_SECRET`
 
@@ -73,6 +80,17 @@ This keeps frontend requests relative and avoids backend CORS changes.
 - Drawer view uses standardized Telegram-style formatting plus expandable full JSON.
 - Context pack builder (markdown/json), live preview, and copy to clipboard.
 - Token estimation (heuristic `chars / 4`).
+
+### Entities
+- Side-menu route at `/entities`.
+- Paginated table for all entities in active schema (test-mode sensitive backend routing).
+- Filters:
+  - required: `content_type`, `source`, `status`, `created_from`, `created_to`
+  - additional: `intent`, `topic_primary` (config-backed dropdown), `has_url`, `quality_flag`
+- Row click opens right-side drawer by calling `POST /db/read/pull` for selected `entry_id`.
+- Multi-select actions:
+  - delete selected entities (`POST /db/delete`)
+  - move selected entities between `pkm` and `pkm_test` (`POST /db/move`)
 
 ### Working Memory
 - Side-menu route at `/working-memory`.

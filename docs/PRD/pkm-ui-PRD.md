@@ -45,11 +45,12 @@ Current repo behavior is:
 - the fixed UI stack is React + TypeScript + TailwindCSS
 - pages currently exposed are:
   - `Read`
+  - `Entities`
   - `Working Memory`
   - `Recipes`
   - `Debug`
   - `Failures`
-- navigation is sidebar-based with routes `/read`, `/working-memory`, `/recipes`, `/debug`, `/debug/run/:runId`, and `/failures`
+- navigation is sidebar-based with routes `/read`, `/entities`, `/working-memory`, `/recipes`, `/debug`, `/debug/run/:runId`, and `/failures`
 - the UI includes a bottom-left test-mode state/toggle control
 - the UI uses backend HTTP only and does not connect directly to Postgres
 - Vite proxy forwards `/db`, `/recipes`, and `/chatgpt` to the backend and injects the admin secret for admin-protected routes in local development
@@ -74,6 +75,7 @@ Current repo behavior is:
 ## Boundaries and callers
 Current pages and their primary dependencies:
 - Read page -> generic read APIs (`continue`, `find`, `last`, `pull`) and shared context-pack builder
+- Entities page -> paginated entities read API (`POST /db/read/entities`) and existing admin maintenance routes (`POST /db/delete`, `POST /db/move`) plus per-row drawer pull (`POST /db/read/pull`)
 - Working Memory page -> internal working-memory route (`POST /chatgpt/working_memory`)
 - Recipes page -> recipes APIs
 - Debug page -> debug run APIs

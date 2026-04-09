@@ -47,6 +47,7 @@ describe('read-write API contract', () => {
       readLast: jest.fn(async () => ({ rows: [{ entry_id: 3 }], rowCount: 1 })),
       readPull: jest.fn(async () => ({ rows: [{ entry_id: 4, excerpt: 'detail' }], rowCount: 1 })),
       readSmoke: jest.fn(async () => ({ rows: [{ entry_id: 5 }], rowCount: 1 })),
+      readEntities: jest.fn(async () => ({ rows: [{ is_meta: true, cmd: 'entities' }, { entry_id: 6 }], rowCount: 2 })),
     };
     jest.doMock('../../src/server/repositories/read-write-repository.js', () => repoMock);
     jest.doMock('../../src/server/tier1-enrichment.js', () => ({
@@ -177,6 +178,25 @@ describe('read-write API contract', () => {
     expect(res.status).toBe(200);
     expect(repoMock.readPull).toHaveBeenCalledWith(payload);
     expect(JSON.parse(res.body)).toEqual([{ entry_id: 4, excerpt: 'detail' }]);
+  });
+
+  test('POST /db/read/entities forwards entity browser payload', async () => {
+    await startServer();
+    if (listenDenied) return;
+
+    const payload = {
+      page: 1,
+      page_size: 25,
+      filters: {
+        content_type: 'newsletter',
+        status: 'pending',
+      },
+    };
+    const res = await request(port, 'POST', '/db/read/entities', JSON.stringify(payload), { 'Content-Type': 'application/json' });
+
+    expect(res.status).toBe(200);
+    expect(repoMock.readEntities).toHaveBeenCalledWith(payload);
+    expect(JSON.parse(res.body)).toEqual([{ is_meta: true, cmd: 'entities' }, { entry_id: 6 }]);
   });
 
   test('POST /db/test-mode/toggle returns next test mode state', async () => {

@@ -35,7 +35,9 @@ export default defineConfig(({ mode }) => {
               headers.set(String(key), String(value));
             }
           }
-          if (requestPath.startsWith('/chatgpt/') && adminSecret && !headers.has('x-pkm-admin-secret')) {
+          const adminDbRoutes = new Set(['/db/delete', '/db/move', '/db/test-mode/toggle']);
+          const shouldInjectAdminSecret = requestPath.startsWith('/chatgpt/') || adminDbRoutes.has(requestPath);
+          if (shouldInjectAdminSecret && adminSecret && !headers.has('x-pkm-admin-secret')) {
             headers.set('x-pkm-admin-secret', adminSecret);
           }
 

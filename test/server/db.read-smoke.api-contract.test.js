@@ -39,6 +39,7 @@ describe('db read smoke API contract', () => {
     readLast: jest.fn(),
     readPull: jest.fn(),
     readSmoke: jest.fn(),
+    readEntities: jest.fn(),
   };
 
   beforeEach(() => {

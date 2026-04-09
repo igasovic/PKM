@@ -27,9 +27,10 @@ This PRD owns:
 - `POST /db/read/find`
 - `POST /db/read/last`
 - `POST /db/read/pull`
+- `POST /db/read/entities` (PKM UI entities browse surface)
 - shared context-pack rendering rules and builder usage
 - `10 Read` workflow at the generic read boundary
-- PKM UI Read page behavior as a consumer of the generic read surface
+- PKM UI Read page and Entities page behavior as consumers of generic read surfaces
 
 This PRD does not own:
 - topic working-memory retrieval
@@ -41,8 +42,10 @@ This PRD does not own:
 ## Current behavior / baseline
 Current repo behavior is:
 - backend exposes `continue`, `find`, `last`, and `pull` as separate internal read routes
+- backend exposes `/db/read/entities` for test-mode-aware paginated entity browsing and maintenance selectors in PKM UI
 - `10 Read` uses those routes through backend HTTP only
 - the PKM UI Read page exposes `continue`, `find`, `last`, and manual/per-card `pull`
+- the PKM UI Entities page exposes pagination + filters (`content_type`, `source`, `status`, `created_from`, `created_to`, `intent`, `topic_primary`, `has_url`, `quality_flag`), multi-select maintenance actions, and drawer pull reuse
 - Read result cards include top-right pull actions that open a right-side detail drawer
 - pull drawer rendering follows a standardized Telegram-style summary layout and keeps full payload JSON behind an expandable debug section
 - context-pack generation is centralized in `src/libs/context-pack-builder.js`
@@ -148,6 +151,7 @@ Owned routes:
 - `POST /db/read/find`
 - `POST /db/read/last`
 - `POST /db/read/pull`
+- `POST /db/read/entities`
 
 Coupled docs:
 - `docs/api_read_write.md`

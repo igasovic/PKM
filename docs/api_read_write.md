@@ -31,7 +31,7 @@
 |---|---|---|---|---|
 | Insert / update | internal | n8n, internal tooling | active schema `entries` | `test/server/idempotency.test.js`, `test/server/normalization.test.js` |
 | Delete / move | admin secret | operators, smoke harness, controlled workflows | `pkm.entries`, `pkm_test.entries` | `test/server/db.read-smoke.api-contract.test.js`, smoke-related tests |
-| Read | internal | n8n read workflows, PKM UI Read page, context-pack builder | active schema `entries` | `test/server/read-sql-distill-projection.test.js`, `test/server/context-pack-builder.test.js`, `test/server/n8n.wf11-context-pack.test.js` |
+| Read | internal | n8n read workflows, PKM UI Read + Entities pages, context-pack builder | active schema `entries` | `test/server/read-sql-distill-projection.test.js`, `test/server/context-pack-builder.test.js`, `test/server/n8n.wf11-context-pack.test.js`, `test/server/read-write.api-contract.test.js` |
 
 ## Insert / Update
 
@@ -325,6 +325,42 @@ Notes:
   - `found=true` when the entry exists (row contains entry data).
   - `found=false` when the entry does not exist (row contains the requested `entry_id` plus null/empty content fields).
 - PKM UI Read page uses this route for manual entry pull and per-result drawer inspection.
+
+### `POST /db/read/entities`
+Returns a paginated entity list for PKM UI entity browsing and maintenance.
+
+Body:
+```json
+{
+  "page": 1,
+  "page_size": 50,
+  "filters": {
+    "content_type": "newsletter",
+    "source": "telegram",
+    "status": "pending",
+    "intent": "archive",
+    "topic_primary": "ai",
+    "created_from": "2026-01-01",
+    "created_to": "2026-04-09",
+    "has_url": true,
+    "quality_flag": "low_signal"
+  }
+}
+```
+
+Notes:
+- Uses active test-mode schema routing (`pkm.entries` vs `pkm_test.entries`), same as other read endpoints.
+- Supported filters:
+  - required by UI request: `content_type`, `source`, `status` (maps to `distill_status`), `created_from`, `created_to`
+  - additional: `intent`, `topic_primary`, `has_url`, `quality_flag`
+- `quality_flag` accepted values:
+  - `low_signal`
+  - `boilerplate_heavy`
+- Response includes one meta row (`is_meta=true`) followed by hit rows (`is_meta=false`).
+- Meta row includes:
+  - pagination (`page`, `page_size`, `total_count`, `total_pages`)
+  - active schema/mode (`schema`, `is_test_mode`)
+  - `topic_primary_options` sourced from shared config topics for UI dropdown rendering
 
 ### `POST /db/read/smoke`
 Returns smoke-marked entries for cleanup/reporting selectors.

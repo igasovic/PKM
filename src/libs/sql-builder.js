@@ -221,6 +221,7 @@ module.exports = {
   buildReadPull,
   buildReadWorkingMemory,
   buildReadSmoke,
+  buildReadEntities,
   buildTier2CandidateDiscovery,
   buildTier2SelectedDetailQuery,
   buildTier2EntryByEntryId,
@@ -1895,6 +1896,184 @@ WHERE
   COALESCE(e.metadata #>> '{smoke,suite}', '') = ${lit(suite)}
   ${runIdFilter}
 ORDER BY e.entry_id ASC;
+`.trim();
+}
+
+function buildReadEntities(opts) {
+  const entries_table = String((opts && opts.entries_table) || '').trim();
+  if (!entries_table) {
+    throw new Error('buildReadEntities requires entries_table');
+  }
+
+  const pageRaw = Number(opts && opts.page);
+  const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.trunc(pageRaw) : 1;
+
+  const pageSizeRaw = Number(opts && opts.page_size);
+  const page_size = Number.isFinite(pageSizeRaw) && pageSizeRaw > 0
+    ? Math.min(200, Math.trunc(pageSizeRaw))
+    : 50;
+
+  const offset = Math.max(0, (page - 1) * page_size);
+
+  const schema = String((opts && opts.schema) || '').trim() || 'pkm';
+  const is_test_mode = !!(opts && opts.is_test_mode);
+  const topic_primary_options = Array.isArray(opts && opts.topic_primary_options)
+    ? opts.topic_primary_options.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+
+  const filters = (opts && opts.filters && typeof opts.filters === 'object')
+    ? opts.filters
+    : {};
+
+  const content_type = String((filters && filters.content_type) || '').trim();
+  const source = String((filters && filters.source) || '').trim();
+  const status = String((filters && filters.status) || '').trim();
+  const intent = String((filters && filters.intent) || '').trim();
+  const topic_primary = String((filters && filters.topic_primary) || '').trim();
+  const created_from = String((filters && filters.created_from) || '').trim();
+  const created_to = String((filters && filters.created_to) || '').trim();
+  const quality_flag = String((filters && filters.quality_flag) || '').trim();
+  const has_url = Object.prototype.hasOwnProperty.call(filters, 'has_url')
+    ? filters.has_url
+    : null;
+  const has_url_lit = has_url === null || has_url === undefined ? 'NULL' : boolLit(has_url);
+
+  return `
+WITH params AS (
+  SELECT
+    ${page}::int AS page,
+    ${page_size}::int AS page_size,
+    ${offset}::int AS offset,
+    NULLIF(${lit(content_type)}, '')::text AS content_type,
+    NULLIF(${lit(source)}, '')::text AS source,
+    NULLIF(${lit(status)}, '')::text AS status,
+    NULLIF(${lit(intent)}, '')::text AS intent,
+    NULLIF(${lit(topic_primary)}, '')::text AS topic_primary,
+    NULLIF(${lit(created_from)}, '')::date AS created_from_date,
+    NULLIF(${lit(created_to)}, '')::date AS created_to_date,
+    NULLIF(${lit(quality_flag)}, '')::text AS quality_flag,
+    ${has_url_lit}::boolean AS has_url
+),
+filtered AS (
+  SELECT
+    e.entry_id,
+    e.id,
+    e.created_at,
+    e.source,
+    e.intent,
+    e.content_type,
+    COALESCE(e.title, '') AS title,
+    COALESCE(e.author, '') AS author,
+    COALESCE(e.url_canonical, e.url, '') AS url,
+    COALESCE(e.topic_primary, '') AS topic_primary,
+    COALESCE(e.topic_secondary, '') AS topic_secondary,
+    COALESCE(e.gist, '') AS gist,
+    COALESCE(e.retrieval_excerpt, e.metadata #>> '{retrieval,excerpt}', '') AS excerpt,
+    COALESCE(e.distill_status, 'pending') AS distill_status,
+    COALESCE(e.low_signal, false) AS low_signal,
+    COALESCE(e.boilerplate_heavy, false) AS boilerplate_heavy
+  FROM ${entries_table} e
+  CROSS JOIN params p
+  WHERE
+    (p.content_type IS NULL OR lower(COALESCE(e.content_type, '')) = lower(p.content_type))
+    AND (p.source IS NULL OR lower(COALESCE(e.source, '')) = lower(p.source))
+    AND (p.status IS NULL OR lower(COALESCE(e.distill_status, 'pending')) = lower(p.status))
+    AND (p.intent IS NULL OR lower(COALESCE(e.intent, '')) = lower(p.intent))
+    AND (p.topic_primary IS NULL OR lower(COALESCE(e.topic_primary, '')) = lower(p.topic_primary))
+    AND (p.created_from_date IS NULL OR e.created_at >= p.created_from_date::timestamptz)
+    AND (p.created_to_date IS NULL OR e.created_at < ((p.created_to_date + 1)::timestamptz))
+    AND (
+      p.has_url IS NULL OR
+      (
+        p.has_url = true
+        AND NULLIF(btrim(COALESCE(e.url_canonical, e.url, '')), '') IS NOT NULL
+      ) OR (
+        p.has_url = false
+        AND NULLIF(btrim(COALESCE(e.url_canonical, e.url, '')), '') IS NULL
+      )
+    )
+    AND (
+      p.quality_flag IS NULL OR
+      (p.quality_flag = 'low_signal' AND COALESCE(e.low_signal, false) = true) OR
+      (p.quality_flag = 'boilerplate_heavy' AND COALESCE(e.boilerplate_heavy, false) = true)
+    )
+),
+totals AS (
+  SELECT COUNT(*)::int AS total_count
+  FROM filtered
+),
+page_hits AS (
+  SELECT *
+  FROM filtered
+  ORDER BY created_at DESC, entry_id DESC
+  LIMIT (SELECT page_size FROM params)
+  OFFSET (SELECT offset FROM params)
+)
+SELECT
+  TRUE AS is_meta,
+  'entities'::text AS cmd,
+  p.page,
+  p.page_size,
+  t.total_count,
+  CASE
+    WHEN t.total_count = 0 THEN 0
+    ELSE CEIL(t.total_count::numeric / p.page_size::numeric)::int
+  END AS total_pages,
+  ${lit(schema)}::text AS schema,
+  ${boolLit(is_test_mode)}::boolean AS is_test_mode,
+  ${jsonbLit(topic_primary_options)} AS topic_primary_options,
+  NULL::bigint AS entry_id,
+  NULL::uuid AS id,
+  NULL::timestamptz AS created_at,
+  NULL::text AS source,
+  NULL::text AS intent,
+  NULL::text AS content_type,
+  NULL::text AS title,
+  NULL::text AS author,
+  NULL::text AS url,
+  NULL::text AS topic_primary,
+  NULL::text AS topic_secondary,
+  NULL::text AS gist,
+  NULL::text AS excerpt,
+  NULL::text AS distill_status,
+  NULL::boolean AS low_signal,
+  NULL::boolean AS boilerplate_heavy
+FROM params p
+CROSS JOIN totals t
+UNION ALL
+SELECT
+  FALSE AS is_meta,
+  'entities'::text AS cmd,
+  p.page,
+  p.page_size,
+  t.total_count,
+  CASE
+    WHEN t.total_count = 0 THEN 0
+    ELSE CEIL(t.total_count::numeric / p.page_size::numeric)::int
+  END AS total_pages,
+  ${lit(schema)}::text AS schema,
+  ${boolLit(is_test_mode)}::boolean AS is_test_mode,
+  NULL::jsonb AS topic_primary_options,
+  h.entry_id,
+  h.id,
+  h.created_at,
+  h.source,
+  h.intent,
+  h.content_type,
+  h.title,
+  h.author,
+  h.url,
+  h.topic_primary,
+  h.topic_secondary,
+  h.gist,
+  h.excerpt,
+  h.distill_status,
+  h.low_signal,
+  h.boilerplate_heavy
+FROM page_hits h
+CROSS JOIN params p
+CROSS JOIN totals t
+ORDER BY is_meta DESC, created_at DESC NULLS LAST, entry_id DESC NULLS LAST;
 `.trim();
 }
 

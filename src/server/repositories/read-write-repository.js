@@ -13,4 +13,5 @@ module.exports = {
   readLast: (...args) => readStore.readLast(...args),
   readPull: (...args) => readStore.readPull(...args),
   readSmoke: (...args) => readStore.readSmoke(...args),
+  readEntities: (...args) => readStore.readEntities(...args),
 };

@@ -502,6 +502,14 @@ const BACKEND_ROUTE_REGISTRY = [
     "doc": "docs/api_read_write.md",
     "primary_callers": ["smoke workflows"],
     "tests": ["test/server/db.read-smoke.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
+    "path": "/db/read/entities",
+    "auth": "internal",
+    "doc": "docs/api_read_write.md",
+    "primary_callers": ["PKM UI entities page"],
+    "tests": ["test/server/read-write.api-contract.test.js"]
   }
 ]
 ;

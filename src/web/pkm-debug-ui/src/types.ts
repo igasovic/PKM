@@ -99,6 +99,36 @@ export interface ReadItem {
   raw: Record<string, unknown>;
 }
 
+export interface EntityListRow {
+  entry_id: string | null;
+  id: string | null;
+  created_at: string | null;
+  source: string | null;
+  intent: string | null;
+  content_type: string | null;
+  title: string | null;
+  author: string | null;
+  url: string | null;
+  topic_primary: string | null;
+  topic_secondary: string | null;
+  gist: string | null;
+  excerpt: string | null;
+  distill_status: string | null;
+  low_signal: boolean;
+  boilerplate_heavy: boolean;
+  raw: Record<string, unknown>;
+}
+
+export interface EntitiesListMeta {
+  page: number;
+  page_size: number;
+  total_count: number;
+  total_pages: number;
+  schema: string;
+  is_test_mode: boolean;
+  topic_primary_options: string[];
+}
+
 export interface RecipeUpsertPayload {
   id: number;
   public_id: string;

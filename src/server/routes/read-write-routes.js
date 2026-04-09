@@ -55,6 +55,7 @@ async function handleReadWriteRoutes(ctx) {
           if (url.pathname === '/db/read/last') return readWriteRepository.readLast(body);
           if (url.pathname === '/db/read/pull') return readWriteRepository.readPull(body);
           if (url.pathname === '/db/read/smoke') return readWriteRepository.readSmoke(body);
+          if (url.pathname === '/db/read/entities') return readWriteRepository.readEntities(body);
           if (url.pathname === '/db/test-mode/toggle') {
             const state = await testModeService.toggle();
             return { rows: [{ is_test_mode: state }], rowCount: 1 };

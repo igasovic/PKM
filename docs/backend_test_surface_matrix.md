@@ -8,8 +8,8 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 - keep route, doc, and test planning tied to one source of truth
 
 ## Summary
-- total routes: 53
-- routes with contract tests: 53
+- total routes: 54
+- routes with contract tests: 54
 - routes with smoke coverage: 9
 - routes with integration tests: 0
 - operator/UI/probe routes: 29
@@ -72,6 +72,7 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 | `POST /db/read/last` | `internal` | 11 ChatGPT Read Router, read workflows | `docs/api_read_write.md` | yes | no | no | no | test/server/read-write.api-contract.test.js |
 | `POST /db/read/pull` | `internal` | 11 ChatGPT Read Router, read workflows | `docs/api_read_write.md` | yes | yes | no | no | test/server/read-write.api-contract.test.js |
 | `POST /db/read/smoke` | `internal` | smoke workflows | `docs/api_read_write.md` | yes | no | no | no | test/server/db.read-smoke.api-contract.test.js |
+| `POST /db/read/entities` | `internal` | PKM UI entities page | `docs/api_read_write.md` | yes | no | no | no | test/server/read-write.api-contract.test.js |
 
 ## Usage Note
 - treat this matrix as a planning and review index, not as proof of behavioral depth; test quality still depends on what each listed file asserts

@@ -104,6 +104,7 @@ describe('backend route registry smoke matrix', () => {
       readLast: async () => ({ rows: [{ entry_id: 101 }], rowCount: 1 }),
       readPull: async () => ({ rows: [{ entry_id: 101, excerpt: 'detail' }], rowCount: 1 }),
       readSmoke: async () => ({ rows: [{ entry_id: 101 }], rowCount: 1 }),
+      readEntities: async () => ({ rows: [{ is_meta: true, cmd: 'entities' }, { entry_id: 101 }], rowCount: 2 }),
     }));
 
     jest.doMock('../../src/server/tier2/planner.js', () => ({
