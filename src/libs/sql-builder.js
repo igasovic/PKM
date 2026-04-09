@@ -1943,7 +1943,7 @@ WITH params AS (
   SELECT
     ${page}::int AS page,
     ${page_size}::int AS page_size,
-    ${offset}::int AS offset,
+    ${offset}::int AS page_offset,
     NULLIF(${lit(content_type)}, '')::text AS content_type,
     NULLIF(${lit(source)}, '')::text AS source,
     NULLIF(${lit(status)}, '')::text AS status,
@@ -2007,7 +2007,7 @@ page_hits AS (
   FROM filtered
   ORDER BY created_at DESC, entry_id DESC
   LIMIT (SELECT page_size FROM params)
-  OFFSET (SELECT offset FROM params)
+  OFFSET (SELECT page_offset FROM params)
 )
 SELECT
   TRUE AS is_meta,
