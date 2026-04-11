@@ -47,28 +47,6 @@ describe('n8n todoist workflows', () => {
   test('wf34 build-sync-request filters projects and resolves waiting lifecycle', async () => {
     const out = await buildSyncRequest({
       $json: {},
-      $input: {
-        all: () => [{
-          json: [
-            {
-              id: 'task-1',
-              project_id: 'proj-work',
-              section_id: 'sec-wait',
-              content: 'Follow up with Alex',
-              description: 'about invoice',
-              priority: 4,
-              due: { date: '2026-04-11', string: 'today', is_recurring: false },
-              added_at: '2026-04-10T00:00:00.000Z',
-            },
-            {
-              id: 'task-2',
-              project_id: 'proj-ignored',
-              section_id: null,
-              content: 'Ignore me',
-            },
-          ],
-        }],
-      },
       $items: (name) => {
         if (name === 'Fetch Todoist Projects') {
           return [{
@@ -82,6 +60,28 @@ describe('n8n todoist workflows', () => {
           return [{
             json: [
               { id: 'sec-wait', project_id: 'proj-work', name: 'Waiting' },
+            ],
+          }];
+        }
+        if (name === 'Fetch Todoist Tasks') {
+          return [{
+            json: [
+              {
+                id: 'task-1',
+                project_id: 'proj-work',
+                section_id: 'sec-wait',
+                content: 'Follow up with Alex',
+                description: 'about invoice',
+                priority: 4,
+                due: { date: '2026-04-11', string: 'today', is_recurring: false },
+                added_at: '2026-04-10T00:00:00.000Z',
+              },
+              {
+                id: 'task-2',
+                project_id: 'proj-ignored',
+                section_id: null,
+                content: 'Ignore me',
+              },
             ],
           }];
         }
@@ -102,6 +102,22 @@ describe('n8n todoist workflows', () => {
       fetched_task_count: 2,
       filtered_task_count: 1,
     }));
+  });
+
+  test('wf34 uses Todoist nodes and project fan-out for task fetches', () => {
+    const wf34 = loadWorkflow('34-todoist-sync__').workflow;
+    const byName = new Map(wf34.nodes.map((node) => [node.name, node]));
+
+    expect(byName.get('Fetch Todoist Projects').type).toBe('n8n-nodes-base.todoist');
+    expect(byName.get('Fetch Todoist Sections').type).toBe('n8n-nodes-base.todoist');
+    expect(byName.get('Fetch Todoist Tasks').type).toBe('n8n-nodes-base.todoist');
+    expect(byName.get('Select Allowed Projects').type).toBe('n8n-nodes-base.code');
+
+    expect(wf34.connections['Fetch Todoist Sections'].main[0][0].node).toBe('Select Allowed Projects');
+    expect(wf34.connections['Select Allowed Projects'].main[0][0].node).toBe('Fetch Todoist Tasks');
+
+    const taskFilters = byName.get('Fetch Todoist Tasks').parameters.filters || {};
+    expect(String(taskFilters.projectId || '')).toContain('$json.todoist_project_id');
   });
 
   test('wf35/36/37 request builders preserve chat fallback and formatters build telegram text', async () => {

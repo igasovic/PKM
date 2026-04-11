@@ -129,11 +129,10 @@ function normalizeTask(taskRow, projectMeta, sectionMap) {
 
 module.exports = async function run(ctx) {
   const current = (ctx && ctx.$json && typeof ctx.$json === 'object') ? ctx.$json : {};
-  const inputItems = (ctx && ctx.$input && typeof ctx.$input.all === 'function') ? ctx.$input.all() : [];
 
   const projectRows = flattenNodeJson(safeItemsAccessor(ctx, 'Fetch Todoist Projects'));
   const sectionRows = flattenNodeJson(safeItemsAccessor(ctx, 'Fetch Todoist Sections'));
-  const taskRows = flattenNodeJson(inputItems);
+  const taskRows = flattenNodeJson(safeItemsAccessor(ctx, 'Fetch Todoist Tasks'));
 
   const { allowed: allowedProjects } = buildProjectMaps(projectRows);
   const sectionMap = buildSectionMap(sectionRows, allowedProjects);

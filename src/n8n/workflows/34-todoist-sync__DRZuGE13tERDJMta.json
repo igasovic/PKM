@@ -28,7 +28,7 @@
         [
           {
             "index": 0,
-            "node": "Fetch Todoist Tasks",
+            "node": "Select Allowed Projects",
             "type": "main"
           }
         ]
@@ -62,6 +62,17 @@
           {
             "index": 0,
             "node": "Fetch Todoist Projects",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Select Allowed Projects": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Fetch Todoist Tasks",
             "type": "main"
           }
         ]
@@ -109,73 +120,52 @@
       "id": "4d2cd4a4-e611-4a86-af27-92f61f084d56",
       "name": "Fetch Todoist Projects",
       "parameters": {
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "={{ \"Bearer \" + $env.TODOIST_API_TOKEN }}"
-            }
-          ]
-        },
-        "method": "GET",
-        "options": {},
-        "sendHeaders": true,
-        "url": "https://api.todoist.com/rest/v2/projects"
+        "resource": "project",
+        "operation": "getAll",
+        "returnAll": true,
+        "options": {}
       },
       "position": [
         -640,
         144
       ],
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3
+      "type": "n8n-nodes-base.todoist",
+      "typeVersion": 2
     },
     {
       "id": "d8e1f6e1-6d84-4a77-ac3b-2be949f4f7e0",
       "name": "Fetch Todoist Sections",
       "parameters": {
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "={{ \"Bearer \" + $env.TODOIST_API_TOKEN }}"
-            }
-          ]
-        },
-        "method": "GET",
-        "options": {},
-        "sendHeaders": true,
-        "url": "https://api.todoist.com/rest/v2/sections"
+        "resource": "section",
+        "operation": "getAll",
+        "returnAll": true,
+        "options": {}
       },
       "position": [
         -384,
         144
       ],
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3
+      "type": "n8n-nodes-base.todoist",
+      "typeVersion": 2
     },
     {
       "id": "59fcbf4a-7a14-43ce-a16a-e22ef3bf7f23",
       "name": "Fetch Todoist Tasks",
       "parameters": {
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "={{ \"Bearer \" + $env.TODOIST_API_TOKEN }}"
-            }
-          ]
+        "resource": "task",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "projectId": "={{ $json.todoist_project_id || $json.id }}"
         },
-        "method": "GET",
-        "options": {},
-        "sendHeaders": true,
-        "url": "https://api.todoist.com/rest/v2/tasks"
+        "options": {}
       },
       "position": [
         -128,
         144
       ],
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3
+      "type": "n8n-nodes-base.todoist",
+      "typeVersion": 2
     },
     {
       "id": "b5c92ae2-5b7f-43cc-a53a-0e47631ef5ac",
@@ -216,6 +206,19 @@
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
+    },
+    {
+      "id": "f0f6e98a-b99f-4c8d-8f0e-2af5f5db5b86",
+      "name": "Select Allowed Projects",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        288
+      ],
+      "parameters": {
+        "jsCode": "const allowed={\"home 🏡\":\"home\",home:\"home\",personal:\"personal\",work:\"work\",inbox:\"inbox\"};\nconst normalize=(v)=>String(v??'').trim().toLowerCase();\nconst projects=(typeof $items==='function'?$items('Fetch Todoist Projects',0,0):[]).map((r)=>r&&r.json?r.json:null).filter(Boolean);\nconst out=[];\nfor (const p of projects){\n  const id=String(p.id??'').trim();\n  const name=String(p.name??'').trim();\n  const key=allowed[normalize(name)]||null;\n  if(!id||!name||!key) continue;\n  out.push({json:{todoist_project_id:id,todoist_project_name:name,project_key:key}});\n}\nreturn out;"
+      }
     }
   ],
   "settings": {
