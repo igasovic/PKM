@@ -145,7 +145,7 @@
         160
       ],
       "type": "n8n-nodes-base.todoist",
-      "typeVersion": 2
+      "typeVersion": 2.2
     },
     {
       "credentials": {
@@ -166,7 +166,7 @@
         160
       ],
       "type": "n8n-nodes-base.todoist",
-      "typeVersion": 2
+      "typeVersion": 2.2
     },
     {
       "credentials": {
@@ -189,7 +189,7 @@
         160
       ],
       "type": "n8n-nodes-base.todoist",
-      "typeVersion": 2
+      "typeVersion": 2.2
     },
     {
       "id": "b5c92ae2-5b7f-43cc-a53a-0e47631ef5ac",
