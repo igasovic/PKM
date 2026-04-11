@@ -1,0 +1,230 @@
+{
+  "active": true,
+  "connections": {
+    "Schedule Hourly Sync": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Fetch Todoist Projects",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Fetch Todoist Projects",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Fetch Todoist Projects": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Fetch Todoist Sections",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Fetch Todoist Sections": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Fetch Todoist Tasks",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Fetch Todoist Tasks": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Sync Request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build Sync Request": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Todoist Sync",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "description": null,
+  "isArchived": false,
+  "name": "34 Todoist Sync",
+  "nodes": [
+    {
+      "id": "9d6a8f77-44a1-4d2a-a0db-9eeb6ab0f945",
+      "name": "Schedule Hourly Sync",
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "triggerAtMinute": 5
+            }
+          ]
+        }
+      },
+      "position": [
+        -896,
+        64
+      ],
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "2cae25f6-6745-466e-88f9-624089fdd2d4",
+      "name": "When Executed by Another Workflow",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        -896,
+        224
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "4d2cd4a4-e611-4a86-af27-92f61f084d56",
+      "name": "Fetch Todoist Projects",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.TODOIST_API_TOKEN }}"
+            }
+          ]
+        },
+        "method": "GET",
+        "options": {},
+        "sendHeaders": true,
+        "url": "https://api.todoist.com/rest/v2/projects"
+      },
+      "position": [
+        -640,
+        144
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "d8e1f6e1-6d84-4a77-ac3b-2be949f4f7e0",
+      "name": "Fetch Todoist Sections",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.TODOIST_API_TOKEN }}"
+            }
+          ]
+        },
+        "method": "GET",
+        "options": {},
+        "sendHeaders": true,
+        "url": "https://api.todoist.com/rest/v2/sections"
+      },
+      "position": [
+        -384,
+        144
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "59fcbf4a-7a14-43ce-a16a-e22ef3bf7f23",
+      "name": "Fetch Todoist Tasks",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $env.TODOIST_API_TOKEN }}"
+            }
+          ]
+        },
+        "method": "GET",
+        "options": {},
+        "sendHeaders": true,
+        "url": "https://api.todoist.com/rest/v2/tasks"
+      },
+      "position": [
+        -128,
+        144
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "b5c92ae2-5b7f-43cc-a53a-0e47631ef5ac",
+      "name": "Build Sync Request",
+      "parameters": {
+        "jsCode": "try{const {wf34BuildSyncRequest}=require('@igasovic/n8n-blocks');return await wf34BuildSyncRequest({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:34-todoist-sync/build-sync-request__b5c92ae2-5b7f-43cc-a53a-0e47631ef5ac.js] ${e.message}`;throw e;}"
+      },
+      "position": [
+        128,
+        144
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "d97d2d64-629a-4530-bfcb-65ea2f5f9f8c",
+      "name": "PKM Todoist Sync",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => ({ run_id: $execution.id, fetched_at: $json.fetched_at || null, tasks: Array.isArray($json.tasks) ? $json.tasks : [] }))()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/todoist/sync"
+      },
+      "position": [
+        384,
+        144
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    }
+  ],
+  "settings": {
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionOrder": "v1",
+    "timezone": "America/Chicago"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 2
+}

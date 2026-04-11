@@ -22,7 +22,7 @@
 |---|---|---|---|
 | `pkm-server` | LAN `:3010` | repo-managed docker/env surfaces + backend config loader | container `pkm-server` on internal network |
 | `litellm` | LAN `:4000` | repo-managed LiteLLM config + docker/env surfaces | container `litellm` on internal network |
-| `n8n` | Pi loopback `:5678`, public via Cloudflare | repo-managed docker/env + live n8n workflow state | container `n8n` plus loopback host publish |
+| `n8n` | Pi loopback `:5678`, public via Cloudflare | repo-managed docker/env + live n8n workflow state + host-local credentials (Telegram/Gmail/Todoist) | container `n8n` plus loopback host publish |
 | `postgres` | internal only | repo-managed init/config surfaces + host-local data | container `postgres` on internal network |
 | `cloudflared` | public publishing edge | runtime-managed compose token mode; not part of current repo-managed config surfaces | host-networked `cloudflared` container |
 | `homeassistant` | LAN `:8123`, public via Cloudflare | out of current repo config program | host-networked `homeassistant` container |
@@ -182,6 +182,7 @@ flowchart LR
   %% n8n integrations
   TG[Telegram] --> N8N
   IMAP[Gmail IMAP] --> N8N
+  N8N --> TD[Todoist API]
   N8N --> TR[Trafilatura (HTTP)]
   N8N --> OD[OneDrive (backups)]
 

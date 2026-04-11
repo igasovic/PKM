@@ -45,6 +45,7 @@ describe('n8n command parser', () => {
     const text = unescapeMdv2(out.telegram_message);
     expect(out._reply_now).toBe(true);
     expect(out.telegram_chat_id).toBe(1509032341);
+    expect(text).toContain('/waiting');
     expect(text).toContain('/distill-run [--batch|--sync]');
     expect(text).toContain('/recipe-link <public_id_1> <public_id_2>');
     expect(text).toContain('/recipe-note <public_id> <note>');
@@ -163,5 +164,12 @@ describe('n8n command parser', () => {
     const text = unescapeMdv2(out.telegram_message);
     expect(out._reply_now).toBe(true);
     expect(text).toContain('/recipe-note <R<number>> <note text>');
+  });
+
+  test('/waiting routes to waiting command payload', async () => {
+    const out = await runParser('/waiting');
+    expect(out.cmd).toBe('waiting');
+    expect(out.telegram_chat_id).toBe(1509032341);
+    expect(out._reply_now).toBeUndefined();
   });
 });

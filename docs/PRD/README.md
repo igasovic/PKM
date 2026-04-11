@@ -35,6 +35,7 @@ This file is the entrypoint for active PRDs in this repo.
 | Logging / telemetry | `docs/PRD/logging-prd.md` | active | as-built logging and telemetry contract |
 | Recipes | `docs/PRD/recipes-prd.md` | active | dedicated recipe capture/retrieval surface, APIs, and Telegram/debug integration |
 | Family calendar | `docs/PRD/family-calendar-prd.md` | proposed | dedicated family-calendar feature surface |
+| Todoist planning | `docs/PRD/todoist-llm-planning-prd.md` | active | Todoist sync/review/brief surface with Telegram and PKM UI review loop |
 | Config sync | `docs/PRD/config-prd.md` | active | repo-managed config/operator workflow |
 | Smoke harness | `docs/PRD/smoke-prd.md` | active | end-to-end smoke validation surface with split-out detailed matrix |
 
@@ -47,6 +48,7 @@ This file is the entrypoint for active PRDs in this repo.
 | `docs/PRD/family-calendar-eval-work-packages.md` | family-calendar-prd | active | eval harness buildout |
 | `docs/PRD/family-calendar-work-packages.md` | family-calendar-prd | active | core calendar feature buildout |
 | `docs/PRD/recipes-work-packages.md` | recipes-prd | active | sequencing recipe schema/API/workflow/UI rollout |
+| `docs/PRD/todoist-llm-planning-work-packages.md` | todoist-llm-planning-prd | active | sequencing Todoist planning rollout across backend/n8n/UI/docs |
 | `docs/PRD/smoke-detailed-matrix.md` | smoke-prd | active | detailed test matrix reference |
 
 Lifecycle rule: once the canonical PRD baseline is self-sufficient, move the companion to `docs/PRD/archive/`. Review companion relevance when the parent PRD status changes.

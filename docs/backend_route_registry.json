@@ -625,6 +625,110 @@
   },
   {
     "method": "POST",
+    "path": "/todoist/sync",
+    "auth": "internal",
+    "doc": "docs/api_todoist.md",
+    "primary_callers": [
+      "34 Todoist Sync",
+      "35 Todoist Daily Focus",
+      "36 Todoist Waiting Radar",
+      "37 Todoist Weekly Pruning"
+    ],
+    "tests": [
+      "test/server/todoist.api-contract.test.js"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/todoist/review",
+    "auth": "internal",
+    "doc": "docs/api_todoist.md",
+    "primary_callers": [
+      "PKM UI /todoist",
+      "operators"
+    ],
+    "tests": [
+      "test/server/todoist.api-contract.test.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/todoist/review/accept",
+    "auth": "internal",
+    "doc": "docs/api_todoist.md",
+    "primary_callers": [
+      "PKM UI /todoist",
+      "operators"
+    ],
+    "tests": [
+      "test/server/todoist.api-contract.test.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/todoist/review/override",
+    "auth": "internal",
+    "doc": "docs/api_todoist.md",
+    "primary_callers": [
+      "PKM UI /todoist",
+      "operators"
+    ],
+    "tests": [
+      "test/server/todoist.api-contract.test.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/todoist/review/reparse",
+    "auth": "internal",
+    "doc": "docs/api_todoist.md",
+    "primary_callers": [
+      "PKM UI /todoist",
+      "operators"
+    ],
+    "tests": [
+      "test/server/todoist.api-contract.test.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/todoist/brief/daily",
+    "auth": "internal",
+    "doc": "docs/api_todoist.md",
+    "primary_callers": [
+      "35 Todoist Daily Focus"
+    ],
+    "tests": [
+      "test/server/todoist.api-contract.test.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/todoist/brief/waiting",
+    "auth": "internal",
+    "doc": "docs/api_todoist.md",
+    "primary_callers": [
+      "36 Todoist Waiting Radar",
+      "10 Read /waiting"
+    ],
+    "tests": [
+      "test/server/todoist.api-contract.test.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/todoist/brief/weekly",
+    "auth": "internal",
+    "doc": "docs/api_todoist.md",
+    "primary_callers": [
+      "37 Todoist Weekly Pruning"
+    ],
+    "tests": [
+      "test/server/todoist.api-contract.test.js"
+    ]
+  },
+  {
+    "method": "POST",
     "path": "/db/insert",
     "auth": "internal",
     "doc": "docs/api_read_write.md",

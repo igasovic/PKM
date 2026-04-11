@@ -198,6 +198,62 @@ export interface RecipeReviewQueueResult {
   limit: number;
 }
 
+export type TodoistReviewView = 'needs_review' | 'unreviewed' | 'accepted' | 'overridden' | 'all';
+export type TodoistTaskShape = 'project' | 'next_action' | 'micro_task' | 'follow_up' | 'vague_note' | 'unknown';
+export type TodoistLifecycleStatus = 'open' | 'waiting' | 'closed';
+export type TodoistReviewStatus = 'needs_review' | 'no_review_needed' | 'accepted' | 'overridden';
+
+export interface TodoistTaskCurrent {
+  id: number;
+  todoist_task_id: string;
+  todoist_project_id: string | null;
+  todoist_project_name: string | null;
+  todoist_section_id: string | null;
+  todoist_section_name: string | null;
+  raw_title: string | null;
+  raw_description: string | null;
+  todoist_priority: number;
+  todoist_due_date: string | null;
+  todoist_due_string: string | null;
+  todoist_due_is_recurring: boolean;
+  project_key: string | null;
+  lifecycle_status: TodoistLifecycleStatus | string | null;
+  normalized_title_en: string | null;
+  task_shape: TodoistTaskShape | string | null;
+  suggested_next_action: string | null;
+  parse_confidence: number;
+  review_status: TodoistReviewStatus | string | null;
+  review_reasons: string[];
+  todoist_added_at: string | null;
+  first_seen_at: string | null;
+  last_seen_at: string | null;
+  waiting_since_at: string | null;
+  closed_at: string | null;
+  parsed_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface TodoistTaskEvent {
+  id: number;
+  task_id: number;
+  event_at: string | null;
+  event_type: string;
+  changed_fields: string[];
+  before_json: Record<string, unknown> | null;
+  after_json: Record<string, unknown> | null;
+  reason: string | null;
+}
+
+export interface TodoistReviewQueueResult {
+  view: TodoistReviewView | string;
+  limit: number;
+  offset: number;
+  rows: TodoistTaskCurrent[];
+  selected: TodoistTaskCurrent | null;
+  events: TodoistTaskEvent[];
+}
+
 export type SpanStatus = 'ok' | 'error' | 'missing_end' | 'orphan_end' | 'orphan_error';
 
 export interface PairedSpan {

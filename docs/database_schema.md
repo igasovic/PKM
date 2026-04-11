@@ -36,7 +36,7 @@ This file is meant to be a **human + agent** reference:
 |---|---|---|
 | `entries`, `idempotency_policies` | mirrored in `pkm` and `pkm_test` | core ingest, dedupe, read and enrichment lifecycle |
 | `recipes`, `recipe_links` | mirrored in `pkm` and `pkm_test` | recipe capture, retrieval, review queue, and bidirectional see-also links |
-| `runtime_config`, `failure_packs`, calendar tables | prod-only | runtime toggles, failure diagnostics, calendar business logs |
+| `runtime_config`, `failure_packs`, calendar tables, todoist planning tables | prod-only | runtime toggles, failure diagnostics, calendar business logs, Todoist planning state |
 | `t1_*`, `t2_*` batch tables | mirrored in `pkm` and `pkm_test` | durable batch orchestration and status visibility |
 
 ## Table Ownership Summary
@@ -51,6 +51,7 @@ This file is meant to be a **human + agent** reference:
 | `pipeline_events` | `pgadmin` | backend | debug tools / admin flows | no | daily prune; default `30` days |
 | `failure_packs` | `pgadmin` | backend / WF99 path | admin debug flows | no | not documented here |
 | `calendar_*` tables | `pgadmin` | backend calendar flows | backend calendar/report/debug flows | no | not documented here |
+| `todoist_task_current`, `todoist_task_events` | `pgadmin` | backend Todoist planning routes via `pkm_ingest` | backend, `pkm_read`, debug UI review surfaces | no | not documented here |
 | `t1_*`, `t2_*` tables | `pgadmin` | backend batch flows | status APIs / admin flows | yes | not documented here |
 
 ---
@@ -63,7 +64,7 @@ This file is meant to be a **human + agent** reference:
 |---|---|---|
 | `pgadmin` | DB owner / superuser | Owns schemas `pkm`, `pkm_test` and all objects. |
 | `pkm_ingest` | Application write role | Has broad CRUD on most tables (including `entries`, `recipes`, and `recipe_links` in both schemas and Tier-1 batch tables). |
-| `pkm_read` | Read-only role | Has `SELECT` on `pkm.entries`, `pkm_test.entries`, `pkm.recipes`, `pkm_test.recipes`, `pkm.recipe_links`, `pkm_test.recipe_links`, and `pkm.runtime_config`. No access to Tier-1 batch tables or idempotency tables (as currently granted). |
+| `pkm_read` | Read-only role | Has `SELECT` on `pkm.entries`, `pkm_test.entries`, `pkm.recipes`, `pkm_test.recipes`, `pkm.recipe_links`, `pkm_test.recipe_links`, `pkm.runtime_config`, `pkm.todoist_task_current`, and `pkm.todoist_task_events`. No access to Tier-1 batch tables or idempotency tables (as currently granted). |
 | `n8n` | n8n DB role | Has `USAGE` on schema `pkm` and `SELECT` on `pkm.runtime_config` only. No access to entries tables. |
 
 ### Database-level access (database `pkm`)
@@ -109,6 +110,8 @@ Schema grants (current):
 - `runtime_config` (~16 kB)
 - `calendar_requests` (size varies by family-calendar usage)
 - `calendar_event_observations` (size varies by read/report volume)
+- `todoist_task_current` (size varies by Todoist sync volume)
+- `todoist_task_events` (size varies by Todoist event history volume)
 - `t1_batches` (~16 kB)
 - `t1_batch_items` (~80 kB)
 - `t1_batch_item_results` (~8192 bytes)
@@ -144,6 +147,8 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 | `pkm.runtime_config` | full | RIUD | R | R |
 | `pkm.calendar_requests` | full | RIUD | — | — |
 | `pkm.calendar_event_observations` | full | RIUD | — | — |
+| `pkm.todoist_task_current` | full | RIUD | R | — |
+| `pkm.todoist_task_events` | full | RIUD | R | — |
 | `pkm.idempotency_policies` | full | RIUD | — | — |
 | `pkm.t1_batches` | full | RIUD | — | — |
 | `pkm.t1_batch_items` | full | RIUD | — | — |
@@ -233,6 +238,7 @@ Mirrored between `pkm` and `pkm_test`:
   - one table stores both test-mode and production-mode capture rows via projected `mode` + envelope JSON.
 - `pkm.calendar_requests` exists **only in prod** (calendar business-request log).
 - `pkm.calendar_event_observations` exists **only in prod** (external visibility/report observation log).
+- `pkm.todoist_task_current` and `pkm.todoist_task_events` exist **only in prod** (Todoist planning state and review/event history).
 
 ### Practical consequences for `/db/delete` and `/db/move`
 

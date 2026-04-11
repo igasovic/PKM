@@ -58,6 +58,7 @@ const defaults = {
   continue: { days: 90, limit: 10 },
   with: { days: 90, limit: 10 },
   pull: { days: null, limit: null },   // <-- NEW
+  waiting: { days: null, limit: null },
   recipe: { days: null, limit: null },
   recipes: { days: null, limit: null },
   recipesave: { days: null, limit: null },
@@ -91,6 +92,7 @@ const HELP_OVERVIEW =
   `Commands:\n` +
   `/help\n` +
   `/pull <id> [--excerpt]\n` +
+  `/waiting\n` +
   `/recipe R<number>\n` +
   `/recipe lemon pasta\n` +
   `/recipes lemon pasta\n` +
@@ -112,6 +114,7 @@ const HELP_OVERVIEW =
 const COMMAND_HELP = {
   help: HELP_OVERVIEW,
   pull: `Usage:\n/pull <id> [--excerpt]\n/pull --help`,
+  waiting: `Usage:\n/waiting\n/waiting --help`,
   recipe: `Usage:\n/recipe <R<number>|query>\nExamples:\n/recipe R17\n/recipe lemon pasta`,
   recipes: `Usage:\n/recipes <query>\nExample:\n/recipes lemon pasta`,
   recipesave: `Usage:\n/recipe-save <structured recipe text>\nExample:\n/recipe-save # Lemon Pasta\\n\\n- Servings: 4\\n\\n## Ingredients\\n- pasta\\n\\n## Instructions\\n1. boil`,
@@ -157,6 +160,18 @@ if (hasHelpFlag) {
 // Special case: /help returns immediate usage block.
 if (cmd === 'help') {
   return replyNow(telegram_chat_id, usageFor('help'));
+}
+
+// Special case: /waiting
+if (cmd === 'waiting') {
+  return [{
+    json: {
+      cmd,
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
+    },
+  }];
 }
 
 // Special case: /recipe <R<number>|query>

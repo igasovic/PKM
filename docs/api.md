@@ -32,6 +32,7 @@
 - `docs/api_distill.md`
 - `docs/api_read_write.md`
 - `docs/api_recipes.md`
+- `docs/api_todoist.md`
 - `docs/n8n_backend_contract_map.md`
 - `docs/backend_runtime_env.md`
 - `docs/external_api.md`
@@ -53,6 +54,7 @@ The machine-readable route ownership registry lives in `docs/backend_route_regis
 | Tier-2 distill | `docs/api_distill.md` | admin secret | `entries`, `t2_*` | tier2 API/control-plane/service tests |
 | Read / write | `docs/api_read_write.md` | mixed; destructive routes require secret | active schema `entries` | read-sql, context-pack, idempotency tests |
 | Recipes | `docs/api_recipes.md` | internal | active schema `recipes` | recipes API and parser contract tests |
+| Todoist planning | `docs/api_todoist.md` | internal | prod schema `todoist_task_current`, `todoist_task_events` | todoist API, reconcile/ranking, n8n helper tests |
 | Backend env | `docs/backend_runtime_env.md` | n/a | n/a | config/runtime tests |
 
 ## Domain Docs
@@ -65,6 +67,7 @@ The machine-readable route ownership registry lives in `docs/backend_route_regis
 | `docs/api_distill.md` | Tier-2 sync / plan / run | operators, n8n, backend control plane | async status surfaces are documented in `docs/api_ingest.md` |
 | `docs/api_read_write.md` | `/db/*` read, insert, update, delete, move (including `/db/read/entities`) | n8n, PKM UI, and internal tooling | includes `/db/*` response-shape rules |
 | `docs/api_recipes.md` | `/recipes/*` create/search/get/update/review/link/note | Telegram recipe workflows, debug UI, operators | includes `/recipe`, `/recipe-link`, and `/recipe-note` command expectations |
+| `docs/api_todoist.md` | `/todoist/*` sync/review/brief endpoints | Todoist workflows, `10 Read /waiting`, debug UI | includes review queue actions and daily/waiting/weekly brief contracts |
 | `docs/backend_runtime_env.md` | backend env vars and runtime knobs | operators, deploy/review work | runtime apply still lives in env/config docs |
 
 ## Shared Conventions

@@ -1,5 +1,53 @@
 # changelog
 
+## 2026-04-11 — Todoist LLM planning V1 surface (WF34–WF37 + `/waiting`)
+
+### What changed
+- Implemented Todoist planning v1 across backend, n8n, and debug UI:
+  - new backend route family `POST /todoist/sync`, review queue/actions (`GET /todoist/review`, `POST /todoist/review/accept|override|reparse`), and brief endpoints (`POST /todoist/brief/daily|waiting|weekly`)
+  - new backend Todoist planning modules for reconciliation, review rule evaluation, deterministic ranking/selection, and rationale orchestration
+  - Todoist normalization graph integration with strict schema/fallback behavior and existing logging/Braintrust instrumentation patterns
+- Added prod-only Todoist planning persistence:
+  - migration `scripts/db/migrations/2026-04-11_todoist_planning_surface.sql`
+  - tables `pkm.todoist_task_current` and `pkm.todoist_task_events`
+  - reconciliation and lifecycle semantics for first-seen/updates/waiting transitions/closed-reopened detection
+- Added n8n workflows using contiguous numbering block `34–37`:
+  - `34 Todoist Sync`
+  - `35 Todoist Daily Focus`
+  - `36 Todoist Waiting Radar`
+  - `37 Todoist Weekly Pruning`
+- Extended `10 Read` command surface with `/waiting` routing into workflow `36 Todoist Waiting Radar`.
+- Added PKM debug UI Todoist review surface at `/todoist`:
+  - views for Needs review, Unreviewed, Accepted, Overridden, and All
+  - review actions Accept, Override, Re-run parse, Next item
+  - editable parsed fields and append-only event history panel
+- Added backend and n8n test coverage for Todoist contracts, ranking/reconciliation/review behavior, and `/waiting` routing.
+
+### Surfaces changed
+- backend Todoist planning service/repository/store/routes
+- database migration and prod-only Todoist planning tables
+- n8n command parser + workflows `10`, `34`, `35`, `36`, `37`
+- PKM debug UI Todoist review page and Todoist API client
+- PRD/contracts/topology/test-surface documentation
+
+### PRDs impacted
+- `docs/PRD/todoist-llm-planning-prd.md`
+- `docs/PRD/todoist-llm-planning-work-packages.md`
+- `docs/PRD/README.md`
+
+### Contract docs impacted
+- `docs/api.md`
+- `docs/api_todoist.md`
+- `docs/database_schema.md`
+- `docs/backend_db_store_map.md`
+- `docs/test_mode_exemptions.md`
+- `docs/n8n_backend_contract_map.md`
+- `docs/backend_route_registry.json`
+- `docs/backend_test_surface_matrix.md`
+- `docs/service_dependency_graph.md`
+- `docs/env.md`
+- `docs/changelog.md`
+
 ## 2026-04-08 — GDrive backup hardening (WF80/WF81)
 
 ### What changed

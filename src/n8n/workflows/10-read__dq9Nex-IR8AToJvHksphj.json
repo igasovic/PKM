@@ -359,6 +359,13 @@
             "node": "PKM Recipe Note",
             "type": "main"
           }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Run Todoist Waiting Radar",
+            "type": "main"
+          }
         ]
       ]
     },
@@ -952,6 +959,31 @@
                 }
               },
               "outputKey": "recipe_note",
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "4dd90424-63bc-4156-9440-7042ac41ed3c",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "waiting"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "waiting",
               "renameOutput": true
             }
           ]
@@ -1591,6 +1623,36 @@
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
+    },
+    {
+      "id": "171aa962-09d2-4778-b2cc-ebb77d579776",
+      "name": "Run Todoist Waiting Radar",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1568,
+        1344
+      ],
+      "parameters": {
+        "options": {
+          "waitForSubWorkflow": true
+        },
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "36 Todoist Waiting Radar",
+          "cachedResultUrl": "/workflow/k7QpN4sD2mX9aL1Vw6y8",
+          "mode": "list",
+          "value": "k7QpN4sD2mX9aL1Vw6y8"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      }
     }
   ],
   "settings": {

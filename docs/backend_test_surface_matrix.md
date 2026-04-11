@@ -8,11 +8,11 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 - keep route, doc, and test planning tied to one source of truth
 
 ## Summary
-- total routes: 54
-- routes with contract tests: 54
+- total routes: 62
+- routes with contract tests: 62
 - routes with smoke coverage: 9
 - routes with integration tests: 0
-- operator/UI/probe routes: 29
+- operator/UI/probe routes: 33
 - routes with no declared tests: 0
 
 ## Matrix
@@ -63,6 +63,14 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 | `POST /recipes/link` | `internal` | Telegram /recipe-link command, debug UI | `docs/api_recipes.md` | yes | no | no | yes | test/server/recipes.api-contract.test.js |
 | `POST /recipes/note` | `internal` | Telegram /recipe-note command | `docs/api_recipes.md` | yes | no | no | no | test/server/recipes.api-contract.test.js |
 | `GET /recipes/review` | `internal` | debug UI, operators | `docs/api_recipes.md` | yes | no | no | yes | test/server/recipes.api-contract.test.js |
+| `POST /todoist/sync` | `internal` | 34 Todoist Sync, 35 Todoist Daily Focus, 36 Todoist Waiting Radar, 37 Todoist Weekly Pruning | `docs/api_todoist.md` | yes | no | no | no | test/server/todoist.api-contract.test.js |
+| `GET /todoist/review` | `internal` | PKM UI /todoist, operators | `docs/api_todoist.md` | yes | no | no | yes | test/server/todoist.api-contract.test.js |
+| `POST /todoist/review/accept` | `internal` | PKM UI /todoist, operators | `docs/api_todoist.md` | yes | no | no | yes | test/server/todoist.api-contract.test.js |
+| `POST /todoist/review/override` | `internal` | PKM UI /todoist, operators | `docs/api_todoist.md` | yes | no | no | yes | test/server/todoist.api-contract.test.js |
+| `POST /todoist/review/reparse` | `internal` | PKM UI /todoist, operators | `docs/api_todoist.md` | yes | no | no | yes | test/server/todoist.api-contract.test.js |
+| `POST /todoist/brief/daily` | `internal` | 35 Todoist Daily Focus | `docs/api_todoist.md` | yes | no | no | no | test/server/todoist.api-contract.test.js |
+| `POST /todoist/brief/waiting` | `internal` | 36 Todoist Waiting Radar, 10 Read /waiting | `docs/api_todoist.md` | yes | no | no | no | test/server/todoist.api-contract.test.js |
+| `POST /todoist/brief/weekly` | `internal` | 37 Todoist Weekly Pruning | `docs/api_todoist.md` | yes | no | no | no | test/server/todoist.api-contract.test.js |
 | `POST /db/insert` | `internal` | n8n capture workflows | `docs/api_read_write.md` | yes | yes | no | no | test/server/read-write.api-contract.test.js |
 | `POST /db/update` | `internal` | n8n update workflows | `docs/api_read_write.md` | yes | no | no | no | test/server/read-write.api-contract.test.js |
 | `POST /db/delete` | `admin_secret` | operators | `docs/api_read_write.md` | yes | no | no | yes | test/server/read-write.api-contract.test.js |

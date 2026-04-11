@@ -31,7 +31,7 @@
 | Service / edge | Exposure | Depends on | Notes |
 |---|---|---|---|
 | `cloudflared` | public publishing edge | Cloudflare Edge, Pi host services | publishes public hostnames to local origins |
-| `n8n` | loopback on Pi host, public via Cloudflare | Postgres, pkm-server, Telegram, Gmail IMAP, Trafilatura, OneDrive | orchestration boundary |
+| `n8n` | loopback on Pi host, public via Cloudflare | Postgres, pkm-server, Telegram, Gmail IMAP, Trafilatura, OneDrive, Todoist API | orchestration boundary |
 | `pkm-server` | LAN-only | Postgres, LiteLLM, Braintrust | internal backend boundary |
 | `postgres` | internal-only | none | durable state for PKM and n8n |
 | `litellm` | LAN-only | OpenAI | OpenAI-compatible proxy/router |
@@ -70,6 +70,7 @@ flowchart LR
     OpenAI[(OpenAI API)]
     BT[Braintrust tracing and cost]
     TG[Telegram API]
+    Todoist[Todoist API]
     GmailIMAP[Gmail IMAP pkm.gasovic@gmail.com]
     OneDrive[OneDrive off-site backups]
     Trafilatura[Trafilatura HTTP extraction]
@@ -99,6 +100,7 @@ flowchart LR
   end
 
   TG -->|commands and notifications| n8n
+  n8n -->|REST sync| Todoist
   GmailIMAP -->|email ingestion| n8n
   n8n -->|HTTP extract| Trafilatura
   n8n -->|upload backups| OneDrive
