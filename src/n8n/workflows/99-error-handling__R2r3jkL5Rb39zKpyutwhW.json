@@ -271,7 +271,7 @@
       "id": "1e49beef-0ce8-4fc3-aa2f-cf298f3537ff",
       "name": "Run Smoke Cleanup",
       "parameters": {
-        "jsCode": "try{const {wf99RunSmokeCleanup}=require('@igasovic/n8n-blocks');return await wf99RunSmokeCleanup({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:99-error-handling/run-smoke-cleanup__1e49beef-0ce8-4fc3-aa2f-cf298f3537ff.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nreturn [{\n  json: {\n    ...$json,\n    smoke_cleanup_summary: null,\n  },\n}];"
       },
       "position": [
         832,

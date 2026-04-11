@@ -5,21 +5,6 @@
   "description": "Internal runtime package for n8n Code-node blocks.",
   "rootExports": {
     "readCommandParser": "nodes/10-read/command-parser.js",
-    "wf00RecordT03Ambiguous": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT03Calendar": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT03Capture": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT03Continue": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT03Continue55f868": "nodes/00-smoke-master/record-t03-continue.js",
-    "wf00RecordT04Capture": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT05Email": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT06Pull": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT07Continue": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT08Distill": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT09Delete": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT10CalendarCreate": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT10Clarification": "nodes/00-smoke-master/record-step.js",
-    "wf00RecordT11CalendarRead": "nodes/00-smoke-master/record-step.js",
-    "wf00T99Cleanup": "nodes/00-smoke-master/t99-cleanup.js",
     "wf02CreateMessage": "nodes/02-telegram-capture/create-message.js",
     "wf03ComposeReplyText": "nodes/03-e-mail-capture/compose-reply-text.js",
     "wf05ValidateCommitPayload": "nodes/05-chatgpt-wrap-commit/validate-commit-payload.js",
@@ -48,8 +33,7 @@
     "wf80Format": "nodes/80-postgres-backup/format.js",
     "wf99BuildFailurePackEnvelope": "nodes/99-error-handling/build-failure-pack-envelope.js",
     "wf99ComposeMessage": "nodes/99-error-handling/compose-message.js",
-    "wf99ExtractFailureContext": "nodes/99-error-handling/extract-failure-context.js",
-    "wf99RunSmokeCleanup": "nodes/99-error-handling/run-smoke-cleanup.js"
+    "wf99ExtractFailureContext": "nodes/99-error-handling/extract-failure-context.js"
   },
   "shared": [
     "config.js",

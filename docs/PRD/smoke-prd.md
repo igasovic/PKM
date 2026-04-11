@@ -3,11 +3,16 @@
 Status: active  
 Surface owner: n8n-first end-to-end validation harness  
 Scope type: canonical surface  
-Last verified: 2026-03-30  
+Last verified: 2026-04-11  
 Related authoritative docs: `docs/api_read_write.md`, `docs/api_control.md`, `docs/n8n_sync.md`, `docs/requirements.md`  
 Related companion doc: `docs/PRD/smoke-detailed-matrix.md`
 
 ## Status and scope boundary
+Current implementation note (2026-04-11):
+- repo-authored smoke workflows `00 Smoke - Master` and `00 Smoke - Public Ingress` have been removed and must be rebuilt before smoke harness operations are considered healthy
+- smoke-specific externalized nodes were removed from `src/n8n/nodes` as part of smoke harness teardown
+- `scripts/n8n/run_smoke.sh` should be treated as blocked until the replacement master workflow is implemented
+
 This PRD owns:
 - the orchestrated smoke harness and fixtures
 - smoke-only selector and cleanup behavior
