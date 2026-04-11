@@ -1,34 +1,23 @@
 {
   "active": true,
   "connections": {
-    "Schedule Weekly Pruning": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Run Todoist Sync",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Run Todoist Sync": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Weekly Brief Request",
-            "type": "main"
-          }
-        ]
-      ]
-    },
     "Build Weekly Brief Request": {
       "main": [
         [
           {
             "index": 0,
             "node": "PKM Todoist Weekly Brief",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Weekly Pruning Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Weekly Pruning Message",
             "type": "main"
           }
         ]
@@ -45,12 +34,23 @@
         ]
       ]
     },
-    "Format Weekly Pruning Message": {
+    "Run Todoist Sync": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Send Weekly Pruning Message",
+            "node": "Build Weekly Brief Request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Schedule Weekly Pruning": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Run Todoist Sync",
             "type": "main"
           }
         ]
@@ -69,9 +69,6 @@
           "interval": [
             {
               "field": "weeks",
-              "triggerAtDay": [
-                0
-              ],
               "triggerAtHour": 18,
               "triggerAtMinute": 30
             }
@@ -95,9 +92,9 @@
         "workflowId": {
           "__rl": true,
           "cachedResultName": "34 Todoist Sync",
-          "cachedResultUrl": "/workflow/o-4gF6T11iZ9m5b2w0a1a",
+          "cachedResultUrl": "/workflow/DRZuGE13tERDJMta",
           "mode": "list",
-          "value": "o-4gF6T11iZ9m5b2w0a1a"
+          "value": "DRZuGE13tERDJMta"
         },
         "workflowInputs": {
           "attemptToConvertTypes": false,
@@ -119,7 +116,7 @@
       "id": "97b1f758-fadb-47de-ac08-a9698e86d7d2",
       "name": "Build Weekly Brief Request",
       "parameters": {
-        "jsCode": "try{const {wf37BuildWeeklyBriefRequest}=require('@igasovic/n8n-blocks');return await wf37BuildWeeklyBriefRequest({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:37-todoist-weekly-pruning/build-weekly-brief-request__97b1f758-fadb-47de-ac08-a9698e86d7d2.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nfunction asText(value) {\n  return String(value === undefined || value === null ? '' : value).trim();\n}\n\n  const row = (ctx && ctx.$json && typeof ctx.$json === 'object') ? ctx.$json : {};\n  const message = row.message && typeof row.message === 'object' ? row.message : {};\n\n  const runId = asText(row.run_id || row.execution_id || row.workflow_run_id) || null;\n  const chatId = asText(row.telegram_chat_id || (message.chat && message.chat.id) || (ctx && ctx.$env && ctx.$env.TELEGRAM_ADMIN_CHAT_ID)) || null;\n  const now = asText(row.now) || null;\n\n  return [{\n    json: {\n      ...row,\n      run_id: runId,\n      telegram_chat_id: chatId,\n      now,\n    },\n  }];\n"
       },
       "position": [
         -224,
@@ -159,7 +156,7 @@
       "id": "8a45b21e-bec8-4f7d-9f8b-b7353971e8ac",
       "name": "Format Weekly Pruning Message",
       "parameters": {
-        "jsCode": "try{const {wf37FormatWeeklyPruningMessage}=require('@igasovic/n8n-blocks');return await wf37FormatWeeklyPruningMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:37-todoist-weekly-pruning/format-weekly-pruning-message__8a45b21e-bec8-4f7d-9f8b-b7353971e8ac.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nfunction asText(value) {\n  return String(value === undefined || value === null ? '' : value).trim();\n}\n\nfunction titleOf(item) {\n  return asText(item && (item.normalized_title_en || item.raw_title)) || 'Untitled task';\n}\n\n  const row = (ctx && ctx.$json && typeof ctx.$json === 'object') ? ctx.$json : {};\n  const message = asText(row.telegram_message);\n\n  if (message) {\n    return [{ json: { ...row, telegram_message: mdv2Message(message, { maxLen: 4000 }) } }];\n  }\n\n  const suggestions = Array.isArray(row.suggestions) ? row.suggestions : [];\n  const lines = [];\n  lines.push('Todoist Weekly Pruning');\n  lines.push('');\n\n  if (!suggestions.length) {\n    lines.push('No weekly pruning suggestions.');\n  } else {\n    for (const item of suggestions.slice(0, 15)) {\n      const recommendation = asText(item.recommendation_type) || 'review';\n      lines.push(`- [${recommendation}] ${titleOf(item)}`);\n    }\n  }\n\n  return [{\n    json: {\n      ...row,\n      telegram_message: mdv2Message(lines.join('\\n').trim(), { maxLen: 4000 }),\n    },\n  }];\n"
       },
       "position": [
         224,
@@ -196,11 +193,16 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1",
     "timezone": "America/Chicago"
   },
-  "staticData": null,
+  "staticData": {
+    "node:Schedule Weekly Pruning": {
+      "recurrenceRules": []
+    }
+  },
   "tags": [],
   "triggerCount": 1
 }

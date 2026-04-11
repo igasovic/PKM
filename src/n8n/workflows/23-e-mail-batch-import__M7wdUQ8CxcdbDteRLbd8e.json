@@ -182,7 +182,7 @@
       "id": "3c25a3f6-0b0a-4a11-9fb7-c18c5f2d1b44",
       "name": "Format Start Telegram Message",
       "parameters": {
-        "jsCode": "try{const {wf23FormatStartTelegramMessage}=require('@igasovic/n8n-blocks');return await wf23FormatStartTelegramMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:23-e-mail-batch-import/format-start-telegram-message__3c25a3f6-0b0a-4a11-9fb7-c18c5f2d1b44.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n  const mailbox = String($json?.stdout ?? 'empty');\n  return [{ json: { ...$json, telegram_message: mdv2Message('Importing mailbox ' + mailbox) } }];\n"
       },
       "position": [
         -144,
@@ -195,7 +195,7 @@
       "id": "9d54b88b-0f8c-4e5f-8bf1-d6de76ec1f8f",
       "name": "Format Import Summary Telegram Message",
       "parameters": {
-        "jsCode": "try{const {wf23FormatImportSummaryTelegramMessage}=require('@igasovic/n8n-blocks');return await wf23FormatImportSummaryTelegramMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:23-e-mail-batch-import/format-import-summary-telegram-message__9d54b88b-0f8c-4e5f-8bf1-d6de76ec1f8f.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n  const b = $json || {};\n  const batch = Array.isArray(b.tier1_batches) && b.tier1_batches[0] ? b.tier1_batches[0] : {};\n  const lines = [\n    'Email backlog import update',\n    '',\n    'Import: ' + String(b.import_id ?? ''),\n    'MBOX: ' + String(b.mbox_path ?? ''),\n    '',\n    'Messages: ' + String(b.total_messages ?? 0),\n    'Normalized: ' + String(b.normalized_ok ?? 0) + ' errors ' + String(b.normalize_errors ?? 0),\n    '',\n    'Schema: ' + String(batch.schema ?? ''),\n    'Inserted: ' + String(b.inserted ?? 0) + ' errors ' + String(b.insert_errors ?? 0),\n    'Updated: ' + String(b.updated ?? 0),\n    'Skipped: ' + String(b.skipped ?? 0),\n    '',\n    'Tier-1 candidates: ' + String(b.tier1_candidates ?? 0),\n    'Tier-1 enqueued: ' + String(b.tier1_enqueued_items ?? 0),\n    'Tier-1 requests: ' + String(batch.request_count ?? 0),\n    'Status: ' + String(batch.status ?? ''),\n  ];\n  return [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];\n"
       },
       "position": [
         96,
@@ -207,8 +207,11 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
-    "executionOrder": "v1"
+    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed"
   },
   "staticData": null,
   "tags": [],

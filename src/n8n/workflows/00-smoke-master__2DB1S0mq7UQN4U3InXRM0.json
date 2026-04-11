@@ -159,9 +159,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "T00.5 - Preflight Cleanup",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -508,6 +508,17 @@
         ]
       ]
     },
+    "T00.5 - Preflight Cleanup": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "T01 - Infra",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "T01 - Infra": {
       "main": [
         [
@@ -537,17 +548,6 @@
             "index": 0,
             "node": "Build Smoke Summary",
             "type": "main"
-          }
-        ]
-      ]
-    },
-    "T00.5 - Preflight Cleanup": {
-      "main": [
-        [
-          {
-            "node": "T01 - Infra",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -685,7 +685,7 @@
       "id": "55f8683e-a7b7-49de-b44d-7d49f22d0c0d",
       "name": "Record T03 Continue",
       "parameters": {
-        "jsCode": "try{const {wf00RecordT03Continue}=require('@igasovic/n8n-blocks');return await wf00RecordT03Continue({$input,$json,$items,$node,$env,helpers},{\"buildNodeName\":\"Build T03 Continue Fixture\",\"defaultCaseName\":\"T03-router-continue\",\"defaultAssertionName\":\"router_execution_ok\",\"artifactAliases\":{}});}catch(e){e.message=`[extjs:00-smoke-master/record-step__7aa3c8e8-1ab4-4c45-8c4a-ec6173fb8f77.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {wf00RecordT03Continue55f868}=require('@igasovic/n8n-blocks');return await wf00RecordT03Continue55f868({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:00-smoke-master/record-t03-continue__55f8683e-a7b7-49de-b44d-7d49f22d0c0d.js] ${e.message}`;throw e;}"
       },
       "position": [
         -640,
@@ -1395,7 +1395,7 @@
       "id": "d24bbd0a-6f62-4e25-bb84-9790f4963b26",
       "name": "Build Smoke Summary",
       "parameters": {
-        "jsCode": "try{const {wf00BuildSmokeSummary}=require('@igasovic/n8n-blocks');return await wf00BuildSmokeSummary({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:00-smoke-master/build-smoke-summary__d24bbd0a-6f62-4e25-bb84-9790f4963b26.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n  const base = { ...$json };\n  const results = Array.isArray(base.results) ? base.results : [];\n  \n  const passCount = results.filter((r) => r && r.ok === true).length;\n  const failRows = results.filter((r) => !r || r.ok !== true);\n  const failCount = failRows.length;\n  const overallOk = failCount === 0;\n  \n  const lines = [];\n  lines.push(overallOk ? 'Smoke passed' : 'Smoke failed');\n  lines.push('Run: ' + String(base.test_run_id || '-'));\n  lines.push('Passed: ' + String(passCount));\n  lines.push('Failed: ' + String(failCount));\n  \n  if (failRows.length) {\n    lines.push('Failures:');\n    failRows.slice(0, 10).forEach((row) => {\n      const name = String((row && row.test_case) || 'unknown');\n      const msg = String((row && row.error && row.error.message) || 'assertion failure');\n      lines.push('- ' + name + ': ' + msg);\n    });\n  }\n  \n  const telegram_message = mdv2Message(lines.join('\\n'), { maxLen: 4000 });\n  \n  return [{\n    json: {\n      ...base,\n      ended_at: new Date().toISOString(),\n      overall_ok: overallOk,\n      passed_count: passCount,\n      failed_count: failCount,\n      telegram_message,\n    },\n  }];\n"
       },
       "position": [
         5856,
@@ -1447,15 +1447,15 @@
     {
       "id": "d8028a07-6148-4525-a55f-e031d0cc2714",
       "name": "T00.5 - Preflight Cleanup",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst headers = {\n  'X-PKM-Run-Id': String(base.test_run_id || ''),\n  'x-pkm-admin-secret': String(($env && $env.PKM_ADMIN_SECRET) || ''),\n};\nconst selector = { suite: 'T00' };\n\nconst before = await helpers.httpRequest({ method: 'POST', url: 'http://pkm-server:8080/db/read/smoke', headers, json: true, body: selector });\nconst ids = [...new Set((Array.isArray(before) ? before : []).map((r) => Number(r && r.entry_id)).filter((v) => Number.isFinite(v) && v > 0))];\n\nlet del = null;\nif (ids.length) {\n  del = await helpers.httpRequest({\n    method: 'POST',\n    url: 'http://pkm-server:8080/db/delete',\n    headers,\n    json: true,\n    body: { schema: 'pkm_test', entry_ids: ids, force: true },\n  });\n}\n\nconst after = await helpers.httpRequest({ method: 'POST', url: 'http://pkm-server:8080/db/read/smoke', headers, json: true, body: selector });\nconst leftovers = [...new Set((Array.isArray(after) ? after : []).map((r) => Number(r && r.entry_id)).filter((v) => Number.isFinite(v) && v > 0))];\n\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nresults.push({\n  test_case: 'T00.5-preflight-cleanup',\n  ok: leftovers.length === 0,\n  run_id: base.test_run_id || null,\n  artifacts: { preflight_deleted_ids: ids, preflight_leftover_ids: leftovers, preflight_delete_response: del || null },\n  assertions: [\n    { name: 'selector_query_ok', ok: true },\n    { name: 'leftovers_empty', ok: leftovers.length === 0, leftovers },\n  ],\n  error: leftovers.length ? { message: 'preflight cleanup left smoke rows: ' + leftovers.join(',') } : null,\n});\n\nif (leftovers.length) {\n  throw new Error('T00.5 preflight cleanup failed: leftover smoke entry_ids ' + leftovers.join(','));\n}\n\nreturn [{ json: { ...base, results, artifacts: { ...(base.artifacts || {}), preflight_deleted_ids: ids, preflight_leftover_ids: leftovers } } }];"
+      },
       "position": [
         -1648,
         -128
       ],
-      "parameters": {
-        "jsCode": "'use strict';\n\nconst base = { ...$json };\nconst headers = {\n  'X-PKM-Run-Id': String(base.test_run_id || ''),\n  'x-pkm-admin-secret': String(($env && $env.PKM_ADMIN_SECRET) || ''),\n};\nconst selector = { suite: 'T00' };\n\nconst before = await helpers.httpRequest({ method: 'POST', url: 'http://pkm-server:8080/db/read/smoke', headers, json: true, body: selector });\nconst ids = [...new Set((Array.isArray(before) ? before : []).map((r) => Number(r && r.entry_id)).filter((v) => Number.isFinite(v) && v > 0))];\n\nlet del = null;\nif (ids.length) {\n  del = await helpers.httpRequest({\n    method: 'POST',\n    url: 'http://pkm-server:8080/db/delete',\n    headers,\n    json: true,\n    body: { schema: 'pkm_test', entry_ids: ids, force: true },\n  });\n}\n\nconst after = await helpers.httpRequest({ method: 'POST', url: 'http://pkm-server:8080/db/read/smoke', headers, json: true, body: selector });\nconst leftovers = [...new Set((Array.isArray(after) ? after : []).map((r) => Number(r && r.entry_id)).filter((v) => Number.isFinite(v) && v > 0))];\n\nconst results = Array.isArray(base.results) ? [...base.results] : [];\nresults.push({\n  test_case: 'T00.5-preflight-cleanup',\n  ok: leftovers.length === 0,\n  run_id: base.test_run_id || null,\n  artifacts: { preflight_deleted_ids: ids, preflight_leftover_ids: leftovers, preflight_delete_response: del || null },\n  assertions: [\n    { name: 'selector_query_ok', ok: true },\n    { name: 'leftovers_empty', ok: leftovers.length === 0, leftovers },\n  ],\n  error: leftovers.length ? { message: 'preflight cleanup left smoke rows: ' + leftovers.join(',') } : null,\n});\n\nif (leftovers.length) {\n  throw new Error('T00.5 preflight cleanup failed: leftover smoke entry_ids ' + leftovers.join(','));\n}\n\nreturn [{ json: { ...base, results, artifacts: { ...(base.artifacts || {}), preflight_deleted_ids: ids, preflight_leftover_ids: leftovers } } }];"
-      }
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {
@@ -1464,7 +1464,11 @@
     "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
     "executionOrder": "v1"
   },
-  "staticData": null,
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": []
+    }
+  },
   "tags": [],
   "triggerCount": 1
 }

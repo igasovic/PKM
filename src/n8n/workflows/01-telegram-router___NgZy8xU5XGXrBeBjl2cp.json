@@ -96,6 +96,17 @@
         ]
       ]
     },
+    "Prepare Recipe Read Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Call 'PKM Read'",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Prepare Route Input": {
       "main": [
         [
@@ -204,17 +215,6 @@
           {
             "index": 0,
             "node": "Prepare Route Input",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Prepare Recipe Read Message": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Call 'PKM Read'",
             "type": "main"
           }
         ]
@@ -630,7 +630,7 @@
       "id": "f6e29fae-95f8-4b12-8404-5dcfcf3db7a4",
       "name": "Format Ambiguous Message",
       "parameters": {
-        "jsCode": "try{const {wf01FormatAmbiguousMessage}=require('@igasovic/n8n-blocks');return await wf01FormatAmbiguousMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:01-telegram-router/format-ambiguous-message__f6e29fae-95f8-4b12-8404-5dcfcf3db7a4.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n  const asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n  \n  const question = asText($json.clarification_question)\n    || 'Do you want this saved as a calendar event or as a PKM note?';\n  \n  return [{\n    json: {\n      ...$json,\n      telegram_chat_id: asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id)),\n      telegram_message: mdv2Message(question),\n    },\n  }];\n"
       },
       "position": [
         1344,

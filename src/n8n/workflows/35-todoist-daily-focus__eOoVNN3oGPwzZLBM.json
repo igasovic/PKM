@@ -1,34 +1,23 @@
 {
   "active": true,
   "connections": {
-    "Schedule Daily Focus": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Run Todoist Sync",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Run Todoist Sync": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Daily Brief Request",
-            "type": "main"
-          }
-        ]
-      ]
-    },
     "Build Daily Brief Request": {
       "main": [
         [
           {
             "index": 0,
             "node": "PKM Todoist Daily Brief",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Daily Focus Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Daily Focus Message",
             "type": "main"
           }
         ]
@@ -45,12 +34,23 @@
         ]
       ]
     },
-    "Format Daily Focus Message": {
+    "Run Todoist Sync": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Send Daily Focus Message",
+            "node": "Build Daily Brief Request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Schedule Daily Focus": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Run Todoist Sync",
             "type": "main"
           }
         ]
@@ -91,9 +91,9 @@
         "workflowId": {
           "__rl": true,
           "cachedResultName": "34 Todoist Sync",
-          "cachedResultUrl": "/workflow/o-4gF6T11iZ9m5b2w0a1a",
+          "cachedResultUrl": "/workflow/DRZuGE13tERDJMta",
           "mode": "list",
-          "value": "o-4gF6T11iZ9m5b2w0a1a"
+          "value": "DRZuGE13tERDJMta"
         },
         "workflowInputs": {
           "attemptToConvertTypes": false,
@@ -115,7 +115,7 @@
       "id": "f55f0158-4c8f-4c52-90f4-2fe8d21564c1",
       "name": "Build Daily Brief Request",
       "parameters": {
-        "jsCode": "try{const {wf35BuildDailyBriefRequest}=require('@igasovic/n8n-blocks');return await wf35BuildDailyBriefRequest({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:35-todoist-daily-focus/build-daily-brief-request__f55f0158-4c8f-4c52-90f4-2fe8d21564c1.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nfunction asText(value) {\n  return String(value === undefined || value === null ? '' : value).trim();\n}\n\n  const row = (ctx && ctx.$json && typeof ctx.$json === 'object') ? ctx.$json : {};\n  const message = row.message && typeof row.message === 'object' ? row.message : {};\n\n  const runId = asText(row.run_id || row.execution_id || row.workflow_run_id) || null;\n  const chatId = asText(row.telegram_chat_id || (message.chat && message.chat.id) || (ctx && ctx.$env && ctx.$env.TELEGRAM_ADMIN_CHAT_ID)) || null;\n  const now = asText(row.now) || null;\n\n  return [{\n    json: {\n      ...row,\n      run_id: runId,\n      telegram_chat_id: chatId,\n      now,\n    },\n  }];\n"
       },
       "position": [
         -224,
@@ -155,7 +155,7 @@
       "id": "5d2798a2-7109-4f4f-a7ea-743f9f726f2d",
       "name": "Format Daily Focus Message",
       "parameters": {
-        "jsCode": "try{const {wf35FormatDailyFocusMessage}=require('@igasovic/n8n-blocks');return await wf35FormatDailyFocusMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:35-todoist-daily-focus/format-daily-focus-message__5d2798a2-7109-4f4f-a7ea-743f9f726f2d.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nfunction asText(value) {\n  return String(value === undefined || value === null ? '' : value).trim();\n}\n\nfunction titleOf(item) {\n  return asText(item && (item.normalized_title_en || item.raw_title)) || 'Untitled task';\n}\n\n  const row = (ctx && ctx.$json && typeof ctx.$json === 'object') ? ctx.$json : {};\n  const message = asText(row.telegram_message);\n\n  if (message) {\n    return [{ json: { ...row, telegram_message: mdv2Message(message, { maxLen: 4000 }) } }];\n  }\n\n  const top3 = Array.isArray(row.top_3) ? row.top_3 : [];\n  const overdue = Array.isArray(row.overdue_now) ? row.overdue_now : [];\n  const waiting = Array.isArray(row.waiting_nudges) ? row.waiting_nudges : [];\n\n  const lines = [];\n  lines.push('Todoist Daily Focus');\n  lines.push('');\n  lines.push('Top 3');\n  if (!top3.length) lines.push('- none');\n  for (const item of top3.slice(0, 3)) {\n    lines.push(`- ${titleOf(item)}`);\n  }\n\n  lines.push('');\n  lines.push('Overdue Now');\n  if (!overdue.length) lines.push('- none');\n  for (const item of overdue.slice(0, 5)) {\n    lines.push(`- ${titleOf(item)}`);\n  }\n\n  lines.push('');\n  lines.push('Waiting Nudges');\n  if (!waiting.length) lines.push('- none');\n  for (const item of waiting.slice(0, 8)) {\n    lines.push(`- ${titleOf(item)}`);\n  }\n\n  return [{\n    json: {\n      ...row,\n      telegram_message: mdv2Message(lines.join('\\n').trim(), { maxLen: 4000 }),\n    },\n  }];\n"
       },
       "position": [
         224,
@@ -192,11 +192,16 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1",
     "timezone": "America/Chicago"
   },
-  "staticData": null,
+  "staticData": {
+    "node:Schedule Daily Focus": {
+      "recurrenceRules": []
+    }
+  },
   "tags": [],
   "triggerCount": 1
 }

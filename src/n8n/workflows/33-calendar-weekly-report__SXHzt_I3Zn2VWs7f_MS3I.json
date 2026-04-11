@@ -281,7 +281,11 @@
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
-  "staticData": null,
+  "staticData": {
+    "node:Schedule Weekly Report": {
+      "recurrenceRules": []
+    }
+  },
   "tags": [],
   "triggerCount": 1
 }

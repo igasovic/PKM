@@ -1,34 +1,23 @@
 {
   "active": true,
   "connections": {
-    "When Executed by Another Workflow": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Run Todoist Sync",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Run Todoist Sync": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Waiting Brief Request",
-            "type": "main"
-          }
-        ]
-      ]
-    },
     "Build Waiting Brief Request": {
       "main": [
         [
           {
             "index": 0,
             "node": "PKM Todoist Waiting Brief",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Waiting Radar Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Waiting Radar Message",
             "type": "main"
           }
         ]
@@ -45,12 +34,23 @@
         ]
       ]
     },
-    "Format Waiting Radar Message": {
+    "Run Todoist Sync": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Send Waiting Radar Message",
+            "node": "Build Waiting Brief Request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Run Todoist Sync",
             "type": "main"
           }
         ]
@@ -84,9 +84,9 @@
         "workflowId": {
           "__rl": true,
           "cachedResultName": "34 Todoist Sync",
-          "cachedResultUrl": "/workflow/o-4gF6T11iZ9m5b2w0a1a",
+          "cachedResultUrl": "/workflow/DRZuGE13tERDJMta",
           "mode": "list",
-          "value": "o-4gF6T11iZ9m5b2w0a1a"
+          "value": "DRZuGE13tERDJMta"
         },
         "workflowInputs": {
           "attemptToConvertTypes": false,
@@ -108,7 +108,7 @@
       "id": "397d8a40-d01b-447f-8bae-b8e5c355ea34",
       "name": "Build Waiting Brief Request",
       "parameters": {
-        "jsCode": "try{const {wf36BuildWaitingBriefRequest}=require('@igasovic/n8n-blocks');return await wf36BuildWaitingBriefRequest({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:36-todoist-waiting-radar/build-waiting-brief-request__397d8a40-d01b-447f-8bae-b8e5c355ea34.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nfunction asText(value) {\n  return String(value === undefined || value === null ? '' : value).trim();\n}\n\n  const row = (ctx && ctx.$json && typeof ctx.$json === 'object') ? ctx.$json : {};\n  const message = row.message && typeof row.message === 'object' ? row.message : {};\n\n  const runId = asText(row.run_id || row.execution_id || row.workflow_run_id) || null;\n  const chatId = asText(row.telegram_chat_id || (message.chat && message.chat.id) || (ctx && ctx.$env && ctx.$env.TELEGRAM_ADMIN_CHAT_ID)) || null;\n  const now = asText(row.now) || null;\n\n  return [{\n    json: {\n      ...row,\n      run_id: runId,\n      telegram_chat_id: chatId,\n      now,\n    },\n  }];\n"
       },
       "position": [
         -224,
@@ -148,7 +148,7 @@
       "id": "6c3724b4-b74c-45db-8e4c-3faf4de246d0",
       "name": "Format Waiting Radar Message",
       "parameters": {
-        "jsCode": "try{const {wf36FormatWaitingRadarMessage}=require('@igasovic/n8n-blocks');return await wf36FormatWaitingRadarMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:36-todoist-waiting-radar/format-waiting-radar-message__6c3724b4-b74c-45db-8e4c-3faf4de246d0.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nfunction asText(value) {\n  return String(value === undefined || value === null ? '' : value).trim();\n}\n\nfunction titleOf(item) {\n  return asText(item && (item.normalized_title_en || item.raw_title)) || 'Untitled task';\n}\n\n  const row = (ctx && ctx.$json && typeof ctx.$json === 'object') ? ctx.$json : {};\n  const message = asText(row.telegram_message);\n\n  if (message) {\n    return [{ json: { ...row, telegram_message: mdv2Message(message, { maxLen: 4000 }) } }];\n  }\n\n  const nudges = Array.isArray(row.nudges) ? row.nudges : [];\n  const lines = [];\n  lines.push('Todoist Waiting Radar');\n  lines.push('');\n  if (!nudges.length) {\n    lines.push('No waiting nudges right now.');\n  } else {\n    for (const item of nudges.slice(0, 12)) {\n      lines.push(`- ${titleOf(item)}`);\n    }\n  }\n\n  return [{\n    json: {\n      ...row,\n      telegram_message: mdv2Message(lines.join('\\n').trim(), { maxLen: 4000 }),\n    },\n  }];\n"
       },
       "position": [
         224,
@@ -185,11 +185,12 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1",
     "timezone": "America/Chicago"
   },
   "staticData": null,
   "tags": [],
-  "triggerCount": 1
+  "triggerCount": 0
 }

@@ -56,6 +56,17 @@
         ]
       ]
     },
+    "Format Recipe Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send MarkdownV2 Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Format Status Message": {
       "main": [
         [
@@ -229,6 +240,61 @@
         ]
       ]
     },
+    "PKM Recipe Create": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Recipe Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Recipe Get": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Recipe Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Recipe Link": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Recipe Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Recipe Note": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Recipe Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Recipe Search": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Recipe Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "PKM Status - T1 Batch": {
       "main": [
         [
@@ -390,72 +456,6 @@
           }
         ]
       ]
-    },
-    "PKM Recipe Get": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Format Recipe Message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Recipe Search": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Format Recipe Message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Recipe Create": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Format Recipe Message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Format Recipe Message": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Send MarkdownV2 Message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Recipe Link": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Format Recipe Message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Recipe Note": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Format Recipe Message",
-            "type": "main"
-          }
-        ]
-      ]
     }
   },
   "description": null,
@@ -491,7 +491,7 @@
       },
       "position": [
         896,
-        1128
+        1992
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -525,7 +525,7 @@
       },
       "position": [
         1120,
-        1128
+        1992
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -991,7 +991,7 @@
       },
       "position": [
         1344,
-        512
+        992
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -1004,7 +1004,7 @@
       },
       "position": [
         224,
-        1224
+        2088
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -1017,7 +1017,7 @@
       },
       "position": [
         672,
-        1128
+        1992
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1039,7 +1039,7 @@
       "id": "83d12448-5f97-48f1-9ece-de61a9756db3",
       "name": "Format /help Message",
       "parameters": {
-        "jsCode": "try{const {wf10FormatHelpMessage}=require('@igasovic/n8n-blocks');return await wf10FormatHelpMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-help-message__83d12448-5f97-48f1-9ece-de61a9756db3.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nconst msg = `Commands:\n/help\n/pull <id> [--excerpt]\n/recipe <R<number>|query>\n/recipes <query>\n/recipe-save <structured_recipe_text>\n/recipe-link <public_id_1> <public_id_2>\n/recipe-note <public_id> <note>\n/last \"query\" [--days N] [--limit M]\n/find \"needle\" [--days N] [--limit M]\n/continue topic [--days N] [--limit M]\n/with person topic [--days N] [--limit M]\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/debug <run_id|last>\n/distill <entry_id>\n/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n/status [t1|t2] [--limit M] [--active-only]\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\n\n  return [{ json: { ...$json, telegram_message: mdv2Message(msg) } }];\n"
       },
       "position": [
         1792,
@@ -1052,11 +1052,11 @@
       "id": "3580c243-cd64-4bc2-8b4f-ab5215ff71a1",
       "name": "Build Context Pack",
       "parameters": {
-        "jsCode": "try{const {wf10BuildContextPack}=require('@igasovic/n8n-blocks');return await wf10BuildContextPack({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/build-context-pack__3580c243-cd64-4bc2-8b4f-ab5215ff71a1.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { buildContextPackMarkdown } = require('@igasovic/n8n-blocks/shared/context-pack-builder.js');\nconst { mdv2Render } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nconst rows = $input.all().map((item) => item.json);\n  const meta = rows.find((row) => row.is_meta === true) || {};\n  const hitsRows = rows.filter((row) => row.is_meta === false && row.id);\n  const method = String(meta.cmd || 'last').toLowerCase();\n  const query = String(meta.query_text || '').trim();\n\n  const msg = buildContextPackMarkdown(\n    hitsRows,\n    {\n      method,\n      query,\n      days: meta.days,\n      limit: meta.limit,\n    },\n    {\n      markdownV2: true,\n      layout: 'ui',\n      maxContentLen: 300,\n    },\n  );\n\n  const truncated = mdv2Render(msg, { maxLen: 3500 });\n  const chars = Array.from(truncated);\n  let unescapedStarCount = 0;\n  for (let i = 0; i < chars.length; i += 1) {\n    if (chars[i] !== '*') continue;\n    let slashCount = 0;\n    for (let j = i - 1; j >= 0 && chars[j] === '\\\\'; j -= 1) slashCount += 1;\n    if (slashCount % 2 === 0) unescapedStarCount += 1;\n  }\n  if (unescapedStarCount % 2 === 0) {\n    return [{ json: { telegram_message: truncated } }];\n  }\n  for (let i = chars.length - 1; i >= 0; i -= 1) {\n    if (chars[i] !== '*') continue;\n    let slashCount = 0;\n    for (let j = i - 1; j >= 0 && chars[j] === '\\\\'; j -= 1) slashCount += 1;\n    if (slashCount % 2 !== 0) continue;\n    chars.splice(i, 1);\n    break;\n  }\n\n  return [{ json: { telegram_message: chars.join('') } }];\n"
       },
       "position": [
         1792,
-        -80
+        -96
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1081,7 +1081,7 @@
       },
       "position": [
         224,
-        1032
+        1896
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -1112,7 +1112,7 @@
       },
       "position": [
         448,
-        1128
+        1992
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -1281,7 +1281,7 @@
       },
       "position": [
         2016,
-        880
+        928
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -1322,7 +1322,7 @@
       "id": "3feac23b-f095-4af9-9179-3b0a1a4279a2",
       "name": "Format delete message",
       "parameters": {
-        "jsCode": "try{const {wf10FormatDeleteMessage}=require('@igasovic/n8n-blocks');return await wf10FormatDeleteMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-delete-message__3feac23b-f095-4af9-9179-3b0a1a4279a2.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nconst s = $json || {};\n  const lines = [\n    'Delete successful',\n    `Dry run: ${String(s.dry_run)}`,\n    `Schema: ${String(s.schema ?? '')}`,\n    `Deleted: ${String(s.deleted_count ?? 0)}`,\n  ];\n  return [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];\n"
       },
       "position": [
         1792,
@@ -1357,7 +1357,7 @@
       },
       "position": [
         1568,
-        1536
+        1728
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1366,11 +1366,11 @@
       "id": "344aac95-db6e-4262-9441-1072918d9d48",
       "name": "Format move message",
       "parameters": {
-        "jsCode": "try{const {wf10FormatMoveMessage}=require('@igasovic/n8n-blocks');return await wf10FormatMoveMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-move-message__344aac95-db6e-4262-9441-1072918d9d48.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nconst s = $json || {};\n  const lines = [\n    'Move successful',\n    `Dry run: ${String(s.dry_run)}`,\n    `Schema: ${String(s.from_schema ?? '')} -> ${String(s.to_schema ?? '')}`,\n    `Moved: ${String(s.moved_count ?? 0)}`,\n  ];\n  return [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];\n"
       },
       "position": [
         1792,
-        1536
+        1728
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1410,7 +1410,7 @@
       "id": "ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca",
       "name": "Format Distill Message",
       "parameters": {
-        "jsCode": "try{const {wf10FormatDistillMessage}=require('@igasovic/n8n-blocks');return await wf10FormatDistillMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2, bold, bullet, joinLines, finalizeMarkdownV2 } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\n  const { $json = {} } = ctx || {};\n  const status = String($json.status || '').trim().toLowerCase();\n  const entryId = String($json.entry_id ?? '-').trim() || '-';\n\n  let telegramMessage = '';\n\n  if (status === 'completed') {\n    const summary = mdv2($json.summary || 'n/a');\n    const why = mdv2($json.why_it_matters || 'n/a');\n    const excerpt = mdv2($json.excerpt || '');\n    const stance = mdv2($json.stance || 'n/a');\n    const lines = [\n      bold('Tier_2 distill completed'),\n      bullet(`Entry: ${entryId}`, { rawValue: true }),\n      bullet(`Stance: ${stance}`, { rawValue: true }),\n      '',\n      bold('Summary'),\n      summary,\n      '',\n      bold('Why it matters'),\n      why,\n    ];\n    if (excerpt) {\n      lines.push('', bold('Excerpt'), excerpt);\n    }\n    telegramMessage = finalizeMarkdownV2(joinLines(lines, { trimTrailing: true }));\n  } else {\n    const errorCode = mdv2($json.error_code || 'unknown_error');\n    const message = mdv2($json.message || 'distill failed');\n    const preserved = String($json.preserved_current_artifact === true);\n    telegramMessage = joinLines([\n      bold('Tier_2 distill failed'),\n      bullet(`Entry: ${mdv2(entryId)}`, { rawValue: true }),\n      bullet(`Error: ${errorCode}`, { rawValue: true }),\n      bullet(`Message: ${message}`, { rawValue: true }),\n      bullet(`Current artifact preserved: ${mdv2(preserved)}`, { rawValue: true }),\n    ], { trimTrailing: true });\n    telegramMessage = finalizeMarkdownV2(telegramMessage);\n  }\n\n  return [{\n    json: {\n      ...$json,\n      telegram_message: telegramMessage,\n    },\n  }];\n"
       },
       "position": [
         1792,
@@ -1467,11 +1467,11 @@
       "id": "93ed61ff-ed68-4a8d-bb78-047a8812675e",
       "name": "Build Read Smoke Result",
       "parameters": {
-        "jsCode": "try{const {wf10BuildReadSmokeResult}=require('@igasovic/n8n-blocks');return await wf10BuildReadSmokeResult({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/build-read-smoke-result__93ed61ff-ed68-4a8d-bb78-047a8812675e.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst smokeMode = $json.smoke_mode === true;\n  if (!smokeMode) {\n    return [{ json: { ...$json } }];\n  }\n\n  const assertions = [];\n  const cmd = String($json.cmd || '').trim();\n  assertions.push({ name: 'command_present', ok: !!cmd, command: cmd || null });\n  const msg = String($json.telegram_message || '');\n  assertions.push({ name: 'telegram_message_non_empty', ok: msg.length > 0 });\n  const telegramMessageId = $json.message_id ?? ($json.result && $json.result.message_id) ?? null;\n  if (telegramMessageId != null) assertions.push({ name: 'telegram_message_id_present', ok: true });\n\n  if (cmd === 'pull') {\n    assertions.push({ name: 'pull_entry_present', ok: !!($json.entry_id || ($json.rows && $json.rows.length)) });\n  }\n  if (cmd === 'continue') {\n    const count = Number($json.count_hits || $json.rows_count || 0);\n    assertions.push({ name: 'continue_rows_available', ok: count >= 0, count });\n  }\n  if (cmd === 'distill') {\n    const status = String($json.status || '').toLowerCase();\n    assertions.push({ name: 'distill_status_present', ok: status.length > 0, status });\n  }\n  if (cmd === 'delete') {\n    const deleted = Number($json.deleted_count ?? 0);\n    assertions.push({ name: 'delete_response_present', ok: Number.isFinite(deleted), deleted_count: deleted });\n  }\n\n  const ok = assertions.every((assertion) => assertion.ok === true);\n  return [{\n    json: {\n      ...$json,\n      test_case: 'read_command',\n      ok,\n      run_id: $json.test_run_id || null,\n      artifacts: {\n        command: cmd,\n        telegram_message: msg || null,\n        telegram_message_id: telegramMessageId,\n        entry_id: $json.entry_id ?? null,\n        deleted_count: $json.deleted_count ?? null,\n      },\n      assertions,\n      error: ok ? null : { message: 'read command assertions failed' },\n    },\n  }];\n"
       },
       "position": [
         2240,
-        880
+        928
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1498,7 +1498,7 @@
       },
       "position": [
         1568,
-        1728
+        1920
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1525,7 +1525,7 @@
       },
       "position": [
         1568,
-        1920
+        2112
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1552,7 +1552,7 @@
       },
       "position": [
         1568,
-        2112
+        2304
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1565,7 +1565,7 @@
       },
       "position": [
         1792,
-        1920
+        2176
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1592,7 +1592,7 @@
       },
       "position": [
         1568,
-        2304
+        2496
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1619,7 +1619,7 @@
       },
       "position": [
         1568,
-        2496
+        2688
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1627,12 +1627,6 @@
     {
       "id": "171aa962-09d2-4778-b2cc-ebb77d579776",
       "name": "Run Todoist Waiting Radar",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        1568,
-        1344
-      ],
       "parameters": {
         "options": {
           "waitForSubWorkflow": true
@@ -1640,9 +1634,9 @@
         "workflowId": {
           "__rl": true,
           "cachedResultName": "36 Todoist Waiting Radar",
-          "cachedResultUrl": "/workflow/k7QpN4sD2mX9aL1Vw6y8",
+          "cachedResultUrl": "/workflow/aPgci3NmEhQZsHQ8",
           "mode": "list",
-          "value": "k7QpN4sD2mX9aL1Vw6y8"
+          "value": "aPgci3NmEhQZsHQ8"
         },
         "workflowInputs": {
           "attemptToConvertTypes": false,
@@ -1652,7 +1646,13 @@
           "schema": [],
           "value": {}
         }
-      }
+      },
+      "position": [
+        1568,
+        1536
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
     }
   ],
   "settings": {

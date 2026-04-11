@@ -12,23 +12,23 @@
         ]
       ]
     },
-    "Validate Commit Payload": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "PKM ChatGPT Wrap Commit",
-            "type": "main"
-          }
-        ]
-      ]
-    },
     "PKM ChatGPT Wrap Commit": {
       "main": [
         [
           {
             "index": 0,
             "node": "Compose Commit Response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Validate Commit Payload": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM ChatGPT Wrap Commit",
             "type": "main"
           }
         ]
@@ -59,7 +59,7 @@
       "id": "18baa58d-2d38-40ed-98aa-6faa721cba76",
       "name": "Validate Commit Payload",
       "parameters": {
-        "jsCode": "try{const {wf05ValidateCommitPayload}=require('@igasovic/n8n-blocks');return await wf05ValidateCommitPayload({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:05-chatgpt-wrap-commit/validate-commit-payload__e9d892ff-1e5d-42b7-8940-4d613a2cb3e2.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {wf05ValidateCommitPayload}=require('@igasovic/n8n-blocks');return await wf05ValidateCommitPayload({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:05-chatgpt-wrap-commit/validate-commit-payload__18baa58d-2d38-40ed-98aa-6faa721cba76.js] ${e.message}`;throw e;}"
       },
       "position": [
         -384,
@@ -103,7 +103,7 @@
       "id": "ba2b7e51-23da-4d6e-8998-09d4a344d374",
       "name": "Compose Commit Response",
       "parameters": {
-        "jsCode": "try{const {wf05ComposeCommitResponse}=require('@igasovic/n8n-blocks');return await wf05ComposeCommitResponse({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:05-chatgpt-wrap-commit/compose-commit-response__9d5705be-cfee-45fb-9d96-9121079459cf.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst body = ($json && typeof $json === 'object' && !Array.isArray($json)) ? $json : {};\n  const outcome = String(body.outcome || '').trim().toLowerCase();\n  const ok = outcome === 'success';\n\n  return [{\n    json: {\n      ok,\n      action: body.action || 'chatgpt_wrap_commit',\n      outcome: body.outcome || null,\n      result: body.result || null,\n    },\n  }];\n"
       },
       "position": [
         128,
@@ -115,10 +115,11 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
   "staticData": null,
   "tags": [],
-  "triggerCount": 0
+  "triggerCount": 1
 }

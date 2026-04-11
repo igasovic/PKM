@@ -1,12 +1,111 @@
 {
   "active": true,
   "connections": {
+    "Build Detail Context Pack": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Compose Final Response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build Error Response": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Compose Final Response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build Search Context Pack": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Compose Final Response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "ChatGPT Read Router Webhook": {
       "main": [
         [
           {
             "index": 0,
             "node": "Route Read Request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Compose Final Response": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Respond to Webhook",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Continue": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Search Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Find": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Search Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Last": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Search Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Pull": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Detail Context Pack",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Working Memory": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Detail Context Pack",
             "type": "main"
           }
         ]
@@ -68,105 +167,6 @@
           }
         ]
       ]
-    },
-    "PKM Last": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Search Context Pack",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Continue": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Search Context Pack",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Find": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Search Context Pack",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Pull": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Detail Context Pack",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Working Memory": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Build Detail Context Pack",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Build Search Context Pack": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Compose Final Response",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Build Detail Context Pack": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Compose Final Response",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Build Error Response": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Compose Final Response",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Compose Final Response": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Respond to Webhook",
-            "type": "main"
-          }
-        ]
-      ]
     }
   },
   "description": null,
@@ -194,7 +194,7 @@
       "id": "283ed177-aa90-4c34-b432-31b7d3048a49",
       "name": "Route Read Request",
       "parameters": {
-        "jsCode": "try{const {wf11RouteReadRequest}=require('@igasovic/n8n-blocks');return await wf11RouteReadRequest({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/route-read-request__4d433aea-a923-4b5e-8d34-a33c70d6d6bd.js] ${e.message}`;throw e;}"
+        "jsCode": "try{const {wf11RouteReadRequest}=require('@igasovic/n8n-blocks');return await wf11RouteReadRequest({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/route-read-request__283ed177-aa90-4c34-b432-31b7d3048a49.js] ${e.message}`;throw e;}"
       },
       "position": [
         -496,
@@ -370,8 +370,10 @@
       "typeVersion": 3.4
     },
     {
+      "continueOnFail": true,
       "id": "30ec6f8b-a0e2-4344-a3c0-f92cb72f3192",
       "name": "PKM Pull",
+      "onError": "continueRegularOutput",
       "parameters": {
         "headerParameters": {
           "parameters": [
@@ -394,13 +396,13 @@
         -128
       ],
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "continueOnFail": true,
-      "onError": "continueRegularOutput"
+      "typeVersion": 4.3
     },
     {
+      "continueOnFail": true,
       "id": "077b2efd-4f5d-4dcf-a43e-abef7df0c759",
       "name": "PKM Last",
+      "onError": "continueRegularOutput",
       "parameters": {
         "headerParameters": {
           "parameters": [
@@ -423,13 +425,13 @@
         0
       ],
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "continueOnFail": true,
-      "onError": "continueRegularOutput"
+      "typeVersion": 4.3
     },
     {
+      "continueOnFail": true,
       "id": "0ea58ded-b113-4dba-91ce-c57ad4f4a556",
       "name": "PKM Continue",
+      "onError": "continueRegularOutput",
       "parameters": {
         "headerParameters": {
           "parameters": [
@@ -452,13 +454,13 @@
         128
       ],
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "continueOnFail": true,
-      "onError": "continueRegularOutput"
+      "typeVersion": 4.3
     },
     {
+      "continueOnFail": true,
       "id": "83eaa2bd-9a35-498d-8eca-cf1134d4459c",
       "name": "PKM Find",
+      "onError": "continueRegularOutput",
       "parameters": {
         "headerParameters": {
           "parameters": [
@@ -481,13 +483,13 @@
         256
       ],
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "continueOnFail": true,
-      "onError": "continueRegularOutput"
+      "typeVersion": 4.3
     },
     {
+      "continueOnFail": true,
       "id": "8a1b9f43-4212-40d0-8127-8f030469f287",
       "name": "PKM Working Memory",
+      "onError": "continueRegularOutput",
       "parameters": {
         "headerParameters": {
           "parameters": [
@@ -514,9 +516,7 @@
         384
       ],
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "continueOnFail": true,
-      "onError": "continueRegularOutput"
+      "typeVersion": 4.3
     },
     {
       "id": "de43f4fe-84ab-43f5-b9b3-f3669e45b7ec",
@@ -548,7 +548,7 @@
       "id": "4bb5d57d-5de8-4f84-9b2d-f8d453874f1a",
       "name": "Build Error Response",
       "parameters": {
-        "jsCode": "try{const {wf11BuildErrorResponse}=require('@igasovic/n8n-blocks');return await wf11BuildErrorResponse({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/build-error-response__4bb5d57d-5de8-4f84-9b2d-f8d453874f1a.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst body = ($json && typeof $json === 'object' && !Array.isArray($json)) ? $json : {};\n  const error = (body.error && typeof body.error === 'object') ? body.error : {};\n\n  return [{\n    json: {\n      response_payload: {\n        ok: false,\n        action: 'chatgpt_read',\n        method: null,\n        outcome: 'failure',\n        no_result: false,\n        context_pack_markdown: null,\n        result: null,\n        error: {\n          code: String(error.code || 'bad_request'),\n          message: String(error.message || 'invalid read command payload'),\n        },\n      },\n      http_status: Number(body.http_status) || 400,\n    },\n  }];\n"
       },
       "position": [
         320,
@@ -561,7 +561,7 @@
       "id": "793f72b2-4263-4bb1-970d-5aa4ad6daaf6",
       "name": "Compose Final Response",
       "parameters": {
-        "jsCode": "try{const {wf11ComposeReadResponse}=require('@igasovic/n8n-blocks');return await wf11ComposeReadResponse({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/compose-read-response__fc1a839b-3ad3-4bcd-a057-34a2ce79a9f7.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst body = ($json && typeof $json === 'object' && !Array.isArray($json)) ? $json : {};\n  const payload = (body.response_payload && typeof body.response_payload === 'object')\n    ? body.response_payload\n    : body;\n  const status = Number(body.http_status);\n  const httpStatus = Number.isFinite(status) && status >= 100 && status <= 599\n    ? status\n    : (payload && payload.ok === false ? 400 : 200);\n  const outcome = String(payload.outcome || '').trim().toLowerCase();\n  const ok = Boolean(payload.ok);\n\n  return [{\n    json: {\n      http_status: httpStatus,\n      ok,\n      action: payload.action || 'chatgpt_read',\n      method: payload.method || null,\n      outcome: payload.outcome || null,\n      no_result: outcome === 'no_result',\n      context_pack_markdown: payload.context_pack_markdown || null,\n      result: payload.result || null,\n      error: payload.error || null,\n    },\n  }];\n"
       },
       "position": [
         608,
@@ -574,11 +574,11 @@
       "id": "68b6c41b-4d5b-4a85-ba89-95e227e4b6cb",
       "name": "Respond to Webhook",
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ $json }}",
         "options": {
           "responseCode": "={{ $json.http_status || 200 }}"
-        }
+        },
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
       },
       "position": [
         864,
@@ -590,10 +590,11 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
   "staticData": null,
   "tags": [],
-  "triggerCount": 0
+  "triggerCount": 1
 }

@@ -1,13 +1,35 @@
 {
   "active": true,
   "connections": {
+    "Backup GDrive - Weekly": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Normalize Cloud Weekly Success",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Backup GDrive Daily": {
       "main": [
         [
           {
+            "index": 0,
             "node": "Normalize Cloud Daily Success",
-            "type": "main",
-            "index": 0
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Backup GDrive Monthly": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Normalize Cloud Monthly Success",
+            "type": "main"
           }
         ]
       ]
@@ -82,6 +104,39 @@
         ]
       ]
     },
+    "Normalize Cloud Daily Success": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a command",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Normalize Cloud Monthly Success": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a command",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Normalize Cloud Weekly Success": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a command",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Parse": {
       "main": [
         [
@@ -149,61 +204,6 @@
             "index": 0,
             "node": "Normalize",
             "type": "main"
-          }
-        ]
-      ]
-    },
-    "Backup GDrive - Weekly": {
-      "main": [
-        [
-          {
-            "node": "Normalize Cloud Weekly Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Backup GDrive Monthly": {
-      "main": [
-        [
-          {
-            "node": "Normalize Cloud Monthly Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Normalize Cloud Daily Success": {
-      "main": [
-        [
-          {
-            "node": "Execute a command",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Normalize Cloud Weekly Success": {
-      "main": [
-        [
-          {
-            "node": "Execute a command",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Normalize Cloud Monthly Success": {
-      "main": [
-        [
-          {
-            "node": "Execute a command",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -363,7 +363,7 @@
       "id": "020b27e4-71d9-4989-848b-793b0fb8bf1b",
       "name": "Parse",
       "parameters": {
-        "jsCode": "try{const {wf80Parse}=require('@igasovic/n8n-blocks');return await wf80Parse({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:80-postgres-backup/parse__020b27e4-71d9-4989-848b-793b0fb8bf1b.js] ${e.message}`;throw e;}"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n  const b = $json.body || $json;\n  \n  const job = String(b.job ?? '');\n  const host = String(b.host ?? '');\n  const ts = String(b.ts ?? '');\n  const rc = String(b.rc ?? '');\n  const cmd = String(b.cmd ?? '');\n  const status = String(b.status ?? (Number(b.rc ?? 0) === 0 ? 'ok' : 'fail'));\n  const icon = status === 'ok' ? '✅' : '❌';\n\n  if (status === 'ok') {\n    return [];\n  }\n  \n  const lines = [\n    icon + ' CRON ' + status,\n    'job: ' + job,\n    'host: ' + host,\n    'ts: ' + ts,\n    'rc: ' + rc,\n    'cmd: ' + cmd,\n  ];\n  \n  return [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];\n"
       },
       "position": [
         96,
@@ -663,7 +663,14 @@
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1"
   },
-  "staticData": null,
+  "staticData": {
+    "node:Schedule 4AM": {
+      "recurrenceRules": []
+    },
+    "node:Schedule 9AM": {
+      "recurrenceRules": []
+    }
+  },
   "tags": [],
   "triggerCount": 4
 }

@@ -1,23 +1,12 @@
 {
   "active": true,
   "connections": {
-    "Schedule Hourly Sync": {
+    "Build Sync Request": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Fetch Todoist Projects",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "When Executed by Another Workflow": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Fetch Todoist Projects",
+            "node": "PKM Todoist Sync",
             "type": "main"
           }
         ]
@@ -56,12 +45,23 @@
         ]
       ]
     },
-    "Build Sync Request": {
+    "Schedule Hourly Sync": {
       "main": [
         [
           {
             "index": 0,
-            "node": "PKM Todoist Sync",
+            "node": "Fetch Todoist Projects",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Fetch Todoist Projects",
             "type": "main"
           }
         ]
@@ -220,11 +220,16 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1",
     "timezone": "America/Chicago"
   },
-  "staticData": null,
+  "staticData": {
+    "node:Schedule Hourly Sync": {
+      "recurrenceRules": []
+    }
+  },
   "tags": [],
-  "triggerCount": 2
+  "triggerCount": 1
 }

@@ -1,13 +1,29 @@
 {
   "active": true,
   "connections": {
-    "When Executed by Another Workflow": {
+    "Build Cleanup Delete List": {
       "main": [
         [
           {
-            "node": "Read Daily Files from Disk",
-            "type": "main",
-            "index": 0
+            "index": 0,
+            "node": "Delete Daily File",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Delete Daily File": {
+      "main": [
+        []
+      ]
+    },
+    "Lookup Daily Files": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Cleanup Delete List",
+            "type": "main"
           }
         ]
       ]
@@ -16,9 +32,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Upload File",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -27,38 +43,22 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Lookup Daily Files",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
     },
-    "Lookup Daily Files": {
+    "When Executed by Another Workflow": {
       "main": [
         [
           {
-            "node": "Build Cleanup Delete List",
-            "type": "main",
-            "index": 0
+            "index": 0,
+            "node": "Read Daily Files from Disk",
+            "type": "main"
           }
         ]
-      ]
-    },
-    "Build Cleanup Delete List": {
-      "main": [
-        [
-          {
-            "node": "Delete Daily File",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Delete Daily File": {
-      "main": [
-        []
       ]
     }
   },
