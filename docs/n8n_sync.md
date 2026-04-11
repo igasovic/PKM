@@ -41,6 +41,19 @@ Canonical repo locations:
 - confirm the intended workflow names and scope
 - confirm `N8N_API_BASE_URL` and `N8N_API_KEY` when using live operations
 - confirm whether you are doing authoring sync, deployment sync, or drift reconciliation
+- for newly added workflows (not yet present in live n8n), manually import them in n8n UI once before `--mode push`
+
+## New Workflow Rule (must-read)
+
+`sync_workflows.sh --mode push` patches existing live workflows only. It does not create missing workflows.
+
+If repo adds a new workflow (for example `34–37`), do this once before push:
+1. Open n8n editor UI.
+2. Use Import workflow from file.
+3. Import the new workflow JSON file(s) from `src/n8n/workflows/`.
+4. Save each imported workflow.
+
+Then run `./scripts/n8n/sync_workflows.sh --mode push` as usual.
 
 ## Post-flight Checks
 - validate the live export or run `validate_cutover.sh`
