@@ -117,7 +117,8 @@
     "availableInMCP": false,
     "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW"
   },
   "staticData": null,
   "tags": [],

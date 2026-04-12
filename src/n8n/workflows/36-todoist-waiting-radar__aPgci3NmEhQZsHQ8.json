@@ -188,7 +188,8 @@
     "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1",
-    "timezone": "America/Chicago"
+    "timezone": "America/Chicago",
+    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW"
   },
   "staticData": null,
   "tags": [],

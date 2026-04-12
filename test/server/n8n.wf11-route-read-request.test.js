@@ -1,6 +1,8 @@
 'use strict';
 
-const routeReadRequest = require('../../src/n8n/nodes/11-chatgpt-read-router/route-read-request__4d433aea-a923-4b5e-8d34-a33c70d6d6bd.js');
+const { requireExternalizedNode } = require('./n8n-node-loader');
+
+const routeReadRequest = requireExternalizedNode('11-chatgpt-read-router', 'route-read-request');
 
 async function runRoute(body) {
   const out = await routeReadRequest({ $json: { body } });

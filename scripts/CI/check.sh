@@ -125,6 +125,55 @@ PY
     echo "$MISSING_TARGETS"
     exit 1
   fi
+
+  N8N_WORKFLOW_GUARDS="$(
+    python3 - "$N8N_WF_DIR" <<'PY'
+import json
+import pathlib
+import sys
+
+wf_dir = pathlib.Path(sys.argv[1])
+expected_error_workflow = "R2r3jkL5Rb39zKpyutwhW"
+errors = []
+
+all_workflows = sorted(wf_dir.glob("*.json"))
+if not all_workflows:
+    errors.append("no workflow files found under src/n8n/workflows")
+
+for wf_path in all_workflows:
+    try:
+        wf = json.loads(wf_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"{wf_path.name}: invalid JSON ({exc})")
+        continue
+
+    settings = wf.get("settings") if isinstance(wf.get("settings"), dict) else {}
+    error_wf = str(settings.get("errorWorkflow") or "").strip()
+    # All workflows except WF99 must route failures to WF99.
+    if not wf_path.name.startswith("99-error-handling__") and error_wf != expected_error_workflow:
+        errors.append(
+            f"{wf_path.name}: settings.errorWorkflow must be '{expected_error_workflow}' (found '{error_wf or '<<empty>>'}')"
+        )
+
+    # Guard against inline Code-node context regressions on Todoist workflows.
+    if wf_path.name.startswith(("34-todoist-sync__", "35-todoist-daily-focus__", "36-todoist-waiting-radar__", "37-todoist-weekly-pruning__")):
+        for node in wf.get("nodes", []):
+            js = ((node.get("parameters") or {}).get("jsCode") or "")
+            if not isinstance(js, str) or not js:
+                continue
+            if "ctx." in js or "ctx &&" in js or "(ctx" in js:
+                node_name = str(node.get("name") or "<<unnamed>>")
+                errors.append(f"{wf_path.name}: inline jsCode must not reference ctx ({node_name})")
+
+if errors:
+    print("\n".join(errors))
+PY
+  )"
+  if [[ -n "$N8N_WORKFLOW_GUARDS" ]]; then
+    echo "ERROR: n8n workflow static guards failed:"
+    echo "$N8N_WORKFLOW_GUARDS"
+    exit 1
+  fi
 else
   echo "WARN: $N8N_WF_DIR not found. Skipping n8n workflow safety checks."
 fi

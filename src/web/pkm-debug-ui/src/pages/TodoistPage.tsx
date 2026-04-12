@@ -63,6 +63,59 @@ function projectMeta(task: TodoistTaskCurrent): string {
   return `${project} / ${section}`;
 }
 
+function buildSelectedTaskJson(task: TodoistTaskCurrent, history: TodoistTaskEvent[]): string {
+  const originalDataTodoist = {
+    todoist_task_id: task.todoist_task_id,
+    todoist_project_id: task.todoist_project_id,
+    todoist_project_name: task.todoist_project_name,
+    todoist_section_id: task.todoist_section_id,
+    todoist_section_name: task.todoist_section_name,
+    raw_title: task.raw_title,
+    raw_description: task.raw_description,
+    todoist_priority: task.todoist_priority,
+    todoist_due_date: task.todoist_due_date,
+    todoist_due_string: task.todoist_due_string,
+    todoist_due_is_recurring: task.todoist_due_is_recurring,
+    todoist_added_at: task.todoist_added_at,
+  };
+
+  const pkmData = {
+    id: task.id,
+    project_key: task.project_key,
+    lifecycle_status: task.lifecycle_status,
+    normalized_title_en: task.normalized_title_en,
+    task_shape: task.task_shape,
+    suggested_next_action: task.suggested_next_action,
+    parse_confidence: task.parse_confidence,
+    review_status: task.review_status,
+    review_reasons: task.review_reasons,
+    first_seen_at: task.first_seen_at,
+    last_seen_at: task.last_seen_at,
+    waiting_since_at: task.waiting_since_at,
+    closed_at: task.closed_at,
+    parsed_at: task.parsed_at,
+    created_at: task.created_at,
+    updated_at: task.updated_at,
+  };
+
+  const eventHistory = history.map((event) => ({
+    id: event.id,
+    task_id: event.task_id,
+    event_at: event.event_at,
+    event_type: event.event_type,
+    changed_fields: event.changed_fields,
+    reason: event.reason,
+    before_json: event.before_json,
+    after_json: event.after_json,
+  }));
+
+  return JSON.stringify({
+    original_data_todoist: originalDataTodoist,
+    pkm_data: pkmData,
+    event_history: eventHistory,
+  }, null, 2);
+}
+
 export function TodoistPage() {
   const [view, setView] = useState<TodoistReviewView>('needs_review');
   const [limitInput, setLimitInput] = useState('50');
@@ -231,6 +284,19 @@ export function TodoistPage() {
     await selectTask(nextRow.todoist_task_id);
   }
 
+  async function copySelectedAsJson() {
+    if (!selected) return;
+    setError(null);
+    setInfo(null);
+    try {
+      const json = buildSelectedTaskJson(selected, events);
+      await navigator.clipboard.writeText(json);
+      setInfo(`Copied JSON for ${selected.todoist_task_id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'copy to clipboard failed');
+    }
+  }
+
   return (
     <div className="space-y-4">
       <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 shadow-glow">
@@ -305,6 +371,14 @@ export function TodoistPage() {
               disabled={busy || rows.length === 0}
             >
               Next Item
+            </button>
+            <button
+              type="button"
+              className="rounded border border-sky-600 bg-sky-600/15 px-3 py-2 text-sm text-sky-300 hover:bg-sky-600/25 disabled:opacity-50"
+              onClick={() => { void copySelectedAsJson(); }}
+              disabled={busy || !selected}
+            >
+              Copy JSON
             </button>
           </div>
         </div>

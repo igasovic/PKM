@@ -15,7 +15,10 @@ export default defineConfig(({ mode }) => {
             console.log(`[pkm-internal-api-proxy] enabled -> ${target}`);
             server.middlewares.use(async (req, res, next) => {
                 const requestPath = String(req.url || '');
-                if (!requestPath.startsWith('/db/') && !requestPath.startsWith('/recipes/') && !requestPath.startsWith('/chatgpt/'))
+                if (!requestPath.startsWith('/db/')
+                    && !requestPath.startsWith('/recipes/')
+                    && !requestPath.startsWith('/todoist/')
+                    && !requestPath.startsWith('/chatgpt/'))
                     return next();
                 // eslint-disable-next-line no-console
                 console.log(`[pkm-internal-api-proxy] ${String(req.method || 'GET').toUpperCase()} ${requestPath}`);

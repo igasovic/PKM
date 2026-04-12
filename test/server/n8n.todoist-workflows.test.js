@@ -42,6 +42,12 @@ describe('n8n todoist workflows', () => {
     expect(wf35.name).toBe('35 Todoist Daily Focus');
     expect(wf36.name).toBe('36 Todoist Waiting Radar');
     expect(wf37.name).toBe('37 Todoist Weekly Pruning');
+
+    const expectedErrorWorkflow = 'R2r3jkL5Rb39zKpyutwhW';
+    expect(wf34.settings.errorWorkflow).toBe(expectedErrorWorkflow);
+    expect(wf35.settings.errorWorkflow).toBe(expectedErrorWorkflow);
+    expect(wf36.settings.errorWorkflow).toBe(expectedErrorWorkflow);
+    expect(wf37.settings.errorWorkflow).toBe(expectedErrorWorkflow);
   });
 
   test('wf34 build-sync-request filters projects and resolves waiting lifecycle', async () => {
