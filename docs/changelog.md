@@ -1,5 +1,27 @@
 # changelog
 
+## 2026-04-14 — Eval platform canonical PRD baseline
+
+### What changed
+- Added canonical eval platform PRD:
+  - `docs/PRD/eval-platform-prd.md`
+- PRD baseline now captures:
+  - current implemented eval platform state (fixtures, runners, shared tooling, reports)
+  - shared runner utility extraction and eval writing guide as platform conventions
+  - planned PKM UI eval case explorer direction with repo-first case loading (table + card), explicitly not report-first and not backend-dependent for core read path
+- Registered the new PRD in:
+  - `docs/PRD/README.md`
+
+### Surfaces changed
+- PRD ownership/routing for eval platform work
+
+### PRDs impacted
+- `docs/PRD/eval-platform-prd.md`
+- `docs/PRD/README.md`
+
+### Contract docs impacted
+- `docs/changelog.md`
+
 ## 2026-04-13 — Eval runner common extraction + eval writing guide
 
 ### What changed

@@ -33,6 +33,7 @@ This file is the entrypoint for active PRDs in this repo.
 | PKM UI shell | `docs/PRD/pkm-ui-prd.md` | active | baseline UI shell, pages, and shared UI constraints |
 | Failure packs | `docs/PRD/failure-pack-prd.md` | active | canonical failure-pack surface |
 | Logging / telemetry | `docs/PRD/logging-prd.md` | active | as-built logging and telemetry contract |
+| Eval platform | `docs/PRD/eval-platform-prd.md` | active | fixtures/runners/reporting plus repo-first PKM UI eval case explorer |
 | Recipes | `docs/PRD/recipes-prd.md` | active | dedicated recipe capture/retrieval surface, APIs, and Telegram/debug integration |
 | Family calendar | `docs/PRD/family-calendar-prd.md` | proposed | dedicated family-calendar feature surface |
 | Todoist planning | `docs/PRD/todoist-llm-planning-prd.md` | active | Todoist sync/review/brief surface with Telegram and PKM UI review loop |
