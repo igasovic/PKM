@@ -38,10 +38,13 @@
 | `POST /todoist/brief/daily` | internal | `35 Todoist Daily Focus` | deterministic shortlist + rationale text |
 | `POST /todoist/brief/waiting` | internal | `36 Todoist Waiting Radar`, `10 Read /waiting` | waiting-only deterministic shortlist + rationale text |
 | `POST /todoist/brief/weekly` | internal | `37 Todoist Weekly Pruning` | deterministic prune recommendations + rationale text |
+| `POST /todoist/eval/normalize` | admin secret | Pi live eval runner | parse output + trace only; no Todoist table writes |
 
 ## Shared Rules
 
-- Auth pattern: `internal`.
+- Auth pattern: mixed.
+  - operational Todoist planning routes use `internal`
+  - eval route `POST /todoist/eval/normalize` uses `x-pkm-admin-secret`
 - Todoist planning tables are prod-pinned (`pkm.todoist_task_current`, `pkm.todoist_task_events`).
 - `POST /todoist/sync` treats active-fetch disappearance as `closed` and reappearance as `reopened`.
 - Brief-selection logic is deterministic; LLM output is rationale text only.
@@ -69,11 +72,17 @@ Request:
       "todoist_due_string": "today",
       "todoist_due_is_recurring": false,
       "project_key": "work",
-      "todoist_added_at": "2026-04-10T09:00:00.000Z"
+      "todoist_added_at": "2026-04-10T09:00:00.000Z",
+      "has_subtasks": true,
+      "explicit_project_signal": true
     }
   ]
 }
 ```
+
+Optional sync input fields used by normalization/risk routing:
+- `has_subtasks` (boolean): whether this task currently has child tasks in Todoist
+- `explicit_project_signal` (boolean): upstream marker (for example title prefix `PRJ:`)
 
 Response `200`:
 ```json
@@ -245,6 +254,51 @@ Response `200` includes:
 - `brief_kind: "weekly_pruning"`
 - `suggestions`, `summary`
 - `telegram_message`
+
+## `POST /todoist/eval/normalize`
+
+Live eval-only normalization endpoint (Pi runner surface). This endpoint executes the normalization pipeline and returns parser output plus trace without mutating Todoist planning tables.
+
+Auth:
+- required header `x-pkm-admin-secret`
+
+Request:
+```json
+{
+  "run_id": "eval.todoist.20260414T060000Z.T-NORM-001",
+  "raw_title": "follow up with vendor",
+  "raw_description": null,
+  "project_key": "work",
+  "todoist_section_name": null,
+  "lifecycle_status": "open",
+  "has_subtasks": false,
+  "explicit_project_signal": false,
+  "few_shot_examples": []
+}
+```
+
+Response `200`:
+```json
+{
+  "status": "ok",
+  "normalized_task": {
+    "normalized_title_en": "Follow up with vendor",
+    "task_shape": "follow_up",
+    "suggested_next_action": "Send a reminder email",
+    "parse_confidence": 0.91,
+    "parse_failed": false,
+    "parse_failure_reason": null
+  },
+  "normalize_trace": {
+    "llm_used": true,
+    "llm_reason": "classification_required",
+    "parse_status": "ok"
+  }
+}
+```
+
+Response `400`: invalid input (for example missing `raw_title`).
+Response `403`: missing or invalid admin secret.
 
 ## Telegram Command Mapping
 

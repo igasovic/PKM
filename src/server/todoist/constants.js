@@ -54,6 +54,28 @@ function parseConfidence(value, fallback = 0) {
   return n;
 }
 
+function parseBoolean(value, fallback = false) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const norm = asText(value).toLowerCase();
+    if (!norm) return fallback;
+    if (['1', 'true', 'yes', 'on'].includes(norm)) return true;
+    if (['0', 'false', 'no', 'off'].includes(norm)) return false;
+  }
+  return fallback;
+}
+
+function detectExplicitProjectSignal(value) {
+  const text = asText(value);
+  if (!text) return false;
+  return (
+    /^prj\s*:/i.test(text)
+    || /^\[prj\]/i.test(text)
+    || /^project\s*:/i.test(text)
+  );
+}
+
 function parseOptionalDate(value) {
   const text = asText(value);
   if (!text) return null;
@@ -74,5 +96,7 @@ module.exports = {
   lifecycleFromSection,
   parsePriority,
   parseConfidence,
+  parseBoolean,
+  detectExplicitProjectSignal,
   parseOptionalDate,
 };

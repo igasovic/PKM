@@ -11,6 +11,7 @@
     "test:integration": "NODE_PATH=../../src/n8n/package/node_modules${NODE_PATH:+:$NODE_PATH} PKM_RUN_DB_INTEGRATION=1 jest --runInBand --rootDir ../.. test/server/db-stores.integration.test.js",
     "eval:router:live": "node ../../scripts/evals/run_router_live.js",
     "eval:calendar:live": "node ../../scripts/evals/run_calendar_live.js",
+    "eval:todoist:live": "node ../../scripts/evals/run_todoist_live.js",
     "eval:harvest:runid": "node ../../scripts/evals/harvest_failure_candidate.js",
     "eval:fixtures:generate": "node ../../scripts/evals/generate_family_calendar_fixtures.js"
   },

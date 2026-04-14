@@ -116,6 +116,20 @@ function buildSelectedTaskJson(task: TodoistTaskCurrent, history: TodoistTaskEve
   }, null, 2);
 }
 
+function buildCorpusSeedJson(task: TodoistTaskCurrent): string {
+  return JSON.stringify({
+    todoist_task_id: task.todoist_task_id,
+    raw_title: task.raw_title || '',
+    project_key: task.project_key || '',
+    model_task_shape: task.task_shape || 'unknown',
+    gold_task_shape: null,
+    gold_suggested_next_action: null,
+    gold_keep_in_daily_pool: null,
+    gold_normalized_title_en: null,
+    corpus_group: 'gold_only',
+  }, null, 2);
+}
+
 export function TodoistPage() {
   const [view, setView] = useState<TodoistReviewView>('needs_review');
   const [limitInput, setLimitInput] = useState('50');
@@ -297,6 +311,19 @@ export function TodoistPage() {
     }
   }
 
+  async function copyCorpusSeed() {
+    if (!selected) return;
+    setError(null);
+    setInfo(null);
+    try {
+      const json = buildCorpusSeedJson(selected);
+      await navigator.clipboard.writeText(json);
+      setInfo(`Copied corpus seed for ${selected.todoist_task_id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'copy to clipboard failed');
+    }
+  }
+
   return (
     <div className="space-y-4">
       <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 shadow-glow">
@@ -379,6 +406,14 @@ export function TodoistPage() {
               disabled={busy || !selected}
             >
               Copy JSON
+            </button>
+            <button
+              type="button"
+              className="rounded border border-cyan-600 bg-cyan-600/15 px-3 py-2 text-sm text-cyan-300 hover:bg-cyan-600/25 disabled:opacity-50"
+              onClick={() => { void copyCorpusSeed(); }}
+              disabled={busy || !selected}
+            >
+              Copy Corpus Seed
             </button>
           </div>
         </div>

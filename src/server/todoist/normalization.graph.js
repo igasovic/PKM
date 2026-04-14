@@ -56,6 +56,9 @@ function loadNode(state) {
       project_key: asText(input.project_key) || null,
       todoist_section_name: asText(input.todoist_section_name) || null,
       lifecycle_status: asText(input.lifecycle_status) || 'open',
+      has_subtasks: input.has_subtasks === true,
+      explicit_project_signal: input.explicit_project_signal === true,
+      few_shot_examples: Array.isArray(input.few_shot_examples) ? input.few_shot_examples : [],
     },
   };
 }

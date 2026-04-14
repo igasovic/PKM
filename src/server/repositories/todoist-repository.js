@@ -11,4 +11,5 @@ module.exports = {
   buildDailyBriefSurface: (...args) => todoistService.buildDailyBriefSurface(...args),
   buildWaitingBriefSurface: (...args) => todoistService.buildWaitingBriefSurface(...args),
   buildWeeklyBriefSurface: (...args) => todoistService.buildWeeklyBriefSurface(...args),
+  evaluateTodoistNormalization: (...args) => todoistService.evaluateTodoistNormalization(...args),
 };

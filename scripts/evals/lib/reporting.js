@@ -89,6 +89,39 @@ function buildCalendarMarkdown(report) {
   ].join('\n');
 }
 
+function buildTodoistMarkdown(report) {
+  const summary = report.summary || {};
+  const highConfidence = takeTop((summary.failure_groups && summary.failure_groups.high_confidence_shape_errors) || [], 20)
+    .map((r) => ({ ...r, expected_label: r.expected_task_shape, actual_label: r.actual_task_shape }));
+  const projectOvercalls = takeTop((summary.failure_groups && summary.failure_groups.project_overcalls) || [], 20)
+    .map((r) => ({ ...r, expected_label: r.expected_task_shape, actual_label: r.actual_task_shape }));
+  const titleMismatches = takeTop((summary.failure_groups && summary.failure_groups.title_mismatches) || [], 20)
+    .map((r) => ({ ...r, expected_label: r.expected_normalized_title_en, actual_label: r.actual_normalized_title_en }));
+
+  return [
+    `# Todoist Normalize Eval Report (${report.metadata.timestamp})`,
+    '',
+    `- backend: ${report.metadata.backend_url}`,
+    `- total: ${summary.total}`,
+    `- passed: ${summary.passed}`,
+    `- accuracy: ${toFixedPct(summary.accuracy)}`,
+    `- task shape accuracy: ${toFixedPct(summary.task_shape_accuracy)}`,
+    `- normalized title match: ${toFixedPct(summary.normalized_title_match_rate)}`,
+    `- project overcall rate: ${toFixedPct(summary.project_overcall_rate)}`,
+    `- next-action metric: ${String(summary.next_action_metric || 'pending_missing_labels')}`,
+    '',
+    '## Highlight: project overcalls',
+    markdownFailureList(projectOvercalls),
+    '',
+    '## Highlight: high-confidence shape errors',
+    markdownFailureList(highConfidence),
+    '',
+    '## Highlight: title mismatches',
+    markdownFailureList(titleMismatches),
+    '',
+  ].join('\n');
+}
+
 function writeEvalReport(surface, stamp, report, markdown) {
   const dir = resolveRepoPath('evals', 'reports', surface);
   ensureDir(dir);
@@ -102,5 +135,6 @@ function writeEvalReport(surface, stamp, report, markdown) {
 module.exports = {
   buildRouterMarkdown,
   buildCalendarMarkdown,
+  buildTodoistMarkdown,
   writeEvalReport,
 };

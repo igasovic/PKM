@@ -16,6 +16,17 @@ function lower(value) {
   return asText(value).toLowerCase();
 }
 
+function parseParentTaskId(task) {
+  const row = task && typeof task === 'object' ? task : {};
+  return asText(row.parent_id || row.parentId || row.parent_task_id || row.parentTaskId) || null;
+}
+
+function hasExplicitProjectSignal(rawTitle) {
+  const title = asText(rawTitle);
+  if (!title) return false;
+  return /^prj\s*:/i.test(title) || /^\[prj\]/i.test(title) || /^project\s*:/i.test(title);
+}
+
 function flattenNodeJson(rows) {
   const items = Array.isArray(rows) ? rows : [];
   const out = [];
@@ -88,10 +99,21 @@ function buildSectionMap(sectionRows, allowedProjects) {
   return sections;
 }
 
-function normalizeTask(taskRow, projectMeta, sectionMap) {
+function buildSubtaskParentSet(taskRows) {
+  const set = new Set();
+  const rows = Array.isArray(taskRows) ? taskRows : [];
+  for (const task of rows) {
+    const parentId = parseParentTaskId(task);
+    if (parentId) set.add(parentId);
+  }
+  return set;
+}
+
+function normalizeTask(taskRow, projectMeta, sectionMap, subtaskParentSet) {
   const task = taskRow && typeof taskRow === 'object' ? taskRow : {};
   const todoistTaskId = asText(task.id);
   if (!todoistTaskId) return null;
+  const rawTitle = asText(task.content);
 
   const sectionId = asText(task.section_id) || null;
   const sectionMeta = sectionId ? sectionMap.get(sectionId) : null;
@@ -108,8 +130,8 @@ function normalizeTask(taskRow, projectMeta, sectionMap) {
     todoist_section_id: sectionMeta ? sectionMeta.todoist_section_id : sectionId,
     section_name: sectionMeta ? sectionMeta.todoist_section_name : null,
     todoist_section_name: sectionMeta ? sectionMeta.todoist_section_name : null,
-    content: asText(task.content),
-    raw_title: asText(task.content),
+    content: rawTitle,
+    raw_title: rawTitle,
     description: asText(task.description) || null,
     raw_description: asText(task.description) || null,
     priority: Number.isFinite(Number(task.priority)) ? Number(task.priority) : 1,
@@ -124,6 +146,8 @@ function normalizeTask(taskRow, projectMeta, sectionMap) {
     todoist_due_is_recurring: !!(task.due && task.due.is_recurring === true),
     added_at: asText(task.added_at) || null,
     todoist_added_at: asText(task.added_at) || null,
+    has_subtasks: subtaskParentSet ? subtaskParentSet.has(todoistTaskId) : false,
+    explicit_project_signal: hasExplicitProjectSignal(rawTitle),
   };
 }
 
@@ -137,11 +161,16 @@ module.exports = async function run(ctx) {
   const { allowed: allowedProjects } = buildProjectMaps(projectRows);
   const sectionMap = buildSectionMap(sectionRows, allowedProjects);
 
-  const tasks = [];
-  for (const task of taskRows) {
+  const scopedTasks = taskRows.filter((task) => {
     const projectId = asText(task.project_id);
-    if (!projectId || !allowedProjects.has(projectId)) continue;
-    const normalized = normalizeTask(task, allowedProjects.get(projectId), sectionMap);
+    return !!(projectId && allowedProjects.has(projectId));
+  });
+  const subtaskParentSet = buildSubtaskParentSet(scopedTasks);
+
+  const tasks = [];
+  for (const task of scopedTasks) {
+    const projectId = asText(task.project_id);
+    const normalized = normalizeTask(task, allowedProjects.get(projectId), sectionMap, subtaskParentSet);
     if (normalized) tasks.push(normalized);
   }
 

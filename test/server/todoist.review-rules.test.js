@@ -55,6 +55,42 @@ describe('todoist review rules', () => {
 
     expect(risky.review_status).toBe('needs_review');
     expect(risky.review_reasons).toEqual(expect.arrayContaining(['risky_task_shape']));
+
+    const projectWithoutEvidence = computeReviewStatus({
+      lifecycle_status: 'open',
+      project_key: 'work',
+      task_shape: 'project',
+      suggested_next_action: 'Break down scope',
+      parse_confidence: 0.9,
+      has_subtasks: false,
+      explicit_project_signal: false,
+      parse_failed: false,
+      previous_review_status: null,
+      parse_triggered: true,
+    });
+
+    expect(projectWithoutEvidence.review_status).toBe('needs_review');
+    expect(projectWithoutEvidence.review_reasons).toEqual(expect.arrayContaining(['risky_task_shape']));
+  });
+
+  test('accepts project shape when strong evidence is present', () => {
+    const withSubtasks = computeReviewStatus({
+      lifecycle_status: 'open',
+      project_key: 'work',
+      task_shape: 'project',
+      suggested_next_action: 'Define milestone 1',
+      parse_confidence: 0.88,
+      has_subtasks: true,
+      explicit_project_signal: false,
+      parse_failed: false,
+      previous_review_status: null,
+      parse_triggered: true,
+    });
+
+    expect(withSubtasks).toEqual({
+      review_status: 'no_review_needed',
+      review_reasons: [],
+    });
   });
 
   test('applies waiting confidence threshold and reparse-after-override behavior', () => {

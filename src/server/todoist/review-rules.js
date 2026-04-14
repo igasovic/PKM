@@ -9,8 +9,8 @@ const {
 function defaultThresholds(config) {
   const cfg = config && config.todoist && config.todoist.review ? config.todoist.review : {};
   return {
-    min_confidence: parseConfidence(cfg.min_confidence, 0.72),
-    waiting_min_confidence: parseConfidence(cfg.waiting_min_confidence, 0.82),
+    min_confidence: parseConfidence(cfg.min_confidence, 0.62),
+    waiting_min_confidence: parseConfidence(cfg.waiting_min_confidence, 0.72),
   };
 }
 
@@ -26,6 +26,8 @@ function computeReviewStatus(input, options = {}) {
   const confidence = Number.isFinite(parseConfidence) ? parseConfidence : 0;
   const hasSuggestedNextAction = !!asText(row.suggested_next_action);
   const parseFailed = row.parse_failed === true;
+  const hasSubtasks = row.has_subtasks === true;
+  const explicitProjectSignal = row.explicit_project_signal === true;
   const previousReviewStatus = asText(row.previous_review_status).toLowerCase();
   const parseTriggered = row.parse_triggered === true;
 
@@ -55,7 +57,12 @@ function computeReviewStatus(input, options = {}) {
   }
 
   // 6. Risky shapes.
-  if (RISKY_SHAPES.has(taskShape)) reasons.push('risky_task_shape');
+  if (taskShape === 'project') {
+    const hasProjectEvidence = hasSubtasks || explicitProjectSignal;
+    if (!hasProjectEvidence) reasons.push('risky_task_shape');
+  } else if (RISKY_SHAPES.has(taskShape)) {
+    reasons.push('risky_task_shape');
+  }
 
   // 7. Waiting + inferred next action.
   if (lifecycleStatus === 'waiting' && hasSuggestedNextAction) reasons.push('waiting_with_inferred_next_action');

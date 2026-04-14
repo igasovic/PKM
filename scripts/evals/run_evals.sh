@@ -7,16 +7,17 @@ STACK_ENV_FILE_DEFAULT="/home/igasovic/stack/.env"
 
 show_help() {
   cat <<'USAGE'
-Run family-calendar live evals.
+Run live evals (router, calendar, todoist).
 
 Usage:
-  ./scripts/evals/run_evals.sh [--router] [--calendar] [options]
+  ./scripts/evals/run_evals.sh [--router] [--calendar] [--todoist] [options]
 
-If neither --router nor --calendar is passed, both run.
+If no surface flag is passed, all available eval surfaces run.
 
 Options:
   --router                     Run router eval only.
   --calendar                   Run calendar normalize eval only.
+  --todoist                    Run todoist normalize eval only.
   --backend-url <url>          Backend URL (for example http://pkm-server:8080).
   --admin-secret <secret>      Admin secret (or set PKM_ADMIN_SECRET env var).
   --telegram-user-id <id>      Telegram user id used by eval requests.
@@ -28,12 +29,13 @@ Options:
 Examples:
   ./scripts/evals/run_evals.sh --router --backend-url http://pkm-server:8080 --admin-secret "$PKM_ADMIN_SECRET"
   ./scripts/evals/run_evals.sh --calendar --telegram-user-id 1509032341
-  ./scripts/evals/run_evals.sh --router --calendar
+  ./scripts/evals/run_evals.sh --router --calendar --todoist
 USAGE
 }
 
 run_router=false
 run_calendar=false
+run_todoist=false
 
 backend_url=""
 admin_secret=""
@@ -50,6 +52,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --calendar)
       run_calendar=true
+      shift
+      ;;
+    --todoist)
+      run_todoist=true
       shift
       ;;
     --backend-url)
@@ -88,9 +94,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "$run_router" == false && "$run_calendar" == false ]]; then
+if [[ "$run_router" == false && "$run_calendar" == false && "$run_todoist" == false ]]; then
   run_router=true
   run_calendar=true
+  run_todoist=true
 fi
 
 # Load PKM_ADMIN_SECRET from Pi stack .env only when caller did not pass secret.
@@ -153,8 +160,10 @@ run_eval() {
     local script_path
     if [[ "$target" == "router" ]]; then
       script_path="$ROOT/scripts/evals/run_router_live.js"
-    else
+    elif [[ "$target" == "calendar" ]]; then
       script_path="$ROOT/scripts/evals/run_calendar_live.js"
+    else
+      script_path="$ROOT/scripts/evals/run_todoist_live.js"
     fi
     local cmd=(node "$script_path")
     if [[ ${#common_args[@]} -gt 0 ]]; then
@@ -179,6 +188,10 @@ fi
 
 if [[ "$run_calendar" == true ]]; then
   run_eval calendar
+fi
+
+if [[ "$run_todoist" == true ]]; then
+  run_eval todoist
 fi
 
 echo "✅ Eval run(s) completed."

@@ -46,6 +46,20 @@ function validateNormalizeCase(row, idx) {
   assertField(typeof row.expect?.status === 'string' && row.expect.status, `normalize case ${row.case_id} missing expect.status`);
 }
 
+function validateTodoistNormalizeCase(row, idx) {
+  assertField(row && typeof row === 'object', `todoist normalize case ${idx} must be object`);
+  assertField(typeof row.case_id === 'string' && row.case_id, `todoist normalize case ${idx} missing case_id`);
+  assertField(typeof row.name === 'string' && row.name, `todoist normalize case ${row.case_id} missing name`);
+  assertField(typeof row.bucket === 'string' && row.bucket, `todoist normalize case ${row.case_id} missing bucket`);
+  assertField(typeof row.corpus_group === 'string' && row.corpus_group, `todoist normalize case ${row.case_id} missing corpus_group`);
+  assertField(['gold_only', 'prompt_examples', 'eval_core'].includes(row.corpus_group), `todoist normalize case ${row.case_id} invalid corpus_group`);
+  assertField(Array.isArray(row.failure_tags), `todoist normalize case ${row.case_id} missing failure_tags`);
+  assertField(typeof row.input?.raw_title === 'string' && row.input.raw_title, `todoist normalize case ${row.case_id} missing input.raw_title`);
+  assertField(typeof row.input?.project_key === 'string' && row.input.project_key, `todoist normalize case ${row.case_id} missing input.project_key`);
+  assertField(typeof row.expect?.task_shape === 'string' && row.expect.task_shape, `todoist normalize case ${row.case_id} missing expect.task_shape`);
+  assertField(typeof row.expect?.normalized_title_en === 'string' && row.expect.normalized_title_en, `todoist normalize case ${row.case_id} missing expect.normalized_title_en`);
+}
+
 function loadRouterFixtures() {
   const stateless = ensureArray(loadJson('evals/router/fixtures/gold/stateless.json'), 'router stateless fixtures');
   const stateful = ensureArray(loadJson('evals/router/fixtures/gold/stateful.json'), 'router stateful fixtures');
@@ -60,6 +74,12 @@ function loadNormalizeFixtures() {
   return rows;
 }
 
+function loadTodoistNormalizeFixtures() {
+  const rows = ensureArray(loadJson('evals/todoist/fixtures/gold/normalize.json'), 'todoist normalize fixtures');
+  rows.forEach(validateTodoistNormalizeCase);
+  return rows;
+}
+
 function getFixturePath(relativePath) {
   return path.join(resolveRepoPath(), relativePath);
 }
@@ -67,5 +87,6 @@ function getFixturePath(relativePath) {
 module.exports = {
   loadRouterFixtures,
   loadNormalizeFixtures,
+  loadTodoistNormalizeFixtures,
   getFixturePath,
 };

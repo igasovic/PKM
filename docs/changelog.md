@@ -1,5 +1,65 @@
 # changelog
 
+## 2026-04-13 — Todoist live eval harness (Pi runner, calendar/router pattern)
+
+### What changed
+- Implemented Todoist normalization eval surface using the same live-runner/reporting pattern as calendar/router:
+  - canonical gold fixture: `evals/todoist/fixtures/gold/normalize.json` (with `corpus_group`)
+  - new runner: `scripts/evals/run_todoist_live.js`
+  - shared lib support in fixtures/live-api/scoring/reporting modules
+  - JSON + Markdown report output under `evals/reports/todoist/`
+- Added dedicated backend eval endpoint:
+  - `POST /todoist/eval/normalize` (admin-secret protected)
+  - runs normalization pipeline and returns parse output + trace without mutating Todoist planning tables
+- Added Pi run wiring:
+  - `src/server/package.json` script `eval:todoist:live`
+  - `scripts/evals/run_evals.sh` support for `--todoist`
+- Added eval tooling and contract tests for Todoist eval fixture validation, scoring/reporting, runner smoke, endpoint auth/shape, and no-write behavior guard.
+
+### Surfaces changed
+- backend Todoist route/service/repository + route registry source
+- eval scripts and shared eval tooling libs
+- eval fixtures/schemas/report directories
+- Todoist API/docs and PRD/work-package status docs
+
+### PRDs impacted
+- `docs/PRD/todoist-llm-planning-prd.md`
+- `docs/PRD/todoist-llm-planning-work-packages.md`
+
+### Contract docs impacted
+- `docs/api.md`
+- `docs/api_todoist.md`
+- `docs/changelog.md`
+
+## 2026-04-12 — Todoist parser/ranking retune (no eval corpus run)
+
+### What changed
+- Retuned Todoist normalization prompt and parser inputs:
+  - added stronger task-shape rubric to reduce `project` over-calls on short actionable tasks
+  - added confidence-band guidance for more consistent confidence calibration
+  - added few-shot placeholder scaffold token `TODO_FILL_FROM_CORPUS_PROMPT_EXAMPLES` for future corpus-driven prompt examples
+  - added normalization inputs `has_subtasks` and `explicit_project_signal` across n8n sync payload -> backend normalize path
+- Recalibrated review/ranking behavior:
+  - lowered default review confidence thresholds (`min_confidence`, `waiting_min_confidence`)
+  - `project` is now treated as risky only when strong project evidence is missing
+  - daily/weekly deterministic ranking received conservative shape-aware scoring/recommendation tuning
+- Improved review-loop tooling in PKM UI:
+  - added `Copy Corpus Seed` action on `/todoist` to export a `gold_only` row starter for corpus labeling
+
+### Surfaces changed
+- backend Todoist normalization/review/ranking modules
+- n8n Todoist sync helper node (`34`)
+- PKM debug UI `/todoist` review page
+- Todoist API and PRD/work-package docs
+
+### PRDs impacted
+- `docs/PRD/todoist-llm-planning-prd.md`
+- `docs/PRD/todoist-llm-planning-work-packages.md`
+
+### Contract docs impacted
+- `docs/api_todoist.md`
+- `docs/changelog.md`
+
 ## 2026-04-11 — Todoist LLM planning V1 surface (WF34–WF37 + `/waiting`)
 
 ### What changed

@@ -479,6 +479,14 @@ const BACKEND_ROUTE_REGISTRY = [
   },
   {
     "method": "POST",
+    "path": "/todoist/eval/normalize",
+    "auth": "admin_secret",
+    "doc": "docs/api_todoist.md",
+    "primary_callers": ["Pi eval runner"],
+    "tests": ["test/server/todoist.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
     "path": "/db/insert",
     "auth": "internal",
     "doc": "docs/api_read_write.md",

@@ -16,11 +16,17 @@ jest.mock('../../src/server/db/todoist-store.js', () => ({
   listCurrentTasks: jest.fn(),
 }));
 
+jest.mock('../../src/server/todoist/normalization.graph.js', () => ({
+  runTodoistNormalizationGraphWithTrace: jest.fn(),
+}));
+
 const { getPool } = require('../../src/server/db-pool.js');
 const todoistStore = require('../../src/server/db/todoist-store.js');
+const { runTodoistNormalizationGraphWithTrace } = require('../../src/server/todoist/normalization.graph.js');
 const {
   syncTodoistSurface,
   acceptReview,
+  evaluateTodoistNormalization,
 } = require('../../src/server/todoist/service.js');
 
 describe('todoist service safeguards', () => {
@@ -87,5 +93,43 @@ describe('todoist service safeguards', () => {
 
     const insertedEvents = todoistStore.insertTaskEvents.mock.calls[0][1];
     expect(insertedEvents[0].before_json).toEqual({ review_status: 'needs_review' });
+  });
+
+  test('evaluateTodoistNormalization does not write todoist tables', async () => {
+    runTodoistNormalizationGraphWithTrace.mockResolvedValue({
+      result: {
+        normalized_title_en: 'Follow up with vendor',
+        task_shape: 'follow_up',
+        suggested_next_action: 'Send reminder',
+        parse_confidence: 0.9,
+        parse_failed: false,
+        parse_failure_reason: null,
+      },
+      trace: {
+        llm_used: true,
+        llm_reason: 'classification_required',
+        parse_status: 'ok',
+      },
+    });
+
+    const out = await evaluateTodoistNormalization({
+      raw_title: 'follow up with vendor',
+      project_key: 'work',
+      lifecycle_status: 'open',
+    });
+
+    expect(out).toEqual(expect.objectContaining({
+      status: 'ok',
+      normalized_task: expect.objectContaining({
+        task_shape: 'follow_up',
+      }),
+      normalize_trace: expect.objectContaining({
+        parse_status: 'ok',
+      }),
+    }));
+    expect(getPool).not.toHaveBeenCalled();
+    expect(todoistStore.upsertTaskCurrent).not.toHaveBeenCalled();
+    expect(todoistStore.insertTaskEvents).not.toHaveBeenCalled();
+    expect(todoistStore.updateTaskForReviewAction).not.toHaveBeenCalled();
   });
 });

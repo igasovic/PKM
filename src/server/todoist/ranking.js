@@ -85,10 +85,16 @@ function scoreDaily(task, nowDate) {
   const overdueDays = dueDelta !== null && dueDelta > 0 ? dueDelta : 0;
   const dueSoonBoost = dueDelta !== null && dueDelta <= 1 ? 4 : 0;
   const waitPenalty = asText(task.lifecycle_status) === 'waiting' ? -8 : 0;
+  const shape = asText(task.task_shape);
+  const shapePenalty = (
+    shape === 'project' ? -2
+      : (shape === 'vague_note' || shape === 'unknown') ? -4
+        : 0
+  );
   const confidence = Number(task.parse_confidence || 0);
   const priority = Number(task.todoist_priority || 1);
   const aging = Math.min(14, ageDays(task, nowDate));
-  return (overdueDays * 6) + dueSoonBoost + (priority * 3) + confidence + aging + waitPenalty;
+  return (overdueDays * 6) + dueSoonBoost + (priority * 3) + confidence + aging + waitPenalty + shapePenalty;
 }
 
 function scoreWaiting(task, nowDate) {
@@ -120,7 +126,10 @@ function assignWeeklyRecommendation(task, nowDate) {
   if (overdue >= 7) return 'defer';
   if (review === 'needs_review') return 'convert_to_next_action';
   if (lifecycle === 'waiting' && waitingAge >= 14) return 'keep_waiting';
-  if (shape === 'project' || shape === 'vague_note' || shape === 'unknown') return 'convert_to_next_action';
+  if (shape === 'project') {
+    return asText(task.suggested_next_action) ? 'defer' : 'convert_to_next_action';
+  }
+  if (shape === 'vague_note' || shape === 'unknown') return 'convert_to_next_action';
   if (shape === 'follow_up' && lifecycle === 'waiting') return 'keep_waiting';
   return 'keep_as_note';
 }

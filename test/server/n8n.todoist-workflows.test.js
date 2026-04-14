@@ -76,11 +76,20 @@ describe('n8n todoist workflows', () => {
                 id: 'task-1',
                 project_id: 'proj-work',
                 section_id: 'sec-wait',
-                content: 'Follow up with Alex',
+                content: 'PRJ: Renovation plan',
                 description: 'about invoice',
                 priority: 4,
                 due: { date: '2026-04-11', string: 'today', is_recurring: false },
                 added_at: '2026-04-10T00:00:00.000Z',
+              },
+              {
+                id: 'task-1a',
+                project_id: 'proj-work',
+                parent_id: 'task-1',
+                section_id: 'sec-wait',
+                content: 'Follow up with Alex',
+                description: 'about invoice',
+                priority: 3,
               },
               {
                 id: 'task-2',
@@ -97,16 +106,24 @@ describe('n8n todoist workflows', () => {
 
     const row = out[0].json;
     expect(Array.isArray(row.tasks)).toBe(true);
-    expect(row.tasks).toHaveLength(1);
-    expect(row.tasks[0]).toEqual(expect.objectContaining({
+    expect(row.tasks).toHaveLength(2);
+    const byId = new Map(row.tasks.map((task) => [task.todoist_task_id, task]));
+    expect(byId.get('task-1')).toEqual(expect.objectContaining({
       todoist_task_id: 'task-1',
       project_key: 'work',
       todoist_section_name: 'Waiting',
       todoist_priority: 4,
+      has_subtasks: true,
+      explicit_project_signal: true,
+    }));
+    expect(byId.get('task-1a')).toEqual(expect.objectContaining({
+      todoist_task_id: 'task-1a',
+      has_subtasks: false,
+      explicit_project_signal: false,
     }));
     expect(row.sync_meta).toEqual(expect.objectContaining({
-      fetched_task_count: 2,
-      filtered_task_count: 1,
+      fetched_task_count: 3,
+      filtered_task_count: 2,
     }));
   });
 

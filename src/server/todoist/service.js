@@ -12,7 +12,11 @@ const {
   buildWaitingBrief,
   buildWeeklyBrief,
 } = require('./ranking.js');
-const { asText } = require('./constants.js');
+const {
+  asText,
+  parseBoolean,
+  detectExplicitProjectSignal,
+} = require('./constants.js');
 
 function nowIso(input) {
   const d = input ? new Date(input) : new Date();
@@ -122,6 +126,8 @@ async function syncTodoistSurface(input, options = {}) {
           project_key: incoming.project_key,
           todoist_section_name: incoming.todoist_section_name,
           lifecycle_status: incoming.lifecycle_status,
+          has_subtasks: incoming.has_subtasks === true,
+          explicit_project_signal: incoming.explicit_project_signal === true,
         })
         : { result: parsePatchFromExisting(existing), trace: { skipped: true, reason: 'no_parse_trigger' } };
 
@@ -136,6 +142,8 @@ async function syncTodoistSurface(input, options = {}) {
         suggested_next_action: parseOut.suggested_next_action,
         parse_confidence: parseOut.parse_confidence,
         parse_failed: parseOut.parse_failed,
+        has_subtasks: incoming.has_subtasks === true,
+        explicit_project_signal: incoming.explicit_project_signal === true,
         previous_review_status: existing ? existing.review_status : null,
         parse_triggered: state.parse_triggered,
       }, options);
@@ -312,12 +320,16 @@ async function reparseReview(input) {
   const existing = await todoistStore.getTaskByTodoistTaskId(todoistTaskId);
   if (!existing) return null;
 
+  const explicitProjectSignal = detectExplicitProjectSignal(existing.raw_title);
+  const hasSubtasks = parseBoolean(existing.has_subtasks, false);
   const parseRun = await runTodoistNormalizationGraphWithTrace({
     raw_title: existing.raw_title,
     raw_description: existing.raw_description,
     project_key: existing.project_key,
     todoist_section_name: existing.todoist_section_name,
     lifecycle_status: existing.lifecycle_status,
+    has_subtasks: hasSubtasks,
+    explicit_project_signal: explicitProjectSignal,
   });
 
   const parseOut = parseRun && parseRun.result ? parseRun.result : parsePatchFromExisting(existing);
@@ -328,6 +340,8 @@ async function reparseReview(input) {
     suggested_next_action: parseOut.suggested_next_action,
     parse_confidence: parseOut.parse_confidence,
     parse_failed: parseOut.parse_failed,
+    has_subtasks: hasSubtasks,
+    explicit_project_signal: explicitProjectSignal,
     previous_review_status: existing.review_status,
     parse_triggered: true,
   });
@@ -501,6 +515,33 @@ async function buildWeeklyBriefSurface(input) {
   return out;
 }
 
+async function evaluateTodoistNormalization(input) {
+  const body = input && typeof input === 'object' ? input : {};
+  const rawTitle = asText(body.raw_title);
+  if (!rawTitle) {
+    const err = new Error('raw_title is required');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const parseRun = await runTodoistNormalizationGraphWithTrace({
+    raw_title: rawTitle,
+    raw_description: asText(body.raw_description) || null,
+    project_key: asText(body.project_key) || null,
+    todoist_section_name: asText(body.todoist_section_name) || null,
+    lifecycle_status: asText(body.lifecycle_status) || 'open',
+    has_subtasks: body.has_subtasks === true,
+    explicit_project_signal: body.explicit_project_signal === true,
+    few_shot_examples: Array.isArray(body.few_shot_examples) ? body.few_shot_examples : [],
+  });
+
+  return {
+    status: 'ok',
+    normalized_task: parseRun && parseRun.result ? parseRun.result : null,
+    normalize_trace: parseRun && parseRun.trace ? parseRun.trace : null,
+  };
+}
+
 module.exports = {
   syncTodoistSurface,
   getReviewQueue,
@@ -510,4 +551,5 @@ module.exports = {
   buildDailyBriefSurface,
   buildWaitingBriefSurface,
   buildWeeklyBriefSurface,
+  evaluateTodoistNormalization,
 };

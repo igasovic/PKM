@@ -5,6 +5,8 @@ const {
   mapProjectKey,
   lifecycleFromSection,
   parsePriority,
+  parseBoolean,
+  detectExplicitProjectSignal,
   parseOptionalDate,
 } = require('./constants.js');
 
@@ -42,6 +44,7 @@ function normalizeIncomingTask(task) {
   const project_key = mapProjectKey(todoist_project_name, raw.project_key);
 
   const todoist_section_name = asText(raw.todoist_section_name || raw.section_name || raw.section || '');
+  const raw_title = asText(raw.raw_title || raw.content || raw.title || '');
 
   const due = raw.due && typeof raw.due === 'object' ? raw.due : {};
 
@@ -51,7 +54,7 @@ function normalizeIncomingTask(task) {
     todoist_project_name,
     todoist_section_id: asText(raw.todoist_section_id || raw.section_id || '') || null,
     todoist_section_name: todoist_section_name || null,
-    raw_title: asText(raw.raw_title || raw.content || raw.title || ''),
+    raw_title,
     raw_description: asText(raw.raw_description || raw.description || '') || null,
     todoist_priority: parsePriority(raw.todoist_priority || raw.priority),
     todoist_due_date: parseOptionalDate(raw.todoist_due_date || due.date),
@@ -60,6 +63,11 @@ function normalizeIncomingTask(task) {
     project_key,
     lifecycle_status: lifecycleFromSection(todoist_section_name),
     todoist_added_at: parseTodoistAddedAt(raw),
+    has_subtasks: parseBoolean(raw.has_subtasks ?? raw.hasSubtasks, false),
+    explicit_project_signal: parseBoolean(
+      raw.explicit_project_signal ?? raw.explicitProjectSignal,
+      detectExplicitProjectSignal(raw_title)
+    ),
   };
 }
 

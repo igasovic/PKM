@@ -4,7 +4,9 @@
 Todoist LLM Planning Assistant
 
 ## Status
-Active (V1 implemented)
+active
+
+**Implementation note:** end-to-end V1 surface exists. Parser retune, stronger project-evidence inputs, review/ranking recalibration, review-loop export helpers, and Pi live eval harness are implemented. `next_action` scoring remains pending until corpus labels are expanded.
 
 ## Surface owner
 PKM / planning workflow
@@ -31,11 +33,12 @@ Canonical surface
 - Changing task normalization, review, ranking, or briefing logic
 - Building the PKM UI review surface for task interpretation corrections
 - Defining success metrics for the planning assistant
+- Defining or updating the Todoist normalization eval corpus/harness
 
 ## Fast path by agent
-- Coding agent: start with Current behavior, Data model, Sync/state transitions, and Output contracts
-- Planning agent: start with Goals, Non-goals, Execution flow, and Success metrics
-- Reviewing agent: start with Risks/open questions, Validation/acceptance, and Output contracts
+- Coding agent: start with Current behavior, Data model, Sync/state transitions, Eval corpus and harness, and Output contracts
+- Planning agent: start with Goals, Non-goals, Execution flow, Success metrics, and Eval corpus and harness
+- Reviewing agent: start with Risks/open questions, Validation/acceptance, Eval corpus and harness, and Output contracts
 - Architect agent: start with Boundaries and callers, Runtime/config implications, and API/config TBDs
 
 ## Section map
@@ -47,14 +50,15 @@ Canonical surface
 6. Data model
 7. Review model
 8. Normalization model
-9. Sync / state transitions
-10. Ranking and output contracts
-11. PKM UI review surface
-12. Runtime / topology implications
-13. Success metrics
-14. Validation / acceptance criteria
-15. Risks / open questions
-16. TBD
+9. Eval corpus and harness
+10. Sync / state transitions
+11. Ranking and output contracts
+12. PKM UI review surface
+13. Runtime / topology implications
+14. Success metrics
+15. Validation / acceptance criteria
+16. Risks / open questions
+17. TBD
 
 ---
 
@@ -84,6 +88,8 @@ The system must prioritize trust, simplicity, and reviewability over maximal aut
 - Work sections besides Waiting are fluid and must not affect behavior in v1
 - Inbox is a capture buffer and should not directly influence planning surfaces
 - User sometimes inputs tasks in English, Serbian, or mixed language; output should be English only
+- Current labeled corpus shows the user’s real task style is mostly actionable; `project` should be treated as a narrow class, not a default fallback
+- In practice, subtasks are a strong signal for true project usage; explicit project markers may also be added
 
 ### Product baseline for v1
 - n8n fetches Todoist projects first, filters to allowed projects, then fetches sections/tasks for those projects only
@@ -93,6 +99,8 @@ The system must prioritize trust, simplicity, and reviewability over maximal aut
 - close and delete are treated the same in backend lifecycle: `closed`
 - parser logic changes do not trigger global reparses in v1
 - no dedicated override-history persistence layer in v1; manual overrides directly update current parsed fields and emit an event
+- parser quality is currently in active iteration; eval corpus and harness are first-class implementation surfaces, not deferred polish
+- normalization prompt keeps a few-shot placeholder token (`TODO_FILL_FROM_CORPUS_PROMPT_EXAMPLES`) and prompt examples are now injected from corpus rows in live eval runs
 
 ---
 
@@ -111,6 +119,7 @@ The system must prioritize trust, simplicity, and reviewability over maximal aut
 2. Make ranking weights configurable
 3. Use deterministic logic for selection and LLM only for normalization + rationale wording
 4. Keep v1 narrow enough to ship and evaluate without large automation risk
+5. Align parser behavior with the user’s real short-form task style rather than generic “broad work item” assumptions
 
 ---
 
@@ -141,6 +150,7 @@ Source of truth for:
 - section
 - due state
 - priority
+- subtask existence (when collected)
 
 ### n8n
 Owns:
@@ -163,6 +173,7 @@ Owns:
 - deterministic ranking and grouping
 - JSON output assembly for all briefs
 - LLM rationale generation on already-selected items
+- eval harness orchestration and reporting
 
 ### LangGraph normalization node
 Owns:
@@ -175,6 +186,7 @@ Does not own:
 - ranking
 - grouping
 - DB writes
+- eval scoring
 
 ### PKM UI
 Owns:
@@ -290,6 +302,8 @@ All `project_key = inbox` tasks are always `needs_review` with high queue priori
 - `project_key`
 - `todoist_section_name`
 - `lifecycle_status`
+- `has_subtasks` when available
+- explicit project signal when available (for example `PRJ:` title prefix)
 
 ### Output schema
 - `normalized_title_en`
@@ -300,8 +314,16 @@ All `project_key = inbox` tasks are always `needs_review` with high queue priori
 ### Normalization principles
 - English-only output
 - preserve meaning rather than optimize phrasing
-- prefer `unknown` over fake certainty
-- prefer `null` next action over invented next action
+- many short tasks from this user are intentionally brief but still actionable
+- short title breadth alone is not enough to classify `project`
+- `project` requires stronger evidence, such as:
+  - subtasks present
+  - explicit project marker such as `PRJ:`
+  - clearly multi-step outcome/workstream phrasing
+- prefer `next_action` for short actionable home/personal/admin tasks unless there is strong evidence otherwise
+- prefer `unknown` over fake certainty only when genuinely ambiguous
+- prefer `null` next action over invented next action for already-clear executable tasks
+- for true `project` items, one plausible next action is preferred when clearly supported
 - treat Waiting as context, not proof
 - do not infer urgency, owner, or duration
 
@@ -322,7 +344,112 @@ Task normalization is implemented as a LangGraph node and must be covered by eva
 
 ---
 
-## 9. Sync / state transitions
+## 9. Eval corpus and harness
+
+### Purpose
+Todoist normalization must be developed against a small but explicit labeled corpus split into:
+- a full gold corpus
+- a prompt-example subset
+- a locked eval subset
+
+This should follow the same **pattern used for calendar eval**:
+- one canonical corpus source
+- explicit split between prompt-visible examples and locked eval rows
+- repeatable scoring against the locked eval subset
+- prompt tuning must not show locked eval rows to the model
+
+### Required corpus groups
+Maintain one canonical corpus file with a required `corpus_group` column.
+
+Allowed values:
+- `gold_only`
+- `prompt_examples`
+- `eval_core`
+
+Rules:
+- all rows belong to the canonical gold corpus
+- rows marked `prompt_examples` are allowed to be injected into the parser prompt as few-shot examples
+- rows marked `eval_core` must never be shown to the parser prompt
+- `prompt_examples` and `eval_core` must be disjoint
+- `eval_core` is the primary scored regression subset for parser changes
+
+### Recommended starting sizes
+For the initial corpus (current ~30 tasks plus a few additional true project examples):
+- `prompt_examples`: 12–16 rows
+- `eval_core`: 10–12 rows
+- remainder: `gold_only`
+
+### Recommended shape mix
+Because the current labeled corpus is heavily skewed toward actionable tasks, the corpus should be expanded slightly before freezing v1 so true `project` cases are represented.
+
+Recommended target mix for the full gold corpus:
+- `next_action`: 18–24
+- `follow_up`: 4–6
+- `vague_note`: 4–6
+- `unknown`: 2–4
+- `project`: 4–6
+
+Recommended target mix for `eval_core`:
+- `next_action`: 4–5
+- `follow_up`: 2
+- `vague_note`: 2
+- `unknown`: 1
+- `project`: 1–2
+
+Recommended target mix for `prompt_examples`:
+- `next_action`: 5–7
+- `follow_up`: 2–3
+- `vague_note`: 2–3
+- `unknown`: 1–2
+- `project`: 2–3
+
+### Required label columns
+Minimum required columns:
+- `todoist_task_id`
+- `raw_title`
+- `project_key`
+- `model_task_shape`
+- `gold_task_shape`
+- `gold_suggested_next_action`
+- `gold_keep_in_daily_pool`
+- `gold_normalized_title_en`
+- `corpus_group`
+
+### Additional recommended feature columns
+If easy to collect, add:
+- `has_subtasks`
+- `explicit_project_signal`
+
+These are especially useful because true `project` classification in this surface should require stronger evidence than short-title breadth alone.
+
+### Coding-agent implementation note
+Implementation must support:
+- reading one canonical labeled corpus source
+- filtering by `corpus_group`
+- building prompt examples only from `prompt_examples`
+- scoring parser changes only on `eval_core`
+- reporting at minimum:
+  - task-shape accuracy on `eval_core`
+  - next-action null/non-null agreement on `eval_core`
+  - project overcall rate on `eval_core`
+
+Current implementation posture:
+- canonical corpus fixture exists at `evals/todoist/fixtures/gold/normalize.json`
+- `has_subtasks` and explicit project-signal inputs are wired into normalization/review paths
+- live runner exists (`scripts/evals/run_todoist_live.js`) and scores locked `eval_core` rows only
+- reports are emitted as timestamped JSON + Markdown under `evals/reports/todoist/`
+- eval execution is Pi/live-backend only for this surface
+- next-action null/non-null metric is explicitly deferred until corpus labels are expanded
+
+### Maintenance guidance
+When the corpus grows:
+- keep `eval_core` stable as long as practical
+- add new corrected tasks to `gold_only` first
+- periodically promote a small number of rows into a fresh `eval_core_v2` when the old eval has been overfit through repeated tuning
+
+---
+
+## 10. Sync / state transitions
 
 ### n8n-side sequence
 1. fetch projects
@@ -373,7 +500,7 @@ Do not reparse when only:
 
 ---
 
-## 10. Ranking and output contracts
+## 11. Ranking and output contracts
 
 ### General build rule for all outputs
 Use hybrid generation:
@@ -438,7 +565,7 @@ Rules:
 
 ---
 
-## 11. PKM UI review surface
+## 12. PKM UI review surface
 
 ### Role
 PKM UI is a review/correction surface for backend fields only.
@@ -478,7 +605,7 @@ PKM UI is a review/correction surface for backend fields only.
 
 ---
 
-## 12. Runtime / topology implications
+## 13. Runtime / topology implications
 
 ### Runtime roles
 - n8n: orchestration + scheduled fetch/delivery
@@ -498,7 +625,7 @@ The API contract is implemented in `docs/api_todoist.md`. Remaining tuning knobs
 
 ---
 
-## 13. Success metrics
+## 14. Success metrics
 
 ### Primary success metrics
 1. **Overdue reduction**
@@ -537,10 +664,11 @@ The API contract is implemented in `docs/api_todoist.md`. Remaining tuning knobs
 - many manual overrides on supposedly safe items
 - review queue becomes too large to process
 - waiting nudges feel noisy or repetitive
+- parser project-overcalls remain high on locked eval
 
 ---
 
-## 14. Validation / acceptance criteria
+## 15. Validation / acceptance criteria
 
 ### Minimum functional acceptance
 1. Allowed-project sync works through n8n -> backend path
@@ -551,12 +679,14 @@ The API contract is implemented in `docs/api_todoist.md`. Remaining tuning knobs
 6. Daily brief JSON is generated deterministically with LLM rationale text attached
 7. Waiting radar JSON is generated deterministically with grouped nudges when clear
 8. Weekly pruning JSON is generated deterministically with bounded recommendation types
+9. Eval harness can score parser output from canonical corpus using locked `eval_core`
 
 ### Trust acceptance
 1. Parse failures never silently enter recommendation surfaces
 2. `needs_review` items are excluded from daily focus and waiting radar
 3. Overridden items can later be reparsed and return to review when appropriate
 4. All surfaced rationale text is based only on deterministic shortlist input
+5. Prompt examples and locked eval rows remain disjoint
 
 ### Usability acceptance
 1. Review queue default sort feels operationally sensible
@@ -565,7 +695,7 @@ The API contract is implemented in `docs/api_todoist.md`. Remaining tuning knobs
 
 ---
 
-## 15. Risks / open questions
+## 16. Risks / open questions
 
 ### Open questions intentionally parked
 1. Should reviewed `project` tasks get a controlled “big thing” slot in the daily brief?
@@ -578,12 +708,12 @@ The API contract is implemented in `docs/api_todoist.md`. Remaining tuning knobs
 3. Waiting grouping may under-group if the heuristic is too cautious
 4. Overwrite-on-reparse may occasionally replace a useful manual correction in v1
 5. Weekly pruning may feel naggy if caps and scoring are not tuned carefully
+6. Eval core may be overfit through repeated prompt iteration unless refreshed deliberately
 
 ---
 
-## 16. TBD
+## 17. TBD
 
 - Config surface ownership and exact config file/DB placement for long-term tuning ergonomics
-- Eval plan and corpus design for normalization/ranking quality tracking
 - Success metric thresholds / baselines once first instrumentation exists
 - Whether daily brief should later include a reviewed “big thing worth advancing” slot

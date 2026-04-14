@@ -1,6 +1,10 @@
 'use strict';
 
-const { asText } = require('../constants.js');
+const {
+  asText,
+  parseBoolean,
+  detectExplicitProjectSignal,
+} = require('../constants.js');
 const { runTodoistLlmAgent } = require('./runner.js');
 const {
   parseNormalizationLlmResult,
@@ -26,6 +30,11 @@ function normalizeTaskInput(input) {
     project_key: asText(input && input.project_key) || null,
     todoist_section_name: asText(input && input.todoist_section_name) || null,
     lifecycle_status: asText(input && input.lifecycle_status) || 'open',
+    has_subtasks: parseBoolean(input && input.has_subtasks, false),
+    explicit_project_signal: parseBoolean(
+      input && input.explicit_project_signal,
+      detectExplicitProjectSignal(rawTitle)
+    ),
   };
 }
 

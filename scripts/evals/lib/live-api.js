@@ -35,6 +35,17 @@ async function postCalendarNormalize({ backendUrl, adminSecret, runId, body, tim
   return assertOkJson(response, 'POST /calendar/normalize');
 }
 
+async function postTodoistEvalNormalize({ backendUrl, adminSecret, runId, body, timeoutMs }) {
+  const response = await requestJson({
+    method: 'POST',
+    url: `${trimTrailingSlash(backendUrl)}/todoist/eval/normalize`,
+    headers: buildHeaders(adminSecret, runId),
+    body: { ...body, run_id: runId },
+    timeoutMs,
+  });
+  return assertOkJson(response, 'POST /todoist/eval/normalize');
+}
+
 async function getDebugRun({ backendUrl, adminSecret, runId, limit, timeoutMs }) {
   const url = `${trimTrailingSlash(backendUrl)}/debug/run/${encodeURIComponent(runId)}?limit=${Number(limit || 200)}`;
   const response = await requestJson({
@@ -66,6 +77,7 @@ async function getFailureBundle({ backendUrl, adminSecret, runId, traceLimit, ti
 module.exports = {
   postTelegramRoute,
   postCalendarNormalize,
+  postTodoistEvalNormalize,
   getDebugRun,
   getFailureBundle,
 };

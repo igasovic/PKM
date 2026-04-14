@@ -114,6 +114,22 @@ describe('todoist API contract', () => {
         summary: { candidate_count: 1, needs_review_count: 0, waiting_count: 0 },
         telegram_message: 'Todoist Weekly Pruning',
       })),
+      evaluateTodoistNormalization: jest.fn(async () => ({
+        status: 'ok',
+        normalized_task: {
+          normalized_title_en: 'Follow up with vendor',
+          task_shape: 'follow_up',
+          suggested_next_action: 'Send a reminder',
+          parse_confidence: 0.91,
+          parse_failed: false,
+          parse_failure_reason: null,
+        },
+        normalize_trace: {
+          llm_used: true,
+          llm_reason: 'classification_required',
+          parse_status: 'ok',
+        },
+      })),
     };
 
     jest.doMock('../../src/server/repositories/todoist-repository.js', () => todoistRepoMock);
@@ -275,5 +291,48 @@ describe('todoist API contract', () => {
     expect(JSON.parse(daily.body)).toEqual(expect.objectContaining({ brief_kind: 'daily_focus', telegram_message: expect.any(String) }));
     expect(JSON.parse(waiting.body)).toEqual(expect.objectContaining({ brief_kind: 'waiting_radar', telegram_message: expect.any(String) }));
     expect(JSON.parse(weekly.body)).toEqual(expect.objectContaining({ brief_kind: 'weekly_pruning', telegram_message: expect.any(String) }));
+  });
+
+  test('POST /todoist/eval/normalize requires admin secret', async () => {
+    await startServer();
+    if (listenDenied) return;
+
+    const res = await request(port, 'POST', '/todoist/eval/normalize', JSON.stringify({
+      raw_title: 'follow up with vendor',
+    }), {
+      'Content-Type': 'application/json',
+    });
+
+    expect(res.status).toBe(403);
+    expect(JSON.parse(res.body)).toEqual({ error: 'forbidden', message: 'forbidden' });
+    expect(todoistRepoMock.evaluateTodoistNormalization).not.toHaveBeenCalled();
+  });
+
+  test('POST /todoist/eval/normalize returns parse output + trace', async () => {
+    await startServer();
+    if (listenDenied) return;
+
+    const body = {
+      raw_title: 'follow up with vendor',
+      project_key: 'work',
+      lifecycle_status: 'open',
+    };
+    const res = await request(port, 'POST', '/todoist/eval/normalize', JSON.stringify(body), {
+      'Content-Type': 'application/json',
+      'x-pkm-admin-secret': 'test-admin-secret',
+    });
+
+    expect(res.status).toBe(200);
+    expect(todoistRepoMock.evaluateTodoistNormalization).toHaveBeenCalledWith(expect.objectContaining(body));
+    expect(JSON.parse(res.body)).toEqual(expect.objectContaining({
+      status: 'ok',
+      normalized_task: expect.objectContaining({
+        task_shape: expect.any(String),
+        normalized_title_en: expect.any(String),
+      }),
+      normalize_trace: expect.objectContaining({
+        parse_status: expect.any(String),
+      }),
+    }));
   });
 });

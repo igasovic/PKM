@@ -2,6 +2,7 @@
 
 const todoistRepository = require('../repositories/todoist-repository.js');
 const {
+  requireAdminSecret,
   readBody,
   parseJsonBody,
   bindRunIdFromBody,
@@ -334,6 +335,46 @@ async function handleTodoistRoutes(ctx) {
 
       logApiSuccess(meta, {
         suggestions: Array.isArray(out.suggestions) ? out.suggestions.length : 0,
+      }, {
+        duration_ms: Date.now() - start,
+      });
+      json(res, 200, out);
+    } catch (err) {
+      logApiError(meta, err, { duration_ms: Date.now() - start });
+      sendError(res, err, { includeField: false });
+    }
+
+    return true;
+  }
+
+  if (method === 'POST' && url.pathname === '/todoist/eval/normalize') {
+    const start = Date.now();
+    const meta = { op: 'api_todoist_eval_normalize', method, path: url.pathname };
+
+    try {
+      requireAdminSecret(req);
+      const body = await readPostBody(req);
+      const out = await logger.step(
+        'api.todoist.eval.normalize',
+        async () => todoistRepository.evaluateTodoistNormalization(body),
+        {
+          input: {
+            has_title: !!asText(body.raw_title),
+            project_key: asText(body.project_key) || null,
+            has_examples: Array.isArray(body.few_shot_examples) && body.few_shot_examples.length > 0,
+          },
+          output: (result) => ({
+            status: asText(result && result.status) || null,
+            task_shape: asText(result && result.normalized_task && result.normalized_task.task_shape) || null,
+            parse_confidence: Number(result && result.normalized_task && result.normalized_task.parse_confidence),
+          }),
+          meta: { route: url.pathname },
+        }
+      );
+
+      logApiSuccess(meta, {
+        status: asText(out && out.status) || null,
+        task_shape: asText(out && out.normalized_task && out.normalized_task.task_shape) || null,
       }, {
         duration_ms: Date.now() - start,
       });

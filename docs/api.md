@@ -54,7 +54,7 @@ The machine-readable route ownership registry lives in `docs/backend_route_regis
 | Tier-2 distill | `docs/api_distill.md` | admin secret | `entries`, `t2_*` | tier2 API/control-plane/service tests |
 | Read / write | `docs/api_read_write.md` | mixed; destructive routes require secret | active schema `entries` | read-sql, context-pack, idempotency tests |
 | Recipes | `docs/api_recipes.md` | internal | active schema `recipes` | recipes API and parser contract tests |
-| Todoist planning | `docs/api_todoist.md` | internal | prod schema `todoist_task_current`, `todoist_task_events` | todoist API, reconcile/ranking, n8n helper tests |
+| Todoist planning | `docs/api_todoist.md` | mixed (internal + admin secret eval) | prod schema `todoist_task_current`, `todoist_task_events` | todoist API, reconcile/ranking, n8n helper tests, todoist eval tooling tests |
 | Backend env | `docs/backend_runtime_env.md` | n/a | n/a | config/runtime tests |
 
 ## Domain Docs

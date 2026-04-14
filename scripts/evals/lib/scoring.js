@@ -32,6 +32,30 @@ function buildRouteConfusion(results) {
   return { labels, matrix };
 }
 
+function normalizeText(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function buildTodoistShapeConfusion(results) {
+  const labels = ['project', 'next_action', 'micro_task', 'follow_up', 'vague_note', 'unknown'];
+  const matrix = {};
+  for (const exp of labels) {
+    matrix[exp] = {};
+    for (const got of labels) matrix[exp][got] = 0;
+  }
+  for (const row of results || []) {
+    const exp = normalizeText(row.expected_task_shape) || 'unknown';
+    const got = normalizeText(row.actual_task_shape) || 'unknown';
+    if (!matrix[exp]) matrix[exp] = {};
+    if (!Number.isFinite(matrix[exp][got])) matrix[exp][got] = 0;
+    matrix[exp][got] += 1;
+  }
+  return { labels, matrix };
+}
+
 function scoreRouterResults(results) {
   const rows = Array.isArray(results) ? results : [];
   const total = rows.length;
@@ -139,7 +163,50 @@ function scoreNormalizeResults(results) {
   };
 }
 
+function scoreTodoistNormalizeResults(results) {
+  const rows = Array.isArray(results) ? results : [];
+  const total = rows.length;
+  const shapeCorrect = rows.filter((r) => r.shape_match).length;
+  const titleCorrect = rows.filter((r) => r.title_match).length;
+  const passed = rows.filter((r) => r.pass).length;
+
+  const nonProjectGold = rows.filter((r) => normalizeText(r.expected_task_shape) !== 'project');
+  const projectOvercalls = nonProjectGold.filter((r) => normalizeText(r.actual_task_shape) === 'project');
+
+  const confusion = buildTodoistShapeConfusion(rows);
+
+  const failureGroups = {
+    project_overcalls: projectOvercalls,
+    high_confidence_shape_errors: rows.filter((r) => !r.shape_match && Number(r.parse_confidence || 0) >= 0.8),
+    title_mismatches: rows.filter((r) => !r.title_match),
+    missing_observability: rows.filter((r) => r.observability_ok === false),
+  };
+
+  const byBucket = groupBy(rows, (r) => r.bucket || 'unknown');
+  const bucketSummary = Array.from(byBucket.entries()).map(([bucket, bucketRows]) => ({
+    bucket,
+    total: bucketRows.length,
+    shape_accuracy: safeRate(bucketRows.filter((r) => r.shape_match).length, bucketRows.length),
+    title_match_rate: safeRate(bucketRows.filter((r) => r.title_match).length, bucketRows.length),
+  }));
+
+  return {
+    total,
+    passed,
+    failed: total - passed,
+    accuracy: safeRate(passed, total),
+    task_shape_accuracy: safeRate(shapeCorrect, total),
+    normalized_title_match_rate: safeRate(titleCorrect, total),
+    project_overcall_rate: safeRate(projectOvercalls.length, nonProjectGold.length),
+    confusion,
+    failure_groups: failureGroups,
+    bucket_summary: bucketSummary,
+    next_action_metric: 'pending_missing_labels',
+  };
+}
+
 module.exports = {
   scoreRouterResults,
   scoreNormalizeResults,
+  scoreTodoistNormalizeResults,
 };

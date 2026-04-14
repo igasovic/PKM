@@ -10,10 +10,11 @@ describe('todoist reconcile semantics', () => {
   test('normalizeIncomingTask maps project and waiting lifecycle', () => {
     const row = normalizeIncomingTask({
       id: 't1',
-      content: 'Follow up with Alex',
+      content: 'PRJ: Follow up with Alex',
       description: 'status update',
       project_name: 'Home 🏡',
       section_name: 'Waiting',
+      has_subtasks: true,
       due: { date: '2026-04-11', string: 'today', is_recurring: false },
       priority: 4,
       added_at: '2026-04-10T00:00:00.000Z',
@@ -25,6 +26,8 @@ describe('todoist reconcile semantics', () => {
       lifecycle_status: 'waiting',
       todoist_due_date: '2026-04-11',
       todoist_priority: 4,
+      has_subtasks: true,
+      explicit_project_signal: true,
     }));
   });
 
