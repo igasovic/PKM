@@ -254,6 +254,29 @@ export interface TodoistReviewQueueResult {
   events: TodoistTaskEvent[];
 }
 
+export type EvalSurface = 'router' | 'calendar' | 'todoist';
+export type EvalTier = 'gold' | 'candidates';
+
+export interface EvalCaseRecord {
+  id: string;
+  surface: EvalSurface;
+  tier: EvalTier;
+  suite: string;
+  mode: string;
+  case_id: string;
+  name: string;
+  bucket: string;
+  corpus_group: string | null;
+  failure_tags: string[];
+  input: Record<string, unknown> | null;
+  expect: Record<string, unknown> | null;
+  setup: Record<string, unknown> | null;
+  expected_label: string;
+  input_preview: string;
+  expect_preview: string;
+  source_path: string;
+}
+
 export type SpanStatus = 'ok' | 'error' | 'missing_end' | 'orphan_end' | 'orphan_error';
 
 export interface PairedSpan {

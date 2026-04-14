@@ -88,7 +88,10 @@ export default defineConfig(({ mode }) => {
             port: 5173,
             strictPort: true,
             fs: {
-                allow: [path.resolve(__dirname, '../../')],
+                allow: [
+                    path.resolve(__dirname, '../../'),
+                    path.resolve(__dirname, '../../../'),
+                ],
             },
             proxy: {
                 '^/api/debug(/|$)': {

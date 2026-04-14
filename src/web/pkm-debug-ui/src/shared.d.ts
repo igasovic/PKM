@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 declare module '@shared/context-pack-builder.js' {
   export {};
 }

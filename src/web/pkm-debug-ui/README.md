@@ -5,12 +5,13 @@ Local React + Tailwind GUI for:
 - **Entities** browsing and maintenance via `/db/read/entities`, `/db/delete`, `/db/move`
 - **Working Memory** lookup via `/chatgpt/working_memory`
 - **Recipes** workflows via `/recipes/*`
+- **Evals** fixture case exploration from `evals/*/fixtures/*` (repo-first, read-only)
 - **Debug** pipeline inspection via `/debug/*`
 - **Failures** diagnostics via `/debug/failures*`
 
 ## Scope
 - Dark-mode only UI.
-- Uses PKM server HTTP only (no DB connections).
+- Uses PKM server HTTP for backend pages and repo fixture imports for `/evals` (no DB connections).
 - Read page depends on:
   - `POST /db/read/continue`
   - `POST /db/read/find`
@@ -31,6 +32,10 @@ Local React + Tailwind GUI for:
   - `POST /recipes/overwrite`
   - `POST /recipes/link`
   - `GET /recipes/review`
+- Evals page depends on:
+  - `evals/router/fixtures/*/*.json`
+  - `evals/calendar/fixtures/*/*.json`
+  - `evals/todoist/fixtures/*/*.json`
 - Debug page depends on:
   - `GET /debug/run/:run_id`
   - `GET /debug/runs`
@@ -70,7 +75,7 @@ This keeps frontend requests relative and avoids backend CORS changes.
 ## Features
 
 ### Read
-- Left menu navigation (`/read`, `/working-memory`, `/recipes`, `/debug`, `/failures`).
+- Left menu navigation (`/read`, `/entities`, `/working-memory`, `/recipes`, `/todoist`, `/evals`, `/debug`, `/failures`).
 - Single-operation radio selection: `continue | find | last`.
 - Query controls: `q` (required), `days`, `limit`.
 - Sends request run id in `X-PKM-Run-Id` (`ui-read-<uuid>`).
@@ -108,6 +113,14 @@ This keeps frontend requests relative and avoids backend CORS changes.
 - Side drawer for event/span/node details.
 - Copy buttons for JSON sections.
 - Deterministic **Copy Investigation Bundle** output with stable key ordering.
+
+### Evals
+- Side-menu route at `/evals`.
+- Loads actual fixture cases directly from repo under `evals/*/fixtures/*` (no eval report dependency).
+- Unified table view across router/calendar/todoist fixture suites.
+- Detail card view for selected case (`input`, `expect`, optional `setup`).
+- Filter controls for surface, tier (`gold`/`candidates`), suite, bucket, and free-text search.
+- Read-only explorer (no run/start/cancel controls).
 
 ### Failures
 - Side-menu route at `/failures`.
