@@ -23,7 +23,6 @@ function buildFewShotExamplesBlock(input) {
   if (!examples.length) return FEW_SHOT_PLACEHOLDER_TOKEN;
 
   return examples
-    .slice(0, 12)
     .map((row, idx) => `${idx + 1}. ${JSON.stringify(row)}`)
     .join('\n');
 }

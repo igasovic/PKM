@@ -158,10 +158,23 @@ Any time you discover a new configuration surface, you must:
 ### Before non-trivial work
 Provide a short plan covering:
 - goal and non-goals
+- assumptions you are making, if any
 - components touched
 - contracts touched
 - tests you will add or update
+- verification or acceptance checks you expect to use
 - files you expect to change
+
+### Execution discipline
+- State assumptions explicitly when proceeding under ambiguity; do not silently choose between materially different interpretations.
+- Ask for clarification only when ambiguity changes contracts, safety, migration risk, or likely implementation direction.
+- Prefer the minimum implementation that solves the requested problem and matches existing repo patterns.
+- Do not add speculative abstraction, configurability, or extension points unless the current change demonstrably needs them.
+- Keep diffs narrowly scoped to the requested change and the required contract, test, doc, or safety updates caused by that change.
+- Do not bundle unrelated cleanup, renames, or refactors into the same change unless required for correctness.
+- If you find adjacent debt or dead code that is not required for the current change, note it separately rather than silently expanding scope.
+- For bug fixes, define the failing behavior and how you will verify the fix before changing code when practical.
+- For behavior changes, state the acceptance check before implementation; prefer tests or other concrete verification over subjective claims that something works.
 
 ### n8n workflow changes
 - Workflow wiring changes: edit in n8n UI, export JSON, commit.
@@ -191,23 +204,27 @@ Provide a short plan covering:
 Final responses should make it easy to ship and verify work:
 - summarize what changed
 - list contracts, tests, and docs updated
+- note any assumptions used for execution
 - note anything not verified
 - if config changed, include the mandatory config handoff block
 
 ### Planning agent
 Plans should include:
 - goal and non-goals
+- assumptions and open questions
 - touched surfaces and authoritative docs
 - contracts and migrations affected
 - sequencing / rollout order
-- open questions and risks
+- risks
 - expected files and tests
+- planned verification or acceptance checks
 
 ### Reviewing agent
 Reviews should focus on:
 - bugs, regressions, unsafe coupling, contract drift, and missing tests
 - missing doc or PRD updates when surfaces changed
 - config ownership and rollout hazards when config/infra are involved
+- unnecessary complexity, speculative abstraction, and scope creep
 - findings first; summaries second
 
 ### Architect agent
