@@ -2,6 +2,9 @@
 
 This directory contains non-gating live eval fixtures and reports for router/calendar/todoist quality tracking.
 
+For adding the next eval surface, use:
+- `evals/eval-writing-guide.md`
+
 ## Scope
 
 - Surfaces:

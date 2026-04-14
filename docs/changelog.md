@@ -1,5 +1,35 @@
 # changelog
 
+## 2026-04-13 — Eval runner common extraction + eval writing guide
+
+### What changed
+- Extracted shared live-eval runner plumbing into `scripts/evals/lib/runner-common.js`:
+  - common option resolution (`backend-url`, `admin-secret`, timeout, observability toggle, optional telegram user id)
+  - shared `--case-limit` parsing
+  - shared per-case observability check helper (`GET /debug/run/<run_id>`)
+  - shared report completion printing
+- Updated all live runners to consume the shared helper:
+  - `scripts/evals/run_router_live.js`
+  - `scripts/evals/run_calendar_live.js`
+  - `scripts/evals/run_todoist_live.js`
+- Added a reusable implementation guide for the next eval surface:
+  - `evals/eval-writing-guide.md`
+  - linked from `evals/README.md`
+- Added helper coverage tests:
+  - `test/server/eval-runner-common.test.js`
+
+### Surfaces changed
+- eval shared tooling
+- eval runner implementations
+- eval docs and PRD companion references
+
+### PRDs impacted
+- `docs/PRD/family-calendar-eval-work-packages.md`
+- `docs/PRD/todoist-llm-planning-prd.md`
+
+### Contract docs impacted
+- `docs/changelog.md`
+
 ## 2026-04-13 — Todoist live eval harness (Pi runner, calendar/router pattern)
 
 ### What changed

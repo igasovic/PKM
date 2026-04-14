@@ -4,45 +4,20 @@
 const {
   parseArgs,
   utcStamp,
-  toInt,
 } = require('./lib/io.js');
+const {
+  resolveRunnerOptions,
+  parsePositiveCaseLimit,
+  checkRunObservability,
+  printEvalCompletion,
+} = require('./lib/runner-common.js');
 const { loadRouterFixtures } = require('./lib/fixtures.js');
 const {
   postTelegramRoute,
   postCalendarNormalize,
-  getDebugRun,
 } = require('./lib/live-api.js');
 const { scoreRouterResults } = require('./lib/scoring.js');
 const { buildRouterMarkdown, writeEvalReport } = require('./lib/reporting.js');
-
-function requireSecret(args) {
-  const secret = String(args['admin-secret'] || process.env.PKM_ADMIN_SECRET || '').trim();
-  if (!secret) {
-    throw new Error('Missing admin secret. Set --admin-secret or PKM_ADMIN_SECRET.');
-  }
-  return secret;
-}
-
-function normalizeCaseLimit(args) {
-  const n = toInt(args['case-limit'], null);
-  if (!Number.isFinite(n) || n <= 0) return null;
-  return n;
-}
-
-async function checkObservability({ backendUrl, adminSecret, runId, timeoutMs }) {
-  try {
-    const out = await getDebugRun({
-      backendUrl,
-      adminSecret,
-      runId,
-      limit: 50,
-      timeoutMs,
-    });
-    return Array.isArray(out.rows) && out.rows.length > 0;
-  } catch (_err) {
-    return false;
-  }
-}
 
 function assertFixtureTargets(stateless, stateful) {
   const total = stateless.length + stateful.length;
@@ -73,16 +48,18 @@ function assertFixtureTargets(stateless, stateful) {
 async function run() {
   const args = parseArgs(process.argv);
   const stamp = utcStamp();
-  const backendUrl = String(args['backend-url'] || process.env.EVAL_BACKEND_URL || 'http://localhost:8080').trim();
-  const adminSecret = requireSecret(args);
-  const telegramUserId = String(args['telegram-user-id'] || process.env.EVAL_TELEGRAM_USER_ID || '1509032341').trim();
-  const timeoutMs = Number(args.timeout || process.env.EVAL_TIMEOUT_MS || 15000);
-  const checkObs = args['no-observability-check'] ? false : true;
+  const {
+    backendUrl,
+    adminSecret,
+    telegramUserId,
+    timeoutMs,
+    checkObservability: checkObs,
+  } = resolveRunnerOptions(args, { includeTelegramUserId: true });
 
   const fixtures = loadRouterFixtures();
   assertFixtureTargets(fixtures.stateless, fixtures.stateful);
 
-  const caseLimit = normalizeCaseLimit(args);
+  const caseLimit = parsePositiveCaseLimit(args);
   const selectedStateless = caseLimit ? fixtures.stateless.slice(0, caseLimit) : fixtures.stateless;
   const selectedStateful = caseLimit ? fixtures.stateful.slice(0, Math.max(1, Math.floor(caseLimit / 4))) : fixtures.stateful;
 
@@ -112,7 +89,7 @@ async function run() {
     });
 
     const observabilityOk = checkObs
-      ? await checkObservability({ backendUrl, adminSecret, runId, timeoutMs })
+      ? await checkRunObservability({ backendUrl, adminSecret, runId, timeoutMs })
       : null;
 
     const actualRoute = String(response.route || '');
@@ -174,7 +151,7 @@ async function run() {
     });
 
     const observabilityOk = checkObs
-      ? await checkObservability({ backendUrl, adminSecret, runId, timeoutMs })
+      ? await checkRunObservability({ backendUrl, adminSecret, runId, timeoutMs })
       : null;
 
     const expectedRoute = String(row.expect.route || '');
@@ -228,10 +205,11 @@ async function run() {
   const markdown = buildRouterMarkdown(report);
   const paths = writeEvalReport('router', stamp, report, markdown);
 
-  process.stdout.write(`Router eval complete.\n`);
-  process.stdout.write(`JSON: ${paths.jsonPath}\n`);
-  process.stdout.write(`Markdown: ${paths.mdPath}\n`);
-  process.stdout.write(`Accuracy: ${(Number(summary.accuracy || 0) * 100).toFixed(1)}% (${summary.passed}/${summary.total})\n`);
+  printEvalCompletion({
+    message: 'Router eval complete.',
+    paths,
+    metricLine: `Accuracy: ${(Number(summary.accuracy || 0) * 100).toFixed(1)}% (${summary.passed}/${summary.total})`,
+  });
 }
 
 run().catch((err) => {

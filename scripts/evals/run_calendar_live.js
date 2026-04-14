@@ -4,38 +4,19 @@
 const {
   parseArgs,
   utcStamp,
-  toInt,
 } = require('./lib/io.js');
+const {
+  resolveRunnerOptions,
+  parsePositiveCaseLimit,
+  checkRunObservability,
+  printEvalCompletion,
+} = require('./lib/runner-common.js');
 const { loadNormalizeFixtures } = require('./lib/fixtures.js');
 const {
   postCalendarNormalize,
-  getDebugRun,
 } = require('./lib/live-api.js');
 const { scoreNormalizeResults } = require('./lib/scoring.js');
 const { buildCalendarMarkdown, writeEvalReport } = require('./lib/reporting.js');
-
-function requireSecret(args) {
-  const secret = String(args['admin-secret'] || process.env.PKM_ADMIN_SECRET || '').trim();
-  if (!secret) {
-    throw new Error('Missing admin secret. Set --admin-secret or PKM_ADMIN_SECRET.');
-  }
-  return secret;
-}
-
-async function checkObservability({ backendUrl, adminSecret, runId, timeoutMs }) {
-  try {
-    const out = await getDebugRun({
-      backendUrl,
-      adminSecret,
-      runId,
-      limit: 50,
-      timeoutMs,
-    });
-    return Array.isArray(out.rows) && out.rows.length > 0;
-  } catch (_err) {
-    return false;
-  }
-}
 
 function assertFixtureTargets(rows) {
   if (rows.length < 40) {
@@ -136,16 +117,18 @@ function evaluateAssertions(expect, response) {
 async function run() {
   const args = parseArgs(process.argv);
   const stamp = utcStamp();
-  const backendUrl = String(args['backend-url'] || process.env.EVAL_BACKEND_URL || 'http://localhost:8080').trim();
-  const adminSecret = requireSecret(args);
-  const telegramUserId = String(args['telegram-user-id'] || process.env.EVAL_TELEGRAM_USER_ID || '1509032341').trim();
-  const timeoutMs = Number(args.timeout || process.env.EVAL_TIMEOUT_MS || 15000);
-  const caseLimit = toInt(args['case-limit'], 0);
-  const checkObs = args['no-observability-check'] ? false : true;
+  const {
+    backendUrl,
+    adminSecret,
+    telegramUserId,
+    timeoutMs,
+    checkObservability: checkObs,
+  } = resolveRunnerOptions(args, { includeTelegramUserId: true });
+  const caseLimit = parsePositiveCaseLimit(args);
 
   const fixtures = loadNormalizeFixtures();
   assertFixtureTargets(fixtures);
-  const selected = caseLimit > 0 ? fixtures.slice(0, caseLimit) : fixtures;
+  const selected = caseLimit ? fixtures.slice(0, caseLimit) : fixtures;
 
   const results = [];
   let seq = 0;
@@ -175,7 +158,7 @@ async function run() {
     });
 
     const observabilityOk = checkObs
-      ? await checkObservability({ backendUrl, adminSecret, runId, timeoutMs })
+      ? await checkRunObservability({ backendUrl, adminSecret, runId, timeoutMs })
       : null;
 
     const assertionResult = evaluateAssertions(row.expect || {}, response);
@@ -225,10 +208,11 @@ async function run() {
   const markdown = buildCalendarMarkdown(report);
   const paths = writeEvalReport('calendar', stamp, report, markdown);
 
-  process.stdout.write(`Calendar normalize eval complete.\n`);
-  process.stdout.write(`JSON: ${paths.jsonPath}\n`);
-  process.stdout.write(`Markdown: ${paths.mdPath}\n`);
-  process.stdout.write(`Accuracy: ${(Number(summary.accuracy || 0) * 100).toFixed(1)}% (${summary.passed}/${summary.total})\n`);
+  printEvalCompletion({
+    message: 'Calendar normalize eval complete.',
+    paths,
+    metricLine: `Accuracy: ${(Number(summary.accuracy || 0) * 100).toFixed(1)}% (${summary.passed}/${summary.total})`,
+  });
 }
 
 if (require.main === module) {

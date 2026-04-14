@@ -432,6 +432,7 @@ Implementation must support:
   - task-shape accuracy on `eval_core`
   - next-action null/non-null agreement on `eval_core`
   - project overcall rate on `eval_core`
+- when extending eval infra to new surfaces, follow `evals/eval-writing-guide.md` and shared runner utilities in `scripts/evals/lib/runner-common.js`
 
 Current implementation posture:
 - canonical corpus fixture exists at `evals/todoist/fixtures/gold/normalize.json`

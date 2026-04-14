@@ -4,50 +4,25 @@
 const {
   parseArgs,
   utcStamp,
-  toInt,
 } = require('./lib/io.js');
+const {
+  resolveRunnerOptions,
+  parsePositiveCaseLimit,
+  checkRunObservability,
+  printEvalCompletion,
+} = require('./lib/runner-common.js');
 const { loadTodoistNormalizeFixtures } = require('./lib/fixtures.js');
 const {
   postTodoistEvalNormalize,
-  getDebugRun,
 } = require('./lib/live-api.js');
 const { scoreTodoistNormalizeResults } = require('./lib/scoring.js');
 const { buildTodoistMarkdown, writeEvalReport } = require('./lib/reporting.js');
-
-function requireSecret(args) {
-  const secret = String(args['admin-secret'] || process.env.PKM_ADMIN_SECRET || '').trim();
-  if (!secret) {
-    throw new Error('Missing admin secret. Set --admin-secret or PKM_ADMIN_SECRET.');
-  }
-  return secret;
-}
 
 function normalizeText(value) {
   return String(value === undefined || value === null ? '' : value)
     .trim()
     .toLowerCase()
     .replace(/\s+/g, ' ');
-}
-
-function normalizeCaseLimit(args) {
-  const n = toInt(args['case-limit'], null);
-  if (!Number.isFinite(n) || n <= 0) return null;
-  return n;
-}
-
-async function checkObservability({ backendUrl, adminSecret, runId, timeoutMs }) {
-  try {
-    const out = await getDebugRun({
-      backendUrl,
-      adminSecret,
-      runId,
-      limit: 50,
-      timeoutMs,
-    });
-    return Array.isArray(out.rows) && out.rows.length > 0;
-  } catch (_err) {
-    return false;
-  }
 }
 
 function assertFixtureTargets(rows) {
@@ -93,16 +68,18 @@ function buildPromptExamples(rows) {
 async function run() {
   const args = parseArgs(process.argv);
   const stamp = utcStamp();
-  const backendUrl = String(args['backend-url'] || process.env.EVAL_BACKEND_URL || 'http://localhost:8080').trim();
-  const adminSecret = requireSecret(args);
-  const timeoutMs = Number(args.timeout || process.env.EVAL_TIMEOUT_MS || 15000);
-  const checkObs = args['no-observability-check'] ? false : true;
+  const {
+    backendUrl,
+    adminSecret,
+    timeoutMs,
+    checkObservability: checkObs,
+  } = resolveRunnerOptions(args);
 
   const fixtures = loadTodoistNormalizeFixtures();
   assertFixtureTargets(fixtures);
   const promptRows = fixtures.filter((row) => row.corpus_group === 'prompt_examples');
   const evalRowsAll = fixtures.filter((row) => row.corpus_group === 'eval_core');
-  const caseLimit = normalizeCaseLimit(args);
+  const caseLimit = parsePositiveCaseLimit(args);
   const evalRows = caseLimit ? evalRowsAll.slice(0, caseLimit) : evalRowsAll;
   const promptExamples = buildPromptExamples(promptRows);
 
@@ -130,7 +107,7 @@ async function run() {
     });
 
     const observabilityOk = checkObs
-      ? await checkObservability({ backendUrl, adminSecret, runId, timeoutMs })
+      ? await checkRunObservability({ backendUrl, adminSecret, runId, timeoutMs })
       : null;
 
     const parsed = response && response.normalized_task && typeof response.normalized_task === 'object'
@@ -195,10 +172,11 @@ async function run() {
   const markdown = buildTodoistMarkdown(report);
   const paths = writeEvalReport('todoist', stamp, report, markdown);
 
-  process.stdout.write('Todoist normalize eval complete.\n');
-  process.stdout.write(`JSON: ${paths.jsonPath}\n`);
-  process.stdout.write(`Markdown: ${paths.mdPath}\n`);
-  process.stdout.write(`Shape accuracy: ${(Number(summary.task_shape_accuracy || 0) * 100).toFixed(1)}%\n`);
+  printEvalCompletion({
+    message: 'Todoist normalize eval complete.',
+    paths,
+    metricLine: `Shape accuracy: ${(Number(summary.task_shape_accuracy || 0) * 100).toFixed(1)}%`,
+  });
 }
 
 if (require.main === module) {

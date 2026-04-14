@@ -45,6 +45,7 @@ Introduce a top-level eval framework and live runners without changing runtime b
   - `eval:router:live`
   - `eval:calendar:live`
 - Produce JSON + markdown outputs.
+- Keep shared runner plumbing in `scripts/evals/lib/runner-common.js` and document add-a-surface flow in `evals/eval-writing-guide.md`.
 
 ### Out of scope
 - CI integration
