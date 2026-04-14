@@ -71,8 +71,7 @@ Implemented as of 2026-04-14:
 - current eval execution pattern is CLI-based (`npm run eval:*:live` and `scripts/evals/run_evals.sh`)
 - evals are advisory and non-gating
 
-Not yet implemented:
-- PKM UI page for lightweight eval case exploration from repo fixture files
+- PKM UI page `/evals` now exists for lightweight eval case exploration from repo fixture files.
 
 ## Goals
 - keep eval assets repo-first, explicit, and reviewable
@@ -92,10 +91,10 @@ Current callers:
 - operators / developers via shell commands
 - test suites under `test/server/*eval-tooling*.test.js`
 
-Planned caller:
+Additional caller:
 - PKM UI `/evals` page (read-only case exploration)
 
-Boundary decision for planned UI case explorer:
+Boundary decision for UI case explorer:
 - source of truth must be fixture files in the same repo as the UI code
 - this exploration mode must not depend on backend eval APIs or report JSON as primary data source
 - this mode is for reading actual cases, not running evals
@@ -108,7 +107,7 @@ Boundary decision for planned UI case explorer:
 4. runner checks observability traces (unless disabled).
 5. runner scores outcomes and writes JSON + Markdown reports under `evals/reports/`.
 
-### B. Planned repo-first case explorer flow (PKM UI)
+### B. Repo-first case explorer flow (PKM UI)
 1. UI reads fixture files from repo paths (router/calendar/todoist, gold and optional candidates).
 2. UI normalizes heterogeneous fixture shapes into a common case-view model.
 3. UI presents:
@@ -142,7 +141,7 @@ Current eval platform contracts:
 - existing backend eval endpoints already documented in owning API docs
 - runner/report contracts are file- and tooling-based inside repo
 
-Planned UI case explorer contract:
+UI case explorer contract:
 - repo fixture files are authoritative source
 - no new backend endpoints required for the case-explorer-only mode
 
@@ -156,7 +155,7 @@ Current:
 - live eval runs depend on backend reachability and admin secret handling
 - report artifacts remain repo-tracked outputs under `evals/reports/`
 
-Planned UI case explorer:
+UI case explorer:
 - local UI dev/runtime must have read access to repo fixture paths
 - no new backend runtime or database dependency is required for case browsing
 - avoid introducing direct DB coupling or hidden backend dependencies for this surface
@@ -170,10 +169,10 @@ Planned UI case explorer:
 - [x] per-surface tooling tests and shared helper tests
 
 ### Phase 1 (next target)
-- [ ] add PKM UI `/evals` case explorer for repo fixtures only
-- [ ] render lightweight table + card views for actual cases
-- [ ] add filtering/search for case discovery
-- [ ] keep this mode strictly read-only (no run actions)
+- [x] add PKM UI `/evals` case explorer for repo fixtures only
+- [x] render lightweight table + card views for actual cases
+- [x] add filtering/search for case discovery
+- [x] keep this mode strictly read-only (no run actions)
 
 ### Phase 2 (future expansion, optional)
 - [ ] add richer cross-surface case taxonomy and tagging standards

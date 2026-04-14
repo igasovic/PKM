@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { DebugPage } from './pages/DebugPage';
 import { EntitiesPage } from './pages/EntitiesPage';
+import { EvalsPage } from './pages/EvalsPage';
 import { FailuresPage } from './pages/FailuresPage';
 import { ReadPage } from './pages/ReadPage';
 import { RecipesPage } from './pages/RecipesPage';
@@ -21,6 +22,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'working-memory', label: 'Working Memory', to: '/working-memory' },
   { id: 'recipes', label: 'Recipes', to: '/recipes' },
   { id: 'todoist', label: 'Todoist', to: '/todoist' },
+  { id: 'evals', label: 'Evals', to: '/evals' },
   { id: 'debug', label: 'Debug', to: '/debug' },
   { id: 'failures', label: 'Failures', to: '/failures' },
 ];
@@ -179,6 +181,7 @@ export default function App() {
               <Route path="/working-memory" element={<WorkingMemoryPage />} />
               <Route path="/recipes" element={<RecipesPage />} />
               <Route path="/todoist" element={<TodoistPage />} />
+              <Route path="/evals" element={<EvalsPage />} />
               <Route path="/debug" element={<DebugPage />} />
               <Route path="/debug/run/:runId" element={<DebugPage />} />
               <Route path="/failures" element={<FailuresPage />} />

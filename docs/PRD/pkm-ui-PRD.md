@@ -25,7 +25,7 @@ Baseline the PKM UI as a real product surface without making it the owner of ind
 This PRD owns:
 - the existence and role of the PKM UI shell under `src/web/pkm-debug-ui`
 - page and navigation structure
-- the rule that the UI talks to backend HTTP only
+- primary backend-HTTP page access rules plus explicit repo-fixture read rules for eval exploration
 - shared UI conventions for read/debug/failure investigation
 - the sidebar test-mode control as a UI surface
 - local development and proxy expectations for the UI shell
@@ -48,11 +48,14 @@ Current repo behavior is:
   - `Entities`
   - `Working Memory`
   - `Recipes`
+  - `Todoist`
+  - `Evals`
   - `Debug`
   - `Failures`
-- navigation is sidebar-based with routes `/read`, `/entities`, `/working-memory`, `/recipes`, `/debug`, `/debug/run/:runId`, and `/failures`
+- navigation is sidebar-based with routes `/read`, `/entities`, `/working-memory`, `/recipes`, `/todoist`, `/evals`, `/debug`, `/debug/run/:runId`, and `/failures`
 - the UI includes a bottom-left test-mode state/toggle control
-- the UI uses backend HTTP only and does not connect directly to Postgres
+- the UI does not connect directly to Postgres
+- most pages use backend HTTP only; `/evals` loads fixture cases from repo paths under `evals/*/fixtures/*`
 - Vite proxy forwards `/db`, `/recipes`, and `/chatgpt` to the backend and injects the admin secret for admin-protected routes in local development
 - current UI is dark-mode only
 - the Read page supports manual pull-by-entry-id and per-card pull actions that open a right-side detail drawer
@@ -78,6 +81,8 @@ Current pages and their primary dependencies:
 - Entities page -> paginated entities read API (`POST /db/read/entities`) and existing admin maintenance routes (`POST /db/delete`, `POST /db/move`) plus per-row drawer pull (`POST /db/read/pull`)
 - Working Memory page -> internal working-memory route (`POST /chatgpt/working_memory`)
 - Recipes page -> recipes APIs
+- Todoist page -> todoist review APIs
+- Evals page -> repo fixture files under `evals/router|calendar|todoist/fixtures/*/*.json`
 - Debug page -> debug run APIs
 - Failures page -> failure-pack APIs
 - Sidebar test-mode control -> test-mode endpoints
@@ -89,7 +94,7 @@ Boundary rule:
 ## Control plane / execution flow
 1. operator opens the UI shell.
 2. shell routes to a feature page.
-3. feature page calls backend HTTP through relative UI API paths.
+3. feature page reads data through relative backend HTTP API paths or, for `/evals`, repo fixture imports.
 4. shell provides shared navigation and test-mode affordances.
 
 ### Debug page feature contract
@@ -134,6 +139,12 @@ The UI depends on, but does not own, these backend surfaces:
 - debug run APIs
 - failure-pack APIs
 - test-mode APIs
+- todoist review APIs
+
+The UI also depends on repo fixture data surfaces for eval case exploration:
+- `evals/router/fixtures/*/*.json`
+- `evals/calendar/fixtures/*/*.json`
+- `evals/todoist/fixtures/*/*.json`
 
 Any UI change that requires a new backend route or contract change must update the owning contract docs and PRDs in the same change set.
 
@@ -141,11 +152,13 @@ Any UI change that requires a new backend route or contract change must update t
 Relevant surfaces:
 - `src/web/pkm-debug-ui/.env` local development config
 - Vite proxy config and admin-secret forwarding for local development
+- Vite filesystem-allow list for repo fixture imports
 - backend reachability and admin-secret requirements documented elsewhere
 
 Shell rules:
 - UI must read debug and failure investigation data only through PKM HTTP `/debug/*` endpoints.
 - UI must not introduce direct DB coupling.
+- UI eval exploration must remain read-only and fixture-driven unless a separate contract update explicitly introduces backend eval APIs for this page.
 - Large payloads should be previewed or copied safely rather than fully inlined by default.
 
 ## Evidence / recovery basis
@@ -166,7 +179,8 @@ Recovered from:
 
 ## Validation / acceptance criteria
 This PRD remains accurate if:
-- the UI continues to use backend HTTP only
+- the UI continues to avoid direct DB coupling and uses backend HTTP for service-backed pages
+- `/evals` remains a read-only fixture-case explorer unless explicitly changed
 - page structure remains centered on read/working-memory/recipes/debug/failure investigation plus shell-level controls
 - feature behavior changes are documented in the owning feature PRDs rather than duplicated here
 

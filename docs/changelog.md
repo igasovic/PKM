@@ -1,5 +1,36 @@
 # changelog
 
+## 2026-04-14 — PKM UI eval case explorer (repo-first, read-only)
+
+### What changed
+- Implemented PKM UI `/evals` page for reading actual fixture cases directly from repo files under `evals/*/fixtures/*`.
+- Added fixture normalization/loader in UI:
+  - `src/web/pkm-debug-ui/src/lib/evalCases.ts`
+- Added eval case page with:
+  - lightweight table view for scanning cases
+  - detail card view for selected case (`input`, `expect`, optional `setup`)
+  - filters for surface, tier, suite, bucket, and free-text search
+  - read-only behavior (no run/start/cancel controls)
+- Added route + sidebar navigation entry:
+  - `src/web/pkm-debug-ui/src/App.tsx`
+- Expanded Vite filesystem allow-list so the UI can import fixture files from repo root:
+  - `src/web/pkm-debug-ui/vite.config.ts`
+- Updated PRDs/docs to match implemented state:
+  - `docs/PRD/eval-platform-prd.md`
+  - `docs/PRD/pkm-ui-prd.md`
+  - `src/web/pkm-debug-ui/README.md`
+
+### Surfaces changed
+- PKM UI shell navigation and page set
+- eval platform case-exploration UX
+
+### PRDs impacted
+- `docs/PRD/eval-platform-prd.md`
+- `docs/PRD/pkm-ui-prd.md`
+
+### Contract docs impacted
+- `docs/changelog.md`
+
 ## 2026-04-14 — Eval platform canonical PRD baseline
 
 ### What changed
