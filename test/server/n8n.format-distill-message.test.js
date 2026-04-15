@@ -1,6 +1,7 @@
 'use strict';
 
-const formatDistillMessage = require('../../src/n8n/nodes/10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js');
+const { loadInlineCodeNode } = require('./n8n-node-loader');
+const formatDistillMessage = loadInlineCodeNode('10-read', 'Format Distill Message');
 
 describe('n8n format-distill-message', () => {
   test('formats completed payload with summary, why_it_matters, and excerpt', async () => {

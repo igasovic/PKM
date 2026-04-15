@@ -44,9 +44,30 @@ function loadInlineCodeNode(workflowSlug, nodeName) {
 
   const workflowRequire = createRequire(workflowPath);
   const AsyncFunction = Object.getPrototypeOf(async function noop() {}).constructor;
-  const runInline = new AsyncFunction('require', '$json', '$input', '$items', '$node', '$env', 'helpers', jsCode);
+
+  let runInline = null;
+  let mode = 'n8n-args';
+  try {
+    runInline = new AsyncFunction(
+      'require',
+      '$json',
+      '$input',
+      '$items',
+      '$node',
+      '$env',
+      'helpers',
+      jsCode,
+    );
+  } catch (err) {
+    // Some legacy inline nodes still use module-style ctx access.
+    runInline = new AsyncFunction('require', 'ctx', jsCode);
+    mode = 'ctx';
+  }
 
   return async function executeInline(ctx = {}) {
+    if (mode === 'ctx') {
+      return runInline(workflowRequire, ctx);
+    }
     return runInline(
       workflowRequire,
       ctx.$json,

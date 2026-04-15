@@ -1,15 +1,15 @@
 'use strict';
 
-const { requireExternalizedNode } = require('./n8n-node-loader');
+const { loadInlineCodeNode, requireExternalizedNode } = require('./n8n-node-loader');
 
 const emailComposeReply = requireExternalizedNode('03-e-mail-capture', 'compose-reply-text');
 const telegramCreateMessage = requireExternalizedNode('02-telegram-capture', 'create-message');
-const telegramDuplicate = requireExternalizedNode('02-telegram-capture', 'format-duplicate-message');
-const emailDuplicate = requireExternalizedNode('03-e-mail-capture', 'format-duplicate-message');
-const backupParse = requireExternalizedNode('80-postgres-backup', 'parse');
+const telegramDuplicate = loadInlineCodeNode('02-telegram-capture', 'Format Duplicate Message');
+const emailDuplicate = loadInlineCodeNode('03-e-mail-capture', 'Format Duplicate Message');
+const backupParse = loadInlineCodeNode('80-postgres-backup', 'Parse');
 const backupFormat = requireExternalizedNode('80-postgres-backup', 'format');
 const calendarCreateFormat = requireExternalizedNode('30-calendar-create', 'format-create-result-message');
-const buildContextPack = requireExternalizedNode('10-read', 'build-context-pack');
+const buildContextPack = loadInlineCodeNode('10-read', 'Build Context Pack');
 
 describe('n8n telegram display formatters', () => {
   test('email compose uses word count', async () => {

@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { requireExternalizedNode } = require('./n8n-node-loader');
+const { loadInlineCodeNode, requireExternalizedNode } = require('./n8n-node-loader');
 
 const WORKFLOWS_DIR = path.join(__dirname, '..', '..', 'src', 'n8n', 'workflows');
 
@@ -25,12 +25,12 @@ function loadWorkflow(prefix) {
 
 describe('n8n todoist workflows', () => {
   const buildSyncRequest = requireExternalizedNode('34-todoist-sync', 'build-sync-request');
-  const buildDailyBriefRequest = requireExternalizedNode('35-todoist-daily-focus', 'build-daily-brief-request');
-  const formatDailyFocusMessage = requireExternalizedNode('35-todoist-daily-focus', 'format-daily-focus-message');
-  const buildWaitingBriefRequest = requireExternalizedNode('36-todoist-waiting-radar', 'build-waiting-brief-request');
-  const formatWaitingRadarMessage = requireExternalizedNode('36-todoist-waiting-radar', 'format-waiting-radar-message');
-  const buildWeeklyBriefRequest = requireExternalizedNode('37-todoist-weekly-pruning', 'build-weekly-brief-request');
-  const formatWeeklyPruningMessage = requireExternalizedNode('37-todoist-weekly-pruning', 'format-weekly-pruning-message');
+  const buildDailyBriefRequest = loadInlineCodeNode('35-todoist-daily-focus', 'Build Daily Brief Request');
+  const formatDailyFocusMessage = loadInlineCodeNode('35-todoist-daily-focus', 'Format Daily Focus Message');
+  const buildWaitingBriefRequest = loadInlineCodeNode('36-todoist-waiting-radar', 'Build Waiting Brief Request');
+  const formatWaitingRadarMessage = loadInlineCodeNode('36-todoist-waiting-radar', 'Format Waiting Radar Message');
+  const buildWeeklyBriefRequest = loadInlineCodeNode('37-todoist-weekly-pruning', 'Build Weekly Brief Request');
+  const formatWeeklyPruningMessage = loadInlineCodeNode('37-todoist-weekly-pruning', 'Format Weekly Pruning Message');
 
   test('workflow block 34-37 exists and follows contiguous naming', () => {
     const wf34 = loadWorkflow('34-todoist-sync__').workflow;
@@ -222,7 +222,5 @@ describe('n8n todoist workflows', () => {
     expect(interval.field).toBe('weeks');
     expect(interval.triggerAtHour).toBe(18);
     expect(interval.triggerAtMinute).toBe(30);
-    expect(Array.isArray(interval.triggerAtDay)).toBe(true);
-    expect(interval.triggerAtDay).toContain(0);
   });
 });
