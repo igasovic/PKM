@@ -1,6 +1,7 @@
 export interface WorkingMemoryReadOptions {
   runId: string;
   timeoutMs?: number;
+  view?: 'gpt' | 'debug';
 }
 
 export interface WorkingMemoryEnvelope {
@@ -61,7 +62,10 @@ export async function readWorkingMemory(
         Accept: 'application/json',
         'X-PKM-Run-Id': runId,
       },
-      body: JSON.stringify({ topic: topicText }),
+      body: JSON.stringify({
+        topic: topicText,
+        ...(options.view ? { view: options.view } : {}),
+      }),
     });
 
     const text = await res.text();

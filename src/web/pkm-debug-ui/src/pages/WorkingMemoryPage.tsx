@@ -9,6 +9,10 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
 function detectFound(payload: WorkingMemoryEnvelope): boolean {
   const result = asRecord(payload.result);
   const meta = asRecord(result.meta);
@@ -38,6 +42,30 @@ export function WorkingMemoryPage() {
     return value as Record<string, unknown>;
   }, [payload]);
 
+  const topicStateDebug = useMemo(() => {
+    if (!payload) return null;
+    const result = asRecord(payload.result);
+    const debug = asRecord(result.debug);
+    const topicState = debug.topic_state;
+    if (!topicState || typeof topicState !== 'object' || Array.isArray(topicState)) return null;
+    return topicState as Record<string, unknown>;
+  }, [payload]);
+
+  const topicStateSummary = useMemo(() => {
+    if (!topicStateDebug) return null;
+    const state = asRecord(topicStateDebug.state);
+    const openQuestions = asArray(topicStateDebug.open_questions);
+    const actionItems = asArray(topicStateDebug.action_items);
+    const relatedEntries = asArray(topicStateDebug.related_entries);
+    return {
+      stateVersion: Number(state.state_version || 0) || null,
+      openQuestions: openQuestions.length,
+      actionItems: actionItems.length,
+      relatedEntries: relatedEntries.length,
+      lastSessionId: String(state.last_session_id || '').trim() || null,
+    };
+  }, [topicStateDebug]);
+
   const loadWorkingMemory = async () => {
     const inputTopic = topic.trim();
     if (!inputTopic) return;
@@ -46,7 +74,7 @@ export function WorkingMemoryPage() {
 
     const runId = createUiRunId('ui-working-memory');
     try {
-      const out = await readWorkingMemory(inputTopic, { runId });
+      const out = await readWorkingMemory(inputTopic, { runId, view: 'debug' });
       setPayload(out.payload);
       setLastRunId(out.run_id || runId);
     } catch (err) {
@@ -121,11 +149,26 @@ export function WorkingMemoryPage() {
       )}
 
       {payload && row && (
-        <EntryStandardCard
-          title="Working Memory Entry"
-          payload={{ ...row, found }}
-          fullPayload={payload}
-        />
+        <section className="space-y-4">
+          {topicStateSummary && (
+            <div className="rounded-xl border border-sky-800/50 bg-sky-950/30 p-4 text-sm text-sky-100 shadow-glow">
+              <div className="font-semibold">Topic State Debug</div>
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                <div>state_version: {topicStateSummary.stateVersion ?? '-'}</div>
+                <div>last_session_id: {topicStateSummary.lastSessionId ?? '-'}</div>
+                <div>open_questions: {topicStateSummary.openQuestions}</div>
+                <div>action_items: {topicStateSummary.actionItems}</div>
+                <div>related_entries: {topicStateSummary.relatedEntries}</div>
+              </div>
+            </div>
+          )}
+
+          <EntryStandardCard
+            title="Working Memory Entry"
+            payload={{ ...row, found }}
+            fullPayload={payload}
+          />
+        </section>
       )}
     </div>
   );
