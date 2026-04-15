@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { JsonCard } from '../components/JsonCard';
 import { loadEvalCases } from '../lib/evalCases';
+import { loadLatestRunsByCase } from '../lib/evalReports';
 import { copyText, stableStringify } from '../lib/stable';
 import type { EvalCaseRecord, EvalSurface, EvalTier } from '../types';
 
@@ -25,6 +26,7 @@ function fmtCount(count: number, total: number): string {
 
 export function EvalsPage() {
   const cases = useMemo(() => loadEvalCases(), []);
+  const latestRunsByCase = useMemo(() => loadLatestRunsByCase(), []);
 
   const [surface, setSurface] = useState<AnySurface>('all');
   const [tier, setTier] = useState<AnyTier>('gold');
@@ -94,6 +96,10 @@ export function EvalsPage() {
     () => filtered.find((row) => row.id === selectedId) || null,
     [filtered, selectedId],
   );
+  const selectedLastRun = useMemo(() => {
+    if (!selected) return null;
+    return latestRunsByCase.get(`${selected.surface}:${selected.case_id}`) || null;
+  }, [latestRunsByCase, selected]);
 
   const summary = useMemo(() => {
     const bySurface: Record<EvalSurface, number> = {
@@ -296,6 +302,57 @@ export function EvalsPage() {
                 <JsonCard title="input" data={selected.input || {}} defaultOpen />
                 <JsonCard title="expect" data={selected.expect || {}} defaultOpen />
                 {selected.setup && <JsonCard title="setup" data={selected.setup} />}
+                <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold text-slate-100">Last Run</h3>
+                    {selectedLastRun && (
+                      <button
+                        type="button"
+                        className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+                        onClick={() => {
+                          void copyText(stableStringify(selectedLastRun.report_case, 2));
+                        }}
+                      >
+                        Copy Last Run JSON
+                      </button>
+                    )}
+                  </div>
+                  {!selectedLastRun && (
+                    <div className="mt-2 text-xs text-slate-400">
+                      No run found for this case in repo reports.
+                    </div>
+                  )}
+                  {selectedLastRun && (
+                    <div className="mt-3 space-y-2 text-xs">
+                      <div className="flex flex-wrap gap-1">
+                        <span className="rounded border border-slate-700 bg-slate-900/60 px-2 py-1 text-slate-300">
+                          report: {selectedLastRun.report_timestamp}
+                        </span>
+                        {selectedLastRun.pass !== null && (
+                          <span className={`rounded border px-2 py-1 ${selectedLastRun.pass ? 'border-emerald-700 bg-emerald-900/30 text-emerald-200' : 'border-rose-700 bg-rose-900/30 text-rose-200'}`}>
+                            {selectedLastRun.pass ? 'pass' : 'fail'}
+                          </span>
+                        )}
+                        {selectedLastRun.observability_ok !== null && (
+                          <span className={`rounded border px-2 py-1 ${selectedLastRun.observability_ok ? 'border-cyan-700 bg-cyan-900/30 text-cyan-200' : 'border-amber-700 bg-amber-900/30 text-amber-200'}`}>
+                            obs: {selectedLastRun.observability_ok ? 'ok' : 'missing'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="rounded border border-slate-800 bg-slate-950/70 p-2 text-slate-300">
+                        {selectedLastRun.summary_line}
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        <div className="rounded border border-slate-800 bg-slate-950/70 p-2 text-slate-400">
+                          <span className="text-slate-500">run_id:</span> {selectedLastRun.run_id || '-'}
+                        </div>
+                        <div className="rounded border border-slate-800 bg-slate-950/70 p-2 text-slate-400">
+                          <span className="text-slate-500">duration_ms:</span> {selectedLastRun.duration_ms ?? '-'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>

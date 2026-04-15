@@ -277,6 +277,21 @@ export interface EvalCaseRecord {
   source_path: string;
 }
 
+export interface EvalCaseLastRun {
+  surface: EvalSurface;
+  report_timestamp: string;
+  case_id: string;
+  run_id: string | null;
+  pass: boolean | null;
+  observability_ok: boolean | null;
+  expected_label: string | null;
+  actual_label: string | null;
+  confidence: number | null;
+  duration_ms: number | null;
+  report_case: Record<string, unknown>;
+  summary_line: string;
+}
+
 export type SpanStatus = 'ok' | 'error' | 'missing_end' | 'orphan_end' | 'orphan_error';
 
 export interface PairedSpan {
