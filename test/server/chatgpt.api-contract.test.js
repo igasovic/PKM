@@ -54,8 +54,50 @@ describe('chatgpt action API contract', () => {
     const writeStoreMock = {
       insert: opts.insert || (async () => ({ rows: [], rowCount: 0 })),
     };
+    const activeTopicStoreMock = {
+      getTopicState: opts.getTopicState || (async ({ topic_key }) => ({
+        meta: { schema: 'pkm', topic_key, found: false },
+        topic: null,
+        state: null,
+        open_questions: [],
+        action_items: [],
+        related_entries: [],
+      })),
+      applyTopicSnapshot: opts.applyTopicSnapshot || (async ({ topic_key, topic_title, state, open_questions, action_items }) => ({
+        meta: { schema: 'pkm', topic_key, found: true },
+        topic: {
+          topic_key,
+          title: topic_title || topic_key,
+          is_active: true,
+          created_at: '2026-03-24T01:00:00.000Z',
+          updated_at: '2026-03-24T01:00:00.000Z',
+        },
+        state: {
+          title: topic_title || topic_key,
+          why_active_now: state && state.why_active_now ? state.why_active_now : '',
+          current_mental_model: state && state.current_mental_model ? state.current_mental_model : '',
+          tensions_uncertainties: state && state.tensions_uncertainties ? state.tensions_uncertainties : '',
+          state_version: 1,
+          last_session_id: state && state.last_session_id ? state.last_session_id : null,
+          migration_source_entry_id: null,
+          migration_source_content_hash: null,
+          created_at: '2026-03-24T01:00:00.000Z',
+          updated_at: '2026-03-24T01:00:00.000Z',
+        },
+        open_questions: Array.isArray(open_questions) ? open_questions : [],
+        action_items: Array.isArray(action_items) ? action_items : [],
+        related_entries: [],
+        write: {
+          state: 'updated',
+          open_questions_replaced: true,
+          action_items_replaced: true,
+          related_entries_replaced: false,
+        },
+      })),
+    };
     jest.doMock('../../src/server/db/read-store.js', () => readStoreMock);
     jest.doMock('../../src/server/db/write-store.js', () => writeStoreMock);
+    jest.doMock('../../src/server/db/active-topic-store.js', () => activeTopicStoreMock);
 
     const { createServer } = require('../../src/server/index.js');
     server = createServer();
@@ -72,11 +114,11 @@ describe('chatgpt action API contract', () => {
     } catch (err) {
       if (err && (err.code === 'EPERM' || err.code === 'EACCES')) {
         listenDenied = true;
-        return { readStoreMock, writeStoreMock };
+        return { readStoreMock, writeStoreMock, activeTopicStoreMock };
       }
       throw err;
     }
-    return { readStoreMock, writeStoreMock };
+    return { readStoreMock, writeStoreMock, activeTopicStoreMock };
   }
 
   test('POST /chatgpt/read is removed', async () => {
@@ -180,6 +222,70 @@ describe('chatgpt action API contract', () => {
     expect(readWorkingMemory).toHaveBeenCalledWith({ topic_key: 'parenting-overload' });
   });
 
+  test('POST /chatgpt/working_memory returns active-topic state when available', async () => {
+    const readWorkingMemory = jest.fn(async () => ({ rows: [] }));
+    const getTopicState = jest.fn(async ({ topic_key }) => ({
+      meta: { schema: 'pkm', topic_key, found: true },
+      topic: {
+        topic_key,
+        title: 'parenting',
+        is_active: true,
+        created_at: '2026-03-24T01:00:00.000Z',
+        updated_at: '2026-03-24T01:00:00.000Z',
+      },
+      state: {
+        title: 'parenting',
+        why_active_now: 'Evening routines are unstable.',
+        current_mental_model: 'Consistency beats intensity.',
+        tensions_uncertainties: 'Travel days break the rhythm.',
+        state_version: 4,
+        last_session_id: 'sess-abc',
+        migration_source_entry_id: 777,
+        migration_source_content_hash: 'topic-hash',
+        created_at: '2026-03-24T01:00:00.000Z',
+        updated_at: '2026-03-25T01:00:00.000Z',
+      },
+      open_questions: [{ question_key: 'q1', question_text: 'How strict should weekends be?', status: 'open', sort_order: 1 }],
+      action_items: [{ action_key: 'a1', action_text: 'Run for 2 weeks', status: 'open', sort_order: 1 }],
+      related_entries: [],
+    }));
+    await startServerWithMocks({ readWorkingMemory, getTopicState });
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/chatgpt/working_memory',
+      JSON.stringify({
+        topic: 'parenting',
+        view: 'debug',
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.outcome).toBe('success');
+    expect(parsed.result.meta.source).toBe('active_topic_state');
+    expect(parsed.result.row).toEqual(expect.objectContaining({
+      found: true,
+      topic_primary: 'parenting',
+      entry_id: 777,
+    }));
+    expect(String(parsed.result.row.working_memory_text || '')).toContain('## Topic: parenting');
+    expect(parsed.result.debug).toEqual(expect.objectContaining({
+      view: 'debug',
+      topic_state: expect.objectContaining({
+        meta: expect.objectContaining({ found: true }),
+      }),
+    }));
+    expect(getTopicState).toHaveBeenCalledWith({ topic_key: 'parenting' });
+    expect(readWorkingMemory).not.toHaveBeenCalled();
+  });
+
   test('POST /chatgpt/working_memory validates required topic', async () => {
     await startServerWithMocks();
     if (listenDenied) return;
@@ -261,7 +367,7 @@ describe('chatgpt action API contract', () => {
           created_at: '2026-03-24T01:00:00.000Z',
           source: 'chatgpt',
           intent: 'thought',
-          content_type: 'working_memory',
+          content_type: 'note',
           title: input.title,
           topic_primary: input.topic_primary,
           topic_secondary: input.topic_secondary,
@@ -270,7 +376,38 @@ describe('chatgpt action API contract', () => {
         }],
       };
     });
-    await startServerWithMocks({ insert });
+    const applyTopicSnapshot = jest.fn(async ({ topic_key, topic_title, state, open_questions, action_items }) => ({
+      meta: { schema: 'pkm', topic_key, found: true },
+      topic: {
+        topic_key,
+        title: topic_title || topic_key,
+        is_active: true,
+        created_at: '2026-03-24T01:00:00.000Z',
+        updated_at: '2026-03-24T01:00:00.000Z',
+      },
+      state: {
+        title: topic_title || topic_key,
+        why_active_now: state.why_active_now,
+        current_mental_model: state.current_mental_model,
+        tensions_uncertainties: state.tensions_uncertainties,
+        state_version: 4,
+        last_session_id: state.last_session_id,
+        migration_source_entry_id: null,
+        migration_source_content_hash: null,
+        created_at: '2026-03-24T01:00:00.000Z',
+        updated_at: '2026-03-24T01:00:00.000Z',
+      },
+      open_questions: Array.isArray(open_questions) ? open_questions : [],
+      action_items: Array.isArray(action_items) ? action_items : [],
+      related_entries: [],
+      write: {
+        state: 'updated',
+        open_questions_replaced: true,
+        action_items_replaced: true,
+        related_entries_replaced: false,
+      },
+    }));
+    await startServerWithMocks({ insert, applyTopicSnapshot });
     if (listenDenied) return;
 
     const res = await request(
@@ -309,15 +446,20 @@ describe('chatgpt action API contract', () => {
     expect(parsed.result.working_memory.action).toBe('updated');
     expect(parsed.result.session_note.idempotency_key_primary).toBe('chatgpt:sess-123');
     expect(parsed.result.working_memory.idempotency_key_primary).toBe('wm:parenting');
+    expect(parsed.result.working_memory.state_version).toBe(4);
+    expect(parsed.result.working_memory.open_questions_count).toBe(1);
+    expect(parsed.result.working_memory.action_items_count).toBe(1);
 
-    expect(insert).toHaveBeenCalledTimes(2);
+    expect(insert).toHaveBeenCalledTimes(1);
+    expect(applyTopicSnapshot).toHaveBeenCalledTimes(1);
     expect(insertCalls[0].input.content_type).toBe('note');
     expect(insertCalls[0].input.idempotency_policy_key).toBe('chatgpt_session_note_v1');
     expect(insertCalls[0].input.enrichment_status).toBe('completed');
     expect(insertCalls[0].input.distill_status).toBe('completed');
-    expect(insertCalls[1].input.content_type).toBe('working_memory');
-    expect(insertCalls[1].input.idempotency_policy_key).toBe('chatgpt_working_memory_v1');
-    expect(insertCalls[1].input.enrichment_status).toBe('completed');
-    expect(insertCalls[1].input.distill_status).toBe('completed');
+    expect(applyTopicSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      topic_key: 'parenting',
+      open_questions: [expect.objectContaining({ question_text: 'How strict should weekends be?' })],
+      action_items: [expect.objectContaining({ action_text: 'Try for 2 weeks' })],
+    }));
   });
 });

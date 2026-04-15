@@ -128,7 +128,65 @@ function renderWorkingMemoryMarkdown(input) {
   return `${lines.join('\n').trim()}\n`;
 }
 
+function renderWorkingMemoryFromTopicState(topicState) {
+  const snapshot = topicState && typeof topicState === 'object' ? topicState : {};
+  const topic = snapshot.topic && typeof snapshot.topic === 'object' ? snapshot.topic : {};
+  const state = snapshot.state && typeof snapshot.state === 'object' ? snapshot.state : {};
+  const openQuestions = Array.isArray(snapshot.open_questions) ? snapshot.open_questions : [];
+  const actionItems = Array.isArray(snapshot.action_items) ? snapshot.action_items : [];
+
+  const topicTitle = asText(state.title || topic.title || topic.topic_key) || 'unspecified';
+  const whyActiveNow = asText(state.why_active_now);
+  const mentalModel = asText(state.current_mental_model);
+  const tensions = asText(state.tensions_uncertainties);
+  const updatedAtRaw = asText(state.updated_at || topic.updated_at);
+  const updatedDate = updatedAtRaw ? updatedAtRaw.slice(0, 10) : new Date().toISOString().slice(0, 10);
+
+  const openQuestionLines = openQuestions
+    .map((row) => {
+      const text = asText(row && row.question_text);
+      if (!text) return null;
+      const status = asText(row && row.status).toLowerCase() || 'open';
+      return `- [${status}] ${text}`;
+    })
+    .filter(Boolean);
+
+  const actionItemLines = actionItems
+    .map((row) => {
+      const text = asText(row && row.action_text);
+      if (!text) return null;
+      const status = asText(row && row.status).toLowerCase() || 'open';
+      return `- [${status}] ${text}`;
+    })
+    .filter(Boolean);
+
+  const lines = [
+    `## Topic: ${topicTitle}`,
+    '',
+    '**Why this matters (1-2 lines)**',
+    ...(whyActiveNow ? [whyActiveNow] : ['No why-it-matters rationale captured.']),
+    '',
+    '**Current mental model (5-7 bullets max)**',
+    ...(mentalModel ? bulletLines([mentalModel], 'No mental model updates captured yet.') : ['- No mental model updates captured yet.']),
+    '',
+    '**Tensions / uncertainties**',
+    ...(tensions ? bulletLines([tensions], 'None captured.') : ['- None captured.']),
+    '',
+    '**Open questions**',
+    ...linesWithFallback(openQuestionLines, '- None captured.'),
+    '',
+    '**Action items**',
+    ...linesWithFallback(actionItemLines, '- None captured.'),
+    '',
+    '**Last updated**',
+    `- ${updatedDate}`,
+  ];
+
+  return `${lines.join('\n').trim()}\n`;
+}
+
 module.exports = {
   renderSessionNoteMarkdown,
   renderWorkingMemoryMarkdown,
+  renderWorkingMemoryFromTopicState,
 };

@@ -31,7 +31,7 @@
 | Endpoint family | Auth | Primary callers | Schema touched | Typical tests |
 |---|---|---|---|---|
 | Health | none | operators, probes | none | `test/server/control.api-contract.test.js`, `test/server.test.js` |
-| Internal ChatGPT actions | admin secret | n8n ChatGPT workflows, PKM UI Working Memory page | `pkm.entries` | `test/server/chatgpt.api-contract.test.js`, `test/server/n8n.wf11-route-read-request.test.js` |
+| Internal ChatGPT actions | admin secret | n8n ChatGPT workflows, PKM UI Working Memory page | `entries`, `active_topics`, `active_topic_state`, `active_topic_open_questions`, `active_topic_action_items`, `active_topic_related_entries` | `test/server/chatgpt.api-contract.test.js`, `test/server/n8n.wf11-route-read-request.test.js` |
 | Config and debug | mixed; debug routes require admin secret | operators, debug UI, WF99 | `runtime_config`, `pipeline_events`, `failure_packs` | `test/server/control.api-contract.test.js`, `test/server/config-module-compat.test.js`, `test/server/failure-pack.api-contract.test.js` |
 
 ## Run ID Correlation
@@ -94,6 +94,9 @@ Body:
 }
 ```
 
+Optional body fields:
+- `view`: when set to `debug`, include structured topic-state debug details in `result.debug` while preserving compatibility envelope fields.
+
 Response:
 ```json
 {
@@ -115,14 +118,10 @@ Response:
 ```
 
 Notes:
-- For node/provider-specific diagnostics, `pack.failure` may include additional optional fields.
-- Telegram node parse failures may include:
-  - `error_description`: raw Telegram API description when available
-  - `telegram_error`: object with provider diagnostics (for example `is_markdownv2_parse_error`, `reserved_character`)
-Notes:
-- The backend query returns exactly one row.
-- `result.meta.found` and `result.row.found` indicate hit/miss.
-- On topic miss, `found=false` and the row contains empty/null content fields.
+- reads first from first-class active-topic state; legacy working-memory entry fallback may be used during migration transition
+- `result.meta.found` and `result.row.found` indicate hit/miss
+- compatibility row fields remain available for n8n/GPT callers
+- when `view=debug`, additional structured state details may be returned under `result.debug`
 
 ### `POST /chatgpt/wrap-commit`
 Internal backend action route used by n8n `05 ChatGPT Wrap Commit`.
@@ -154,6 +153,10 @@ Response:
   }
 }
 ```
+
+Notes:
+- wrap-commit writes one session note to `entries` and one topic-state update to active-topic state tables.
+- new working-memory entry rows (`content_type='working_memory'`) are no longer created after cutover.
 
 ## Config
 

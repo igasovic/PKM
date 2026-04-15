@@ -2,12 +2,14 @@
 
 const { readWorkingMemory } = require('../db/read-store.js');
 const { insert } = require('../db/write-store.js');
+const activeTopicRepository = require('../repositories/active-topic-repository.js');
 const { deriveContentHashFromCleanText } = require('../../libs/content-hash.js');
 const contextPackBuilder = require('../../libs/context-pack-builder-core.js');
 const { normalizeTopicLabel, normalizeTopicKey, asText } = require('./topic.js');
 const {
   renderSessionNoteMarkdown,
   renderWorkingMemoryMarkdown,
+  renderWorkingMemoryFromTopicState,
 } = require('./renderers.js');
 
 class ChatgptActionError extends Error {
@@ -133,9 +135,18 @@ function deriveKeywords(topicPrimary, topicSecondary) {
   )).slice(0, 12);
 }
 
-async function pullWorkingMemory(args) {
-  const input = requireObject(args || {}, 'arguments');
-  const topic = requireString(input.topic, 'topic');
+function normalizeView(view) {
+  const normalized = asText(view).toLowerCase();
+  if (!normalized) return 'gpt';
+  return normalized === 'debug' ? 'debug' : 'gpt';
+}
+
+function isMissingTopicStateTableError(err) {
+  const message = err && err.message ? String(err.message) : '';
+  return message.includes('active topic state tables missing');
+}
+
+function normalizeTopicFromInput(topic) {
   const topicLabel = normalizeTopicLabel(topic);
   const topicKey = normalizeTopicKey(topicLabel);
   if (!topicKey) {
@@ -144,35 +155,163 @@ async function pullWorkingMemory(args) {
       code: 'missing_topic',
     });
   }
+  return { topicLabel, topicKey };
+}
 
-  const result = await readWorkingMemory({ topic_key: topicKey });
-  const row = Array.isArray(result && result.rows) && result.rows.length > 0 ? result.rows[0] : null;
-  const found = row && Object.prototype.hasOwnProperty.call(row, 'found') ? !!row.found : !!row;
+function toLegacyRowFromReadStoreRow(row, topicLabel) {
+  if (!row) return null;
+  const found = Object.prototype.hasOwnProperty.call(row, 'found') ? !!row.found : true;
+  return {
+    found,
+    entry_id: row.entry_id || null,
+    created_at: row.created_at || null,
+    topic_primary: row.topic_primary || topicLabel,
+    topic_secondary: row.topic_secondary || '',
+    topic_secondary_confidence: row.topic_secondary_confidence === undefined ? null : row.topic_secondary_confidence,
+    title: row.title || '',
+    gist: row.gist || '',
+    distill_summary: row.distill_summary || '',
+    distill_why_it_matters: row.distill_why_it_matters || '',
+    excerpt: row.excerpt || '',
+    working_memory_text: row.capture_text || row.clean_text || '',
+    content_hash: row.content_hash || null,
+    metadata: row.metadata || null,
+  };
+}
+
+function toTopicStateDebugSnapshot(snapshot) {
+  if (!snapshot || !snapshot.meta || !snapshot.meta.found) return null;
+  return {
+    meta: snapshot.meta,
+    topic: snapshot.topic || null,
+    state: snapshot.state || null,
+    open_questions: Array.isArray(snapshot.open_questions) ? snapshot.open_questions : [],
+    action_items: Array.isArray(snapshot.action_items) ? snapshot.action_items : [],
+    related_entries: Array.isArray(snapshot.related_entries) ? snapshot.related_entries : [],
+  };
+}
+
+function toRowFromTopicState(snapshot, fallbackTopicLabel) {
+  if (!snapshot || !snapshot.meta || !snapshot.meta.found) return null;
+  const topic = snapshot.topic && typeof snapshot.topic === 'object' ? snapshot.topic : {};
+  const state = snapshot.state && typeof snapshot.state === 'object' ? snapshot.state : {};
+  const workingMemoryMarkdown = renderWorkingMemoryFromTopicState(snapshot);
+  const summary = firstSentence(state.current_mental_model)
+    || firstSentence(state.why_active_now)
+    || `Working memory for ${asText(topic.title || topic.topic_key || fallbackTopicLabel)}`;
+  const excerpt = firstSentence(state.tensions_uncertainties);
+  const contentHash = deriveContentHashFromCleanText(workingMemoryMarkdown.trim());
 
   return {
+    found: true,
+    entry_id: state.migration_source_entry_id || null,
+    created_at: state.updated_at || topic.updated_at || null,
+    topic_primary: asText(topic.title || topic.topic_key || fallbackTopicLabel) || fallbackTopicLabel,
+    topic_secondary: '',
+    topic_secondary_confidence: null,
+    title: asText(state.title || `Working Memory: ${fallbackTopicLabel}`) || `Working Memory: ${fallbackTopicLabel}`,
+    gist: summary,
+    distill_summary: asText(state.current_mental_model) || summary,
+    distill_why_it_matters: asText(state.why_active_now) || '',
+    excerpt: excerpt || '',
+    working_memory_text: workingMemoryMarkdown,
+    content_hash: contentHash || null,
+    metadata: {
+      chatgpt: {
+        artifact_kind: 'working_memory_topic_state',
+        topic_key: topic.topic_key || null,
+        state_version: state.state_version || null,
+      },
+      topic_state: {
+        open_questions_count: Array.isArray(snapshot.open_questions) ? snapshot.open_questions.length : 0,
+        action_items_count: Array.isArray(snapshot.action_items) ? snapshot.action_items.length : 0,
+        related_entries_count: Array.isArray(snapshot.related_entries) ? snapshot.related_entries.length : 0,
+      },
+    },
+  };
+}
+
+function buildStableItemKey(prefix, text, index) {
+  const base = normalizeTopicKey(text) || prefix;
+  return `${prefix}-${index + 1}-${base}`;
+}
+
+function toOpenQuestionItems(values) {
+  return values.map((text, index) => ({
+    question_key: buildStableItemKey('q', text, index),
+    question_text: text,
+    status: 'open',
+    sort_order: index + 1,
+  }));
+}
+
+function toActionItems(values) {
+  return values.map((text, index) => ({
+    action_key: buildStableItemKey('a', text, index),
+    action_text: text,
+    status: 'open',
+    sort_order: index + 1,
+  }));
+}
+
+async function pullWorkingMemory(args) {
+  const input = requireObject(args || {}, 'arguments');
+  const topic = requireString(input.topic, 'topic');
+  const view = normalizeView(input.view);
+  const { topicLabel, topicKey } = normalizeTopicFromInput(topic);
+
+  let topicSnapshot = null;
+  try {
+    topicSnapshot = await activeTopicRepository.getTopicState({ topic_key: topicKey });
+  } catch (err) {
+    if (!isMissingTopicStateTableError(err)) throw err;
+  }
+
+  if (topicSnapshot && topicSnapshot.meta && topicSnapshot.meta.found) {
+    const row = toRowFromTopicState(topicSnapshot, topicLabel);
+    const result = {
+      meta: {
+        method: 'pull_working_memory',
+        topic: topicLabel,
+        topic_key: topicKey,
+        found: true,
+        source: 'active_topic_state',
+      },
+      row,
+    };
+    if (view === 'debug') {
+      result.debug = {
+        view,
+        topic_state: toTopicStateDebugSnapshot(topicSnapshot),
+      };
+    }
+    return result;
+  }
+
+  const legacyResult = await readWorkingMemory({ topic_key: topicKey });
+  const legacyRawRow = Array.isArray(legacyResult && legacyResult.rows) && legacyResult.rows.length > 0
+    ? legacyResult.rows[0]
+    : null;
+  const legacyRow = toLegacyRowFromReadStoreRow(legacyRawRow, topicLabel);
+  const found = !!(legacyRow && legacyRow.found);
+
+  const result = {
     meta: {
       method: 'pull_working_memory',
       topic: topicLabel,
       topic_key: topicKey,
       found,
+      source: 'legacy_entry',
     },
-    row: row ? {
-      found,
-      entry_id: row.entry_id || null,
-      created_at: row.created_at || null,
-      topic_primary: row.topic_primary || topicLabel,
-      topic_secondary: row.topic_secondary || '',
-      topic_secondary_confidence: row.topic_secondary_confidence === undefined ? null : row.topic_secondary_confidence,
-      title: row.title || '',
-      gist: row.gist || '',
-      distill_summary: row.distill_summary || '',
-      distill_why_it_matters: row.distill_why_it_matters || '',
-      excerpt: row.excerpt || '',
-      working_memory_text: row.capture_text || row.clean_text || '',
-      content_hash: row.content_hash || null,
-      metadata: row.metadata || null,
-    } : null,
+    row: legacyRow,
   };
+  if (view === 'debug') {
+    result.debug = {
+      view,
+      topic_state: toTopicStateDebugSnapshot(topicSnapshot),
+    };
+  }
+  return result;
 }
 
 async function wrapCommit(args) {
@@ -219,11 +358,9 @@ async function wrapCommit(args) {
   };
 
   const sessionMarkdown = renderSessionNoteMarkdown(renderInput);
-  const workingMemoryMarkdown = renderWorkingMemoryMarkdown(renderInput);
+  const legacyWorkingMemoryMarkdown = renderWorkingMemoryMarkdown(renderInput);
   const sessionCleanText = sessionMarkdown.trim();
-  const workingMemoryCleanText = workingMemoryMarkdown.trim();
   const sessionContentHash = deriveContentHashFromCleanText(sessionCleanText);
-  const workingMemoryContentHash = deriveContentHashFromCleanText(workingMemoryCleanText);
 
   const defaultGist = firstSentence(sessionSummary)
     || firstSentence(workingMemoryUpdates[0])
@@ -243,7 +380,6 @@ async function wrapCommit(args) {
   const sessionTitle = chatTitle
     ? `Session: ${chatTitle}`
     : `Session: ${topicPrimary} (${dateStamp})`;
-  const workingMemoryTitle = `Working Memory: ${topicPrimary}`;
   const keywords = deriveKeywords(topicPrimary, topicSecondary);
   const writeVersion = 'chatgpt.wrap_commit_v1';
 
@@ -291,51 +427,23 @@ async function wrapCommit(args) {
     idempotency_key_secondary: sessionContentHash,
   };
 
-  const wmSummary = workingMemoryUpdates.join(' | ') || sessionSummary || gist;
-  const wmExcerpt = firstSentence(workingMemoryCleanText);
-  const workingMemoryInsertInput = {
-    source: 'chatgpt',
-    intent: 'thought',
-    content_type: 'working_memory',
-    title: workingMemoryTitle,
-    author: 'chatgpt',
-    capture_text: workingMemoryMarkdown,
-    clean_text: workingMemoryCleanText,
-    content_hash: workingMemoryContentHash,
-    metadata: {
-      chatgpt: {
-        artifact_kind: 'working_memory',
-        session_id: sessionId,
-        topic_key: topicKey,
-        source_entry_refs: sourceEntryRefs,
-        committed_at: nowIso,
-      },
+  const topicSnapshotResult = await activeTopicRepository.applyTopicSnapshot({
+    topic_key: topicKey,
+    topic_title: topicPrimary,
+    state: {
+      title: topicPrimary,
+      why_active_now: whyItMatters,
+      current_mental_model: workingMemoryUpdates.join('\n') || sessionSummary || gist,
+      tensions_uncertainties: tensions.join('\n'),
+      last_session_id: sessionId,
     },
-    topic_primary: topicPrimary,
-    topic_secondary: topicSecondary,
-    topic_secondary_confidence: topicSecondaryConfidence,
-    keywords,
-    enrichment_status: 'completed',
-    enrichment_model: writeVersion,
-    prompt_version: writeVersion,
-    gist: gist || `Working memory for ${topicPrimary}`,
-    retrieval_excerpt: wmExcerpt,
-    distill_summary: wmSummary,
-    distill_why_it_matters: whyItMatters,
-    distill_stance: 'descriptive',
-    distill_version: writeVersion,
-    distill_created_from_hash: workingMemoryContentHash,
-    distill_status: 'completed',
-    distill_metadata: {
-      source: 'chatgpt.wrap_commit',
-      session_id: sessionId,
-      topic_key: topicKey,
-      source_entry_refs: sourceEntryRefs,
-    },
-    idempotency_policy_key: 'chatgpt_working_memory_v1',
-    idempotency_key_primary: `wm:${topicKey}`,
-    idempotency_key_secondary: workingMemoryContentHash,
-  };
+    open_questions: toOpenQuestionItems(openQuestions),
+    action_items: toActionItems(nextSteps),
+  });
+
+  const topicStateMarkdown = renderWorkingMemoryFromTopicState(topicSnapshotResult);
+  const workingMemoryCleanText = topicStateMarkdown.trim() || legacyWorkingMemoryMarkdown.trim();
+  const workingMemoryContentHash = deriveContentHashFromCleanText(workingMemoryCleanText);
 
   const returning = [
     'entry_id',
@@ -354,24 +462,30 @@ async function wrapCommit(args) {
     input: sessionInsertInput,
     returning,
   });
-  const workingMemoryInsertResult = await insert({
-    input: workingMemoryInsertInput,
-    returning,
-  });
 
   const sessionRow = Array.isArray(sessionInsertResult && sessionInsertResult.rows)
     ? sessionInsertResult.rows[0]
     : null;
-  const workingMemoryRow = Array.isArray(workingMemoryInsertResult && workingMemoryInsertResult.rows)
-    ? workingMemoryInsertResult.rows[0]
-    : null;
 
-  if (!sessionRow || !workingMemoryRow) {
-    throw new ChatgptActionError('wrap_commit did not return both artifact rows', {
+  if (!sessionRow) {
+    throw new ChatgptActionError('wrap_commit did not return session-note row', {
       code: 'tool_error',
       statusCode: 500,
     });
   }
+
+  const topicState = topicSnapshotResult && topicSnapshotResult.state
+    ? topicSnapshotResult.state
+    : {};
+  const openQuestionCount = Array.isArray(topicSnapshotResult && topicSnapshotResult.open_questions)
+    ? topicSnapshotResult.open_questions.length
+    : 0;
+  const actionItemCount = Array.isArray(topicSnapshotResult && topicSnapshotResult.action_items)
+    ? topicSnapshotResult.action_items.length
+    : 0;
+  const relatedEntryCount = Array.isArray(topicSnapshotResult && topicSnapshotResult.related_entries)
+    ? topicSnapshotResult.related_entries.length
+    : 0;
 
   return {
     meta: {
@@ -395,22 +509,24 @@ async function wrapCommit(args) {
       idempotency_key_secondary: sessionInsertInput.idempotency_key_secondary,
     },
     working_memory: {
-      entry_id: workingMemoryRow.entry_id || null,
-      id: workingMemoryRow.id || null,
-      created_at: workingMemoryRow.created_at || null,
-      action: workingMemoryRow.action || null,
-      title: workingMemoryRow.title || workingMemoryTitle,
-      topic_primary: workingMemoryRow.topic_primary || topicPrimary,
-      topic_secondary: workingMemoryRow.topic_secondary || topicSecondary || '',
-      topic_secondary_confidence: workingMemoryRow.topic_secondary_confidence === undefined
-        ? topicSecondaryConfidence
-        : workingMemoryRow.topic_secondary_confidence,
-      idempotency_key_primary: workingMemoryInsertInput.idempotency_key_primary,
-      idempotency_key_secondary: workingMemoryInsertInput.idempotency_key_secondary,
+      entry_id: topicState.migration_source_entry_id || null,
+      id: null,
+      created_at: topicState.updated_at || null,
+      action: topicSnapshotResult && topicSnapshotResult.write ? topicSnapshotResult.write.state : 'updated',
+      title: topicState.title || `Working Memory: ${topicPrimary}`,
+      topic_primary: topicPrimary,
+      topic_secondary: '',
+      topic_secondary_confidence: null,
+      state_version: topicState.state_version || null,
+      open_questions_count: openQuestionCount,
+      action_items_count: actionItemCount,
+      related_entries_count: relatedEntryCount,
+      idempotency_key_primary: `wm:${topicKey}`,
+      idempotency_key_secondary: workingMemoryContentHash,
     },
     artifacts: {
       session_markdown: sessionMarkdown,
-      working_memory_markdown: workingMemoryMarkdown,
+      working_memory_markdown: topicStateMarkdown,
     },
   };
 }

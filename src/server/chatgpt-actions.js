@@ -20,6 +20,7 @@ function requireObject(value, fieldName) {
 async function runChatgptWorkingMemoryAction(payload, requestMeta) {
   const input = requireObject(payload || {}, 'working_memory payload');
   const topic = asText(input.topic || input.topic_primary || input.resolved_topic_primary || input.q);
+  const view = asText(input.view || input.mode || '');
   if (!topic) {
     throw new ChatgptValidationError('topic is required for pull_working_memory', {
       field: 'topic',
@@ -27,7 +28,7 @@ async function runChatgptWorkingMemoryAction(payload, requestMeta) {
     });
   }
 
-  const result = await pullWorkingMemory({ topic }, requestMeta || {});
+  const result = await pullWorkingMemory({ topic, view }, requestMeta || {});
   return {
     action: 'chatgpt_read',
     method: 'pull_working_memory',
