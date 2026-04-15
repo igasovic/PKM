@@ -1,11 +1,14 @@
 # PRD — Working Memory And Wrap Commit
 
-Status: active  
+Status: superseded  
 Surface owner: backend working-memory/session-note artifact semantics  
 Scope type: backfilled baseline  
-Last verified: 2026-04-07  
+Last verified: 2026-04-15  
 Related authoritative docs: `docs/api_control.md`, `docs/external_api.md`, `docs/database_schema.md`, `docs/requirements.md`, `chatgpt/project_instructions.md`  
 Related work-package doc: none
+
+Superseded by:
+- `docs/PRD/active_topics_and_working_memory_prd.md`
 
 ## Purpose
 Separate the working-memory domain surface from the public GPT Actions integration boundary so topic memory, session-note semantics, and wrap/commit behavior can evolve without being buried inside webhook transport details.

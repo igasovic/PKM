@@ -86,7 +86,7 @@ Unsupported architecture:
 - classify: `src/server/tier1-enrichment.js`, `src/server/tier1/**`
 - distill: `src/server/tier2-enrichment.js`, `src/server/tier2/**`
 - recipes: `src/server/routes/recipes-routes.js`, `src/server/recipes/recipe-input.js`
-- ChatGPT / working memory: `src/server/chatgpt-actions.js`, `src/server/chatgpt/**`
+- ChatGPT / working memory: `src/server/chatgpt-actions.js`, `src/server/chatgpt/**`, `src/server/db/active-topic-store.js`
 - backlog / batch status: `src/server/email-importer.js`, `src/server/batch-status-service.js`, `src/server/batch-worker-runtime.js`
 
 ### 3. Persistence
@@ -129,6 +129,7 @@ Unsupported architecture:
 ### `src/server/db/**`
 - the SQL boundary now lives in bounded stores instead of one catch-all module
 - current backend-owned store split:
+  - `active-topic-store.js` for first-class active-topic state reads and snapshot writes
   - `runtime-store.js` for runtime config and test-mode helpers
   - `read-store.js` for read surfaces
   - `write-store.js` for generic write/delete/move and idempotency handling

@@ -44,7 +44,7 @@ Current repo behavior is:
 - `05 ChatGPT Wrap Commit` validates public write payloads and calls internal `POST /chatgpt/wrap-commit`
 - `11 ChatGPT Read Router` resolves semantic read intent in n8n and calls exactly one internal backend route per request
 - public action schema is maintained in `chatgpt/action_schema.yaml`
-- working-memory method is available through the public read action, but its internal semantics are owned by `docs/PRD/working-memory-prd.md`
+- working-memory method is available through the public read action, but its internal semantics are owned by `docs/PRD/active_topics_and_working_memory_prd.md`
 - read/write action calls emit structured observability tied to action, method, request metadata, outcome, and compact error summaries through the existing backend/n8n logging surfaces
 
 ## Goals
@@ -97,7 +97,7 @@ Internal routes used by the public workflows:
 
 Internal-domain ownership lives in:
 - `docs/PRD/read-prd.md`
-- `docs/PRD/working-memory-prd.md`
+- `docs/PRD/active_topics_and_working_memory_prd.md`
 
 ## Contract delta table
 | Surface | Changes? | Baseline known? | Notes |

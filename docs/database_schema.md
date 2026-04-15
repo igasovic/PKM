@@ -35,6 +35,7 @@ This file is meant to be a **human + agent** reference:
 | Table group | Scope | Primary use |
 |---|---|---|
 | `entries`, `idempotency_policies` | mirrored in `pkm` and `pkm_test` | core ingest, dedupe, read and enrichment lifecycle |
+| `active_topics`, `active_topic_state`, `active_topic_open_questions`, `active_topic_action_items`, `active_topic_related_entries` | mirrored in `pkm` and `pkm_test` | first-class active-topic working-memory state and topic-entry links |
 | `recipes`, `recipe_links` | mirrored in `pkm` and `pkm_test` | recipe capture, retrieval, review queue, and bidirectional see-also links |
 | `runtime_config`, `failure_packs`, calendar tables, todoist planning tables | prod-only | runtime toggles, failure diagnostics, calendar business logs, Todoist planning state |
 | `t1_*`, `t2_*` batch tables | mirrored in `pkm` and `pkm_test` | durable batch orchestration and status visibility |
@@ -45,6 +46,7 @@ This file is meant to be a **human + agent** reference:
 |---|---|---|---|---|---|
 | `entries` | `pgadmin` | backend via `pkm_ingest` | backend, `pkm_read` | yes | not explicitly bounded |
 | `idempotency_policies` | `pgadmin` | migrations / admin setup | backend | yes | not explicitly bounded |
+| `active_topics`, `active_topic_state`, `active_topic_open_questions`, `active_topic_action_items`, `active_topic_related_entries` | `pgadmin` | backend active-topic store via `pkm_ingest` | backend, `pkm_read` | yes | not explicitly bounded |
 | `recipes` | `pgadmin` | backend recipe routes via `pkm_ingest` | backend, `pkm_read` | yes | not explicitly bounded |
 | `recipe_links` | `pgadmin` | backend recipe link routes via `pkm_ingest` | backend, `pkm_read` | yes | not explicitly bounded |
 | `runtime_config` | `pgadmin` | backend | backend, `pkm_read`, `n8n` | no | not explicitly bounded |
@@ -103,6 +105,11 @@ Schema grants (current):
 **Production (`pkm`)**
 - `entries` (~1232 kB)
 - `idempotency_policies` (~16 kB)
+- `active_topics` (size varies by topic count; currently fixed small set)
+- `active_topic_state` (size varies by topic state history volume)
+- `active_topic_open_questions` (size varies by active question volume)
+- `active_topic_action_items` (size varies by active action volume)
+- `active_topic_related_entries` (size varies by topic-entry link volume)
 - `recipes` (size varies by recipe volume)
 - `recipe_links` (size varies by recipe-link volume)
 - `pipeline_events` (size varies by retention)
@@ -122,6 +129,11 @@ Schema grants (current):
 **Test (`pkm_test`)**
 - `entries` (~488 kB)
 - `idempotency_policies` (~16 kB)
+- `active_topics` (size varies by topic count; currently fixed small set)
+- `active_topic_state` (size varies by topic state history volume)
+- `active_topic_open_questions` (size varies by active question volume)
+- `active_topic_action_items` (size varies by active action volume)
+- `active_topic_related_entries` (size varies by topic-entry link volume)
 - `recipes` (size varies by recipe volume)
 - `recipe_links` (size varies by recipe-link volume)
 - `t1_batches` (~8192 bytes)
@@ -140,6 +152,11 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 | Table | pgadmin | pkm_ingest | pkm_read | n8n |
 |---|---|---|---|---|
 | `pkm.entries` | RIUD + TRUNCATE/REF/… | RIUD | R | — |
+| `pkm.active_topics` | full | RIUD | R | — |
+| `pkm.active_topic_state` | full | RIUD | R | — |
+| `pkm.active_topic_open_questions` | full | RIUD | R | — |
+| `pkm.active_topic_action_items` | full | RIUD | R | — |
+| `pkm.active_topic_related_entries` | full | RIUD | R | — |
 | `pkm.recipes` | full | RIUD | R | — |
 | `pkm.recipe_links` | full | RIUD | R | — |
 | `pkm.pipeline_events` | full | RIUD | — | — |
@@ -162,6 +179,11 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 | Table | pgadmin | pkm_ingest | pkm_read |
 |---|---|---|---|
 | `pkm_test.entries` | full | RIUD | R |
+| `pkm_test.active_topics` | full | RIUD | R |
+| `pkm_test.active_topic_state` | full | RIUD | R |
+| `pkm_test.active_topic_open_questions` | full | RIUD | R |
+| `pkm_test.active_topic_action_items` | full | RIUD | R |
+| `pkm_test.active_topic_related_entries` | full | RIUD | R |
 | `pkm_test.recipes` | full | RIUD | R |
 | `pkm_test.recipe_links` | full | RIUD | R |
 | `pkm_test.idempotency_policies` | full | RIUD | — |
@@ -184,6 +206,7 @@ Legend: `R`=SELECT, `I`=INSERT, `U`=UPDATE, `D`=DELETE
 
 Current sequence grants:
 - `pkm_ingest`: `USAGE` + `SELECT` on both `entries_entry_id_seq` and both `recipes_id_seq` sequences.
+- `pkm_ingest`: `USAGE` + `SELECT` on both `active_topic_open_questions_id_seq` and both `active_topic_action_items_id_seq` sequences.
 - `pgadmin`: `USAGE`/`SELECT`/`UPDATE` on both.
 
 **Important nuance (idempotency_policies):**
@@ -221,6 +244,11 @@ Most tables are mirrored in both schemas to allow safe experimentation.
 Mirrored between `pkm` and `pkm_test`:
 - `entries`
 - `idempotency_policies`
+- `active_topics`
+- `active_topic_state`
+- `active_topic_open_questions`
+- `active_topic_action_items`
+- `active_topic_related_entries`
 - `recipes`
 - `recipe_links`
 - `t1_batches`
@@ -341,6 +369,97 @@ Same intent as prod, but names differ slightly:
 - Smoke selector index: `entries_smoke_suite_idx` partial expression index on `((metadata #>> '{smoke,suite}')) WHERE metadata ? 'smoke'`
 
 ---
+
+### `pkm.active_topics` / `pkm_test.active_topics`
+
+**Purpose**  
+Canonical fixed-topic registry for the active-topic working-memory surface.
+
+**Columns**
+- `topic_key` text PK (lowercase canonical key)
+- `title` text NOT NULL
+- `is_active` boolean NOT NULL default `true`
+- `created_at` timestamptz NOT NULL default `now()`
+- `updated_at` timestamptz NOT NULL default `now()`
+
+**Notes**
+- Phase-1 seeded keys: `communication`, `parenting`, `product`, `ai`.
+
+### `pkm.active_topic_state` / `pkm_test.active_topic_state`
+
+**Purpose**  
+One structured state row per active topic key.
+
+**Columns**
+- `topic_key` text PK FK -> `active_topics(topic_key)` with `ON DELETE CASCADE`
+- `title` text NOT NULL default `''`
+- `why_active_now` text NOT NULL default `''`
+- `current_mental_model` text NOT NULL default `''`
+- `tensions_uncertainties` text NOT NULL default `''`
+- `state_version` int NOT NULL default `1` CHECK `state_version >= 1`
+- `last_session_id` text
+- `migration_source_entry_id` bigint
+- `migration_source_content_hash` text
+- `created_at` timestamptz NOT NULL default `now()`
+- `updated_at` timestamptz NOT NULL default `now()`
+
+**Indexes**
+- `(updated_at DESC)` for latest-state inspection
+
+### `pkm.active_topic_open_questions` / `pkm_test.active_topic_open_questions`
+
+**Purpose**  
+Structured open-question rows linked to one active topic.
+
+**Columns**
+- `id` bigint identity PK
+- `topic_key` text NOT NULL FK -> `active_topics(topic_key)` with `ON DELETE CASCADE`
+- `question_key` text NOT NULL
+- `question_text` text NOT NULL
+- `status` text NOT NULL CHECK in `('open', 'closed')`
+- `sort_order` int NOT NULL default `0`
+- `created_at` timestamptz NOT NULL default `now()`
+- `updated_at` timestamptz NOT NULL default `now()`
+
+**Constraints and indexes**
+- UNIQUE `(topic_key, question_key)`
+- `(topic_key, status, sort_order, id)` for topic-state rendering and status views
+
+### `pkm.active_topic_action_items` / `pkm_test.active_topic_action_items`
+
+**Purpose**  
+Structured action-item rows linked to one active topic.
+
+**Columns**
+- `id` bigint identity PK
+- `topic_key` text NOT NULL FK -> `active_topics(topic_key)` with `ON DELETE CASCADE`
+- `action_key` text NOT NULL
+- `action_text` text NOT NULL
+- `status` text NOT NULL CHECK in `('open', 'done')`
+- `sort_order` int NOT NULL default `0`
+- `created_at` timestamptz NOT NULL default `now()`
+- `updated_at` timestamptz NOT NULL default `now()`
+
+**Constraints and indexes**
+- UNIQUE `(topic_key, action_key)`
+- `(topic_key, status, sort_order, id)` for topic-state rendering and status views
+
+### `pkm.active_topic_related_entries` / `pkm_test.active_topic_related_entries`
+
+**Purpose**  
+Explicit topic-to-entry relationships, separate from wrap/commit state patch updates.
+
+**Columns**
+- `topic_key` text NOT NULL FK -> `active_topics(topic_key)` with `ON DELETE CASCADE`
+- `entry_id` bigint NOT NULL
+- `relation_type` text NOT NULL default `'related'` (non-empty)
+- `metadata` jsonb
+- `created_at` timestamptz NOT NULL default `now()`
+- `updated_at` timestamptz NOT NULL default `now()`
+
+**Constraints and indexes**
+- PK `(topic_key, entry_id)`
+- `(entry_id, topic_key)` index for reverse lookup from entry-centric workflows
 
 ### `pkm.recipes` / `pkm_test.recipes`
 

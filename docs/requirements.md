@@ -52,7 +52,7 @@ Migration note (2026-03-30):
 | Read context pack requirements | `docs/PRD/read-prd.md` |
 | Telegram command UX requirements | `docs/PRD/read-prd.md` plus `docs/PRD/distill-prd.md` |
 | Family calendar requirements | `docs/PRD/family-calendar-prd.md` |
-| ChatGPT action requirements | `docs/PRD/gpt-actions-integration-prd.md` plus `docs/PRD/working-memory-prd.md` |
+| ChatGPT action requirements | `docs/PRD/gpt-actions-integration-prd.md` plus `docs/PRD/active_topics_and_working_memory_prd.md` |
 | Non-goals | owned by the relevant feature PRD |
 
 ## Remaining Uncovered Requirements

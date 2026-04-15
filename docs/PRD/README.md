@@ -28,7 +28,7 @@ This file is the entrypoint for active PRDs in this repo.
 | Tier-1 classify | `docs/PRD/classify-prd.md` | active | sync + batch classify control plane |
 | Tier-2 distill | `docs/PRD/distill-prd.md` | active | canonical Tier-2 surface with deeper appendix material split out |
 | Generic read + context pack | `docs/PRD/read-prd.md` | active | shared read methods and context-pack builder |
-| Working memory | `docs/PRD/working-memory-prd.md` | active | topic working memory and wrap/commit artifact semantics |
+| Active topics and working memory | `docs/PRD/active_topics_and_working_memory_prd.md` | proposed | canonical successor for first-class topic state + wrap/commit migration |
 | GPT actions integration | `docs/PRD/gpt-actions-integration-prd.md` | active | public ChatGPT -> n8n webhook boundary |
 | PKM UI shell | `docs/PRD/pkm-ui-prd.md` | active | baseline UI shell, pages, and shared UI constraints |
 | Failure packs | `docs/PRD/failure-pack-prd.md` | active | canonical failure-pack surface |
