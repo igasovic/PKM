@@ -12,6 +12,7 @@ const {
   enqueueTier1Batch,
 } = require('../tier1-enrichment.js');
 const { importEmailMbox } = require('../email-importer.js');
+const { ingestTelegramUrlBatch } = require('../telegram-url-batch-ingest.js');
 const {
   readBody,
   parseJsonBody,
@@ -44,6 +45,30 @@ async function handleClassifyRoutes(ctx) {
         { input: body, output: (out) => out, meta: { route: url.pathname } }
       );
       json(res, 200, normalized);
+    } catch (err) {
+      logError(err, req);
+      sendError(res, err, { includeErrorCodeField: false, includeField: false });
+    }
+    return true;
+  }
+
+  if (method === 'POST' && url.pathname === '/ingest/telegram/url-batch') {
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const result = await logger.step(
+        'api.ingest.telegram.url_batch',
+        async () => ingestTelegramUrlBatch({
+          text: body.text,
+          source: body.source,
+          continue_on_error: body.continue_on_error,
+          smoke_mode: body.smoke_mode,
+          test_run_id: body.test_run_id,
+        }),
+        { input: body, output: (out) => out, meta: { route: url.pathname } }
+      );
+      json(res, 200, result);
     } catch (err) {
       logError(err, req);
       sendError(res, err, { includeErrorCodeField: false, includeField: false });

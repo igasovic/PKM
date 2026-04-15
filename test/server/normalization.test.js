@@ -5,6 +5,7 @@ const {
   normalizeEmail,
   normalizeWebpage,
   normalizeNotion,
+  parseTelegramUrlListInput,
 } = require('../../src/server/normalization.js');
 const { deriveContentHashFromCleanText } = require('../../src/libs/content-hash.js');
 
@@ -34,6 +35,25 @@ describe('normalization', () => {
     expect(out.content_type).toBe('note');
     expect(out.clean_text).toBe('hello world');
     expect(out.content_hash).toBe(deriveContentHashFromCleanText('hello world'));
+  });
+
+  test('telegram url-list parser supports comma/newline lists with canonical dedupe', () => {
+    const out = parseTelegramUrlListInput(
+      'https://example.com/a?utm_source=x,\\nwww.Example.com/a\\nhttps://example.com/b'
+    );
+
+    expect(out.url_count).toBe(2);
+    expect(out.is_mixed).toBe(false);
+    expect(out.urls.map((u) => u.url_canonical)).toEqual([
+      'https://example.com/a',
+      'https://example.com/b',
+    ]);
+  });
+
+  test('telegram url-list parser flags mixed text + URLs', () => {
+    const out = parseTelegramUrlListInput('read this https://example.com/a now');
+    expect(out.url_count).toBe(1);
+    expect(out.is_mixed).toBe(true);
   });
 
   test('email returns normalized payload and internal idempotency source', async () => {

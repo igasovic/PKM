@@ -174,7 +174,7 @@
         [
           {
             "index": 0,
-            "node": "PKM Normalize Telegram",
+            "node": "Route Telegram Capture Mode",
             "type": "main"
           }
         ]
@@ -252,6 +252,142 @@
           {
             "index": 0,
             "node": "PKM Config",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Route Telegram Capture Mode": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "IF Invalid Mixed",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF Invalid Mixed": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Mixed Input Message",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "IF URL Mode",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF URL Mode": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "IF URL Bulk",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Normalize Telegram",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF URL Bulk": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Ingest Telegram URL Batch",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Normalize Telegram",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Ingest Telegram URL Batch": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format URL Batch Summary Message",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Build URL Batch Extraction Items",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build URL Batch Extraction Items": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Call '06 Web Extraction' (Bulk URLs)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Call '06 Web Extraction' (Bulk URLs)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format URL Batch Extraction Summary Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format URL Batch Summary Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format URL Batch Extraction Summary Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Mixed Input Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send a text message1",
             "type": "main"
           }
         ]
@@ -726,6 +862,228 @@
       "position": [
         2256,
         -416
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "54d6fd6b-5f26-4a56-a90d-4cdfa41cd0d5",
+      "name": "Route Telegram Capture Mode",
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst text = String($json.raw_text || ($json.message && ($json.message.text || $json.message.caption)) || '').trim();\nconst URL_RE = /(https?:\\/\\/[^\\s<>()]+|www\\.[^\\s<>()]+)/ig;\nconst matches = text.match(URL_RE) || [];\nconst urls = matches.map((u) => {\n  let v = String(u || '').trim();\n  while (/[)\\],.?!:;\"'»]+$/.test(v)) v = v.replace(/[)\\],.?!:;\"'»]+$/, '');\n  if (/^www\\./i.test(v)) v = `https://${v}`;\n  return v;\n}).filter(Boolean);\n\nconst residue = text\n  .replace(URL_RE, ' ')\n  .replace(/[\\s,;|\\u2022()\\[\\]{}<>0-9.\\-_:]+/g, '')\n  .trim();\n\nlet mode = 'thought';\nlet mode_error = null;\nif (urls.length > 0) {\n  if (residue.length > 0) {\n    mode = 'invalid_mixed';\n    mode_error = 'mixed_telegram_capture_not_supported';\n  } else {\n    mode = 'url';\n  }\n}\n\nconst assertions = Array.isArray($json.smoke_assertions) ? [...$json.smoke_assertions] : [];\nassertions.push({ name: 'telegram_mode_routed', ok: true, mode, url_count: urls.length });\n\nreturn [{\n  json: {\n    ...$json,\n    raw_text: text,\n    telegram_capture_mode: mode,\n    telegram_url_count: urls.length,\n    telegram_urls: urls,\n    telegram_mode_error: mode_error,\n    smoke_assertions: assertions,\n  },\n}];"
+      },
+      "position": [
+        -880,
+        -224
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "3067f8a3-2250-4f40-aa59-74a96366d00f",
+      "name": "IF Invalid Mixed",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f96b00b3-a2d7-4fe7-8f3b-a05875a4a806",
+              "leftValue": "={{ $json.telegram_capture_mode }}",
+              "operator": {
+                "name": "filter.operator.equals",
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "invalid_mixed"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        -656,
+        -224
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "id": "a4aa5fa1-4967-4914-b862-9fe9136f9af6",
+      "name": "IF URL Mode",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "0f554996-1f73-4ac8-aa1f-b8b8dfdd79f7",
+              "leftValue": "={{ $json.telegram_capture_mode }}",
+              "operator": {
+                "name": "filter.operator.equals",
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "url"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        -432,
+        -224
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "id": "cdb2bb3f-7f9a-4759-8651-d4e7c2d95a1a",
+      "name": "IF URL Bulk",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "2122da09-7d82-4f50-a90e-ddad9faf8eb3",
+              "leftValue": "={{ Number($json.telegram_url_count || 0) > 1 }}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": "true"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "position": [
+        -208,
+        -224
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2
+    },
+    {
+      "id": "8d6864d4-4688-45df-9824-1543532a9129",
+      "name": "PKM Ingest Telegram URL Batch",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => ({ text: $json.raw_text || '', source: { chat_id: $json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id) || null, message_id: $json.telegram_message_id || ($json.message && $json.message.message_id) || null, user_id: $json.telegram_user_id || ($json.message && $json.message.from && $json.message.from.id) || null }, continue_on_error: true, smoke_mode: $json.smoke_mode === true, test_run_id: $json.test_run_id || null }))()) }}",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/ingest/telegram/url-batch"
+      },
+      "position": [
+        16,
+        -96
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "id": "9516d3ef-c3cc-4e63-b5e2-53871ea8e94e",
+      "name": "Build URL Batch Extraction Items",
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst results = Array.isArray($json.results) ? $json.results : [];\nconst base = { ...$json };\n\nreturn results\n  .filter((r) => {\n    const action = String((r && r.action) || '');\n    const ok = r && r.ok === true;\n    const hasId = !!(r && r.id);\n    const hasUrl = !!(r && (r.url || r.url_canonical));\n    return ok && (action === 'inserted' || action === 'updated') && hasId && hasUrl;\n  })\n  .map((r) => ({\n    json: {\n      ...base,\n      id: r.id,\n      entry_id: r.entry_id ?? null,\n      url: r.url || r.url_canonical || null,\n      url_canonical: r.url_canonical || r.url || null,\n      content_type: 'newsletter',\n      bulk_web_extraction: true,\n    },\n  }));"
+      },
+      "position": [
+        240,
+        -96
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "45bcfef9-a85d-43d8-9683-8dd2c06f5e8f",
+      "name": "Call '06 Web Extraction' (Bulk URLs)",
+      "parameters": {
+        "options": {},
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "06 Web Extraction",
+          "cachedResultUrl": "/workflow/eYF7ivDiFwDYgi-pFRbpg",
+          "mode": "list",
+          "value": "eYF7ivDiFwDYgi-pFRbpg"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        464,
+        -96
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "743ea7c4-a8e6-4290-b7ee-e352e065994a",
+      "name": "Format URL Batch Summary Message",
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nconst total = Number($json.url_count || 0);\nconst inserted = Number($json.inserted_count || 0);\nconst updated = Number($json.updated_count || 0);\nconst skipped = Number($json.skipped_count || 0);\nconst failed = Number($json.failed_count || 0);\nconst results = Array.isArray($json.results) ? $json.results : [];\n\nconst successEntries = results\n  .filter((r) => r && r.ok === true && (r.action === 'inserted' || r.action === 'updated') && r.entry_id != null)\n  .map((r) => String(r.entry_id));\nconst failedRows = results.filter((r) => r && (r.ok === false || r.action === 'failed'));\n\nconst lines = [\n  `URL batch processed: ${total}`,\n  `Inserted: ${inserted} Updated: ${updated} Skipped: ${skipped} Failed: ${failed}`,\n];\n\nif (successEntries.length > 0) {\n  lines.push(`Entry IDs: ${successEntries.slice(0, 20).join(', ')}`);\n}\n\nif (failedRows.length > 0) {\n  const errs = failedRows\n    .slice(0, 5)\n    .map((r) => `#${Number(r.batch_index) + 1}: ${String(r.error || 'failed')}`)\n    .join(' | ');\n  lines.push(`Errors: ${errs}`);\n}\n\nreturn [{ json: { ...$json, telegram_message: mdv2Message(lines.join('\\n')) } }];"
+      },
+      "position": [
+        1584,
+        -96
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "f2b8fbbf-5dd6-4bc4-8468-f08409d1719d",
+      "name": "Format URL Batch Extraction Summary Message",
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nconst items = $input.all().map((i) => i.json || {});\nif (!items.length) return [];\n\nconst base = items[0];\nconst total = Number(base.url_count || 0);\nconst inserted = Number(base.inserted_count || 0);\nconst updated = Number(base.updated_count || 0);\nconst skipped = Number(base.skipped_count || 0);\nconst failed = Number(base.failed_count || 0);\n\nconst extractionSuccess = items.filter((i) => i && i.id).length;\nconst attempted = inserted + updated;\nconst extractionFailed = Math.max(0, attempted - extractionSuccess);\n\nconst lines = [\n  `URL batch processed: ${total}`,\n  `Inserted: ${inserted} Updated: ${updated} Skipped: ${skipped} Failed: ${failed}`,\n  `Extraction attempted: ${attempted} Succeeded: ${extractionSuccess} Failed: ${extractionFailed}`,\n];\n\nconst entryIds = items\n  .map((i) => i.entry_id)\n  .filter((v) => v != null)\n  .map((v) => String(v));\nif (entryIds.length > 0) {\n  lines.push(`Extracted entry IDs: ${entryIds.slice(0, 20).join(', ')}`);\n}\n\nreturn [{ json: { ...base, telegram_message: mdv2Message(lines.join('\\n')) } }];"
+      },
+      "position": [
+        1584,
+        32
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "77065187-f4fe-475b-8e23-7447283a14ca",
+      "name": "Format Mixed Input Message",
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\nconst text = 'Mixed text and URL list is not supported\\nSend either a thought message, or a URL-only comma/newline list';\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];"
+      },
+      "position": [
+        1584,
+        160
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2

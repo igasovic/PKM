@@ -51,6 +51,7 @@ Current repo behavior is:
 - conflict resolution is enforced in backend DB insert logic, not in n8n
 - Telegram, email, email-batch, and Notion ingest are fail-closed when required idempotency fields are missing
 - `/normalize/webpage` returns DB-ready quality/retrieval projections for `/db/update`, but intentionally does not derive idempotency
+- `POST /ingest/telegram/url-batch` handles comma/newline URL-list capture as a backend-owned parse + batch-insert path with per-URL result reporting
 - `/normalize/notion` runs `collect -> normalize -> idempotency -> quality`, with a non-fatal skip path for unsupported block types
 - `/import/email/mbox` normalizes each message synchronously, inserts idempotently, records partial failures, and enqueues classify batches only for rows that were not skipped
 - backlog import uses `source = "email-batch"` while preserving email idempotency semantics by aliasing `email-batch` to `email` during idempotency derivation
@@ -116,6 +117,7 @@ Boundary rule:
 | Method | Backend sequence | Output intent | Write boundary |
 |---|---|---|---|
 | Telegram | `normalize -> quality -> idempotency` | note/thought or link/archive | `/db/insert` |
+| Telegram URL list batch | `parse url-list -> normalize(each) -> quality(each) -> idempotency(each) -> batch insert` | multi-link archive ingest with per-URL status | `/ingest/telegram/url-batch` (internally uses `/db/insert` repository path) |
 | Email | `normalize -> quality -> idempotency` | newsletter, correspondence, or note | `/db/insert` |
 | Notion | `collect -> normalize -> skip-or-idempotency -> quality` | note/archive depending on content type | `/db/insert` |
 | Webpage | `normalize -> quality` | update existing entry projections | `/db/update` |
@@ -132,6 +134,14 @@ Boundary rule:
   - `intent = archive`
   - `url_canonical` is derived in backend normalization
 - Otherwise the message remains a note/thought path without a URL.
+- Telegram URL-list batch ingest (`/ingest/telegram/url-batch`) is URL-only:
+  - accepts comma/newline URL lists
+  - rejects mixed free text + URLs as invalid input
+  - parses URL items in parallel and reports per-item normalize/insert outcomes
+- `02 Telegram Capture` explicitly routes thought text and URL capture as separate flow modes:
+  - mixed thought+URL input is rejected before normalization
+  - URL mode defaults to web extraction (`22 Web Extraction`) for both single-URL and successful URL-list entries
+  - URL-list mode reports one insert summary and one aggregated extraction summary back to Telegram
 
 ### Email normalization modes
 - Email normalization first performs transport cleanup, forwarded-envelope detection, mojibake cleanup, and body extraction.
@@ -237,6 +247,7 @@ This PRD owns the ingest requirement that normalization and DB writes agree on t
 ## API / contract surfaces
 Owned or coupled internal routes:
 - `POST /normalize/telegram`
+- `POST /ingest/telegram/url-batch`
 - `POST /normalize/email/intent`
 - `POST /normalize/email`
 - `POST /normalize/webpage`

@@ -32,6 +32,7 @@
 | Endpoint family | Auth | Primary callers | Schema touched | Typical tests |
 |---|---|---|---|---|
 | Normalization | internal | n8n ingest workflows | none directly; returns DB-ready payloads | `test/server/normalization.test.js`, `test/server/content-hash.test.js`, `test/server/quality.test.js` |
+| Telegram URL batch ingest | internal | Telegram capture workflows | `entries` (through backend write repository) | `test/server/classify.api-contract.test.js`, `test/server/telegram-url-batch-ingest.test.js` |
 | Tier-1 enrichment | internal | n8n, backend orchestration | `t1_*` status tables for batch flows | `test/server/tier2.enrichment.test.js`, `test/server/batch-status-service.test.js` |
 | Backlog import | internal | n8n backlog flows | `entries`, `t1_*` tables | `test/server/idempotency.test.js`, related batch tests |
 
@@ -84,6 +85,70 @@ Response:
   "idempotency_key_primary": "tg:123:456",
   "idempotency_key_secondary": "f8a9...",
   "metadata": { "retrieval": { "version": "v1" } }
+}
+```
+
+### `POST /ingest/telegram/url-batch`
+Normalizes and inserts a pure URL list from one Telegram message in one backend call.
+The backend parses URLs in parallel, inserts with idempotency, and returns a per-URL summary.
+
+This route is for URL-only lists (comma/newline separated). Mixed free text + URLs is rejected.
+When `continue_on_error` is true (default), per-URL normalize or insert failures are reported in `results[]` while successful URLs still complete.
+
+Body:
+```json
+{
+  "text": "https://a.com, https://b.com",
+  "source": {
+    "chat_id": "123",
+    "message_id": "456",
+    "user_id": "789"
+  },
+  "continue_on_error": true
+}
+```
+
+Response:
+```json
+{
+  "mode": "url_list",
+  "url_count": 3,
+  "inserted_count": 1,
+  "updated_count": 0,
+  "skipped_count": 1,
+  "failed_count": 1,
+  "results": [
+    {
+      "batch_index": 0,
+      "ok": true,
+      "action": "inserted",
+      "entry_id": 101,
+      "id": "uuid",
+      "url": "https://a.com",
+      "url_canonical": "https://a.com",
+      "error": null
+    },
+    {
+      "batch_index": 1,
+      "ok": true,
+      "action": "skipped",
+      "entry_id": 99,
+      "id": "uuid",
+      "url": "https://b.com",
+      "url_canonical": "https://b.com",
+      "error": null
+    },
+    {
+      "batch_index": 2,
+      "ok": false,
+      "action": "failed",
+      "entry_id": null,
+      "id": null,
+      "url": "https://c.com",
+      "url_canonical": "https://c.com",
+      "error": "normalize failed"
+    }
+  ]
 }
 ```
 

@@ -8,8 +8,8 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 - keep route, doc, and test planning tied to one source of truth
 
 ## Summary
-- total routes: 63
-- routes with contract tests: 63
+- total routes: 64
+- routes with contract tests: 64
 - routes with smoke coverage: 9
 - routes with integration tests: 0
 - operator/UI/probe routes: 33
@@ -26,6 +26,7 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 | `POST /chatgpt/working_memory` | `admin_secret` | 11 ChatGPT Read Router | `docs/api_control.md` | yes | no | no | no | test/server/chatgpt.api-contract.test.js |
 | `POST /chatgpt/wrap-commit` | `admin_secret` | 05 ChatGPT Wrap Commit | `docs/api_control.md` | yes | no | no | no | test/server/chatgpt.api-contract.test.js |
 | `POST /normalize/telegram` | `internal` | Telegram ingest workflows | `docs/api_ingest.md` | yes | yes | no | no | test/server/classify.api-contract.test.js |
+| `POST /ingest/telegram/url-batch` | `internal` | Telegram ingest workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js, test/server/telegram-url-batch-ingest.test.js |
 | `POST /normalize/email/intent` | `internal` | Email ingest workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
 | `POST /normalize/email` | `internal` | Email ingest workflows | `docs/api_ingest.md` | yes | yes | no | no | test/server/classify.api-contract.test.js |
 | `POST /normalize/webpage` | `internal` | Web capture workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |

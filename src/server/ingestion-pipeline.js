@@ -6,6 +6,7 @@ const {
   normalizeEmail,
   normalizeWebpage,
   normalizeNotion,
+  parseTelegramUrlListInput,
 } = require('./normalization.js');
 const {
   buildIdempotencyForNormalized,
@@ -97,6 +98,71 @@ async function runTelegramIngestionPipeline({ text, source }) {
     { input: withQuality, output: (out) => out }
   );
   return stripInternalFields(withIdempotency);
+}
+
+async function runTelegramBulkUrlIngestionPipeline({ text, source, continue_on_error }) {
+  const logger = getLogger().child({ pipeline: 'ingestion.telegram.bulk' });
+  const src = ensureObject(source);
+  const continueOnError = continue_on_error !== false;
+  const parsed = await logger.step(
+    'parse.telegram.bulk',
+    async () => parseTelegramUrlListInput(text),
+    { input: { text, source: src }, output: (out) => ({ url_count: out.url_count, is_mixed: out.is_mixed }) }
+  );
+
+  if (parsed.url_count < 1) {
+    throw new Error('telegram url batch requires at least one URL');
+  }
+  if (parsed.is_mixed) {
+    throw new Error('mixed telegram text and URL capture is not supported for url batch ingest');
+  }
+
+  const settled = await logger.step(
+    'normalize.telegram.bulk',
+    async () => {
+      if (!continueOnError) {
+        const strict = await Promise.all(parsed.urls.map((u) => runTelegramIngestionPipeline({ text: u.url, source: src })));
+        return strict.map((value) => ({ status: 'fulfilled', value }));
+      }
+      return Promise.allSettled(parsed.urls.map((u) => runTelegramIngestionPipeline({ text: u.url, source: src })));
+    },
+    {
+      input: { url_count: parsed.url_count, continue_on_error: continueOnError },
+      output: (out) => ({ item_count: Array.isArray(out) ? out.length : 0 }),
+    }
+  );
+
+  const items = [];
+  const normalize_failures = [];
+  for (let idx = 0; idx < settled.length; idx += 1) {
+    const result = settled[idx];
+    const srcUrl = parsed.urls[idx] || {};
+    if (result && result.status === 'fulfilled') {
+      const item = result.value || {};
+      items.push({
+        ...item,
+        url: srcUrl.url || item.url || null,
+        url_canonical: srcUrl.url_canonical || item.url_canonical || null,
+        _bulk_index: idx,
+      });
+      continue;
+    }
+    const reason = result && result.reason;
+    normalize_failures.push({
+      batch_index: idx,
+      url: srcUrl.url || null,
+      url_canonical: srcUrl.url_canonical || null,
+      error: reason && reason.message ? String(reason.message) : 'normalize failed',
+    });
+  }
+
+  return {
+    mode: 'url_list',
+    url_count: parsed.url_count,
+    urls: parsed.urls,
+    items,
+    normalize_failures,
+  };
 }
 
 async function runEmailIngestionPipeline({ raw_text, from, subject, date, message_id, source }) {
@@ -275,6 +341,7 @@ async function runNotionIngestionPipeline({
 
 module.exports = {
   runTelegramIngestionPipeline,
+  runTelegramBulkUrlIngestionPipeline,
   runEmailIngestionPipeline,
   runWebpageIngestionPipeline,
   runNotionIngestionPipeline,

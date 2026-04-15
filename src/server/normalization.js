@@ -200,6 +200,53 @@ function cleanWebpageExtractedText(s) {
   return t;
 }
 
+const TELEGRAM_URL_RE = /(https?:\/\/[^\s<>()]+|www\.[^\s<>()]+)/ig;
+
+function trimTelegramUrlCandidate(raw) {
+  let url = String(raw || '').trim();
+  while (/[)\],.?!:;"'»]+$/.test(url)) {
+    url = url.replace(/[)\],.?!:;"'»]+$/, '');
+  }
+  if (!url) return null;
+  if (/^www\./i.test(url)) return `https://${url}`;
+  return url;
+}
+
+function parseTelegramUrlListInput(text) {
+  const capture_text = maybeUnescapeTelegramText(String(text || ''));
+  const matches = capture_text.match(TELEGRAM_URL_RE) || [];
+  const urls = [];
+  const seen = new Set();
+
+  for (const m of matches) {
+    const url = trimTelegramUrlCandidate(m);
+    if (!url) continue;
+    const url_canonical = canonicalizeUrl(url) || null;
+    const dedupeKey = String(url_canonical || url)
+      .toLowerCase()
+      .replace('://www.', '://');
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    urls.push({
+      url,
+      url_canonical,
+    });
+  }
+
+  const residue = capture_text
+    .replace(TELEGRAM_URL_RE, ' ')
+    .replace(/[\s,;|\u2022()\[\]{}<>0-9.\-_:]+/g, '')
+    .trim();
+
+  return {
+    capture_text,
+    urls,
+    url_count: urls.length,
+    is_mixed: urls.length > 0 && residue.length > 0,
+    residue,
+  };
+}
+
 async function normalizeTelegram({ text, source }) {
   const src = source && typeof source === 'object' ? source : null;
   const inputText = text !== undefined && text !== null
@@ -237,15 +284,10 @@ async function normalizeTelegram({ text, source }) {
     };
   }
 
-  const match = capture_text.match(/https?:\/\/[^\s<>()]+/i);
-  let url = match ? match[0] : null;
-  if (url) {
-    while (/[)\],.?!:;"'»]+$/.test(url)) {
-      url = url.replace(/[)\],.?!:;"'»]+$/, '');
-    }
-  }
-
-  const url_canonical = canonicalizeUrl(url);
+  const parsedUrls = parseTelegramUrlListInput(capture_text);
+  const firstUrl = parsedUrls.urls[0] || null;
+  const url = firstUrl ? firstUrl.url : null;
+  const url_canonical = firstUrl ? firstUrl.url_canonical : null;
   const content_type = url ? 'newsletter' : 'note';
   const intent = content_type === 'newsletter' ? 'archive' : 'think';
 
@@ -1603,4 +1645,5 @@ module.exports = {
   normalizeWebpage,
   normalizeNotion,
   decideEmailIntent,
+  parseTelegramUrlListInput,
 };

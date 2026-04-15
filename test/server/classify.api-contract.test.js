@@ -40,6 +40,7 @@ describe('classify and ingest API contract', () => {
   const classifyBatchStatusMock = jest.fn();
   const emailIntentMock = jest.fn();
   const mboxImportMock = jest.fn();
+  const telegramUrlBatchIngestMock = jest.fn();
 
   beforeEach(() => {
     jest.resetModules();
@@ -55,6 +56,7 @@ describe('classify and ingest API contract', () => {
     classifyBatchStatusMock.mockReset();
     emailIntentMock.mockReset();
     mboxImportMock.mockReset();
+    telegramUrlBatchIngestMock.mockReset();
   });
 
   afterEach(async () => {
@@ -86,6 +88,9 @@ describe('classify and ingest API contract', () => {
     }));
     jest.doMock('../../src/server/email-importer.js', () => ({
       importEmailMbox: mboxImportMock,
+    }));
+    jest.doMock('../../src/server/telegram-url-batch-ingest.js', () => ({
+      ingestTelegramUrlBatch: telegramUrlBatchIngestMock,
     }));
     jest.doMock('../../src/server/tier2-enrichment.js', () => ({
       getTier2BatchStatusList: async () => ({ summary: {}, jobs: [] }),
@@ -153,6 +158,41 @@ describe('classify and ingest API contract', () => {
     expect(res.status).toBe(200);
     expect(emailIntentMock).toHaveBeenCalledWith('hello world');
     expect(JSON.parse(res.body)).toEqual({ content_type: 'newsletter' });
+  });
+
+  test('POST /ingest/telegram/url-batch forwards payload to telegram url batch ingest service', async () => {
+    telegramUrlBatchIngestMock.mockResolvedValue({
+      mode: 'url_list',
+      url_count: 2,
+      inserted_count: 2,
+      updated_count: 0,
+      skipped_count: 0,
+      failed_count: 0,
+      results: [],
+    });
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const body = {
+      text: 'https://a.com, https://b.com',
+      source: { chat_id: '1', message_id: '2', user_id: '3' },
+      continue_on_error: true,
+      smoke_mode: true,
+      test_run_id: 'smoke-1',
+    };
+    const res = await request(port, 'POST', '/ingest/telegram/url-batch', JSON.stringify(body), { 'Content-Type': 'application/json' });
+
+    expect(res.status).toBe(200);
+    expect(telegramUrlBatchIngestMock).toHaveBeenCalledWith(body);
+    expect(JSON.parse(res.body)).toEqual({
+      mode: 'url_list',
+      url_count: 2,
+      inserted_count: 2,
+      updated_count: 0,
+      skipped_count: 0,
+      failed_count: 0,
+      results: [],
+    });
   });
 
   test('POST /normalize/email forwards canonical email fields', async () => {

@@ -28,7 +28,23 @@
         [
           {
             "index": 0,
-            "node": "Text Clean",
+            "node": "PKM Normalize Webpage",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Merge2",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "PKM Update",
             "type": "main"
           }
         ]
@@ -55,34 +71,23 @@
         ]
       ]
     },
+    "PKM Normalize Webpage": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge2",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Read Webpage (HTTP)": {
       "main": [
         [
           {
             "index": 0,
             "node": "Merge",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Recompute retrieval excerpt + quality signals from clean_text": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "PKM Update",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Text Clean": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Recompute retrieval excerpt + quality signals from clean_text",
             "type": "main"
           }
         ]
@@ -198,29 +203,45 @@
     },
     {
       "id": "e3d370cf-c8f9-4022-ab8c-cbdce2d351dd",
-      "name": "Recompute retrieval excerpt + quality signals from clean_text",
+      "name": "PKM Normalize Webpage",
       "parameters": {
-        "jsCode": "try{const {wf22RecomputeRetrievalExcerptQualitySignalsFromCleanText}=require('@igasovic/n8n-blocks');return await wf22RecomputeRetrievalExcerptQualitySignalsFromCleanText({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/recompute-retrieval-excerpt-quality-signals-from-clean-text__e3d370cf-c8f9-4022-ab8c-cbdce2d351dd.js] ${e.message}`;throw e;}"
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify((() => ({\n  text: $json.text ?? $json.extracted_text ?? null,\n  capture_text: $json.capture_text ?? null,\n  content_type: $json.content_type ?? null,\n  url: $json.url ?? null,\n  url_canonical: $json.url_canonical ?? null\n}))()) }}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/normalize/webpage"
       },
       "position": [
         1472,
         -96
       ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
     },
     {
       "id": "9ceb22a3-83dc-4b29-844e-6a769101b0d2",
-      "name": "Text Clean",
+      "name": "Merge2",
       "parameters": {
-        "jsCode": "try{const {wf22TextClean}=require('@igasovic/n8n-blocks');return await wf22TextClean({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/text-clean__9ceb22a3-83dc-4b29-844e-6a769101b0d2.js] ${e.message}`;throw e;}"
+        "combineBy": "combineByPosition",
+        "mode": "combine",
+        "options": {}
       },
       "position": [
         1248,
         -96
       ],
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
     },
     {
       "id": "fb9f50f3-1052-48e4-a949-b269a31e0892",
@@ -264,7 +285,7 @@
             }
           ]
         },
-        "jsonBody": "={{ JSON.stringify((() => {\n  const id = $json.id;\n\n  const url = $json.url ?? null;\n  const url_canonical = $json.url_canonical ?? null;\n  const title = $json.title ?? null;\n  const author = $json.author ?? null;\n\n  // only send clean_text/extracted_text if non-empty (matches your previous COALESCE logic)\n  const clean = String($json.clean_text ?? \"\");\n  const cleanTrim = clean.trim();\n\n  const extractedRaw = $json.extracted_text ?? $json.text ?? null;\n  const extracted = (extractedRaw === null || extractedRaw === undefined) ? \"\" : String(extractedRaw);\n  const extractedTrim = extracted.trim();\n\n  // retrieval patch + promoted columns (WP2)\n  const retrieval = $json.retrieval ?? null;\n  const doMeta = !!(retrieval && typeof retrieval === \"object\");\n  const q = doMeta ? (retrieval.quality || {}) : {};\n\n  const body = {\n    id,\n\n    url,\n    url_canonical,\n    title,\n    author,\n\n    // backend accepts JSONB as object or valid JSON string; we send object\n    metadata: doMeta ? { retrieval } : null,\n\n    // promoted columns only when retrieval exists\n    retrieval_excerpt: doMeta ? (retrieval.excerpt ?? null) : null,\n    retrieval_version: doMeta ? (retrieval.version ?? null) : null,\n    source_domain: doMeta ? (retrieval.source_domain ?? null) : null,\n\n    clean_word_count: doMeta ? (q.clean_word_count ?? null) : null,\n    clean_char_count: doMeta ? (q.clean_char_count ?? null) : null,\n    extracted_char_count: doMeta ? (q.extracted_char_count ?? null) : null,\n\n    link_count: doMeta ? (q.link_count ?? null) : null,\n    link_ratio: doMeta ? (q.link_ratio ?? null) : null,\n\n    boilerplate_heavy: doMeta ? (q.boilerplate_heavy ?? null) : null,\n    low_signal: doMeta ? (q.low_signal ?? null) : null,\n    extraction_incomplete: doMeta ? (q.extraction_incomplete ?? null) : null,\n    quality_score: doMeta ? (q.quality_score ?? null) : null,\n\n    returning: [\n      \"entry_id\",\n      \"id\",\n      \"created_at\",\n      \"source\",\n      \"intent\",\n      \"content_type\",\n      \"COALESCE(title,'') AS title\",\n      \"COALESCE(author,'') AS author\",\n      \"COALESCE(clean_text,'') AS clean_text\",\n      \"url_canonical\",\n      \"COALESCE(char_length(clean_text), 0) AS clean_len\",\n      \"COALESCE(char_length(extracted_text), 0) AS extracted_len\"\n    ]\n  };\n\n  if (cleanTrim) {\n    body.clean_text = clean;\n    body.content_hash = $json.content_hash ?? null;\n  }\n  if (extractedTrim) body.extracted_text = extracted;\n\n  return body;\n})()) }}\n",
+        "jsonBody": "={{ JSON.stringify((() => {\n  const id = $json.id;\n\n  const url = $json.url ?? null;\n  const url_canonical = $json.url_canonical ?? null;\n  const title = $json.title ?? null;\n  const author = $json.author ?? null;\n\n  // only send clean_text/extracted_text if non-empty (matches your previous COALESCE logic)\n  const clean = String($json.clean_text ?? \"\");\n  const cleanTrim = clean.trim();\n\n  const extractedRaw = $json.extracted_text ?? $json.text ?? null;\n  const extracted = (extractedRaw === null || extractedRaw === undefined) ? \"\" : String(extractedRaw);\n  const extractedTrim = extracted.trim();\n\n  // retrieval patch + promoted columns (WP2)\n  const retrieval = $json.retrieval ?? null;\n  const doMeta = !!(retrieval && typeof retrieval === \"object\");\n  const q = doMeta ? (retrieval.quality || {}) : {};\n\n  const body = {\n    id,\n\n    url,\n    url_canonical,\n    title,\n    author,\n\n    returning: [\n      \"entry_id\",\n      \"id\",\n      \"created_at\",\n      \"source\",\n      \"intent\",\n      \"content_type\",\n      \"COALESCE(title,'') AS title\",\n      \"COALESCE(author,'') AS author\",\n      \"COALESCE(clean_text,'') AS clean_text\",\n      \"url_canonical\",\n      \"COALESCE(char_length(clean_text), 0) AS clean_len\",\n      \"COALESCE(char_length(extracted_text), 0) AS extracted_len\"\n    ]\n  };\n\n  // Respect retrieval_update_skipped: only patch retrieval fields when backend returned retrieval.\n  if (doMeta) {\n    body.metadata = { retrieval };\n    body.retrieval_excerpt = retrieval.excerpt ?? null;\n    body.retrieval_version = retrieval.version ?? null;\n    body.source_domain = retrieval.source_domain ?? null;\n\n    body.clean_word_count = q.clean_word_count ?? null;\n    body.clean_char_count = q.clean_char_count ?? null;\n    body.extracted_char_count = q.extracted_char_count ?? null;\n\n    body.link_count = q.link_count ?? null;\n    body.link_ratio = q.link_ratio ?? null;\n\n    body.boilerplate_heavy = q.boilerplate_heavy ?? null;\n    body.low_signal = q.low_signal ?? null;\n    body.extraction_incomplete = q.extraction_incomplete ?? null;\n    body.quality_score = q.quality_score ?? null;\n  }\n\n  if (cleanTrim) {\n    body.clean_text = clean;\n    body.content_hash = $json.content_hash ?? null;\n  }\n  if (extractedTrim) body.extracted_text = extracted;\n\n  return body;\n})()) }}\n",
         "method": "POST",
         "options": {},
         "sendBody": true,
