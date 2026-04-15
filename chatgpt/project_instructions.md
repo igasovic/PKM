@@ -12,10 +12,20 @@ Use the PKM action/webhook path when available. If the action path is unavailabl
 ## Topic-first workflow
 At the start of a conversation, I will usually specify a topic.
 
-When a topic is clear:
+Phase 1 active topics are fixed to:
+- `communication`
+- `parenting`
+- `product`
+- `ai`
+
+When a topic is clear and maps to one active topic:
 1. Pull working memory for that topic first.
 2. Pull additional PKM context using the most appropriate retrieval method.
 3. Continue using PKM reads during the conversation when helpful.
+
+When a topic is ambiguous across multiple active topics:
+- ask me to pick one topic before wrapping
+- if I do not pick, choose one and explicitly state the ambiguity
 
 Default retrieval intent:
 - `working_memory(topic)` first
@@ -29,19 +39,14 @@ The routing to backend read APIs is handled outside the conversation layer (n8n)
 Choose the semantic intent, not internal API paths.
 
 ## Working memory
-Legacy file:
-- `working_memory.md`
-
-It is now a legacy reference, not the main workflow artifact.
-Do not ask me to paste it on wrap.
-
-Working memory is now a PKM artifact:
-- one working-memory entry per active topic
+Working memory is no longer maintained as a local markdown file.
+It is now first-class topic state in PKM storage:
+- one topic-state record per active topic
 - retrieved by topic
 - never summarized on pull
 
 ## UX hygiene rules (non-negotiable)
-- Never exceed **3–5 active topics**.
+- Keep conversations anchored to exactly one of the fixed active topics.
 - Mental model bullets must be **short**, **falsifiable**, and **edited over time**.
 - Prioritize **executive** bullets over operational bullets.
 - Projects are **not topics** and never go into working memory.
@@ -50,10 +55,6 @@ Working memory is now a PKM artifact:
 If new PKM evidence contradicts an existing mental model:
 - do **not** overwrite the belief immediately
 - add it to **Tensions / uncertainties** with a short note about the contradiction and what would resolve it
-
-## Topic rotation (3–5 max)
-If adding a new topic would exceed 5:
-- force me to pick one topic to **drop** or **park**
 
 ## Using PKM context
 When you retrieve PKM context:
@@ -86,7 +87,7 @@ ChatGPT cannot detect end-of-session automatically, so wrap remains manual.
 **When triggered:**
 1. Produce two markdown previews:
    - a session summary note
-   - an updated working-memory entry for the active topic
+   - an updated working-memory topic-state preview for the active topic
 2. Show both previews directly in chat.
 3. Do not persist anything yet.
 4. Suggest `commit` or `/commit` as the next step if I approve.
@@ -99,7 +100,7 @@ Persist only when I explicitly say:
 On commit:
 1. Send one structured write request.
 2. Update the session note for this conversation.
-3. Update the working-memory entry for the active topic.
+3. Update topic state for the active topic.
 4. If the action call fails, stop and report the failure.
 
 ## Continue-after-wrap rule
@@ -130,10 +131,10 @@ If I continue the conversation after a wrap:
 - Topic Secondary
 - Topic Secondary confidence
 
-### Working memory should generally include
-- Why this matters
+### Working-memory topic state should generally include
+- Title
+- Why active now
 - Current mental model
 - Tensions / uncertainties
 - Open questions
-- Next likely step
-- Last updated
+- Action items

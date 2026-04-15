@@ -28,6 +28,7 @@ paths:
                 value:
                   cmd: working_memory
                   topic: parenting
+                  view: gpt
               continue:
                 summary: Continue thread by topic/query
                 value:
@@ -62,7 +63,7 @@ paths:
       description: |
         Persists both artifacts in one flow:
         - session summary note
-        - topic working memory
+        - topic-state update for one active topic
       requestBody:
         required: true
         content:
@@ -109,6 +110,13 @@ components:
         topic:
           type: string
           description: Topic for working_memory.
+        view:
+          type: string
+          enum: [gpt, debug]
+          description: |
+            Optional read view selector for working_memory.
+            `gpt` (default) returns compatibility markdown payload.
+            `debug` may include structured topic-state details in result.debug.
         topic_primary:
           type: string
           description: Alias for topic.
@@ -198,6 +206,12 @@ components:
                 method:
                   type: [string, 'null']
                 query_text:
+                  type: [string, 'null']
+                topic:
+                  type: [string, 'null']
+                topic_key:
+                  type: [string, 'null']
+                source:
                   type: [string, 'null']
                 days:
                   type: [integer, 'null']
