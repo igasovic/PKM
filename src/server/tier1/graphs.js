@@ -24,6 +24,7 @@ const {
   findBatchRecord,
   getBatchItemRequests,
 } = require('./store.js');
+const tier1ClassifyStore = require('../db/tier1-classify-store.js');
 
 let litellmClient = null;
 let langGraphModulePromise = null;
@@ -407,7 +408,14 @@ async function batchCollectWriteNode(state) {
     }
   }
 
-  const updated_items = await upsertBatchResults(schema, batchId, state.parsed.rows || []);
+  const parsedRows = state.parsed.rows || [];
+  const updated_items = await upsertBatchResults(schema, batchId, parsedRows);
+  const applied_updates = await tier1ClassifyStore.applyCollectedBatchResults({
+    schema,
+    rows: parsedRows,
+    enrichment_model: remoteBatch.model || localBatch.model || null,
+    prompt_version: 't1_batch_collect_v1',
+  });
   const summary = await readBatchSummary(schema, batchId);
   braintrustSink.logSuccess('t1_batch_collect.consume', {
     input: {
@@ -418,9 +426,14 @@ async function batchCollectWriteNode(state) {
       status: remoteBatch.status || null,
       updated_items,
       summary,
+      applied_updates: {
+        row_count: applied_updates.rowCount || 0,
+        skipped_non_ok: applied_updates.skipped_non_ok || 0,
+        skipped_no_selector: applied_updates.skipped_no_selector || 0,
+      },
       retry: retryInfo,
       failure: isFailed ? toBatchFailureInfo(remoteBatch) : null,
-      consumed_entries: toEntitySecondaryTopicPairs(state.parsed.rows || []),
+      consumed_entries: toEntitySecondaryTopicPairs(parsedRows),
     },
     metadata: {
       source: 't1_batch_collect',
@@ -435,6 +448,11 @@ async function batchCollectWriteNode(state) {
       status: remoteBatch.status,
       terminal: TERMINAL_BATCH_STATUSES.has(String(remoteBatch.status || '').toLowerCase()),
       updated_items,
+      applied_updates: {
+        row_count: applied_updates.rowCount || 0,
+        skipped_non_ok: applied_updates.skipped_non_ok || 0,
+        skipped_no_selector: applied_updates.skipped_no_selector || 0,
+      },
       summary,
       retry: retryInfo,
     },

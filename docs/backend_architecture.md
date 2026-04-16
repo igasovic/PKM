@@ -83,7 +83,7 @@ Unsupported architecture:
 ### 2. Domain/application services
 - ingest: `src/server/ingestion-pipeline.js`, `src/server/normalization.js`, `src/server/idempotency.js`, `src/server/quality.js`
 - calendar: `src/server/calendar-service.js`, `src/server/calendar-access.js`, `src/server/calendar/**`, `src/server/telegram-router/**`
-- classify: `src/server/tier1-enrichment.js`, `src/server/tier1/**`
+- classify: `src/server/tier1-enrichment.js`, `src/server/tier1/**`, `src/server/db/tier1-classify-store.js`
 - distill: `src/server/tier2-enrichment.js`, `src/server/tier2/**`
 - recipes: `src/server/routes/recipes-routes.js`, `src/server/recipes/recipe-input.js`
 - ChatGPT / working memory: `src/server/chatgpt-actions.js`, `src/server/chatgpt/**`, `src/server/db/active-topic-store.js`

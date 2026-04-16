@@ -14,8 +14,13 @@ function applyTopicSnapshot(args, opts) {
   return activeTopicStore.applyTopicSnapshot(args, opts);
 }
 
+function applyTopicPatch(args, opts) {
+  return activeTopicStore.applyTopicPatch(args, opts);
+}
+
 module.exports = {
   listActiveTopics,
   getTopicState,
   applyTopicSnapshot,
+  applyTopicPatch,
 };

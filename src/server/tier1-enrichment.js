@@ -3,6 +3,7 @@
 const { braintrustSink } = require('./logger/braintrust.js');
 const { getLogger } = require('./logger/index.js');
 const { createBatchWorkerRuntime } = require('./batch-worker-runtime.js');
+const tier1ClassifyStore = require('./db/tier1-classify-store.js');
 const {
   listPendingBatchIds,
   listBatchStatuses,
@@ -21,6 +22,147 @@ async function enrichTier1(input) {
     't1.enrich.sync',
     async () => runSyncEnrichmentGraph(input || {}),
     { input: input || {}, output: (out) => out }
+  );
+}
+
+async function enrichTier1AndPersist(input) {
+  const args = input && typeof input === 'object' ? input : {};
+  const selectorId = args.id || null;
+  const selectorEntryId = args.entry_id || null;
+  if (!selectorId && !selectorEntryId) {
+    throw new Error('enrich/t1/update requires id or entry_id');
+  }
+
+  const logger = getLogger().child({ pipeline: 't1.enrich.sync.update' });
+  return logger.step(
+    't1.enrich.sync.update',
+    async () => {
+      const hasProvidedT1 = !!(
+        (args.t1 && typeof args.t1 === 'object' && !Array.isArray(args.t1))
+        || (
+          (args.topic_primary !== undefined && args.topic_primary !== null)
+          && (args.topic_secondary !== undefined && args.topic_secondary !== null)
+          && (args.gist !== undefined && args.gist !== null)
+        )
+      );
+      const t1 = hasProvidedT1
+        ? ((args.t1 && typeof args.t1 === 'object' && !Array.isArray(args.t1)) ? args.t1 : args)
+        : await runSyncEnrichmentGraph({
+          title: args.title ?? null,
+          author: args.author ?? null,
+          clean_text: args.clean_text ?? null,
+        });
+
+      return tier1ClassifyStore.applyTier1Update({
+        id: selectorId,
+        entry_id: selectorEntryId,
+        clean_text: args.clean_text ?? null,
+        enrichment_model: args.enrichment_model ?? null,
+        prompt_version: args.prompt_version ?? null,
+        t1,
+        schema: args.schema ?? null,
+      });
+    },
+    {
+      input: {
+        has_id: !!selectorId,
+        has_entry_id: !!selectorEntryId,
+        has_t1: !!(args.t1 && typeof args.t1 === 'object' && !Array.isArray(args.t1)),
+      },
+      output: (out) => ({
+        schema: out && out.schema ? out.schema : null,
+        entry_id: out && out.row ? out.row.entry_id : null,
+        topic_primary: out && out.row ? out.row.topic_primary : null,
+        linked_topic_key: out && out.topic_link ? out.topic_link.topic_key : null,
+      }),
+    }
+  );
+}
+
+async function applyTier1CollectedBatchResults(input) {
+  const args = input && typeof input === 'object' ? input : {};
+  const logger = getLogger().child({ pipeline: 't1.enrich.batch.apply' });
+  return logger.step(
+    't1.enrich.batch.apply',
+    async () => tier1ClassifyStore.applyCollectedBatchResults({
+      schema: args.schema || null,
+      rows: Array.isArray(args.rows) ? args.rows : [],
+      enrichment_model: args.enrichment_model || null,
+      prompt_version: args.prompt_version || null,
+    }),
+    {
+      input: {
+        schema: args.schema || null,
+        rows: Array.isArray(args.rows) ? args.rows.length : 0,
+      },
+      output: (out) => ({
+        rowCount: out && Number.isFinite(Number(out.rowCount)) ? Number(out.rowCount) : 0,
+        skipped_non_ok: out && Number.isFinite(Number(out.skipped_non_ok)) ? Number(out.skipped_non_ok) : 0,
+        skipped_no_selector: out && Number.isFinite(Number(out.skipped_no_selector))
+          ? Number(out.skipped_no_selector)
+          : 0,
+      }),
+    }
+  );
+}
+
+async function enrichTier1AndPersistBatch(input) {
+  const args = input && typeof input === 'object' ? input : {};
+  const rawItems = Array.isArray(args.items) ? args.items : [];
+  if (!rawItems.length) {
+    throw new Error('enrich/t1/update-batch requires non-empty items');
+  }
+
+  const logger = getLogger().child({ pipeline: 't1.enrich.sync.update_batch' });
+  return logger.step(
+    't1.enrich.sync.update_batch',
+    async () => {
+      const prepared = [];
+      for (let i = 0; i < rawItems.length; i += 1) {
+        const item = rawItems[i] && typeof rawItems[i] === 'object' && !Array.isArray(rawItems[i])
+          ? rawItems[i]
+          : {};
+        const hasProvidedT1 = !!(
+          (item.t1 && typeof item.t1 === 'object' && !Array.isArray(item.t1))
+          || (
+            (item.topic_primary !== undefined && item.topic_primary !== null)
+            && (item.topic_secondary !== undefined && item.topic_secondary !== null)
+            && (item.gist !== undefined && item.gist !== null)
+          )
+        );
+        const t1 = hasProvidedT1
+          ? ((item.t1 && typeof item.t1 === 'object' && !Array.isArray(item.t1)) ? item.t1 : item)
+          : await runSyncEnrichmentGraph({
+            title: item.title ?? null,
+            author: item.author ?? null,
+            clean_text: item.clean_text ?? null,
+          });
+        prepared.push({
+          id: item.id ?? null,
+          entry_id: item.entry_id ?? null,
+          clean_text: item.clean_text ?? null,
+          enrichment_model: item.enrichment_model ?? args.enrichment_model ?? null,
+          prompt_version: item.prompt_version ?? args.prompt_version ?? null,
+          t1,
+          schema: item.schema ?? args.schema ?? null,
+        });
+      }
+
+      return tier1ClassifyStore.applyTier1UpdateBatch({
+        items: prepared,
+        continue_on_error: args.continue_on_error !== false,
+        schema: args.schema ?? null,
+      });
+    },
+    {
+      input: {
+        items_count: rawItems.length,
+        continue_on_error: args.continue_on_error !== false,
+      },
+      output: (out) => ({
+        rowCount: out && Number.isFinite(Number(out.rowCount)) ? Number(out.rowCount) : 0,
+      }),
+    }
   );
 }
 
@@ -177,6 +319,9 @@ function stopTier1BatchWorker() {
 
 module.exports = {
   enrichTier1,
+  enrichTier1AndPersist,
+  enrichTier1AndPersistBatch,
+  applyTier1CollectedBatchResults,
   enqueueTier1Batch,
   getTier1BatchStatusList,
   getTier1BatchStatus,

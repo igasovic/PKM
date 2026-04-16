@@ -87,6 +87,204 @@ function toQuestionItems(items) {
   });
 }
 
+function toPatchKeyList(value, fieldName) {
+  if (value === undefined || value === null || value === '') return [];
+  if (!Array.isArray(value)) {
+    throw new Error(`${fieldName} must be an array`);
+  }
+  const out = [];
+  const seen = new Set();
+  for (let i = 0; i < value.length; i += 1) {
+    const key = asText(value[i]);
+    if (!key) continue;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(key);
+  }
+  return out;
+}
+
+function normalizeQuestionPatch(patch) {
+  if (patch === undefined || patch === null) return null;
+  if (typeof patch !== 'object' || Array.isArray(patch)) {
+    throw new Error('open_questions_patch must be an object');
+  }
+  const upsertRaw = patch.upsert;
+  const upsert = upsertRaw === undefined ? [] : toQuestionItems(upsertRaw);
+  return {
+    upsert,
+    close: toPatchKeyList(patch.close, 'open_questions_patch.close'),
+    reopen: toPatchKeyList(patch.reopen, 'open_questions_patch.reopen'),
+    delete: toPatchKeyList(patch.delete, 'open_questions_patch.delete'),
+  };
+}
+
+function normalizeActionPatch(patch) {
+  if (patch === undefined || patch === null) return null;
+  if (typeof patch !== 'object' || Array.isArray(patch)) {
+    throw new Error('action_items_patch must be an object');
+  }
+  const upsertRaw = patch.upsert;
+  const upsert = upsertRaw === undefined ? [] : toActionItems(upsertRaw);
+  return {
+    upsert,
+    done: toPatchKeyList(patch.done, 'action_items_patch.done'),
+    reopen: toPatchKeyList(patch.reopen, 'action_items_patch.reopen'),
+    delete: toPatchKeyList(patch.delete, 'action_items_patch.delete'),
+  };
+}
+
+function hasStatePatchFields(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return (
+    Object.prototype.hasOwnProperty.call(value, 'title')
+    || Object.prototype.hasOwnProperty.call(value, 'why_active_now')
+    || Object.prototype.hasOwnProperty.call(value, 'current_mental_model')
+    || Object.prototype.hasOwnProperty.call(value, 'tensions_uncertainties')
+    || Object.prototype.hasOwnProperty.call(value, 'last_session_id')
+    || Object.prototype.hasOwnProperty.call(value, 'migration_source_entry_id')
+    || Object.prototype.hasOwnProperty.call(value, 'migration_source_content_hash')
+  );
+}
+
+function hasQuestionPatchOps(value) {
+  if (!value) return false;
+  return (
+    (Array.isArray(value.upsert) && value.upsert.length > 0)
+    || (Array.isArray(value.close) && value.close.length > 0)
+    || (Array.isArray(value.reopen) && value.reopen.length > 0)
+    || (Array.isArray(value.delete) && value.delete.length > 0)
+  );
+}
+
+function hasActionPatchOps(value) {
+  if (!value) return false;
+  return (
+    (Array.isArray(value.upsert) && value.upsert.length > 0)
+    || (Array.isArray(value.done) && value.done.length > 0)
+    || (Array.isArray(value.reopen) && value.reopen.length > 0)
+    || (Array.isArray(value.delete) && value.delete.length > 0)
+  );
+}
+
+function applyQuestionPatchItems(currentRows, patch) {
+  const map = new Map();
+  const list = Array.isArray(currentRows) ? currentRows : [];
+  let maxSort = 0;
+
+  for (let i = 0; i < list.length; i += 1) {
+    const row = list[i];
+    const key = asText(row && row.question_key);
+    if (!key) continue;
+    const sortOrder = Number.isFinite(Number(row.sort_order)) ? Math.trunc(Number(row.sort_order)) : (i + 1);
+    if (sortOrder > maxSort) maxSort = sortOrder;
+    map.set(key, {
+      question_key: key,
+      question_text: asText(row.question_text),
+      status: asText(row.status || 'open').toLowerCase() === 'closed' ? 'closed' : 'open',
+      sort_order: sortOrder,
+    });
+  }
+
+  for (const item of patch.upsert) {
+    const key = item.question_key;
+    const existing = map.get(key);
+    const nextSort = Number.isFinite(Number(item.sort_order)) ? Math.trunc(Number(item.sort_order)) : (existing ? existing.sort_order : (maxSort + 1));
+    if (!existing && nextSort > maxSort) maxSort = nextSort;
+    map.set(key, {
+      question_key: key,
+      question_text: asText(item.question_text) || (existing ? existing.question_text : ''),
+      status: item.status === 'closed' ? 'closed' : (existing ? existing.status : 'open'),
+      sort_order: nextSort,
+    });
+  }
+
+  for (const key of patch.close) {
+    const row = map.get(key);
+    if (!row) continue;
+    row.status = 'closed';
+  }
+  for (const key of patch.reopen) {
+    const row = map.get(key);
+    if (!row) continue;
+    row.status = 'open';
+  }
+  for (const key of patch.delete) {
+    map.delete(key);
+  }
+
+  const next = Array.from(map.values())
+    .filter((item) => asText(item.question_text))
+    .sort((a, b) => {
+      if (a.sort_order === b.sort_order) return a.question_key.localeCompare(b.question_key);
+      return a.sort_order - b.sort_order;
+    })
+    .map((item, index) => ({
+      ...item,
+      sort_order: index + 1,
+    }));
+  return next;
+}
+
+function applyActionPatchItems(currentRows, patch) {
+  const map = new Map();
+  const list = Array.isArray(currentRows) ? currentRows : [];
+  let maxSort = 0;
+
+  for (let i = 0; i < list.length; i += 1) {
+    const row = list[i];
+    const key = asText(row && row.action_key);
+    if (!key) continue;
+    const sortOrder = Number.isFinite(Number(row.sort_order)) ? Math.trunc(Number(row.sort_order)) : (i + 1);
+    if (sortOrder > maxSort) maxSort = sortOrder;
+    map.set(key, {
+      action_key: key,
+      action_text: asText(row.action_text),
+      status: asText(row.status || 'open').toLowerCase() === 'done' ? 'done' : 'open',
+      sort_order: sortOrder,
+    });
+  }
+
+  for (const item of patch.upsert) {
+    const key = item.action_key;
+    const existing = map.get(key);
+    const nextSort = Number.isFinite(Number(item.sort_order)) ? Math.trunc(Number(item.sort_order)) : (existing ? existing.sort_order : (maxSort + 1));
+    if (!existing && nextSort > maxSort) maxSort = nextSort;
+    map.set(key, {
+      action_key: key,
+      action_text: asText(item.action_text) || (existing ? existing.action_text : ''),
+      status: item.status === 'done' ? 'done' : (existing ? existing.status : 'open'),
+      sort_order: nextSort,
+    });
+  }
+
+  for (const key of patch.done) {
+    const row = map.get(key);
+    if (!row) continue;
+    row.status = 'done';
+  }
+  for (const key of patch.reopen) {
+    const row = map.get(key);
+    if (!row) continue;
+    row.status = 'open';
+  }
+  for (const key of patch.delete) {
+    map.delete(key);
+  }
+
+  const next = Array.from(map.values())
+    .filter((item) => asText(item.action_text))
+    .sort((a, b) => {
+      if (a.sort_order === b.sort_order) return a.action_key.localeCompare(b.action_key);
+      return a.sort_order - b.sort_order;
+    })
+    .map((item, index) => ({
+      ...item,
+      sort_order: index + 1,
+    }));
+  return next;
+}
+
 function toActionItems(items) {
   if (items === undefined) return null;
   if (!Array.isArray(items)) {
@@ -567,8 +765,62 @@ async function applyTopicSnapshot(args, opts) {
   }
 }
 
+async function applyTopicPatch(args, opts) {
+  const input = args && typeof args === 'object' ? args : {};
+  const topicKey = requireTopicKey(input.topic_key || input.topic || input.key);
+  const statePatch = input.state_patch && typeof input.state_patch === 'object' && !Array.isArray(input.state_patch)
+    ? input.state_patch
+    : {};
+  const questionPatch = normalizeQuestionPatch(input.open_questions_patch);
+  const actionPatch = normalizeActionPatch(input.action_items_patch);
+  const topicTitle = asText(input.topic_title || statePatch.title || topicKey) || topicKey;
+  const { schema, tables } = await resolveContext(opts);
+
+  const shouldPatchState = hasStatePatchFields(statePatch) || hasQuestionPatchOps(questionPatch) || hasActionPatchOps(actionPatch);
+  const shouldPatchQuestions = hasQuestionPatchOps(questionPatch);
+  const shouldPatchActions = hasActionPatchOps(actionPatch);
+
+  try {
+    return runInTransaction('active_topic_state_patch', { schema, topic_key: topicKey }, async (client) => {
+      await ensureTopicRow(client, tables, topicKey, topicTitle);
+
+      let stateWriteAction = 'unchanged';
+      if (shouldPatchState) {
+        const stateResult = await upsertStateRow(client, tables, topicKey, statePatch, topicTitle);
+        stateWriteAction = stateResult && stateResult.action ? stateResult.action : 'updated';
+      }
+
+      if (shouldPatchQuestions || shouldPatchActions) {
+        const current = await getTopicState({ topic_key: topicKey }, { schema, client });
+        if (shouldPatchQuestions) {
+          const nextQuestions = applyQuestionPatchItems(current.open_questions, questionPatch);
+          await replaceOpenQuestions(client, tables, topicKey, nextQuestions);
+        }
+        if (shouldPatchActions) {
+          const nextActions = applyActionPatchItems(current.action_items, actionPatch);
+          await replaceActionItems(client, tables, topicKey, nextActions);
+        }
+      }
+
+      const snapshot = await getTopicState({ topic_key: topicKey }, { schema, client });
+      return {
+        ...snapshot,
+        write: {
+          state: stateWriteAction,
+          open_questions_patched: shouldPatchQuestions,
+          action_items_patched: shouldPatchActions,
+          related_entries_replaced: false,
+        },
+      };
+    });
+  } catch (err) {
+    throw wrapActiveTopicTableError(err, tables.topics);
+  }
+}
+
 module.exports = {
   listActiveTopics,
   getTopicState,
   applyTopicSnapshot,
+  applyTopicPatch,
 };

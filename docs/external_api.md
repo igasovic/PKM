@@ -184,6 +184,7 @@ Request fields:
 | `resolved_topic_primary` | yes | normalized topic key for working memory |
 | `session_summary` | no | optional summary artifact input |
 | `key_insights` | no | optional list of insights |
+| `topic_patch` | no | optional explicit topic-state patch (question/action status operations) |
 | other wrap fields | no | forwarded when accepted by the workflow/backend contract |
 
 Required request fields:

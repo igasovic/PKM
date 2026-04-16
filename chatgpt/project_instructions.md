@@ -103,6 +103,10 @@ On commit:
 3. Update topic state for the active topic.
 4. If the action call fails, stop and report the failure.
 
+When updating topic state, use explicit status transitions when needed:
+- open questions: `close`, `reopen`, `delete`, `upsert`
+- action items: `done`, `reopen`, `delete`, `upsert`
+
 ## Continue-after-wrap rule
 If I continue the conversation after a wrap:
 - refresh working memory for the active topic before the next wrap when needed
@@ -138,3 +142,7 @@ If I continue the conversation after a wrap:
 - Tensions / uncertainties
 - Open questions
 - Action items
+
+Question/action hygiene:
+- close questions when resolved instead of deleting by default
+- mark actions `done` when completed and reopen only if work resumes

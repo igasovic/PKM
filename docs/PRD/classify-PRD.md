@@ -3,7 +3,7 @@
 Status: active  
 Surface owner: backend Tier-1 orchestration + classify batch lifecycle  
 Scope type: backfilled baseline  
-Last verified: 2026-03-30  
+Last verified: 2026-04-15  
 Related authoritative docs: `docs/api_control.md`, `docs/database_schema.md`, `docs/backend_runtime_env.md`, `docs/requirements.md`  
 Related work-package doc: none
 
@@ -24,7 +24,9 @@ Baseline the Tier-1 classify surface so it is cleanly separated from ingest on t
 ## Status and scope boundary
 This PRD owns:
 - `POST /enrich/t1`
+- `POST /enrich/t1/update`
 - `POST /enrich/t1/batch`
+- `POST /enrich/t1/update-batch`
 - `GET /status/batch?stage=t1`
 - `GET /status/batch/:batch_id?stage=t1`
 - legacy `/status/t1/batch*` compatibility while it exists
@@ -42,7 +44,9 @@ This PRD does not own:
 ## Current behavior / baseline
 Current repo behavior is:
 - Tier-1 sync classify is exposed through `POST /enrich/t1`
+- explicit sync classify writeback is exposed through `POST /enrich/t1/update`
 - Tier-1 batch enqueue is exposed through `POST /enrich/t1/batch`
+- explicit batch classify writeback is exposed through `POST /enrich/t1/update-batch` and internal batch-collect apply flow
 - batch status is exposed through the generic `/status/batch` surface with explicit `stage=t1`
 - batch lifecycle persistence is backend-owned and restart-safe
 - LiteLLM is the only model gateway for Tier-1
@@ -79,7 +83,7 @@ Boundary rule:
 ## Contract delta table
 | Surface | Changes? | Baseline known? | Notes |
 |---|---|---|---|
-| Internal backend API | no | yes | API routes and batch-status surfaces are implemented and documented |
+| Internal backend API | yes | yes | classify writeback now has explicit update routes (`/enrich/t1/update*`) |
 | Public webhook API | no | yes | out of scope here |
 | Database schema | no | mostly | lifecycle table families are known; detailed writeback field set still has one review marker |
 | Config / infra | no | yes | LiteLLM and backend runtime env dependencies are known |
@@ -95,11 +99,19 @@ Boundary rule:
 3. LiteLLM handles the model call.
 4. backend parses and returns Tier-1 results.
 
+### Sync classify update
+1. caller submits entry selector + classify input to `POST /enrich/t1/update`.
+2. backend runs Tier-1 classify if `t1` was not provided.
+3. backend applies the fixed Tier-1 writeback field set to `entries`.
+4. backend syncs active-topic related-entry link (`classified_primary`) when topic maps to an active topic.
+5. backend returns updated entry summary + topic-link result.
+
 ### Batch classify
 1. caller submits `items[]` to `POST /enrich/t1/batch`.
 2. backend validates and persists batch request state.
 3. backend-owned batch worker schedules provider work and later collects results.
 4. status is exposed through `/status/batch` with `stage=t1`.
+5. batch collect persists parsed rows and applies explicit entry writeback through backend-owned classify update methods.
 
 ### Runtime contract
 - Tier-1 must route through LiteLLM, not direct provider APIs.
@@ -152,7 +164,9 @@ Representative lifecycle states:
 ## API / contract surfaces
 Owned routes:
 - `POST /enrich/t1`
+- `POST /enrich/t1/update`
 - `POST /enrich/t1/batch`
+- `POST /enrich/t1/update-batch`
 - `GET /status/batch?stage=t1`
 - `GET /status/batch/:batch_id?stage=t1`
 

@@ -33,7 +33,7 @@
 |---|---|---|---|---|
 | Normalization | internal | n8n ingest workflows | none directly; returns DB-ready payloads | `test/server/normalization.test.js`, `test/server/content-hash.test.js`, `test/server/quality.test.js` |
 | Telegram URL batch ingest | internal | Telegram capture workflows | `entries` (through backend write repository) | `test/server/classify.api-contract.test.js`, `test/server/telegram-url-batch-ingest.test.js` |
-| Tier-1 enrichment | internal | n8n, backend orchestration | `t1_*` status tables for batch flows | `test/server/tier2.enrichment.test.js`, `test/server/batch-status-service.test.js` |
+| Tier-1 enrichment | internal | n8n, backend orchestration | `entries`, `active_topic_related_entries`, `t1_*` status tables for batch flows | `test/server/classify.api-contract.test.js`, `test/server/tier2.enrichment.test.js`, `test/server/batch-status-service.test.js` |
 | Backlog import | internal | n8n backlog flows | `entries`, `t1_*` tables | `test/server/idempotency.test.js`, related batch tests |
 
 ## Batch Persistence Note
@@ -353,6 +353,50 @@ Response:
 }
 ```
 
+### `POST /enrich/t1/update`
+Runs Tier‑1 enrichment and persists the fixed Tier‑1 update field set to one existing entry.
+This is the explicit classify write path (replaces classify-through-generic-`/db/update`).
+
+Body:
+```json
+{
+  "entry_id": 123,
+  "title": "Optional title",
+  "author": "Optional author",
+  "clean_text": "Required when t1 is not provided"
+}
+```
+
+Optional fields:
+- `id` as UUID selector alternative to `entry_id`
+- `t1` object to persist precomputed Tier‑1 output (skips model call)
+- `enrichment_model`, `prompt_version`
+- `schema` (`pkm` or `pkm_test`) for explicit override
+
+Response:
+```json
+{
+  "schema": "pkm",
+  "row": {
+    "entry_id": 123,
+    "topic_primary": "parenting",
+    "topic_secondary": "bedtime routine",
+    "gist": "One sentence summary.",
+    "enrichment_status": "done",
+    "action": "updated"
+  },
+  "topic_link": {
+    "linked": true,
+    "topic_key": "parenting",
+    "reason": null
+  }
+}
+```
+
+Notes:
+- When `topic_primary` resolves to an active topic key, backend upserts `active_topic_related_entries` with `relation_type='classified_primary'`.
+- If the resolved topic is not active, prior `classified_primary` links for that entry are cleared and no active-topic link is created.
+
 ### `POST /enrich/t1/batch`
 Creates a LiteLLM/OpenAI-compatible Batch job for Tier‑1 enrichment and persists mapping in Postgres.
 
@@ -384,6 +428,39 @@ Response:
 ```
 
 Batch completion handling is internal to backend workers. External callers only enqueue via `/enrich/t1/batch`.
+
+### `POST /enrich/t1/update-batch`
+Persists explicit Tier‑1 updates for multiple existing entries in one call.
+Each item may either provide a precomputed `t1` object or provide `clean_text` for in-call enrichment.
+
+Body:
+```json
+{
+  "items": [
+    {
+      "entry_id": 123,
+      "clean_text": "Required when t1 is not provided"
+    }
+  ],
+  "continue_on_error": true
+}
+```
+
+Response:
+```json
+{
+  "rows": [
+    {
+      "_batch_index": 0,
+      "_batch_ok": true,
+      "entry_id": 123,
+      "topic_primary": "parenting",
+      "action": "updated"
+    }
+  ],
+  "rowCount": 1
+}
+```
 
 ### `GET /status/batch`
 Returns current batch job status for a stage (`t1` or `t2`).

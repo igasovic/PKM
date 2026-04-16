@@ -312,6 +312,85 @@ components:
           type: array
           items:
             type: integer
+        topic_patch:
+          type: object
+          description: |
+            Optional explicit topic-state patch.
+            When provided, patch operations are authoritative for question/action status transitions.
+          properties:
+            state:
+              type: object
+              properties:
+                title:
+                  type: string
+                why_active_now:
+                  type: string
+                current_mental_model:
+                  type: string
+                tensions_uncertainties:
+                  type: string
+              additionalProperties: false
+            open_questions:
+              type: object
+              properties:
+                upsert:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      text:
+                        type: string
+                      status:
+                        type: string
+                        enum: [open, closed]
+                    required: [text]
+                    additionalProperties: true
+                close:
+                  type: array
+                  items:
+                    type: string
+                reopen:
+                  type: array
+                  items:
+                    type: string
+                delete:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: false
+            action_items:
+              type: object
+              properties:
+                upsert:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      text:
+                        type: string
+                      status:
+                        type: string
+                        enum: [open, done]
+                    required: [text]
+                    additionalProperties: true
+                done:
+                  type: array
+                  items:
+                    type: string
+                reopen:
+                  type: array
+                  items:
+                    type: string
+                delete:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: false
+          additionalProperties: false
       required:
         - session_id
         - resolved_topic_primary

@@ -8,8 +8,8 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 - keep route, doc, and test planning tied to one source of truth
 
 ## Summary
-- total routes: 64
-- routes with contract tests: 64
+- total routes: 67
+- routes with contract tests: 67
 - routes with smoke coverage: 9
 - routes with integration tests: 0
 - operator/UI/probe routes: 33
@@ -25,6 +25,7 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 | `GET /config` | `none` | operators, debug UI | `docs/api_control.md` | yes | no | no | yes | test/server/control.api-contract.test.js |
 | `POST /chatgpt/working_memory` | `admin_secret` | 11 ChatGPT Read Router | `docs/api_control.md` | yes | no | no | no | test/server/chatgpt.api-contract.test.js |
 | `POST /chatgpt/wrap-commit` | `admin_secret` | 05 ChatGPT Wrap Commit | `docs/api_control.md` | yes | no | no | no | test/server/chatgpt.api-contract.test.js |
+| `POST /chatgpt/topic-state` | `admin_secret` | PKM UI Working Memory page | `docs/api_control.md` | yes | no | no | no | test/server/chatgpt.api-contract.test.js |
 | `POST /normalize/telegram` | `internal` | Telegram ingest workflows | `docs/api_ingest.md` | yes | yes | no | no | test/server/classify.api-contract.test.js |
 | `POST /ingest/telegram/url-batch` | `internal` | Telegram ingest workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js, test/server/telegram-url-batch-ingest.test.js |
 | `POST /normalize/email/intent` | `internal` | Email ingest workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
@@ -33,6 +34,8 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 | `POST /normalize/notion` | `internal` | Notion ingest workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
 | `POST /enrich/t1` | `internal` | Classify workflows | `docs/api_ingest.md` | yes | yes | no | no | test/server/classify.api-contract.test.js |
 | `POST /enrich/t1/batch` | `internal` | Classify batch workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
+| `POST /enrich/t1/update` | `internal` | 21 Tier-1 Enrichment | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
+| `POST /enrich/t1/update-batch` | `internal` | Classify workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
 | `GET /status/t1/batch` | `internal` | Classify batch workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
 | `GET /status/t1/batch/:batch_id` | `internal` | Classify batch workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
 | `POST /telegram/route` | `admin_secret` | Family calendar router workflows | `docs/api_calendar.md` | yes | yes | no | no | test/server/calendar.api-contract.test.js |

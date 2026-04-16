@@ -35,6 +35,8 @@ describe('classify and ingest API contract', () => {
   const webpageNormalizeMock = jest.fn();
   const notionNormalizeMock = jest.fn();
   const classifyMock = jest.fn();
+  const classifyUpdateMock = jest.fn();
+  const classifyUpdateBatchMock = jest.fn();
   const classifyBatchMock = jest.fn();
   const classifyBatchStatusListMock = jest.fn();
   const classifyBatchStatusMock = jest.fn();
@@ -51,6 +53,8 @@ describe('classify and ingest API contract', () => {
     webpageNormalizeMock.mockReset();
     notionNormalizeMock.mockReset();
     classifyMock.mockReset();
+    classifyUpdateMock.mockReset();
+    classifyUpdateBatchMock.mockReset();
     classifyBatchMock.mockReset();
     classifyBatchStatusListMock.mockReset();
     classifyBatchStatusMock.mockReset();
@@ -80,6 +84,8 @@ describe('classify and ingest API contract', () => {
     }));
     jest.doMock('../../src/server/tier1-enrichment.js', () => ({
       enrichTier1: classifyMock,
+      enrichTier1AndPersist: classifyUpdateMock,
+      enrichTier1AndPersistBatch: classifyUpdateBatchMock,
       enqueueTier1Batch: classifyBatchMock,
       getTier1BatchStatusList: classifyBatchStatusListMock,
       getTier1BatchStatus: classifyBatchStatusMock,
@@ -304,6 +310,54 @@ describe('classify and ingest API contract', () => {
       completion_window: '12h',
     });
     expect(JSON.parse(res.body)).toEqual({ batch_id: 'batch-1' });
+  });
+
+  test('POST /enrich/t1/update forwards explicit classify update payload', async () => {
+    classifyUpdateMock.mockResolvedValue({
+      schema: 'pkm',
+      row: { entry_id: 42, topic_primary: 'parenting', action: 'updated' },
+      topic_link: { linked: true, topic_key: 'parenting' },
+    });
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const body = {
+      entry_id: 42,
+      title: 'A',
+      author: 'B',
+      clean_text: 'C',
+    };
+    const res = await request(port, 'POST', '/enrich/t1/update', JSON.stringify(body), { 'Content-Type': 'application/json' });
+
+    expect(res.status).toBe(200);
+    expect(classifyUpdateMock).toHaveBeenCalledWith(body);
+    expect(JSON.parse(res.body)).toEqual({
+      schema: 'pkm',
+      row: { entry_id: 42, topic_primary: 'parenting', action: 'updated' },
+      topic_link: { linked: true, topic_key: 'parenting' },
+    });
+  });
+
+  test('POST /enrich/t1/update-batch forwards explicit classify batch update payload', async () => {
+    classifyUpdateBatchMock.mockResolvedValue({
+      rowCount: 1,
+      rows: [{ _batch_index: 0, _batch_ok: true, entry_id: 12 }],
+    });
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const body = {
+      items: [{ entry_id: 12, clean_text: 'one' }],
+      continue_on_error: true,
+    };
+    const res = await request(port, 'POST', '/enrich/t1/update-batch', JSON.stringify(body), { 'Content-Type': 'application/json' });
+
+    expect(res.status).toBe(200);
+    expect(classifyUpdateBatchMock).toHaveBeenCalledWith(body);
+    expect(JSON.parse(res.body)).toEqual({
+      rowCount: 1,
+      rows: [{ _batch_index: 0, _batch_ok: true, entry_id: 12 }],
+    });
   });
 
   test('POST /import/email/mbox forwards backlog import payload', async () => {

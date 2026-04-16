@@ -352,6 +352,12 @@ Phase 1 behavior:
 - topic update writes to topic-state tables, not working-memory rows in `entries`
 - may accept optional internal `topic_patch` extension while keeping legacy payload compatibility
 
+### `POST /chatgpt/topic-state` (internal operator patch path)
+Phase 1 extension behavior:
+- admin-only internal route for topic-state patch operations without session-note writes
+- used by PKM UI for manual update/reopen/close/done/delete operations on open questions and action items
+- does not change public webhook contracts
+
 ### PKM UI behavior
 - PKM UI Working Memory flow remains on `POST /chatgpt/working_memory`
 - PKM UI may request `view='debug'` and render structured topic fields/items

@@ -87,6 +87,14 @@ const COLUMN_TYPES = {
 
 const DISALLOWED_INSERT_COLUMNS = new Set(['id', 'entry_id', 'tsv']);
 const DISALLOWED_UPDATE_COLUMNS = new Set(['id', 'entry_id', 'created_at', 'tsv']);
+const TIER1_CLASSIFY_UPDATE_COLUMNS = new Set([
+  'topic_primary',
+  'topic_primary_confidence',
+  'topic_secondary',
+  'topic_secondary_confidence',
+  'keywords',
+  'gist',
+]);
 
 function wrapTier2EntriesError(err, tableName) {
   if (!err) return err;
@@ -226,13 +234,24 @@ function buildGenericUpdatePayload(input, returningOverride) {
   }
 
   const set = [];
+  const tier1WriteFields = [];
   Object.keys(data).forEach((key) => {
     if (key === 'where' || key === 'id' || key === 'entry_id') return;
     if (DISALLOWED_UPDATE_COLUMNS.has(key)) return;
+    if (TIER1_CLASSIFY_UPDATE_COLUMNS.has(key)) {
+      tier1WriteFields.push(key);
+      return;
+    }
     const type = COLUMN_TYPES[key];
     if (!type) return;
     set.push(`${key} = ${toSqlValue(type, data[key])}`);
   });
+
+  if (tier1WriteFields.length > 0) {
+    throw new Error(
+      `generic /db/update does not accept Tier-1 classify fields (${tier1WriteFields.join(', ')}); use /enrich/t1/update`
+    );
+  }
 
   if (set.length === 0) {
     throw new Error('update requires at least one updatable field');

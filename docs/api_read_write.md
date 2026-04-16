@@ -179,9 +179,19 @@ You can also use a `where` object:
 ```json
 {
   "where": { "entry_id": 123 },
-  "gist": "Updated gist"
+  "title": "Updated title"
 }
 ```
+
+Tier-1 classify field guard:
+- generic `/db/update` rejects Tier-1 classify fields:
+  - `topic_primary`
+  - `topic_primary_confidence`
+  - `topic_secondary`
+  - `topic_secondary_confidence`
+  - `keywords`
+  - `gist`
+- use `POST /enrich/t1/update` (or `POST /enrich/t1/update-batch`) for classify writeback.
 
 **Batch update**
 

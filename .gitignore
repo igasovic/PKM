@@ -15,3 +15,6 @@ src/n8n/package/
 # python cache artifacts
 __pycache__/
 *.py[cod]
+
+# local editor telemetry
+.VSCodeCounter/

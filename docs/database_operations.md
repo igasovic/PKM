@@ -35,6 +35,18 @@
 
 Most day-to-day backend, schema, and API work does **not** require this doc. Use it when the change touches backup/restore operations or restore safety expectations.
 
+## One-off data maintenance scripts
+
+Active-topic related-entry backfill:
+- script: `scripts/db/backfill_active_topic_related_entries.sh`
+- dry run: `scripts/db/backfill_active_topic_related_entries.sh --dry-run pkm`
+- apply (transactional): `scripts/db/backfill_active_topic_related_entries.sh --apply pkm`
+
+Notes:
+- links only active topics from `active_topics`
+- writes relation type `classified_primary`
+- apply mode is all-or-nothing (transaction rollback on any error)
+
 ## Backups (Operational Reference)
 
 This project uses **logical Postgres backups** (`pg_dump` custom format) because the DB is still small and we want **fast, low-risk** operations with easy restore.

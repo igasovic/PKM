@@ -5,6 +5,7 @@ const { getConfig } = require('../../libs/config.js');
 const {
   runChatgptWorkingMemoryAction,
   runChatgptWrapCommitAction,
+  runChatgptTopicStatePatchAction,
 } = require('../chatgpt-actions.js');
 const debugRepository = require('../repositories/debug-repository.js');
 const {
@@ -119,6 +120,44 @@ async function handleControlRoutes(ctx) {
             outcome: out && out.outcome ? out.outcome : null,
             has_session_note: !!(out && out.result && out.result.session_note),
             has_working_memory: !!(out && out.result && out.result.working_memory),
+          }),
+          meta: { route: url.pathname },
+        },
+      );
+      json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      sendError(res, err);
+    }
+    return true;
+  }
+
+  if (
+    method === 'POST'
+    && (url.pathname === '/chatgpt/topic-state' || url.pathname === '/chatgpt/topic-state/')
+  ) {
+    try {
+      requireAdminSecret(req);
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const requestId = asText(body.request_id) || null;
+      const runId = asText(body.run_id) || null;
+      const result = await logger.step(
+        'api.chatgpt.topic_state_patch',
+        async () => runChatgptTopicStatePatchAction(body, {
+          request_id: requestId,
+          run_id: runId,
+          logger: logger.child({ pipeline: 'chatgpt_actions' }),
+        }),
+        {
+          input: {
+            has_topic: !!asText(body.topic || body.topic_primary || body.resolved_topic_primary || body.topic_key),
+            has_topic_patch: !!(body.topic_patch && typeof body.topic_patch === 'object'),
+          },
+          output: (out) => ({
+            action: out && out.action ? out.action : null,
+            outcome: out && out.outcome ? out.outcome : null,
           }),
           meta: { route: url.pathname },
         },

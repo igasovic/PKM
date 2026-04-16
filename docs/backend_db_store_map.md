@@ -41,7 +41,7 @@
 | Todoist planning | `src/server/routes/todoist-routes.js` | `src/server/repositories/todoist-repository.js`, `src/server/todoist/service.js` | `src/server/db/todoist-store.js` | `pkm.todoist_task_current`, `pkm.todoist_task_events` | prod-pinned planning surface for sync/review/brief contracts |
 | Calendar | `src/server/routes/calendar-routes.js` | `src/server/repositories/calendar-repository.js` | `src/server/db/calendar-store.js` | `calendar_requests`, `calendar_event_observations` | calendar business logs are fixed-table and not test-mode routed |
 | Distill API | `src/server/routes/distill-routes.js` | distill planner and worker services, `src/server/repositories/distill-repository.js` | `src/server/db/distill-store.js`, `src/server/tier2/store.js` | `entries`, `t2_batches`, `t2_batch_items`, `t2_batch_item_results` | candidate discovery uses the distill store; batch orchestration uses the distill batch store |
-| Classify and ingest | `src/server/routes/classify-routes.js` | ingestion pipeline, `src/server/tier1-enrichment.js`, `src/server/email-importer.js` | `src/server/db/write-store.js`, `src/server/tier1/store.js` | `entries`, `t1_batches`, `t1_batch_items`, `t1_batch_item_results` | route layer calls services directly rather than through repositories today |
+| Classify and ingest | `src/server/routes/classify-routes.js` | ingestion pipeline, `src/server/tier1-enrichment.js`, `src/server/email-importer.js` | `src/server/db/write-store.js`, `src/server/db/tier1-classify-store.js`, `src/server/tier1/store.js` | `entries`, `active_topic_related_entries`, `t1_batches`, `t1_batch_items`, `t1_batch_item_results` | Tier-1 writeback now uses explicit classify update methods instead of generic `/db/update` for classify fields |
 | Status | `src/server/routes/status-routes.js`, `src/server/batch-status-service.js` | batch status service | `src/server/tier1/store.js`, `src/server/tier2/store.js` | `t1_*`, `t2_*` batch tables | status reads are batch-store owned, not generic DB-store owned |
 
 ## Background And Shared Writers
@@ -53,7 +53,7 @@
 | `src/server/email-importer.js` | `src/server/db/write-store.js`, `src/server/tier1/store.js` | `entries`, `t1_*` batch tables | import flow both writes entries and schedules classify batch work |
 | `src/server/tier2/service.js` | `src/server/db/distill-store.js` | `entries` | single-entry distill sync writes directly to prod-pinned distill fields |
 | `src/server/tier2-enrichment.js` | `src/server/db/distill-store.js`, `src/server/tier2/store.js` | `entries`, `t2_*` batch tables | the main distill worker spans both entry-state persistence and batch-control persistence |
-| `src/server/tier1/graphs.js` and `src/server/tier1-enrichment.js` | `src/server/tier1/store.js` | `t1_*` batch tables | classify backlog execution uses its own batch store boundary, not `src/server/db/**` |
+| `src/server/tier1/graphs.js` and `src/server/tier1-enrichment.js` | `src/server/tier1/store.js`, `src/server/db/tier1-classify-store.js` | `t1_*` batch tables, `entries`, `active_topic_related_entries` | batch collect persists Tier-1 result rows and applies explicit classify updates to entries/topic links |
 
 ## Placement Rule
 

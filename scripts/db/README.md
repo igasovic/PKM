@@ -77,6 +77,18 @@ Prod restore:
 - requires `--target prod`
 - requires env var `CONFIRM_PROD=YES`
 
+### `backfill_active_topic_related_entries.sh`
+Backfills active-topic related-entry links from `entries.topic_primary`.
+
+Usage:
+- `scripts/db/backfill_active_topic_related_entries.sh --dry-run pkm`
+- `scripts/db/backfill_active_topic_related_entries.sh --apply pkm`
+
+Notes:
+- only active topics in `active_topics` are linked
+- relation type is `classified_primary`
+- apply mode is transactional (all-or-nothing)
+
 ---
 
 ## Install

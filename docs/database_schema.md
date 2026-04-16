@@ -461,6 +461,9 @@ Explicit topic-to-entry relationships, separate from wrap/commit state patch upd
 - PK `(topic_key, entry_id)`
 - `(entry_id, topic_key)` index for reverse lookup from entry-centric workflows
 
+**Operational notes**
+- Tier-1 classify writeback uses `relation_type='classified_primary'` for active-topic links derived from `entries.topic_primary`.
+
 ### `pkm.recipes` / `pkm_test.recipes`
 
 **Purpose**

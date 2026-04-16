@@ -104,6 +104,16 @@ function toEntryIdList(value, fieldName) {
   return value.map((item, index) => requiredPositiveInt(item, `${fieldName}[${index}]`));
 }
 
+function toPatchKeyList(value, fieldName) {
+  if (value === null || value === undefined || value === '') return [];
+  if (!Array.isArray(value)) {
+    throw new ChatgptValidationError(`${fieldName} must be an array`, { field: fieldName });
+  }
+  return value
+    .map((item) => asText(item))
+    .filter(Boolean);
+}
+
 function firstSentence(value) {
   const text = asText(value);
   if (!text) return '';
@@ -254,6 +264,112 @@ function toActionItems(values) {
   }));
 }
 
+function normalizeTopicPatchUpsertItems(kind, value) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw new ChatgptValidationError(`${kind}.upsert must be an array`, { field: `${kind}.upsert` });
+  }
+
+  return value.map((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw new ChatgptValidationError(`${kind}.upsert[${index}] must be an object`, {
+        field: `${kind}.upsert[${index}]`,
+      });
+    }
+    if (kind === 'open_questions') {
+      const text = asText(item.text || item.question_text);
+      const key = asText(item.id || item.question_key || item.item_key)
+        || buildStableItemKey('q', text || `q${index + 1}`, index);
+      if (!text) {
+        throw new ChatgptValidationError(`${kind}.upsert[${index}].text is required`, {
+          field: `${kind}.upsert[${index}].text`,
+        });
+      }
+      const statusRaw = asText(item.status || 'open').toLowerCase();
+      const status = statusRaw === 'closed' ? 'closed' : 'open';
+      return {
+        question_key: key,
+        question_text: text,
+        status,
+      };
+    }
+
+    const text = asText(item.text || item.action_text);
+    const key = asText(item.id || item.action_key || item.item_key)
+      || buildStableItemKey('a', text || `a${index + 1}`, index);
+    if (!text) {
+      throw new ChatgptValidationError(`${kind}.upsert[${index}].text is required`, {
+        field: `${kind}.upsert[${index}].text`,
+      });
+    }
+    const statusRaw = asText(item.status || 'open').toLowerCase();
+    const status = statusRaw === 'done' ? 'done' : 'open';
+    return {
+      action_key: key,
+      action_text: text,
+      status,
+    };
+  });
+}
+
+function normalizeTopicPatch(value) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new ChatgptValidationError('topic_patch must be an object', { field: 'topic_patch' });
+  }
+
+  const stateInput = value.state && typeof value.state === 'object' && !Array.isArray(value.state)
+    ? value.state
+    : {};
+  const statePatch = {};
+  const stateFields = ['title', 'why_active_now', 'current_mental_model', 'tensions_uncertainties', 'last_session_id'];
+  for (const field of stateFields) {
+    if (Object.prototype.hasOwnProperty.call(stateInput, field)) {
+      statePatch[field] = asText(stateInput[field]);
+    }
+  }
+
+  const openQuestions = value.open_questions && typeof value.open_questions === 'object' && !Array.isArray(value.open_questions)
+    ? value.open_questions
+    : {};
+  const actionItems = value.action_items && typeof value.action_items === 'object' && !Array.isArray(value.action_items)
+    ? value.action_items
+    : {};
+
+  return {
+    state_patch: statePatch,
+    open_questions_patch: {
+      upsert: normalizeTopicPatchUpsertItems('open_questions', openQuestions.upsert),
+      close: toPatchKeyList(openQuestions.close, 'topic_patch.open_questions.close'),
+      reopen: toPatchKeyList(openQuestions.reopen, 'topic_patch.open_questions.reopen'),
+      delete: toPatchKeyList(openQuestions.delete, 'topic_patch.open_questions.delete'),
+    },
+    action_items_patch: {
+      upsert: normalizeTopicPatchUpsertItems('action_items', actionItems.upsert),
+      done: toPatchKeyList(actionItems.done, 'topic_patch.action_items.done'),
+      reopen: toPatchKeyList(actionItems.reopen, 'topic_patch.action_items.reopen'),
+      delete: toPatchKeyList(actionItems.delete, 'topic_patch.action_items.delete'),
+    },
+  };
+}
+
+function hasTopicPatchOperations(patch) {
+  if (!patch) return false;
+  const state = patch.state_patch || {};
+  const hasState = Object.keys(state).length > 0;
+  const oq = patch.open_questions_patch || {};
+  const hasOq = (Array.isArray(oq.upsert) && oq.upsert.length > 0)
+    || (Array.isArray(oq.close) && oq.close.length > 0)
+    || (Array.isArray(oq.reopen) && oq.reopen.length > 0)
+    || (Array.isArray(oq.delete) && oq.delete.length > 0);
+  const ai = patch.action_items_patch || {};
+  const hasAi = (Array.isArray(ai.upsert) && ai.upsert.length > 0)
+    || (Array.isArray(ai.done) && ai.done.length > 0)
+    || (Array.isArray(ai.reopen) && ai.reopen.length > 0)
+    || (Array.isArray(ai.delete) && ai.delete.length > 0);
+  return hasState || hasOq || hasAi;
+}
+
 async function pullWorkingMemory(args) {
   const input = requireObject(args || {}, 'arguments');
   const topic = requireString(input.topic, 'topic');
@@ -341,6 +457,8 @@ async function wrapCommit(args) {
   const nextSteps = toStringList(input.next_steps, 'next_steps');
   const workingMemoryUpdates = toStringList(input.working_memory_updates, 'working_memory_updates');
   const sourceEntryRefs = toEntryIdList(input.source_entry_refs, 'source_entry_refs');
+  const topicPatch = normalizeTopicPatch(input.topic_patch);
+  const hasPatch = hasTopicPatchOperations(topicPatch);
 
   const renderInput = {
     ...input,
@@ -427,19 +545,30 @@ async function wrapCommit(args) {
     idempotency_key_secondary: sessionContentHash,
   };
 
-  const topicSnapshotResult = await activeTopicRepository.applyTopicSnapshot({
-    topic_key: topicKey,
-    topic_title: topicPrimary,
-    state: {
-      title: topicPrimary,
-      why_active_now: whyItMatters,
-      current_mental_model: workingMemoryUpdates.join('\n') || sessionSummary || gist,
-      tensions_uncertainties: tensions.join('\n'),
-      last_session_id: sessionId,
-    },
-    open_questions: toOpenQuestionItems(openQuestions),
-    action_items: toActionItems(nextSteps),
-  });
+  const topicSnapshotResult = hasPatch
+    ? await activeTopicRepository.applyTopicPatch({
+      topic_key: topicKey,
+      topic_title: topicPrimary,
+      state_patch: {
+        ...(topicPatch.state_patch || {}),
+        last_session_id: sessionId,
+      },
+      open_questions_patch: topicPatch.open_questions_patch,
+      action_items_patch: topicPatch.action_items_patch,
+    })
+    : await activeTopicRepository.applyTopicSnapshot({
+      topic_key: topicKey,
+      topic_title: topicPrimary,
+      state: {
+        title: topicPrimary,
+        why_active_now: whyItMatters,
+        current_mental_model: workingMemoryUpdates.join('\n') || sessionSummary || gist,
+        tensions_uncertainties: tensions.join('\n'),
+        last_session_id: sessionId,
+      },
+      open_questions: toOpenQuestionItems(openQuestions),
+      action_items: toActionItems(nextSteps),
+    });
 
   const topicStateMarkdown = renderWorkingMemoryFromTopicState(topicSnapshotResult);
   const workingMemoryCleanText = topicStateMarkdown.trim() || legacyWorkingMemoryMarkdown.trim();
@@ -531,9 +660,44 @@ async function wrapCommit(args) {
   };
 }
 
+async function patchTopicState(args) {
+  const input = requireObject(args || {}, 'arguments');
+  const topicRaw = requireString(
+    input.topic || input.topic_primary || input.resolved_topic_primary || input.topic_key,
+    'topic'
+  );
+  const { topicLabel, topicKey } = normalizeTopicFromInput(topicRaw);
+  const topicPatch = normalizeTopicPatch(input.topic_patch);
+  if (!hasTopicPatchOperations(topicPatch)) {
+    throw new ChatgptValidationError('topic_patch must include at least one operation', {
+      field: 'topic_patch',
+      code: 'missing_topic_patch',
+    });
+  }
+
+  const snapshot = await activeTopicRepository.applyTopicPatch({
+    topic_key: topicKey,
+    topic_title: topicLabel,
+    state_patch: topicPatch.state_patch,
+    open_questions_patch: topicPatch.open_questions_patch,
+    action_items_patch: topicPatch.action_items_patch,
+  });
+
+  return {
+    meta: {
+      method: 'patch_topic_state',
+      topic: topicLabel,
+      topic_key: topicKey,
+      found: !!(snapshot && snapshot.meta && snapshot.meta.found),
+    },
+    topic_state: snapshot,
+  };
+}
+
 module.exports = {
   ChatgptActionError,
   ChatgptValidationError,
   pullWorkingMemory,
   wrapCommit,
+  patchTopicState,
 };

@@ -134,6 +134,8 @@ Body:
 - required:
   - `session_id`
   - `resolved_topic_primary`
+- optional:
+  - `topic_patch` for explicit topic-state operations (`open_questions` close/reopen/delete/upsert and `action_items` done/reopen/delete/upsert)
 
 Response:
 ```json
@@ -157,6 +159,52 @@ Response:
 Notes:
 - wrap-commit writes one session note to `entries` and one topic-state update to active-topic state tables.
 - new working-memory entry rows (`content_type='working_memory'`) are no longer created after cutover.
+- when `topic_patch` is provided, patch operations are authoritative for topic updates; legacy list fields remain compatibility fallback.
+
+### `POST /chatgpt/topic-state`
+Internal admin route for topic-state patch operations without writing a session note.
+Used by PKM UI Working Memory management.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Body:
+```json
+{
+  "topic": "parenting",
+  "topic_patch": {
+    "open_questions": {
+      "upsert": [{ "id": "q-new", "text": "What changed this week?" }],
+      "close": ["q-old"],
+      "reopen": [],
+      "delete": []
+    },
+    "action_items": {
+      "upsert": [{ "id": "a-new", "text": "Run for 7 days" }],
+      "done": ["a-old"],
+      "reopen": [],
+      "delete": []
+    }
+  }
+}
+```
+
+Response:
+```json
+{
+  "action": "chatgpt_topic_state_patch",
+  "outcome": "success",
+  "result": {
+    "meta": {
+      "method": "patch_topic_state",
+      "topic": "parenting",
+      "topic_key": "parenting",
+      "found": true
+    },
+    "topic_state": {}
+  }
+}
+```
 
 ## Config
 

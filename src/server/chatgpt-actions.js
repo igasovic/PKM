@@ -3,6 +3,7 @@
 const {
   pullWorkingMemory,
   wrapCommit,
+  patchTopicState,
   ChatgptValidationError,
 } = require('./chatgpt/service.js');
 
@@ -47,7 +48,18 @@ async function runChatgptWrapCommitAction(payload, requestMeta) {
   };
 }
 
+async function runChatgptTopicStatePatchAction(payload, requestMeta) {
+  const input = requireObject(payload || {}, 'topic_state_patch payload');
+  const result = await patchTopicState(input, requestMeta || {});
+  return {
+    action: 'chatgpt_topic_state_patch',
+    outcome: 'success',
+    result,
+  };
+}
+
 module.exports = {
   runChatgptWorkingMemoryAction,
   runChatgptWrapCommitAction,
+  runChatgptTopicStatePatchAction,
 };

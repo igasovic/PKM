@@ -77,6 +77,18 @@
   },
   {
     "method": "POST",
+    "path": "/chatgpt/topic-state",
+    "auth": "admin_secret",
+    "doc": "docs/api_control.md",
+    "primary_callers": [
+      "PKM UI Working Memory page"
+    ],
+    "tests": [
+      "test/server/chatgpt.api-contract.test.js"
+    ]
+  },
+  {
+    "method": "POST",
     "path": "/normalize/telegram",
     "auth": "internal",
     "doc": "docs/api_ingest.md",
@@ -196,6 +208,30 @@
     "doc": "docs/api_ingest.md",
     "primary_callers": [
       "Classify batch workflows"
+    ],
+    "tests": [
+      "test/server/classify.api-contract.test.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/enrich/t1/update",
+    "auth": "internal",
+    "doc": "docs/api_ingest.md",
+    "primary_callers": [
+      "21 Tier-1 Enrichment"
+    ],
+    "tests": [
+      "test/server/classify.api-contract.test.js"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/enrich/t1/update-batch",
+    "auth": "internal",
+    "doc": "docs/api_ingest.md",
+    "primary_callers": [
+      "Classify workflows"
     ],
     "tests": [
       "test/server/classify.api-contract.test.js"

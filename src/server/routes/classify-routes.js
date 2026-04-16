@@ -9,6 +9,8 @@ const {
 } = require('../ingestion-pipeline.js');
 const {
   enrichTier1,
+  enrichTier1AndPersist,
+  enrichTier1AndPersistBatch,
   enqueueTier1Batch,
 } = require('../tier1-enrichment.js');
 const { importEmailMbox } = require('../email-importer.js');
@@ -184,6 +186,42 @@ async function handleClassifyRoutes(ctx) {
           author: body.author ?? null,
           clean_text: body.clean_text ?? null,
         }),
+        { input: body, output: (out) => out, meta: { route: url.pathname } }
+      );
+      json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      sendError(res, err, { includeErrorCodeField: false, includeField: false });
+    }
+    return true;
+  }
+
+  if (method === 'POST' && url.pathname === '/enrich/t1/update') {
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const result = await logger.step(
+        'api.enrich.t1.update',
+        async () => enrichTier1AndPersist(body || {}),
+        { input: body, output: (out) => out, meta: { route: url.pathname } }
+      );
+      json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      sendError(res, err, { includeErrorCodeField: false, includeField: false });
+    }
+    return true;
+  }
+
+  if (method === 'POST' && url.pathname === '/enrich/t1/update-batch') {
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const result = await logger.step(
+        'api.enrich.t1.update_batch',
+        async () => enrichTier1AndPersistBatch(body || {}),
         { input: body, output: (out) => out, meta: { route: url.pathname } }
       );
       json(res, 200, result);

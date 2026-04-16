@@ -94,6 +94,41 @@ describe('chatgpt action API contract', () => {
           related_entries_replaced: false,
         },
       })),
+      applyTopicPatch: opts.applyTopicPatch || (async ({ topic_key, topic_title, state_patch, open_questions_patch, action_items_patch }) => ({
+        meta: { schema: 'pkm', topic_key, found: true },
+        topic: {
+          topic_key,
+          title: topic_title || topic_key,
+          is_active: true,
+          created_at: '2026-03-24T01:00:00.000Z',
+          updated_at: '2026-03-24T01:00:00.000Z',
+        },
+        state: {
+          title: (state_patch && state_patch.title) || topic_title || topic_key,
+          why_active_now: (state_patch && state_patch.why_active_now) || '',
+          current_mental_model: (state_patch && state_patch.current_mental_model) || '',
+          tensions_uncertainties: (state_patch && state_patch.tensions_uncertainties) || '',
+          state_version: 2,
+          last_session_id: (state_patch && state_patch.last_session_id) || null,
+          migration_source_entry_id: null,
+          migration_source_content_hash: null,
+          created_at: '2026-03-24T01:00:00.000Z',
+          updated_at: '2026-03-24T01:00:00.000Z',
+        },
+        open_questions: (open_questions_patch && Array.isArray(open_questions_patch.upsert))
+          ? open_questions_patch.upsert
+          : [],
+        action_items: (action_items_patch && Array.isArray(action_items_patch.upsert))
+          ? action_items_patch.upsert
+          : [],
+        related_entries: [],
+        write: {
+          state: 'updated',
+          open_questions_patched: true,
+          action_items_patched: true,
+          related_entries_replaced: false,
+        },
+      })),
     };
     jest.doMock('../../src/server/db/read-store.js', () => readStoreMock);
     jest.doMock('../../src/server/db/write-store.js', () => writeStoreMock);
@@ -461,5 +496,155 @@ describe('chatgpt action API contract', () => {
       open_questions: [expect.objectContaining({ question_text: 'How strict should weekends be?' })],
       action_items: [expect.objectContaining({ action_text: 'Try for 2 weeks' })],
     }));
+  });
+
+  test('POST /chatgpt/wrap-commit applies topic_patch operations when provided', async () => {
+    const insert = jest.fn(async () => ({
+      rowCount: 1,
+      rows: [{
+        entry_id: 201,
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        created_at: '2026-03-24T01:00:00.000Z',
+        source: 'chatgpt',
+        intent: 'thought',
+        content_type: 'note',
+        title: 'Session: Topic patch',
+        topic_primary: 'parenting',
+        topic_secondary: '',
+        topic_secondary_confidence: null,
+        action: 'inserted',
+      }],
+    }));
+    const applyTopicPatch = jest.fn(async ({ topic_key, state_patch, open_questions_patch, action_items_patch }) => ({
+      meta: { schema: 'pkm', topic_key, found: true },
+      topic: { topic_key, title: 'parenting', is_active: true, created_at: null, updated_at: null },
+      state: {
+        title: 'parenting',
+        why_active_now: state_patch.why_active_now || '',
+        current_mental_model: '',
+        tensions_uncertainties: '',
+        state_version: 8,
+        last_session_id: state_patch.last_session_id || null,
+        migration_source_entry_id: null,
+        migration_source_content_hash: null,
+        created_at: null,
+        updated_at: '2026-03-24T01:00:00.000Z',
+      },
+      open_questions: Array.isArray(open_questions_patch.upsert) ? open_questions_patch.upsert : [],
+      action_items: Array.isArray(action_items_patch.upsert) ? action_items_patch.upsert : [],
+      related_entries: [],
+      write: {
+        state: 'updated',
+        open_questions_patched: true,
+        action_items_patched: true,
+        related_entries_replaced: false,
+      },
+    }));
+    await startServerWithMocks({ insert, applyTopicPatch });
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/chatgpt/wrap-commit',
+      JSON.stringify({
+        session_id: 'sess-patch-1',
+        resolved_topic_primary: 'parenting',
+        session_summary: 'Patch session',
+        topic_patch: {
+          state: {
+            why_active_now: 'Need to reduce conflict spikes.',
+          },
+          open_questions: {
+            close: ['q-old'],
+            upsert: [{ id: 'q-new', text: 'Which cue works best?' }],
+          },
+          action_items: {
+            done: ['a-old'],
+            upsert: [{ id: 'a-new', text: 'Try cue for 7 days' }],
+          },
+        },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.outcome).toBe('success');
+    expect(parsed.result.working_memory.state_version).toBe(8);
+    expect(applyTopicPatch).toHaveBeenCalledTimes(1);
+    expect(applyTopicPatch).toHaveBeenCalledWith(expect.objectContaining({
+      topic_key: 'parenting',
+      state_patch: expect.objectContaining({
+        why_active_now: 'Need to reduce conflict spikes.',
+        last_session_id: 'sess-patch-1',
+      }),
+      open_questions_patch: expect.objectContaining({
+        close: ['q-old'],
+      }),
+      action_items_patch: expect.objectContaining({
+        done: ['a-old'],
+      }),
+    }));
+  });
+
+  test('POST /chatgpt/topic-state applies patch without creating session note', async () => {
+    const insert = jest.fn(async () => ({ rowCount: 0, rows: [] }));
+    const applyTopicPatch = jest.fn(async ({ topic_key }) => ({
+      meta: { schema: 'pkm', topic_key, found: true },
+      topic: { topic_key, title: topic_key, is_active: true, created_at: null, updated_at: null },
+      state: {
+        title: topic_key,
+        why_active_now: '',
+        current_mental_model: '',
+        tensions_uncertainties: '',
+        state_version: 3,
+        last_session_id: null,
+        migration_source_entry_id: null,
+        migration_source_content_hash: null,
+        created_at: null,
+        updated_at: null,
+      },
+      open_questions: [],
+      action_items: [],
+      related_entries: [],
+      write: {
+        state: 'updated',
+        open_questions_patched: true,
+        action_items_patched: false,
+        related_entries_replaced: false,
+      },
+    }));
+    await startServerWithMocks({ insert, applyTopicPatch });
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/chatgpt/topic-state',
+      JSON.stringify({
+        topic: 'parenting',
+        topic_patch: {
+          open_questions: {
+            upsert: [{ id: 'q-new', text: 'What changed this week?' }],
+          },
+        },
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.action).toBe('chatgpt_topic_state_patch');
+    expect(parsed.outcome).toBe('success');
+    expect(parsed.result.meta.method).toBe('patch_topic_state');
+    expect(insert).not.toHaveBeenCalled();
+    expect(applyTopicPatch).toHaveBeenCalledTimes(1);
   });
 });

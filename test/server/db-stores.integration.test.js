@@ -530,6 +530,132 @@ describeIntegration('Postgres-backed DB store integration', () => {
     expect(refreshed.related_entries.map((row) => Number(row.entry_id))).toEqual([9001]);
   });
 
+  test('tier1-classify-store applyTier1Update writes entry fields and links active topic', async () => {
+    await adminPool.query(`
+      INSERT INTO pkm_test.entries (
+        entry_id,
+        source,
+        intent,
+        capture_text,
+        clean_text,
+        title,
+        content_hash
+      ) VALUES (
+        333,
+        'telegram',
+        'think',
+        'raw',
+        'raw',
+        'Needs classify',
+        'hash-333'
+      )
+    `);
+    await setTestMode(adminPool, true);
+
+    const { applyTier1Update } = require('../../src/server/db/tier1-classify-store.js');
+    const out = await applyTier1Update({
+      entry_id: 333,
+      t1: {
+        topic_primary: 'parenting',
+        topic_primary_confidence: 0.9,
+        topic_secondary: 'bedtime routine',
+        topic_secondary_confidence: 0.7,
+        keywords: ['bedtime', 'routine', 'family', 'kids', 'consistency'],
+        gist: 'Bedtime process needs simplification.',
+      },
+      enrichment_model: 't1-test',
+      prompt_version: 'prompt-v1',
+    });
+
+    expect(out.schema).toBe('pkm_test');
+    expect(out.row).toEqual(expect.objectContaining({
+      entry_id: '333',
+      topic_primary: 'parenting',
+      topic_secondary: 'bedtime routine',
+      gist: 'Bedtime process needs simplification.',
+      enrichment_status: 'done',
+      action: 'updated',
+    }));
+    expect(out.topic_link).toEqual(expect.objectContaining({
+      linked: true,
+      topic_key: 'parenting',
+    }));
+
+    const linked = await queryOne(
+      adminPool,
+      `SELECT topic_key, entry_id, relation_type
+       FROM pkm_test.active_topic_related_entries
+       WHERE entry_id = 333`
+    );
+    expect(linked).toEqual({
+      topic_key: 'parenting',
+      entry_id: '333',
+      relation_type: 'classified_primary',
+    });
+  });
+
+  test('tier1-classify-store applyCollectedBatchResults applies parsed ok rows', async () => {
+    await adminPool.query(`
+      INSERT INTO pkm_test.entries (
+        entry_id,
+        source,
+        intent,
+        capture_text,
+        clean_text,
+        title,
+        content_hash
+      ) VALUES (
+        444,
+        'email',
+        'archive',
+        'raw email',
+        'raw email',
+        'Batch classify target',
+        'hash-444'
+      )
+    `);
+    await setTestMode(adminPool, true);
+
+    const { applyCollectedBatchResults } = require('../../src/server/db/tier1-classify-store.js');
+    const out = await applyCollectedBatchResults({
+      schema: 'pkm_test',
+      rows: [
+        {
+          custom_id: 'entry_444',
+          status: 'ok',
+          parsed: {
+            topic_primary: 'ai',
+            topic_primary_confidence: 0.84,
+            topic_secondary: 'agents',
+            topic_secondary_confidence: 0.73,
+            keywords: ['agents', 'automation', 'workflow', 'planning', 'tools'],
+            gist: 'Agent workflow planning notes.',
+          },
+        },
+      ],
+      enrichment_model: 't1-batch-test',
+    });
+
+    expect(out.rowCount).toBe(1);
+    expect(out.rows[0]).toEqual(expect.objectContaining({
+      _batch_ok: true,
+      topic_primary: 'ai',
+      gist: 'Agent workflow planning notes.',
+    }));
+
+    const linked = await queryOne(
+      adminPool,
+      `SELECT topic_key, entry_id, relation_type
+       FROM pkm_test.active_topic_related_entries
+       WHERE entry_id = 444`
+    );
+    expect(linked).toEqual({
+      topic_key: 'ai',
+      entry_id: '444',
+      relation_type: 'classified_primary',
+    });
+  });
+
   test('distill-store prod-pinned sync updates production entries even when test mode is enabled', async () => {
     await adminPool.query(
       `INSERT INTO pkm.entries (
