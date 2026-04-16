@@ -89,14 +89,24 @@ async function getRecentPipelineRuns(opts) {
     throw new Error('before_ts must be a valid datetime');
   }
   const hasError = parseNullableBoolean(options.has_error);
+  const pipeline = parseOptionalText(options.pipeline);
+  const step = parseOptionalText(options.step);
   const sql = sb.buildGetRecentPipelineRuns({ eventsTable: PIPELINE_EVENTS_TABLE });
-  const params = [beforeTs ? beforeTs.toISOString() : null, hasError, limit];
+  const params = [
+    beforeTs ? beforeTs.toISOString() : null,
+    hasError,
+    limit,
+    pipeline,
+    step,
+  ];
   const res = await getPool().query(sql, params);
   return {
     rows: res.rows || [],
     limit,
     before_ts: beforeTs ? beforeTs.toISOString() : null,
     has_error: hasError,
+    pipeline,
+    step,
   };
 }
 

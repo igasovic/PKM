@@ -8,6 +8,10 @@ interface RecentRunsListProps {
   loading: boolean;
   error: string | null;
   filter: RecentFilter;
+  pipelineFilter: string;
+  stepFilter: string;
+  onPipelineFilterChange: (next: string) => void;
+  onStepFilterChange: (next: string) => void;
   onFilterChange: (next: RecentFilter) => void;
   onRefresh: () => void;
   onLoadRun: (runId: string) => void;
@@ -33,6 +37,10 @@ export function RecentRunsList(props: RecentRunsListProps) {
     loading,
     error,
     filter,
+    pipelineFilter,
+    stepFilter,
+    onPipelineFilterChange,
+    onStepFilterChange,
     onFilterChange,
     onRefresh,
     onLoadRun,
@@ -75,6 +83,20 @@ export function RecentRunsList(props: RecentRunsListProps) {
             {loading ? 'Loading...' : 'Refresh'}
           </button>
         </div>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input
+          value={pipelineFilter}
+          onChange={(event) => onPipelineFilterChange(event.target.value)}
+          placeholder="pipeline contains"
+          className="w-48 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100 outline-none ring-sky-500 placeholder:text-slate-500 focus:ring"
+        />
+        <input
+          value={stepFilter}
+          onChange={(event) => onStepFilterChange(event.target.value)}
+          placeholder="step contains"
+          className="w-48 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100 outline-none ring-sky-500 placeholder:text-slate-500 focus:ring"
+        />
       </div>
 
       {error && (

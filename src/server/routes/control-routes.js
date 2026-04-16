@@ -366,11 +366,19 @@ async function handleControlRoutes(ctx) {
       const limit = Number(url.searchParams.get('limit') || 50);
       const before_ts = url.searchParams.get('before_ts') || url.searchParams.get('before') || null;
       const has_error = url.searchParams.get('has_error');
+      const pipeline = url.searchParams.get('pipeline') || null;
+      const step = url.searchParams.get('step') || null;
       const result = await logger.step(
         'api.debug.runs',
-        async () => debugRepository.getRecentPipelineRuns({ limit, before_ts, has_error }),
+        async () => debugRepository.getRecentPipelineRuns({
+          limit,
+          before_ts,
+          has_error,
+          pipeline,
+          step,
+        }),
         {
-          input: { limit, before_ts, has_error },
+          input: { limit, before_ts, has_error, pipeline, step },
           output: (out) => ({ count: Array.isArray(out.rows) ? out.rows.length : 0 }),
           meta: { route: url.pathname },
         }

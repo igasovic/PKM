@@ -780,18 +780,30 @@ function buildGetRecentPipelineRuns(opts) {
   }
   return `WITH runs AS (
   SELECT
-    run_id,
-    MIN(ts) AS started_at,
-    MAX(ts) AS ended_at,
-    GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (MAX(ts) - MIN(ts))) * 1000))::bigint AS total_ms,
+    e.run_id,
+    MIN(e.ts) AS started_at,
+    MAX(e.ts) AS ended_at,
+    GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (MAX(e.ts) - MIN(e.ts))) * 1000))::bigint AS total_ms,
     COUNT(*)::int AS event_count,
-    COUNT(*) FILTER (WHERE direction = 'error')::int AS error_count,
-    COUNT(*) FILTER (WHERE direction = 'start')::int AS start_count,
-    COUNT(*) FILTER (WHERE direction = 'end')::int AS end_count,
-    COUNT(*) FILTER (WHERE direction = 'error')::int AS error_event_count
-  FROM ${eventsTable}
-  WHERE ($1::timestamptz IS NULL OR ts < $1::timestamptz)
-  GROUP BY run_id
+    COUNT(*) FILTER (WHERE e.direction = 'error')::int AS error_count,
+    COUNT(*) FILTER (WHERE e.direction = 'start')::int AS start_count,
+    COUNT(*) FILTER (WHERE e.direction = 'end')::int AS end_count,
+    COUNT(*) FILTER (WHERE e.direction = 'error')::int AS error_event_count
+  FROM ${eventsTable} e
+  WHERE
+    ($1::timestamptz IS NULL OR e.ts < $1::timestamptz)
+    AND (
+      ($4::text IS NULL AND $5::text IS NULL)
+      OR EXISTS (
+        SELECT 1
+        FROM ${eventsTable} f
+        WHERE
+          f.run_id = e.run_id
+          AND ($4::text IS NULL OR COALESCE(f.pipeline, '') ILIKE ('%' || $4::text || '%'))
+          AND ($5::text IS NULL OR COALESCE(f.step, '') ILIKE ('%' || $5::text || '%'))
+      )
+    )
+  GROUP BY e.run_id
 )
 SELECT
   run_id,

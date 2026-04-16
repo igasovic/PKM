@@ -130,6 +130,8 @@ export function DebugPage() {
   const [recentLoading, setRecentLoading] = useState(false);
   const [recentError, setRecentError] = useState<string | null>(null);
   const [recentFilter, setRecentFilter] = useState<RecentFilter>('all');
+  const [recentPipelineFilter, setRecentPipelineFilter] = useState('');
+  const [recentStepFilter, setRecentStepFilter] = useState('');
   const [recentBeforeTs, setRecentBeforeTs] = useState<string | null>(null);
   const [recentHasMore, setRecentHasMore] = useState(false);
 
@@ -182,6 +184,8 @@ export function DebugPage() {
         limit: RECENT_PAGE_SIZE,
         before_ts,
         has_error,
+        pipeline: recentPipelineFilter.trim() || null,
+        step: recentStepFilter.trim() || null,
       });
       const incoming = result.rows;
       const merged = reset
@@ -206,7 +210,7 @@ export function DebugPage() {
   useEffect(() => {
     void loadRecentRuns(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recentFilter]);
+  }, [recentFilter, recentPipelineFilter, recentStepFilter]);
 
   useEffect(() => {
     const routeRunId = String(params.runId || '').trim();
@@ -326,6 +330,10 @@ export function DebugPage() {
             loading={recentLoading}
             error={recentError}
             filter={recentFilter}
+            pipelineFilter={recentPipelineFilter}
+            stepFilter={recentStepFilter}
+            onPipelineFilterChange={setRecentPipelineFilter}
+            onStepFilterChange={setRecentStepFilter}
             onFilterChange={setRecentFilter}
             onRefresh={() => {
               void loadRecentRuns(true);

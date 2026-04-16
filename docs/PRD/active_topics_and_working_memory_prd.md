@@ -84,6 +84,8 @@ Current repo behavior is:
 - working memory today is represented as a special ChatGPT-authored artifact in `entries`, not first-class topic state.
 - one working-memory row exists per normalized topic key where present, but not all desired active topics have rows.
 - ChatGPT-authored session notes and working-memory rows bypass Tier-1 and Tier-2 enrichment.
+- explicit Tier-1 classify write routes exist (`POST /enrich/t1/update`, `POST /enrich/t1/update-batch`) and are the only classify writeback path for Tier-1 field updates.
+- Tier-1 classify writeback can synchronize active-topic related-entry links via `active_topic_related_entries` with relation type `classified_primary` when `topic_primary` maps to an active topic.
 - current ChatGPT interaction pattern is topic-first:
   - read working memory
   - retrieve supporting context via existing read tools
@@ -192,6 +194,13 @@ Migration is additive first (schema + backfill + dual-read). Write cutover happe
 ### AD-8: No topology or trust-boundary change
 No new public edges, no direct UI-to-DB access, no n8n direct PKM table access.
 
+### AD-9: Classify writeback uses explicit Tier-1 update methods only
+Tier-1 classify writes must use explicit classify-update methods/routes, not generic DB update:
+- sync: `POST /enrich/t1/update`
+- batch: `POST /enrich/t1/update-batch` and batch-collect apply path
+
+Generic `POST /db/update` must reject Tier-1 classify field writes.
+
 ## Phase 1 target behavior
 
 ### Topic set
@@ -266,6 +275,12 @@ Phase 1 rule:
 5. backend writes session note to existing session-note path in `entries`.
 6. backend applies topic patch to first-class topic-state tables in one transaction boundary.
 7. backend returns one combined result envelope.
+
+### Ingestion and classify related-entry linking
+1. Tier-1 classify writeback occurs through explicit update routes (`/enrich/t1/update`, `/enrich/t1/update-batch`) and batch-collect apply.
+2. Backend applies the fixed Tier-1 field set on `entries` and then synchronizes `active_topic_related_entries` for active-topic matches only.
+3. Link relation type is `classified_primary`.
+4. Non-active-topic `topic_primary` values do not create related-entry links.
 
 ### Validation policy
 Phase 1 uses:
@@ -402,6 +417,13 @@ to:
 - migrate latest legacy working-memory row per topic into topic-state tables
 - tolerate missing legacy rows by creating empty initialized topic rows
 - record migration provenance (legacy entry id/hash, timestamp)
+- run separate active-topic related-entry backfill for classify links using `scripts/db/backfill_active_topic_related_entries.sh` (not bundled into schema migration script)
+
+#### Stage 2b: Related-entry classify-link backfill operation
+- execute dry-run first per schema (`pkm`, optionally `pkm_test`)
+- apply mode runs in a single transaction boundary (all-or-nothing per invocation)
+- only entries whose `topic_primary` maps to active topics are linked
+- relation type is `classified_primary`
 
 #### Stage 3: Write cutover
 - switch wrap/commit topic writes to topic-state tables
@@ -453,6 +475,7 @@ For each fixed active topic:
 2. rendered markdown from topic-state is non-empty or explicitly empty-by-design
 3. migrated provenance references legacy source where present
 4. no new wrap commits create `entries.content_type='working_memory'` rows
+5. classify-link backfill dry-run/apply counts are sane and only include active-topic matches
 
 ### Gate D: End-to-end behavior
 1. ChatGPT public read (`working_memory`) still returns handled success/no_result envelopes.

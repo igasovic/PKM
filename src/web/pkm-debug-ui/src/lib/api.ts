@@ -88,6 +88,8 @@ export interface FetchRecentRunsOptions {
   limit?: number;
   before_ts?: string | null;
   has_error?: boolean | null;
+  pipeline?: string | null;
+  step?: string | null;
 }
 
 export interface FetchRecentRunsResult {
@@ -95,6 +97,8 @@ export interface FetchRecentRunsResult {
   limit: number;
   before_ts: string | null;
   has_error: boolean | null;
+  pipeline: string | null;
+  step: string | null;
 }
 
 export async function fetchRecentRuns(
@@ -107,6 +111,8 @@ export async function fetchRecentRuns(
   if (options.before_ts) params.set('before_ts', options.before_ts);
   if (options.has_error === true) params.set('has_error', 'true');
   if (options.has_error === false) params.set('has_error', 'false');
+  if (options.pipeline && String(options.pipeline).trim()) params.set('pipeline', String(options.pipeline).trim());
+  if (options.step && String(options.step).trim()) params.set('step', String(options.step).trim());
 
   const payload = await fetchJson(`/api/debug/runs?${params.toString()}`, timeoutMs);
   const data = (payload && typeof payload === 'object') ? (payload as Record<string, unknown>) : {};
@@ -129,6 +135,8 @@ export async function fetchRecentRuns(
     limit: asNumber(data.limit, rows.length || 30),
     before_ts: asString(data.before_ts),
     has_error: data.has_error === true ? true : data.has_error === false ? false : null,
+    pipeline: asString(data.pipeline),
+    step: asString(data.step),
   };
 }
 

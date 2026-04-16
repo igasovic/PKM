@@ -120,10 +120,10 @@ describe('control and debug API contract', () => {
     await startServer();
     if (listenDenied) return;
 
-    const forbidden = await request(port, 'GET', '/debug/runs?limit=5&before=2026-03-30T00:00:00.000Z&has_error=true');
+    const forbidden = await request(port, 'GET', '/debug/runs?limit=5&before=2026-03-30T00:00:00.000Z&has_error=true&pipeline=t1.enrich&step=batch.collect');
     expect(forbidden.status).toBe(403);
 
-    const res = await request(port, 'GET', '/debug/runs?limit=5&before=2026-03-30T00:00:00.000Z&has_error=true', null, {
+    const res = await request(port, 'GET', '/debug/runs?limit=5&before=2026-03-30T00:00:00.000Z&has_error=true&pipeline=t1.enrich&step=batch.collect', null, {
       'x-pkm-admin-secret': 'test-admin-secret',
     });
 
@@ -132,6 +132,8 @@ describe('control and debug API contract', () => {
       limit: 5,
       before_ts: '2026-03-30T00:00:00.000Z',
       has_error: 'true',
+      pipeline: 't1.enrich',
+      step: 'batch.collect',
     });
     expect(JSON.parse(res.body)).toEqual({ rows: [{ run_id: 'run-1' }], limit: 5 });
   });

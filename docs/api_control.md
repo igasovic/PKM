@@ -319,6 +319,8 @@ Query params:
 - `limit` (optional, default `50`, max `200`)
 - `before_ts` (optional ISO datetime, returns runs older than this timestamp)
 - `has_error` (optional boolean: `true` or `false`)
+- `pipeline` (optional case-insensitive contains filter over `pipeline_events.pipeline`)
+- `step` (optional case-insensitive contains filter over `pipeline_events.step`)
 
 Response:
 ```json
@@ -336,7 +338,9 @@ Response:
   ],
   "limit": 50,
   "before_ts": null,
-  "has_error": null
+  "has_error": null,
+  "pipeline": null,
+  "step": null
 }
 ```
 
