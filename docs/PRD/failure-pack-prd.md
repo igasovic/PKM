@@ -222,6 +222,8 @@ Manual path remains available:
 6. `wf99` writes large payloads to sidecar files under shared storage.
 7. `wf99` builds normalized JSON envelope.
 8. A dedicated n8n `HTTP Request` node posts envelope to PKM admin endpoint.
+   - this transport node is allowed to continue regular output on transport errors so WF99 alerting still executes.
+   - when transport fails, WF99 composes a Telegram failure message using the local envelope fallback (`failure_pack_post.ok=false`).
 9. `wf99` composes Telegram text in a dedicated compose-only Code node.
 10. PKM upserts the failure-pack record keyed by `run_id`.
 

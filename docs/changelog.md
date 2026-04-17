@@ -1,5 +1,32 @@
 # changelog
 
+## 2026-04-17 — WF99 reliability hardening (transport-failure alert continuity + coverage)
+
+### What changed
+- Hardened `99 Error Handling` (`WF99`) so diagnostics transport failures do not suppress Telegram alerting:
+  - set `Store Failure Pack` HTTP node to continue regular output on transport errors (`onError: continueRegularOutput`)
+  - preserves failure-notification path even when `POST /debug/failures` is unreachable
+- Expanded WF99 regression coverage with a dedicated test suite:
+  - workflow wiring and contracts (`ignore` branch, failure-pack post path, headers, parse mode)
+  - inline node behavior (`Check Ignore Rules`, `Finalize Failure Pack Result`, `Run Smoke Cleanup`)
+  - externalized node behavior (`extract-failure-context`, `build-failure-pack-envelope`, `compose-message`)
+  - guard against reintroducing legacy inline `ctx` runtime usage in WF99 code nodes
+- Fixed additional WF99 extraction robustness issues discovered during the coverage pass:
+  - correctly extracts `execution_id` from `execution.id`
+  - resolves `execution_url` from both `execution.url` and legacy nested forms
+  - broadens Telegram-node detection via node type in addition to node name/stack hints
+
+### Surfaces changed
+- WF99 workflow error-path reliability
+- WF99 extraction logic and tests
+
+### PRDs impacted
+- `docs/PRD/failure-pack-prd.md`
+
+### Contract docs impacted
+- `docs/n8n_node_style_guide.md`
+- `docs/changelog.md`
+
 ## 2026-04-14 — PKM UI eval case explorer (repo-first, read-only)
 
 ### What changed

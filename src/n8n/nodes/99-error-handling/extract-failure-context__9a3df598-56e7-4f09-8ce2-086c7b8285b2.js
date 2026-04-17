@@ -91,7 +91,12 @@ module.exports = async function run(ctx) {
     || asText(e.trigger && e.mode)
     || 'unknown-node';
 
-  const isTelegramNode = /telegram/i.test(nodeName) || /Telegram(?:\/|\\).+\.ts/i.test(stack);
+  const nodeType = asText(e.execution && e.execution.error && e.execution.error.node && e.execution.error.node.type)
+    || asText(e.error && e.error.node && e.error.node.type)
+    || asText(findFirstValueByKey(e, 'nodeType'));
+  const isTelegramNode = /telegram/i.test(nodeName)
+    || /telegram/i.test(nodeType)
+    || /Telegram(?:\/|\\).+\.ts/i.test(stack);
   const telegramReservedMatch = errorDescription.match(/can't parse entities:\s*Character '([^']+)' is reserved and must be escaped/i);
   const isTelegramMarkdownParseError = isTelegramNode && /can't parse entities/i.test(errorDescription);
   const isGenericBadRequest = /^Bad request - please check your parameters$/i.test(message);
@@ -114,11 +119,14 @@ module.exports = async function run(ctx) {
     || asText(e.timestamp)
     || new Date().toISOString();
 
-  const execId = asText(e.execution && e.id)
+  const execId = asText(e.execution && e.execution.id)
+    || asText(e.execution && e.id)
     || asText(e.executionId)
     || 'unknown';
 
-  const execUrl = asText(e.execution && e.execution && e.execution.url)
+  const execUrl = asText(e.execution && e.execution.url)
+    || asText(e.execution && e.url)
+    || asText(e.execution && e.execution && e.execution.url)
     || (execId && execId !== 'unknown' ? `/execution/${execId}` : '');
 
   const runId = asText(findFirstValueByKey(e, 'run_id'))

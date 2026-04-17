@@ -85,6 +85,11 @@ const { wf10CommandParser } = require('@igasovic/n8n-blocks');
 - Do not set node `onError` to continuation modes (`continueRegularOutput`, `continueErrorOutput`).
 - Default behavior must be fail-fast so workflow errors stop execution unless a PRD explicitly documents an exception.
 
+Documented exception:
+- `99 Error Handling` -> `Store Failure Pack` (`POST /debug/failures`) may use `onError: continueRegularOutput`.
+- Rationale: diagnostics persistence must not block the WF99 Telegram alert path when PKM transport is unavailable.
+- Scope: this exception is limited to the failure-pack write transport node and must not be copied to business workflows.
+
 ### 3.5 Hard rule: No Transport Calls From Code Nodes
 - Code nodes must not perform direct HTTP requests or SSH calls.
 - Use standard n8n transport nodes instead (`HTTP Request`, `SSH`, etc.).
