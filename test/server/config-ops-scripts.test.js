@@ -423,6 +423,7 @@ describe('config ops scripts', () => {
       CFG_STACK_ROOT: tempStackRoot,
       CFG_N8N_SYNC_SCRIPT: fakeN8nSyncPath,
       FAKE_N8N_SYNC_LOG: fakeN8nSyncLog,
+      N8N_API_KEY: 'test-key',
     });
 
     expect(res.code).toBe(0);

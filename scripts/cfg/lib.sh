@@ -31,6 +31,7 @@ CFG_REPO_N8N_NODES_DIR="${CFG_REPO_N8N_NODES_DIR:-$CFG_REPO_ROOT/src/n8n/nodes}"
 CFG_REPO_N8N_PACKAGE_MANIFEST="${CFG_REPO_N8N_PACKAGE_MANIFEST:-$CFG_REPO_ROOT/src/n8n/package.manifest.json}"
 
 CFG_BACKEND_DEPLOY_SCRIPT="${CFG_BACKEND_DEPLOY_SCRIPT:-$CFG_REPO_ROOT/scripts/cfg/backend_push.sh}"
+CFG_N8N_API_ENV_FILE="${CFG_N8N_API_ENV_FILE:-}"
 
 SUPPORTED_SURFACES=(
   n8n
@@ -265,6 +266,40 @@ resolve_python_bin() {
     return 0
   fi
   return 1
+}
+
+CFG_N8N_API_ENV_LOADED_FROM=""
+
+load_n8n_api_env_if_needed() {
+  if [[ -n "${N8N_API_KEY:-}" ]]; then
+    return 0
+  fi
+
+  local -a candidates=()
+  if [[ -n "$CFG_N8N_API_ENV_FILE" ]]; then
+    candidates+=("$CFG_N8N_API_ENV_FILE")
+  fi
+
+  local home_dir="${HOME:-}"
+  if [[ -n "$home_dir" ]]; then
+    candidates+=(
+      "$home_dir/.config/pkm/n8n-api.env"
+      "$home_dir/.config/pkm/secrets.env"
+    )
+  fi
+
+  local env_file
+  for env_file in "${candidates[@]}"; do
+    [[ -f "$env_file" ]] || continue
+    # shellcheck disable=SC1090
+    source "$env_file"
+    if [[ -n "${N8N_API_KEY:-}" ]]; then
+      CFG_N8N_API_ENV_LOADED_FROM="$env_file"
+      return 0
+    fi
+  done
+
+  return 0
 }
 
 docker_collect_compose_services() {
@@ -814,9 +849,15 @@ check_surface_n8n() {
     return 0
   fi
 
+  load_n8n_api_env_if_needed
+  if [[ -n "$CFG_N8N_API_ENV_LOADED_FROM" ]]; then
+    add_check_detail "loaded N8N_API_KEY from $CFG_N8N_API_ENV_LOADED_FROM"
+  fi
+
   if [[ -z "${N8N_API_KEY:-}" ]]; then
     cfg_err "N8N_API_KEY is required for sync_nodes."
     cfg_err "^ export N8N_API_KEY='<your n8n api key>'"
+    cfg_err "^ or set it in ~/.config/pkm/n8n-api.env (or ~/.config/pkm/secrets.env)"
     mark_check_blocked "N8N_API_KEY is required for sync_nodes."
     progress_fail "missing N8N_API_KEY"
     return 0
@@ -1158,6 +1199,17 @@ update_surface_n8n() {
     mark_update_blocked "n8n sync script missing or not executable ($CFG_N8N_SYNC_SCRIPT)."
     progress_fail "sync script missing"
     return 0
+  fi
+
+  load_n8n_api_env_if_needed
+  if [[ -z "${N8N_API_KEY:-}" ]]; then
+    mark_update_blocked "N8N_API_KEY is required for n8n sync."
+    add_update_detail "Set N8N_API_KEY in shell or host-local env file (~/.config/pkm/n8n-api.env or ~/.config/pkm/secrets.env)."
+    progress_fail "missing N8N_API_KEY"
+    return 0
+  fi
+  if [[ -n "$CFG_N8N_API_ENV_LOADED_FROM" ]]; then
+    add_update_detail "Loaded N8N_API_KEY from $CFG_N8N_API_ENV_LOADED_FROM"
   fi
 
   local out=""

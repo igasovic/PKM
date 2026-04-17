@@ -1,5 +1,23 @@
 # changelog
 
+## 2026-04-17 — Config ops n8n env loading fallback
+
+### What changed
+- Hardened `checkcfg n8n` and `updatecfg n8n` env handling to reduce operator failures when `N8N_API_KEY` is not exported in the current shell.
+- `scripts/cfg` now auto-loads `N8N_API_KEY` (when missing) from host-local env files in order:
+  - `CFG_N8N_API_ENV_FILE` (optional explicit override)
+  - `~/.config/pkm/n8n-api.env`
+  - `~/.config/pkm/secrets.env`
+- Added clearer blocked-state guidance for missing `N8N_API_KEY` in n8n config ops paths.
+
+### Surfaces changed
+- config ops script behavior for n8n check/update
+- config operations docs
+
+### Contract docs impacted
+- `docs/config_operations.md`
+- `docs/changelog.md`
+
 ## 2026-04-17 — WF99 reliability hardening (transport-failure alert continuity + coverage)
 
 ### What changed

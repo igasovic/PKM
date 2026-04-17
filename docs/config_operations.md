@@ -149,6 +149,10 @@ Notes:
 - `checkcfg n8n` first builds the generated runtime package from `src/n8n/package.manifest.json`, validates live wrapper targets against repo canonical nodes, then compares repo workflows against a fresh live snapshot built with a one-shot export fan-out (single n8n export reused for normalized + raw views).
 - `updatecfg n8n --push` builds the generated runtime package, builds the local `pkm-n8n-runners:2.10.3` image from `ops/stack/n8n-runners/Dockerfile`, recreates `n8n` + `n8n-runners`, patches workflows in-place via API, and validates the live workflow export.
 - `updatecfg n8n --pull` exports live workflows, normalizes them, and resynchronizes externalized node sources.
+- `checkcfg n8n` and `updatecfg n8n` require `N8N_API_KEY` for API patch/validation and will auto-load it from host-local env files in this order when unset in shell:
+  - `CFG_N8N_API_ENV_FILE` (if explicitly set)
+  - `~/.config/pkm/n8n-api.env`
+  - `~/.config/pkm/secrets.env`
 - Canonical n8n workflow/node runtime imports are package-based (`@igasovic/n8n-blocks/...`). `/data/src/...` runtime imports are forbidden after the migration.
 
 ### docker
@@ -228,5 +232,5 @@ Keep this list updated whenever a new config-adjacent surface is discovered or o
 - `ops/stack/n8n-runners/n8n-task-runners.json`
 - `scripts/db/**`
 - `pkm.runtime_config` (runtime-mutable DB state)
-- shell exports for `N8N_API_*` (recommended host-local source file: `/home/igasovic/.config/pkm/n8n-api.env`, sourced from `~/.zshrc`)
+- shell exports for `N8N_API_*` (recommended host-local source files: `/home/igasovic/.config/pkm/n8n-api.env` or `/home/igasovic/.config/pkm/secrets.env`, sourced from shell rc)
 - `test/smoke/config/defaults.json` (repo-owned smoke input; outside active `checkcfg` / `updatecfg` surfaces)
