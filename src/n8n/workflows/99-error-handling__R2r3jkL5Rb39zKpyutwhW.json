@@ -323,7 +323,8 @@
   "settings": {
     "availableInMCP": false,
     "callerPolicy": "workflowsFromSameOwner",
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "timezone": "America/Chicago"
   },
   "staticData": null,
   "tags": [],

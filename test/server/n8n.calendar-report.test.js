@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { requireExternalizedNode } = require('./n8n-node-loader');
 
 const buildDailyReportWindow = requireExternalizedNode('32-calendar-daily-report', 'build-report-window');
@@ -7,7 +9,41 @@ const formatDailyReportMessage = requireExternalizedNode('32-calendar-daily-repo
 const buildWeeklyReportWindow = requireExternalizedNode('33-calendar-weekly-report', 'build-report-window');
 const formatWeeklyReportMessage = requireExternalizedNode('33-calendar-weekly-report', 'format-calendar-report-message');
 
+const WORKFLOWS_DIR = path.join(__dirname, '..', '..', 'src', 'n8n', 'workflows');
+
+function loadWorkflow(prefix) {
+  const match = fs.readdirSync(WORKFLOWS_DIR)
+    .filter((name) => name.startsWith(prefix) && name.endsWith('.json'))
+    .sort();
+  if (match.length !== 1) {
+    throw new Error(`expected one workflow file for ${prefix}, found ${match.length}`);
+  }
+  return JSON.parse(fs.readFileSync(path.join(WORKFLOWS_DIR, match[0]), 'utf8'));
+}
+
 describe('n8n calendar report helpers', () => {
+  test('WF32/WF33 schedules run in America/Chicago with expected local times', () => {
+    const wf32 = loadWorkflow('32-calendar-daily-report__');
+    const wf33 = loadWorkflow('33-calendar-weekly-report__');
+
+    expect(wf32.settings.timezone).toBe('America/Chicago');
+    expect(wf33.settings.timezone).toBe('America/Chicago');
+
+    const wf32Schedule = wf32.nodes.find((node) => node.name === 'Schedule Daily Report');
+    const wf33Schedule = wf33.nodes.find((node) => node.name === 'Schedule Weekly Report');
+    expect(wf32Schedule).toBeDefined();
+    expect(wf33Schedule).toBeDefined();
+
+    const wf32Interval = wf32Schedule.parameters.rule.interval[0];
+    expect(wf32Interval.triggerAtHour).toBe(5);
+    expect(wf32Interval.triggerAtMinute).toBe(30);
+
+    const wf33Interval = wf33Schedule.parameters.rule.interval[0];
+    expect(wf33Interval.field).toBe('weeks');
+    expect(wf33Interval.triggerAtHour).toBe(18);
+    expect(wf33Interval.triggerAtMinute).toBe(30);
+  });
+
   test('build report window resolves daily range and admin chat fallback', async () => {
     const out = await buildDailyReportWindow({
       $json: {

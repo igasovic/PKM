@@ -572,7 +572,8 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
     "executionOrder": "v1",
-    "timeSavedMode": "fixed"
+    "timeSavedMode": "fixed",
+    "timezone": "America/Chicago"
   },
   "staticData": {
     "node:Notion Trigger - Added": {

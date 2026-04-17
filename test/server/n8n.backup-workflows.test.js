@@ -34,6 +34,12 @@ describe('n8n backup workflows', () => {
     const wf80 = loadWorkflow('80-postgres-backup__pZH_qI9CjFoJNs6x7Fh2t.json');
     const nodesByName = Object.fromEntries(wf80.nodes.map((node) => [node.name, node]));
 
+    expect(wf80.settings.timezone).toBe('America/Chicago');
+    expect(nodesByName['Get Week/Month'].parameters.jsCode).toContain("const timezone = 'America/Chicago'");
+    expect(nodesByName['Get Week/Month'].parameters.jsCode).toContain('timeZone: timezone');
+    expect(nodesByName['Get Week/Month'].parameters.jsCode).not.toContain('getDay()');
+    expect(nodesByName['Get Week/Month'].parameters.jsCode).not.toContain('getDate()');
+
     expect(nodesByName['Normalize Cloud Daily Success'].parameters.jsCode).toContain('pkm_backup_gdrive_daily');
     expect(nodesByName['Normalize Cloud Weekly Success'].parameters.jsCode).toContain('pkm_backup_gdrive_weekly');
     expect(nodesByName['Normalize Cloud Monthly Success'].parameters.jsCode).toContain('pkm_backup_gdrive_monthly');

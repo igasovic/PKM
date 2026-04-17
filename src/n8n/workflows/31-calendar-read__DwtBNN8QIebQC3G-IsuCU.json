@@ -380,7 +380,8 @@
     "availableInMCP": false,
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "timezone": "America/Chicago"
   },
   "staticData": null,
   "tags": [],

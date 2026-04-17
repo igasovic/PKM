@@ -279,7 +279,8 @@
     "availableInMCP": false,
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1",
-    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW"
+    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
+    "timezone": "America/Chicago"
   },
   "staticData": {
     "node:Schedule Daily Report": {

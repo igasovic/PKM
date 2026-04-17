@@ -395,7 +395,7 @@
       "id": "3f999037-58f1-465c-bb8a-e1a27b5d9156",
       "name": "Get Week/Month",
       "parameters": {
-        "jsCode": "const now = new Date();        // uses server timezone; make sure n8n is America/Chicago\nconst dow = now.getDay();      // 0 = Sunday\nconst dom = now.getDate();     // 1..31\n\nreturn [{\n  doWeekly: dow === 0,\n  doMonthly: dom === 1,\n}];\n"
+        "jsCode": "'use strict';\n\nconst timezone = 'America/Chicago';\nconst parts = new Intl.DateTimeFormat('en-US', {\n  timeZone: timezone,\n  weekday: 'short',\n  day: '2-digit',\n}).formatToParts(new Date());\nconst byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));\n\nconst weekday = String(byType.weekday || '').toLowerCase();\nconst day = Number(byType.day || 0);\n\nreturn [{\n  doWeekly: weekday === 'sun',\n  doMonthly: day === 1,\n}];\n"
       },
       "position": [
         -128,
@@ -662,7 +662,8 @@
     "availableInMCP": false,
     "callerPolicy": "workflowsFromSameOwner",
     "executionOrder": "v1",
-    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW"
+    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
+    "timezone": "America/Chicago"
   },
   "staticData": {
     "node:Schedule 4AM": {

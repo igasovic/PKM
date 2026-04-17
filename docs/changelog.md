@@ -1,5 +1,40 @@
 # changelog
 
+## 2026-04-17 — Global workflow timezone pinning
+
+### What changed
+- Enforced `settings.timezone = "America/Chicago"` across all n8n workflows to eliminate implicit host-timezone behavior.
+- This includes both scheduled and non-scheduled workflows so inline date/time expressions and execution-context time semantics remain consistent.
+- Added guardrail test:
+  - `test/server/n8n.workflow-timezone.test.js`
+  - verifies every workflow JSON under `src/n8n/workflows/` pins timezone to `America/Chicago`.
+
+### Surfaces changed
+- n8n workflow metadata (timezone settings)
+- n8n workflow test coverage
+
+### Contract docs impacted
+- `docs/changelog.md`
+
+## 2026-04-17 — n8n schedule timezone hardening (WF32/WF33/WF80)
+
+### What changed
+- Fixed DST-sensitive schedule drift by setting explicit workflow timezone `America/Chicago` for scheduled workflows that were missing it:
+  - `32 Calendar Daily Report` (05:30 local)
+  - `33 Calendar Weekly Report` (Sunday 18:30 local)
+  - `80 Postgres Backup` (`Schedule 4AM`, `Schedule 9AM`)
+- Hardened `80 Postgres Backup` date-gating logic (`Get Week/Month`) to compute weekly/monthly boundaries in `America/Chicago` instead of host-local `Date#getDay()`/`Date#getDate()`.
+- Added regression assertions for schedule/timezone configuration:
+  - `test/server/n8n.calendar-report.test.js` now verifies WF32/WF33 timezone and trigger times
+  - `test/server/n8n.backup-workflows.test.js` now verifies WF80 timezone and timezone-aware week/month gating logic
+
+### Surfaces changed
+- n8n workflow schedule configuration
+- n8n workflow configuration tests
+
+### Contract docs impacted
+- `docs/changelog.md`
+
 ## 2026-04-17 — Config ops n8n env loading fallback
 
 ### What changed
