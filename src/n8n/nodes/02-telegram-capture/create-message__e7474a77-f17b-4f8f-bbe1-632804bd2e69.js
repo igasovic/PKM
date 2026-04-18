@@ -37,7 +37,7 @@ module.exports = async function run(ctx) {
   const topicSecondary = s($json.topic_secondary);
   const gist = s($json.gist);
 
-  const labelBase = title || 'link';
+  const labelBase = title || url || 'link';
   const label = author ? `${labelBase} — ${author}` : labelBase;
 
   // Determine status purely from clean_text length

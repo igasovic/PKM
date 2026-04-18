@@ -43,6 +43,21 @@ describe('n8n telegram display formatters', () => {
     expect(msg).not.toContain('chars');
   });
 
+  test('telegram capture extraction-failed message falls back to url_canonical label', async () => {
+    const out = await telegramCreateMessage({
+      $json: {
+        entry_id: 902,
+        clean_text: '',
+        url_canonical: 'https://example.com/fallback-label',
+      },
+    });
+
+    const msg = out[0].json.telegram_message;
+    expect(msg).toContain('❌ Saved \\(extraction failed\\)');
+    expect(msg).toContain('https://example\\.com/fallback\\-label');
+    expect(msg).not.toContain(': link');
+  });
+
   test('duplicate messages include source system', async () => {
     const tgOut = await telegramDuplicate({ $json: { entry_id: 819 } });
     const emailOut = await emailDuplicate({ $json: { entry_id: 820 } });
