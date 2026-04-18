@@ -432,6 +432,13 @@
             "node": "Run Todoist Waiting Radar",
             "type": "main"
           }
+        ],
+        [
+          {
+            "node": "PKM Classify Run",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -453,6 +460,28 @@
             "index": 0,
             "node": "PKM Config",
             "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Classify Run": {
+      "main": [
+        [
+          {
+            "node": "Format Classify Run Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Classify Run Message": {
+      "main": [
+        [
+          {
+            "node": "Send MarkdownV2 Message",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -985,6 +1014,31 @@
               },
               "outputKey": "waiting",
               "renameOutput": true
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "f3a03c6f-06d0-48f8-a0b9-5d9f4f173fa8",
+                    "leftValue": "={{ $json.cmd }}",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "classify"
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                }
+              },
+              "outputKey": "classify",
+              "renameOutput": true
             }
           ]
         }
@@ -1039,7 +1093,7 @@
       "id": "83d12448-5f97-48f1-9ece-de61a9756db3",
       "name": "Format /help Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nconst msg = `Commands:\n/help\n/pull <id> [--excerpt]\n/recipe <R<number>|query>\n/recipes <query>\n/recipe-save <structured_recipe_text>\n/recipe-link <public_id_1> <public_id_2>\n/recipe-note <public_id> <note>\n/last \"query\" [--days N] [--limit M]\n/find \"needle\" [--days N] [--limit M]\n/continue topic [--days N] [--limit M]\n/with person topic [--days N] [--limit M]\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/debug <run_id|last>\n/distill <entry_id>\n/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n/status [t1|t2] [--limit M] [--active-only]\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\n\n  return [{ json: { ...$json, telegram_message: mdv2Message(msg) } }];\n"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nconst msg = `Commands:\n/help\n/pull <id> [--excerpt]\n/recipe <R<number>|query>\n/recipes <query>\n/recipe-save <structured_recipe_text>\n/recipe-link <public_id_1> <public_id_2>\n/recipe-note <public_id> <note>\n/last \"query\" [--days N] [--limit M]\n/find \"needle\" [--days N] [--limit M]\n/continue topic [--days N] [--limit M]\n/with person topic [--days N] [--limit M]\n/delete <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n/debug <run_id|last>\n/distill <entry_id>\n/classify [--batch] [--dry-run] [--limit N]\n/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n/status [t1|t2] [--limit M] [--active-only]\n\nTips:\n- Every result shows #<id> so you can /pull it.\n- Reduce --limit if messages truncate.`;\n\n  return [{ json: { ...$json, telegram_message: mdv2Message(msg) } }];\n"
       },
       "position": [
         1792,
@@ -1653,6 +1707,50 @@
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
+    },
+    {
+      "id": "50e3a95e-6763-4de5-8e53-6f8b220da9c6",
+      "name": "PKM Classify Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1568,
+        1088
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://pkm-server:8080/enrich/t1/run",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-pkm-admin-secret",
+              "value": "={{ $env.PKM_ADMIN_SECRET }}"
+            },
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify((() => ({ execution_mode: $json.execution_mode, dry_run: $json.dry_run, limit: $json.classify_limit }))()) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "68e6f8e8-b463-4ca9-8cc4-bf2cde7ad2f5",
+      "name": "Format Classify Run Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        1088
+      ],
+      "parameters": {
+        "jsCode": "'use strict';\n\nconst { mdv2, bold, parens, joinLines, finalizeMarkdownV2 } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n\nconst r = $json || {};\nconst mode = String(r.mode || 'run').toLowerCase();\nconst executionMode = String(r.execution_mode || 'sync').toLowerCase() === 'batch' ? 'batch' : 'sync';\nconst lines = [];\n\nlines.push(mode === 'dry_run' ? `${bold('Tier_1 classify')} ${parens('dry run')}` : bold('Tier_1 classify'));\nlines.push(`${bold('Execution:')} ${mdv2(executionMode)}`);\nif (r.batch_id) lines.push(`${bold('Batch_id:')} ${mdv2(r.batch_id)}`);\nlines.push('');\nlines.push(`${bold('Candidates:')} ${r.candidate_count ?? 0}`);\nlines.push(`${bold('Runnable:')} ${r.runnable_count ?? 0}`);\nif (Number(r.skipped_missing_clean_text || 0) > 0) lines.push(`Skipped missing clean text: ${Number(r.skipped_missing_clean_text || 0)}`);\n\nif (mode === 'dry_run') {\n  lines.push(`${bold('Would process:')} ${r.will_process_count ?? r.runnable_count ?? 0}`);\n} else if (executionMode === 'batch') {\n  lines.push(`${bold('Enqueued:')} ${r.enqueued_count ?? r.request_count ?? 0}`);\n  if (r.status) lines.push(`Batch status: ${mdv2(r.status)}`);\n} else {\n  lines.push(`${bold('Processed:')} ${r.processed_count ?? 0}`);\n  lines.push(`Completed: ${r.completed_count ?? 0}`);\n  lines.push(`Failed: ${r.failed_count ?? 0}`);\n  const topFailures = Object.entries((r && r.error_code_counts) || {})\n    .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))\n    .slice(0, 3);\n  if (topFailures.length) lines.push(`Top failures: ${topFailures.map(([code, count]) => `${mdv2(code)} ${parens(Number(count || 0))}`).join(', ')}`);\n}\n\nreturn [{ json: { ...r, telegram_message: finalizeMarkdownV2(joinLines(lines, { trimTrailing: true })) } }];\n"
+      }
     }
   ],
   "settings": {

@@ -149,6 +149,14 @@ const BACKEND_ROUTE_REGISTRY = [
   },
   {
     "method": "POST",
+    "path": "/enrich/t1/run",
+    "auth": "internal",
+    "doc": "docs/api_ingest.md",
+    "primary_callers": ["10 Read (/classify)"],
+    "tests": ["test/server/classify.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
     "path": "/enrich/t1/update",
     "auth": "internal",
     "doc": "docs/api_ingest.md",

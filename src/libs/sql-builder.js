@@ -222,6 +222,7 @@ module.exports = {
   buildReadWorkingMemory,
   buildReadSmoke,
   buildReadEntities,
+  buildTier1UnclassifiedCandidates,
   buildTier2CandidateDiscovery,
   buildTier2SelectedDetailQuery,
   buildTier2EntryByEntryId,
@@ -236,6 +237,7 @@ module.exports = {
   buildT1BatchSummary,
   buildT1BatchFind,
   buildT1BatchListPending,
+  buildT1BatchListCollectCandidates,
   buildT1BatchStatusList,
   buildT1BatchStatusById,
   buildT1BatchItemStatusList,
@@ -459,6 +461,54 @@ LIMIT $2`;
 }
 
 /**
+ * Build SQL for listing Tier-1 batch ids that should be collected.
+ * Includes normal non-terminal batches and recovery candidates where a batch
+ * was marked completed but has zero persisted item results.
+ * @param {{ batchesTable: string, itemsTable: string, resultsTable: string }} opts
+ * @returns {string}
+ */
+function buildT1BatchListCollectCandidates(opts) {
+  const batchesTable = opts && opts.batchesTable;
+  const itemsTable = opts && opts.itemsTable;
+  const resultsTable = opts && opts.resultsTable;
+  if (!batchesTable || typeof batchesTable !== 'string') {
+    throw new Error('buildT1BatchListCollectCandidates: batchesTable must be a non-empty string');
+  }
+  if (!itemsTable || typeof itemsTable !== 'string') {
+    throw new Error('buildT1BatchListCollectCandidates: itemsTable must be a non-empty string');
+  }
+  if (!resultsTable || typeof resultsTable !== 'string') {
+    throw new Error('buildT1BatchListCollectCandidates: resultsTable must be a non-empty string');
+  }
+  return `SELECT b.batch_id
+FROM ${batchesTable} b
+LEFT JOIN (
+  SELECT batch_id, COUNT(*)::int AS total_items
+  FROM ${itemsTable}
+  GROUP BY batch_id
+) i ON i.batch_id = b.batch_id
+LEFT JOIN (
+  SELECT batch_id, COUNT(*)::int AS processed_count
+  FROM ${resultsTable}
+  GROUP BY batch_id
+) r ON r.batch_id = b.batch_id
+WHERE (
+  b.status IS NULL
+  OR b.status = ''
+  OR b.status <> ALL($1::text[])
+)
+OR (
+  lower(COALESCE(b.status, '')) = 'completed'
+  AND COALESCE(b.request_count, 0) > 0
+  AND COALESCE(i.total_items, 0) > 0
+  AND COALESCE(r.processed_count, 0) = 0
+  AND COALESCE(b.metadata->>'auto_retry_spawned_batch_id', '') = ''
+)
+ORDER BY b.created_at ASC
+LIMIT $2`;
+}
+
+/**
  * Build SQL for listing batch status rows with item/result counters.
  * @param {{ batchesTable: string, itemsTable: string, resultsTable: string, includeTerminal?: boolean }} opts
  * @returns {string}
@@ -596,6 +646,14 @@ function buildT1BatchItemStatusList(opts) {
   i.prompt_mode,
   i.created_at,
   COALESCE(r.status, 'pending') AS status,
+  COALESCE(
+    NULLIF(r.error->>'code', ''),
+    CASE
+      WHEN r.status IN ('parse_error', 'error') THEN r.status
+      ELSE NULL
+    END
+  ) AS error_code,
+  NULLIF(r.error->>'message', '') AS message,
   r.updated_at,
   (r.error IS NOT NULL) AS has_error
 FROM ${itemsTable} i
@@ -2086,6 +2144,36 @@ FROM page_hits h
 CROSS JOIN params p
 CROSS JOIN totals t
 ORDER BY is_meta DESC, created_at DESC NULLS LAST, entry_id DESC NULLS LAST;
+`.trim();
+}
+
+function buildTier1UnclassifiedCandidates(opts) {
+  const entries_table = opts && opts.entries_table;
+  if (!entries_table || typeof entries_table !== 'string') {
+    throw new Error('buildTier1UnclassifiedCandidates: entries_table must be a non-empty string');
+  }
+
+  const limitRaw = Number(opts && opts.limit);
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.trunc(limitRaw) : 0;
+  const limitSql = limit > 0 ? `\nLIMIT ${limit}` : '';
+
+  return `
+SELECT
+  e.id,
+  e.entry_id,
+  COALESCE(e.title, '') AS title,
+  COALESCE(e.author, '') AS author,
+  COALESCE(e.content_type, '') AS content_type,
+  COALESCE(e.clean_text, '') AS clean_text,
+  COALESCE(e.topic_primary, '') AS topic_primary,
+  COALESCE(e.gist, '') AS gist
+FROM ${entries_table} e
+WHERE
+  (
+    NULLIF(btrim(COALESCE(e.topic_primary, '')), '') IS NULL
+    OR NULLIF(btrim(COALESCE(e.gist, '')), '') IS NULL
+  )
+ORDER BY e.entry_id ASC${limitSql};
 `.trim();
 }
 

@@ -68,6 +68,7 @@ const defaults = {
   move: { days: null, limit: null },
   debug: { days: null, limit: null },
   distill: { days: null, limit: null },
+  classify: { days: null, limit: null },
   distillrun: { days: null, limit: null },
   status: { days: null, limit: null },
   help: { days: null, limit: null },
@@ -107,6 +108,7 @@ const HELP_OVERVIEW =
   `/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\n` +
   `/debug <run_id|last>\n` +
   `/distill <entry_id>\n` +
+  `/classify [--batch] [--dry-run] [--limit N]\n` +
   `/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n` +
   `/status [t1|t2] [--limit M] [--active-only]\n\n` +
   `Tip: append --help to any command for command-specific help.`;
@@ -128,6 +130,7 @@ const COMMAND_HELP = {
   move: `Usage:\n/move <prod|test> <prod|test> <id|id1,id2|from-to> [--dry-run] [--force]\nExample:\n/move test prod 100,101 --dry-run`,
   debug: `Usage:\n/debug <run_id|last>\n/debug --help\nExamples:\n/debug last\n/debug n8n-123456`,
   distill: `Usage:\n/distill <entry_id>\n/distill --help\nExample:\n/distill 12345`,
+  classify: `Usage:\n/classify [--batch] [--dry-run] [--limit N]\n/classify --help\nExamples:\n/classify --dry-run\n/classify --batch --limit 500`,
   distillrun: `Usage:\n/distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]\n/distill-run --help\nExamples:\n/distill-run --dry-run --candidate-limit 50 --max-sync-items 10\n/distill-run --sync --max-sync-items 1`,
   status: `Usage:\n/status [t1|t2] [--limit M] [--active-only]\n/status --help\nExamples:\n/status\n/status t2 --limit 20 --active-only`,
 };
@@ -329,6 +332,31 @@ if (cmd === 'distill') {
     json: {
       cmd,
       entry_id: mId[1],
+      telegram_chat_id,
+      smoke_mode,
+      smoke_case,
+    }
+  }];
+}
+
+// Special case: /classify [--batch] [--dry-run] [--limit N]
+if (cmd === 'classify') {
+  const dry_run = /--dry-run\b/i.test(text);
+  const forceBatch = /--batch\b/i.test(text);
+  const forceSync = /--sync\b/i.test(text);
+  if (forceBatch && forceSync) {
+    return replyNow(telegram_chat_id, usageFor('classify'));
+  }
+  const mLimit = text.match(/--limit\s+(\d+)/i);
+  const classify_limit = mLimit ? Math.max(0, parseInt(mLimit[1], 10)) : 0;
+  const execution_mode = forceBatch ? 'batch' : 'sync';
+
+  return [{
+    json: {
+      cmd,
+      dry_run,
+      classify_limit,
+      execution_mode,
       telegram_chat_id,
       smoke_mode,
       smoke_case,

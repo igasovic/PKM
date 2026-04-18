@@ -38,6 +38,7 @@ describe('classify and ingest API contract', () => {
   const classifyUpdateMock = jest.fn();
   const classifyUpdateBatchMock = jest.fn();
   const classifyBatchMock = jest.fn();
+  const classifyRunMock = jest.fn();
   const classifyBatchStatusListMock = jest.fn();
   const classifyBatchStatusMock = jest.fn();
   const emailIntentMock = jest.fn();
@@ -56,6 +57,7 @@ describe('classify and ingest API contract', () => {
     classifyUpdateMock.mockReset();
     classifyUpdateBatchMock.mockReset();
     classifyBatchMock.mockReset();
+    classifyRunMock.mockReset();
     classifyBatchStatusListMock.mockReset();
     classifyBatchStatusMock.mockReset();
     emailIntentMock.mockReset();
@@ -87,6 +89,7 @@ describe('classify and ingest API contract', () => {
       enrichTier1AndPersist: classifyUpdateMock,
       enrichTier1AndPersistBatch: classifyUpdateBatchMock,
       enqueueTier1Batch: classifyBatchMock,
+      runTier1ClassifyRun: classifyRunMock,
       getTier1BatchStatusList: classifyBatchStatusListMock,
       getTier1BatchStatus: classifyBatchStatusMock,
       startTier1BatchWorker: () => {},
@@ -312,6 +315,35 @@ describe('classify and ingest API contract', () => {
       completion_window: '12h',
     });
     expect(JSON.parse(res.body)).toEqual({ batch_id: 'batch-1' });
+  });
+
+  test('POST /enrich/t1/run forwards classify run payload', async () => {
+    classifyRunMock.mockResolvedValue({
+      mode: 'dry_run',
+      execution_mode: 'sync',
+      candidate_count: 7,
+      runnable_count: 6,
+      will_process_count: 6,
+    });
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const body = {
+      execution_mode: 'sync',
+      dry_run: true,
+      limit: 10,
+    };
+    const res = await request(port, 'POST', '/enrich/t1/run', JSON.stringify(body), { 'Content-Type': 'application/json' });
+
+    expect(res.status).toBe(200);
+    expect(classifyRunMock).toHaveBeenCalledWith(body);
+    expect(JSON.parse(res.body)).toEqual({
+      mode: 'dry_run',
+      execution_mode: 'sync',
+      candidate_count: 7,
+      runnable_count: 6,
+      will_process_count: 6,
+    });
   });
 
   test('POST /enrich/t1/update forwards explicit classify update payload', async () => {

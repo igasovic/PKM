@@ -46,6 +46,7 @@ describe('n8n command parser', () => {
     expect(out._reply_now).toBe(true);
     expect(out.telegram_chat_id).toBe(1509032341);
     expect(text).toContain('/waiting');
+    expect(text).toContain('/classify [--batch] [--dry-run] [--limit N]');
     expect(text).toContain('/distill-run [--batch|--sync]');
     expect(text).toContain('/recipe-link <public_id_1> <public_id_2>');
     expect(text).toContain('/recipe-note <public_id> <note>');
@@ -81,6 +82,28 @@ describe('n8n command parser', () => {
     expect(out._reply_now).toBe(true);
     expect(text).toContain('/distill-run [--batch|--sync]');
     expect(text).toContain('/distill-run --help');
+  });
+
+  test('/classify defaults to execution_mode=sync and unlimited limit', async () => {
+    const out = await runParser('/classify --dry-run');
+    expect(out.cmd).toBe('classify');
+    expect(out.execution_mode).toBe('sync');
+    expect(out.dry_run).toBe(true);
+    expect(out.classify_limit).toBe(0);
+  });
+
+  test('/classify --batch sets execution_mode=batch and parses limit', async () => {
+    const out = await runParser('/classify --batch --limit 500');
+    expect(out.cmd).toBe('classify');
+    expect(out.execution_mode).toBe('batch');
+    expect(out.classify_limit).toBe(500);
+  });
+
+  test('/classify rejects conflicting --batch and --sync', async () => {
+    const out = await runParser('/classify --batch --sync');
+    const text = unescapeMdv2(out.telegram_message);
+    expect(out._reply_now).toBe(true);
+    expect(text).toContain('/classify [--batch]');
   });
 
   test('/find --help returns find usage without query requirement', async () => {

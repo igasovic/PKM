@@ -441,6 +441,47 @@ Response:
 
 Batch completion handling is internal to backend workers. External callers only enqueue via `/enrich/t1/batch`.
 
+### `POST /enrich/t1/run`
+Runs a classify sweep over entries where `topic_primary` or `gist` is missing.
+Supports sync writeback (`/enrich/t1/update-batch`) or async batch enqueue (`/enrich/t1/batch`) in one control-plane call.
+
+Body:
+```json
+{
+  "execution_mode": "sync",
+  "dry_run": false,
+  "limit": 0
+}
+```
+
+Fields:
+- `execution_mode`: `sync` (default) or `batch`
+- `dry_run`: when true, returns counts only and does not classify
+- `limit`: non-negative integer; `0` means unlimited
+- `schema`: optional explicit schema override (`pkm` or `pkm_test`)
+
+Response:
+```json
+{
+  "mode": "run",
+  "execution_mode": "sync",
+  "limit": 0,
+  "candidate_count": 120,
+  "runnable_count": 118,
+  "skipped_missing_clean_text": 2,
+  "processed_count": 118,
+  "completed_count": 117,
+  "failed_count": 1,
+  "error_code_counts": {
+    "error": 1
+  }
+}
+```
+
+Notes:
+- Batch mode returns enqueue metadata (`batch_id`, `status`, `request_count`, `enqueued_count`) instead of per-item completion counts.
+- Dry-run mode returns `will_process_count` and never performs enrichment calls.
+
 ### `POST /enrich/t1/update-batch`
 Persists explicit Tier‑1 updates for multiple existing entries in one call.
 Each item may either provide a precomputed `t1` object or provide `clean_text` for in-call enrichment.
@@ -570,6 +611,8 @@ Response:
     {
       "custom_id": "entry_1",
       "status": "ok",
+      "error_code": null,
+      "message": null,
       "title": "Sample",
       "author": "Author",
       "content_type": "newsletter",
@@ -584,6 +627,9 @@ Response:
 
 Notes:
 - For `stage=t2`, failed runs may include `metadata.error` with a compact run-level failure summary.
+- For `stage=t1` with `include_items=true`, item rows may include:
+  - `error_code` (`parse_error`, `error`, or provider/code-specific value when available)
+  - `message` (best-effort failure message when available)
 - For `stage=t2` with `include_items=true`, item rows may include:
   - `entry_id`
   - `error_code`

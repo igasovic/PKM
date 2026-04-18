@@ -12,6 +12,7 @@ const {
   enrichTier1AndPersist,
   enrichTier1AndPersistBatch,
   enqueueTier1Batch,
+  runTier1ClassifyRun,
 } = require('../tier1-enrichment.js');
 const { importEmailMbox } = require('../email-importer.js');
 const { ingestTelegramUrlBatch } = require('../telegram-url-batch-ingest.js');
@@ -244,6 +245,24 @@ async function handleClassifyRoutes(ctx) {
           metadata: body.metadata || undefined,
           completion_window: body.completion_window || '24h',
         }),
+        { input: body, output: (out) => out, meta: { route: url.pathname } }
+      );
+      json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      sendError(res, err, { includeErrorCodeField: false, includeField: false });
+    }
+    return true;
+  }
+
+  if (method === 'POST' && url.pathname === '/enrich/t1/run') {
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const result = await logger.step(
+        'api.enrich.t1.run',
+        async () => runTier1ClassifyRun(body || {}),
         { input: body, output: (out) => out, meta: { route: url.pathname } }
       );
       json(res, 200, result);

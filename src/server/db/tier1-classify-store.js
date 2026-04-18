@@ -8,7 +8,7 @@ const {
   parseUuid,
   parsePositiveBigintString,
 } = require('./shared.js');
-const { getConfigWithTestMode } = require('./runtime-store.js');
+const { getConfigWithTestMode, getEntriesTableFromConfig, exec } = require('./runtime-store.js');
 
 function asText(value) {
   return String(value === undefined || value === null ? '' : value).trim();
@@ -487,9 +487,48 @@ async function applyCollectedBatchResults(input, opts) {
   };
 }
 
+async function listUnclassifiedCandidates(opts) {
+  const options = opts || {};
+  const config = options.config || await getConfigWithTestMode();
+  const schema = asText(options.schema) ? resolveSchema(options.schema, config) : null;
+  const entriesTable = schema
+    ? sb.qualifiedTable(schema, 'entries')
+    : getEntriesTableFromConfig(config);
+
+  const limitRaw = Number(options.limit);
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.trunc(limitRaw) : 0;
+  const sql = sb.buildTier1UnclassifiedCandidates({
+    entries_table: entriesTable,
+    limit,
+  });
+  const res = await exec(sql, {
+    op: 'tier1_unclassified_candidates',
+    schema: schema || null,
+    limit,
+  });
+  const rows = Array.isArray(res && res.rows) ? res.rows : [];
+
+  return rows.map((row) => {
+    const cleanText = asText(row.clean_text);
+    return {
+      id: row.id ? String(row.id) : null,
+      entry_id: row.entry_id == null ? null : String(row.entry_id),
+      title: asText(row.title),
+      author: asText(row.author),
+      content_type: asText(row.content_type),
+      clean_text: cleanText,
+      topic_primary: asText(row.topic_primary),
+      gist: asText(row.gist),
+      can_classify: !!cleanText,
+      reason: cleanText ? null : 'missing_clean_text',
+    };
+  });
+}
+
 module.exports = {
   applyTier1Update,
   applyTier1UpdateBatch,
   applyCollectedBatchResults,
   buildBatchItemsFromCollectedRows,
+  listUnclassifiedCandidates,
 };

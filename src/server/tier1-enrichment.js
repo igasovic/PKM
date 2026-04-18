@@ -178,6 +178,135 @@ async function enqueueTier1Batch(items, opts) {
   );
 }
 
+function resolveTier1RunLimit(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.trunc(n);
+}
+
+function summarizeSyncRows(rows) {
+  const out = {
+    processed_count: 0,
+    completed_count: 0,
+    failed_count: 0,
+    error_code_counts: {},
+  };
+  const list = Array.isArray(rows) ? rows : [];
+  out.processed_count = list.length;
+  for (const row of list) {
+    if (row && row._batch_ok === true) {
+      out.completed_count += 1;
+      continue;
+    }
+    out.failed_count += 1;
+    const code = String((row && row.error_code) || 'error').trim().toLowerCase() || 'error';
+    out.error_code_counts[code] = Number(out.error_code_counts[code] || 0) + 1;
+  }
+  return out;
+}
+
+async function runTier1ClassifyRun(input) {
+  const args = input && typeof input === 'object' ? input : {};
+  const execution_mode = String(args.execution_mode || '').trim().toLowerCase() === 'batch' ? 'batch' : 'sync';
+  const dry_run = args.dry_run === true;
+  const limit = resolveTier1RunLimit(args.limit);
+  const schema = args.schema || null;
+  const logger = getLogger().child({ pipeline: 't1.enrich.run' });
+
+  return logger.step(
+    't1.enrich.run',
+    async () => {
+      const candidates = await tier1ClassifyStore.listUnclassifiedCandidates({ limit, schema });
+      const runnable = candidates.filter((row) => row && row.can_classify === true);
+      const skipped_missing_clean_text = Math.max(candidates.length - runnable.length, 0);
+
+      const base = {
+        mode: dry_run ? 'dry_run' : 'run',
+        execution_mode,
+        limit,
+        candidate_count: candidates.length,
+        runnable_count: runnable.length,
+        skipped_missing_clean_text,
+      };
+
+      if (dry_run) {
+        return {
+          ...base,
+          will_process_count: runnable.length,
+        };
+      }
+
+      if (!runnable.length) {
+        return {
+          ...base,
+          processed_count: 0,
+          completed_count: 0,
+          failed_count: 0,
+        };
+      }
+
+      if (execution_mode === 'batch') {
+        const batchResult = await enqueueTier1Batch(
+          runnable.map((item) => ({
+            custom_id: item.entry_id ? `entry_${item.entry_id}` : `id_${item.id}`,
+            title: item.title || null,
+            author: item.author || null,
+            content_type: item.content_type || null,
+            clean_text: item.clean_text,
+          })),
+          {
+            metadata: {
+              source: 'telegram_classify_command',
+            },
+            completion_window: '24h',
+          }
+        );
+        return {
+          ...base,
+          batch_id: batchResult && batchResult.batch_id ? batchResult.batch_id : null,
+          status: batchResult && batchResult.status ? batchResult.status : null,
+          request_count: batchResult && Number.isFinite(Number(batchResult.request_count))
+            ? Number(batchResult.request_count)
+            : runnable.length,
+          enqueued_count: runnable.length,
+          processed_count: runnable.length,
+          completed_count: 0,
+          failed_count: 0,
+        };
+      }
+
+      const syncResult = await enrichTier1AndPersistBatch({
+        schema,
+        continue_on_error: true,
+        items: runnable.map((item) => ({
+          id: item.id,
+          entry_id: item.entry_id,
+          title: item.title || null,
+          author: item.author || null,
+          clean_text: item.clean_text,
+        })),
+      });
+      const rows = Array.isArray(syncResult && syncResult.rows) ? syncResult.rows : [];
+      const summarized = summarizeSyncRows(rows);
+      return {
+        ...base,
+        ...summarized,
+        rowCount: syncResult && Number.isFinite(Number(syncResult.rowCount))
+          ? Number(syncResult.rowCount)
+          : rows.length,
+      };
+    },
+    {
+      input: {
+        execution_mode,
+        dry_run,
+        limit,
+      },
+      output: (out) => out,
+    }
+  );
+}
+
 async function syncPendingTier1Batches(opts) {
   const logger = getLogger().child({ pipeline: 't1.enrich.batch.collect' });
   const options = opts || {};
@@ -321,6 +450,7 @@ module.exports = {
   enrichTier1,
   enrichTier1AndPersist,
   enrichTier1AndPersistBatch,
+  runTier1ClassifyRun,
   applyTier1CollectedBatchResults,
   enqueueTier1Batch,
   getTier1BatchStatusList,

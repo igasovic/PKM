@@ -8,8 +8,8 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 - keep route, doc, and test planning tied to one source of truth
 
 ## Summary
-- total routes: 67
-- routes with contract tests: 67
+- total routes: 68
+- routes with contract tests: 68
 - routes with smoke coverage: 9
 - routes with integration tests: 0
 - operator/UI/probe routes: 33
@@ -34,6 +34,7 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 | `POST /normalize/notion` | `internal` | Notion ingest workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
 | `POST /enrich/t1` | `internal` | Classify workflows | `docs/api_ingest.md` | yes | yes | no | no | test/server/classify.api-contract.test.js |
 | `POST /enrich/t1/batch` | `internal` | Classify batch workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
+| `POST /enrich/t1/run` | `internal` | 10 Read (/classify) | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
 | `POST /enrich/t1/update` | `internal` | 21 Tier-1 Enrichment | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
 | `POST /enrich/t1/update-batch` | `internal` | Classify workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
 | `GET /status/t1/batch` | `internal` | Classify batch workflows | `docs/api_ingest.md` | yes | no | no | no | test/server/classify.api-contract.test.js |
