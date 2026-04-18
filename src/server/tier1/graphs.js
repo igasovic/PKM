@@ -105,6 +105,17 @@ function toBatchFailureInfo(remoteBatch) {
   };
 }
 
+function toBatchEmptyCompletionInfo(batchId, requestCount, remoteBatch) {
+  return {
+    code: 'completed_without_results',
+    message: 'provider batch completed without parseable result rows',
+    batch_id: batchId,
+    request_count: Number(requestCount || 0),
+    output_file_id: remoteBatch && remoteBatch.output_file_id ? remoteBatch.output_file_id : null,
+    error_file_id: remoteBatch && remoteBatch.error_file_id ? remoteBatch.error_file_id : null,
+  };
+}
+
 function toEntitySecondaryTopicPairs(rows) {
   return (Array.isArray(rows) ? rows : []).map((row) => {
     const customId = String((row && row.custom_id) || '').trim();
@@ -350,6 +361,12 @@ async function batchCollectWriteNode(state) {
 
   const normalizedStatus = String(remoteBatch.status || '').trim().toLowerCase();
   const isFailed = normalizedStatus === 'failed';
+  const requestCount = Number(localBatch.request_count || 0);
+  const parsedRows = state.parsed.rows || [];
+  const isCompletedWithNoResults = normalizedStatus === 'completed'
+    && requestCount > 0
+    && parsedRows.length === 0;
+  let emptyCompletion = null;
   if (isFailed) {
     const alreadyRetried = !!localMetadata.auto_retry_spawned_batch_id;
     if (!alreadyRetried) {
@@ -408,7 +425,130 @@ async function batchCollectWriteNode(state) {
     }
   }
 
-  const parsedRows = state.parsed.rows || [];
+  if (isCompletedWithNoResults) {
+    const alreadyRetried = !!localMetadata.auto_retry_spawned_batch_id;
+    const anomalyInfo = toBatchEmptyCompletionInfo(batchId, requestCount, remoteBatch);
+    const anomalyMetadata = {
+      ...localMetadata,
+      completion_anomaly: anomalyInfo,
+    };
+
+    if (!alreadyRetried) {
+      try {
+        const requests = await getBatchItemRequests(schema, batchId);
+        if (requests.length > 0) {
+          const client = getLiteLLMClient();
+          const { batch: retryBatch } = await client.createBatch(requests, {
+            completion_window: '24h',
+            metadata: {
+              retry_of_batch_id: batchId,
+              retry_source: 'batch_collect_empty_result_retry',
+              reason: 'completed_without_results',
+            },
+          });
+          const retryMetadata = {
+            ...anomalyMetadata,
+            auto_retry_spawned_batch_id: retryBatch.id,
+            auto_retry_spawned_at: new Date().toISOString(),
+          };
+          await upsertBatchRow(
+            schema,
+            {
+              ...remoteBatch,
+              status: 'failed',
+            },
+            requestCount,
+            retryMetadata
+          );
+          await upsertBatchRow(
+            schema,
+            retryBatch,
+            requests.length,
+            {
+              request_count: requests.length,
+              created_via: 'auto_retry',
+              retry_of_batch_id: batchId,
+              retry_reason: 'completed_without_results',
+            }
+          );
+          await upsertBatchItems(schema, retryBatch.id, requests);
+          retryInfo = {
+            spawned: true,
+            retry_batch_id: retryBatch.id,
+            request_count: requests.length,
+          };
+          emptyCompletion = {
+            ...anomalyInfo,
+            retry_spawned: true,
+            retry_batch_id: retryBatch.id,
+          };
+        } else {
+          await upsertBatchRow(
+            schema,
+            {
+              ...remoteBatch,
+              status: 'failed',
+            },
+            requestCount,
+            anomalyMetadata
+          );
+          emptyCompletion = {
+            ...anomalyInfo,
+            retry_spawned: false,
+            retry_reason: 'no_saved_requests',
+          };
+        }
+      } catch (retryErr) {
+        braintrustSink.logError('t1_batch_collect.empty_completion_retry', {
+          input: {
+            batch_id: batchId,
+            schema,
+          },
+          error: retryErr,
+          metadata: {
+            source: 't1_batch_collect',
+            event: 'empty_completion_retry_failed',
+          },
+        });
+        await upsertBatchRow(
+          schema,
+          {
+            ...remoteBatch,
+            status: 'failed',
+          },
+          requestCount,
+          {
+            ...anomalyMetadata,
+            completion_anomaly_retry_error: {
+              message: retryErr && retryErr.message ? retryErr.message : String(retryErr),
+              at: new Date().toISOString(),
+            },
+          }
+        );
+        emptyCompletion = {
+          ...anomalyInfo,
+          retry_spawned: false,
+          retry_error: retryErr && retryErr.message ? retryErr.message : String(retryErr),
+        };
+      }
+    } else {
+      await upsertBatchRow(
+        schema,
+        {
+          ...remoteBatch,
+          status: 'failed',
+        },
+        requestCount,
+        anomalyMetadata
+      );
+      emptyCompletion = {
+        ...anomalyInfo,
+        retry_spawned: false,
+        retry_reason: 'already_retried',
+      };
+    }
+  }
+
   const updated_items = await upsertBatchResults(schema, batchId, parsedRows);
   const applied_updates = await tier1ClassifyStore.applyCollectedBatchResults({
     schema,
@@ -417,13 +557,14 @@ async function batchCollectWriteNode(state) {
     prompt_version: 't1_batch_collect_v1',
   });
   const summary = await readBatchSummary(schema, batchId);
+  const finalStatus = emptyCompletion ? 'failed' : (remoteBatch.status || null);
   braintrustSink.logSuccess('t1_batch_collect.consume', {
     input: {
       batch_id: batchId,
       schema,
     },
     output: {
-      status: remoteBatch.status || null,
+      status: finalStatus,
       updated_items,
       summary,
       applied_updates: {
@@ -432,6 +573,7 @@ async function batchCollectWriteNode(state) {
         skipped_no_selector: applied_updates.skipped_no_selector || 0,
       },
       retry: retryInfo,
+      completion_anomaly: emptyCompletion,
       failure: isFailed ? toBatchFailureInfo(remoteBatch) : null,
       consumed_entries: toEntitySecondaryTopicPairs(parsedRows),
     },
@@ -445,8 +587,8 @@ async function batchCollectWriteNode(state) {
     output: {
       batch_id: batchId,
       schema,
-      status: remoteBatch.status,
-      terminal: TERMINAL_BATCH_STATUSES.has(String(remoteBatch.status || '').toLowerCase()),
+      status: finalStatus,
+      terminal: TERMINAL_BATCH_STATUSES.has(String(finalStatus || '').toLowerCase()),
       updated_items,
       applied_updates: {
         row_count: applied_updates.rowCount || 0,
@@ -455,15 +597,25 @@ async function batchCollectWriteNode(state) {
       },
       summary,
       retry: retryInfo,
+      completion_anomaly: emptyCompletion,
     },
   };
 }
 
 async function getLangGraphModule() {
   if (!langGraphModulePromise) {
-    langGraphModulePromise = import('@langchain/langgraph').catch((err) => {
-      throw new Error(`Failed to load @langchain/langgraph: ${err.message}`);
-    });
+    langGraphModulePromise = (async () => {
+      try {
+        // Prefer CJS require in Node/Jest environments where dynamic import callbacks may be restricted.
+        return require('@langchain/langgraph');
+      } catch (_requireErr) {
+        try {
+          return await import('@langchain/langgraph');
+        } catch (importErr) {
+          throw new Error(`Failed to load @langchain/langgraph: ${importErr.message}`);
+        }
+      }
+    })();
   }
   return langGraphModulePromise;
 }

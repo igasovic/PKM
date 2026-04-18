@@ -241,9 +241,15 @@ async function listPendingBatchIds(limit) {
   for (const schema of schemas) {
     if (out.length >= take) break;
     const batchesTable = tableName(schema, 't1_batches');
+    const itemsTable = tableName(schema, 't1_batch_items');
+    const resultsTable = tableName(schema, 't1_batch_item_results');
     try {
       const remaining = take - out.length;
-      const sql = sb.buildT1BatchListPending({ batchesTable });
+      const sql = sb.buildT1BatchListCollectCandidates({
+        batchesTable,
+        itemsTable,
+        resultsTable,
+      });
       const res = await runQuery(
         't1_batch_list_pending',
         { schema, table: batchesTable },
@@ -389,6 +395,8 @@ async function getBatchStatus(batchId, opts) {
         out.items = (itemsRes.rows || []).map((item) => ({
           custom_id: item.custom_id,
           status: item.status || 'pending',
+          error_code: item.error_code || null,
+          message: item.message || null,
           title: item.title || null,
           author: item.author || null,
           content_type: item.content_type || null,

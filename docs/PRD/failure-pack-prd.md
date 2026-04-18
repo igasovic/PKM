@@ -1,616 +1,656 @@
-# PRD — Failure Pack Capture And Retrieval For n8n / PKM
+# PRD — Failure Pack Capture, Analysis, And Codex Retrieval For n8n / PKM
 
 Status: active  
-Surface owner: n8n failure capture + PKM failure-pack retrieval surface  
+Surface owner: n8n failure capture + PKM failure tracking surface  
 Scope type: canonical surface  
-Last verified: 2026-03-30  
-Related authoritative docs: `docs/api_control.md`, `docs/database_schema.md`, `docs/env.md`, `docs/requirements.md`  
-Related work-package doc: `docs/PRD/archive/failure-pack-work-packages.md`
+Baseline date: 2026-04-17  
+Related authoritative docs: `docs/api.md`, `docs/database_schema.md`, `docs/env.md`, `docs/n8n_sync.md`, `docs/prd-expectations.md`  
+Related work-package docs:
+- `docs/PRD/failure-pack-wp1-root-dedupe-and-write-path.md`
+- `docs/PRD/failure-pack-wp2-analysis-lifecycle-and-ui.md`
+- `docs/PRD/failure-pack-wp3-codex-access-and-sidecars.md`
 
 ## Purpose
-Define the failure-pack surface for durable n8n failure capture, PKM persistence, and operator/agent retrieval.
+
+Define the failure-pack surface for:
+
+- durable n8n failure capture,
+- idempotent collapse of duplicate failure reports within one propagated failure tree,
+- operator and agent retrieval,
+- agent-authored analysis tracking,
+- sidecar copy for local Codex analysis.
+
+This PRD replaces the earlier v1 assumption that `run_id` is the correct write/upsert key for the failure-pack row.
 
 ## Use this PRD when
-- changing failure-pack capture, persistence, retrieval, or sidecar behavior
-- changing the failure investigation path exposed to operators or agents
-- deciding whether a diagnostic requirement belongs here or in the general logging layer
+
+- changing WF99 failure-pack capture or write semantics,
+- changing the persistence shape of `pkm.failure_packs`,
+- changing failure-status lifecycle or analysis/resolution behavior,
+- changing Codex-facing failure retrieval or sidecar-copy flows,
+- changing the Failures page in the PKM debug UI.
 
 ## Fast path by agent
-- Coding agent: read `Status and scope boundary`, `Target operator experience`, `Control plane and execution flow`, `JSON envelope contract`, and `PKM API surface`.
-- Planning agent: read `Problem`, `Goal`, `Scope boundary`, `Key product decisions`, and `Operator UI`.
-- Reviewing agent: read `Status and scope boundary`, `Payload policy`, `Redaction policy`, `PKM API surface`, `Security and access model`, and `Retention and cleanup`.
-- Architect agent: read `Scope boundary`, `Persistence boundary`, `Sidecar writer boundary`, `JSON envelope contract`, and `Logging and observability boundary`.
+
+- Coding agent: read `Status and scope boundary`, `Current behavior`, `Target behavior`, `Write path`, `Data model`, `API and webhook surface`, `Sidecars`, and `Status model`.
+- Planning agent: read `Problem`, `Goal`, `Scope boundary`, `Key product decisions`, and `Work-package split`.
+- Reviewing agent: read `Contract delta table`, `Data model`, `Status model`, `API and webhook surface`, `Security and access model`, and `Risks`.
+- Architect agent: read `Scope boundary`, `Write path`, `Deduplication model`, `API and webhook boundary`, and `Codex access model`.
 
 ## Section map
-- Why this surface exists: `Problem`, `Goal`, `Target operator experience`
-- Capture and retrieval flow: `Control plane and execution flow`
-- Stored artifact shape: `Data model`, `JSON envelope contract`
-- APIs and UI: `PKM API surface`, `Operator UI`
-- Safety and lifecycle: `Security and access model`, `Logging and observability boundary`, `Retention and cleanup`
+
+- Why this change exists: `Problem`, `Goal`
+- Current vs target behavior: `Current behavior`, `Target behavior`, `Contract delta table`
+- Capture and dedupe flow: `Write path`, `Deduplication model`
+- Retrieval and agent flow: `API and webhook surface`, `Codex access model`, `Sidecars`
+- Persistence and lifecycle: `Data model`, `Status model`
+- Delivery plan: `Work-package split`
+
+---
 
 ## Status and scope boundary
+
 This PRD owns:
-- `wf99` failure-pack capture
-- PKM failure-pack write/read endpoints
-- shared-disk sidecar policy for failure packs
-- debug UI Failures page as a consumer of this surface
+
+- WF99 failure-pack capture,
+- propagated root execution correlation for nested workflow failures,
+- PKM persistence of failure rows and analysis fields,
+- PKM debug UI Failures page as a consumer of this surface,
+- Codex-oriented retrieval and sidecar-copy flow,
+- n8n webhook façade for non-UI agent operations.
 
 This PRD does not own:
-- generalized logging/observability platform design
-- non-n8n execution paths
-- raw n8n execution browsing as the primary investigation path
 
-## Detailed design
-## 1. Problem
-
-Today, workflow failures are visible in Telegram and raw execution data exists in n8n, but debugging still requires manual digging through n8n execution details and logs. The desired operator experience is:
-
-- identify a failed node and approximate time,
-- fetch a normalized failure record,
-- inspect the failing node input,
-- inspect the immediate parent context without duplicated payloads,
-- follow the existing `run_id` into PKM backend trace,
-- avoid manual log hunting for normal cases.
-
-The current stack already provides important prerequisites:
-
-- n8n saves executions.
-- `run_id` already exists and is propagated.
-- PKM already exposes `/debug/run/:run_id` over admin-protected endpoints.
-- n8n and PKM already share a writable host-mounted data path (`/home/igasovic/pkm-import`) under `/files` in n8n and `/data` in PKM.
-
-The missing capability is a durable, queryable **failure pack** artifact plus a narrow PKM read surface for agents and operators.
+- generalized observability or log-search platform design,
+- non-n8n execution paths,
+- autonomous code application or self-healing,
+- raw n8n execution browsing as the primary debugging interface,
+- generalized ticketing or issue-tracker integration.
 
 ---
 
-## 2. Goal
+## Problem
 
-Add a first-class diagnostics path where:
+Today all relevant workflows can trigger WF99 on failure. In nested execution chains such as:
 
-1. `wf99` captures a normalized failure pack for each failed n8n-orchestrated workflow run.
-2. Large payloads are preserved as sidecar artifacts rather than dropped.
-3. PKM persists failure-pack metadata and serves retrieval endpoints.
-4. Codex or other tools can fetch a failure bundle by `run_id` without directly querying n8n in the normal path.
-5. Operators can browse recent failures in the existing debug UI via a new **Failures** page.
+- `WF01 -> WF02 -> WF22`
 
----
+a single child failure can generate multiple WF99 invocations at different workflow boundaries. The current model stores each report independently, which produces duplicate failure entries for one logical incident.
 
-## 3. Scope boundary
+That duplicate behavior was tolerable for manual debugging but becomes harmful once a coding agent or operator starts pulling “new failures” as work items.
 
-In scope:
+At the same time, capturing only at the top-level orchestrator is not acceptable, because the most useful debugging context exists at the local failing workflow boundary:
 
-- paths orchestrated by n8n,
-- `wf99` capture and normalization,
-- PKM persistence,
-- PKM read endpoints,
-- sidecar storage on shared disk,
-- debug UI Failures page,
-- one persistence model that works for both test and production mode runs.
-
-Out of scope:
-
-- paths that execute outside of n8n orchestration,
-- tier 1 / tier 2 workers or other non-n8n-only execution paths,
-- making n8n the main query plane for failure investigation,
-- broad raw-log search or generalized log ingestion,
-- automatic fallback rehydration from n8n when a saved failure pack is insufficient,
-- a full observability platform,
-- exposing secrets to Codex,
-- storing arbitrary heavy telemetry in `pipeline_events`,
-- changing the existing `run_id` contract.
-
----
-
-## 4. Key product decisions
-
-### 4.1 Immediate-parent rule
-- “Upstream node” means the **immediate parent node** connected to the failing node.
-- If the failing node has multiple direct parents, capture **all direct parents**.
-
-### 4.2 Payload policy
-Store:
-- full **failing node input**,
-- **immediate parent input**,
-- sidecar artifacts for large payloads.
-
-Do **not** store immediate parent output by default.
-
-Rationale:
-- In a simple straight-through path, immediate parent output is usually redundant with failing node input.
-- Immediate parent input gives one step earlier context, which is typically more useful.
-- When immediate parent output is materially different, that usually happens because the parent rewrites, merges, aggregates, or otherwise transforms data; those cases remain available for manual investigation in raw execution data when needed.
-
-### 4.3 Large payload policy
-- Do not trim meaningful large blobs only because they are large.
-- Do not inline every large blob into the main row payload.
-- Preserve large JSON/text/binary-like payloads as **sidecar artifacts**.
-- The failure pack must contain hashes and relative paths for sidecars.
-
-### 4.4 Redaction policy
-Apply default secret redaction to:
-- auth headers,
-- bearer tokens,
-- cookies,
-- API keys,
-- passwords,
-- credential-like fields discovered by allowlist/denylist rules.
-
-Non-secret request/response bodies should be preserved.
-
-### 4.5 Multi-item policy
-For v1, store **all items** reaching the failing node and **all items** for the immediate parent input.
-
-### 4.6 Persistence boundary
-“PKM failure store” in this PRD means:
-
-- PKM persists normalized failure-pack metadata in its own database.
-- PKM serves retrieval endpoints for those records.
-- Large sidecar artifacts live on the shared mounted disk path.
-
-This is **not** a separate product or service.
-
-### 4.7 Sidecar writer boundary
-- `wf99` writes sidecars first to shared storage.
-- `wf99` then posts the normalized envelope to PKM.
-- PKM persists metadata only and does not write sidecars on behalf of `wf99`.
-- If sidecar writes are unavailable at runtime, `wf99` falls back to inline payloads and marks the stored pack as `partial`.
-
-### 4.8 Test-mode agnostic design
-- One table covers both production and test-mode failure packs.
-- The stored pack must preserve execution mode in the JSON and projected summary fields.
-- There is no separate `pkm_test` failure-pack table.
-
----
-
-## 5. Why parent output is usually redundant
-
-For a normal one-edge flow, the immediate parent node’s output is usually the same business payload the failing node receives. Differences become important mainly when:
-
-- the parent node combines multiple items,
-- the parent has multiple inputs,
-- the parent rewrites or synthesizes new items,
-- a Code/custom node changes item structure or pairing metadata,
-- Merge/Aggregate/Summarize-style behavior creates one downstream item from multiple upstream items.
-
-Because of that, this design stores:
-
+- the real failing workflow execution id,
+- the real failing node,
 - failing node input,
-- immediate parent input,
-- parent identity and type,
+- immediate prior-node context,
+- local sidecars.
 
-instead of duplicating immediate parent output in the normal case.
+The design therefore needs to do both:
 
----
+1. keep the local detailed capture where the failure actually happened,
+2. collapse duplicate reports from the same propagated failure tree into one logical failure row.
 
-## 6. Target operator experience
+A second gap is that the current failure-pack surface stores the raw failure record but does not provide a simple lifecycle for agent analysis:
 
-Primary path:
+- newly captured,
+- analyzed with explanation and proposed fix,
+- resolved by operator action in the UI.
 
-1. A workflow fails.
-2. `wf99` captures failure context and writes sidecar artifacts if needed.
-3. `wf99` posts the normalized pack to PKM.
-4. PKM stores the pack and exposes it by `run_id` and `failure_id`.
-5. Agent calls one PKM read endpoint and gets:
-   - failure summary,
-   - failure pack,
-   - PKM backend trace from existing `/debug/run/:run_id` data,
-   - artifact references.
-6. Operator can also browse recent failures in the debug UI **Failures** page.
-
-Manual path remains available:
-- operator can still inspect the raw n8n execution manually when needed.
+A third gap is that Codex needs a safe way to retrieve a failure and its sidecars without becoming a first-class backend client.
 
 ---
 
-## 7. Control plane and execution flow
+## Goal
 
-### 7.1 Write path
+Add a first-class diagnostics and analysis path where:
 
-1. n8n workflow fails.
-2. Shared error workflow routes to `wf99`.
-3. `wf99` runs a lightweight ignore-rule check keyed by workflow name + error message.
-4. If ignored, `wf99` exits without failure-pack write or Telegram alert.
-5. If not ignored, `wf99` reads the failure event and extracts:
-   - `run_id`,
-   - `execution_id`,
-   - workflow metadata,
-   - execution mode,
-   - failing node metadata,
-   - failing node input,
-   - immediate parent node metadata,
-   - immediate parent input.
-6. `wf99` writes large payloads to sidecar files under shared storage.
-7. `wf99` builds normalized JSON envelope.
-8. A dedicated n8n `HTTP Request` node posts envelope to PKM admin endpoint.
-   - this transport node is allowed to continue regular output on transport errors so WF99 alerting still executes.
-   - when transport fails, WF99 composes a Telegram failure message using the local envelope fallback (`failure_pack_post.ok=false`).
-9. `wf99` composes Telegram text in a dedicated compose-only Code node.
-10. PKM upserts the failure-pack record keyed by `run_id`.
-
-### 7.2 Read path
-
-1. Agent or UI queries PKM by `run_id`, `failure_id`, or recent filters.
-2. PKM returns stored failure-pack metadata and JSON.
-3. PKM resolves run trace from existing `pipeline_events` using the same `run_id`.
-4. PKM returns a merged failure bundle or summary list.
+1. every workflow in a nested failure tree propagates a shared `root_execution_id`,
+2. WF99 keeps local detailed capture at the failing workflow boundary,
+3. PKM stores one logical failure row per `root_execution_id`,
+4. later duplicate reports for the same `root_execution_id` update the existing row instead of inserting a new row,
+5. the canonical failing workflow identity remains separate from the list of propagation reporters,
+6. the agent can submit explanation and proposed fix text without writing code or mutating runtime state,
+7. the UI can mark a failure as resolved,
+8. Codex can retrieve failure details and copy sidecars through a script layer without becoming a general backend client.
 
 ---
 
-## 8. Data model
+## Current behavior
 
-### 8.1 New shared table: `pkm.failure_packs`
+Current baseline:
 
-Purpose:
-- durable summary + lookup surface for failure artifacts captured from n8n.
+- WF99 captures a normalized failure pack for a failed workflow execution.
+- PKM persists failure-pack metadata and full `pack` JSON in `pkm.failure_packs`.
+- The earlier PRD models write/upsert by `run_id`.
+- The earlier PRD models a capture-oriented status concept centered on `captured`, `partial`, and `failed`.
+- The earlier PRD assumes failure-pack retrieval by backend endpoints and a one-call bundle path.
 
-Proposed columns:
+Current shortcomings:
 
-- `failure_id` uuid PK default `gen_random_uuid()`
-- `created_at` timestamptz not null default `now()`
-- `updated_at` timestamptz not null default `now()`
-- `run_id` text not null unique
-- `execution_id` text
-- `workflow_id` text
-- `workflow_name` text not null
-- `mode` text
-- `failed_at` timestamptz
-- `node_name` text not null
-- `node_type` text
-- `error_name` text
-- `error_message` text
-- `status` text not null default `'captured'`
-- `has_sidecars` boolean not null default `false`
-- `sidecar_root` text
-- `pack` jsonb not null
+- nested failure propagation creates duplicate rows,
+- `run_id` is not the right logical dedupe key for nested workflow failure trees,
+- top-level-only capture loses useful child-workflow detail,
+- there is no minimal agent lifecycle for explanation/proposed fix,
+- there is no explicit operator resolve flow,
+- there is no Codex script layer contract for open-failure polling and sidecar copy.
 
-Recommended indexes:
+---
 
-- unique `(run_id)`
-- `(failed_at desc)`
+## Target behavior
+
+### Capture and dedupe
+
+- Every relevant workflow propagates `root_execution_id`.
+- WF99 still captures at the local failing workflow boundary.
+- First report for a given `root_execution_id` inserts a failure row.
+- Later reports for the same `root_execution_id` update the existing row.
+- The update path appends `reporting_workflow_names`.
+- The update path does not replace the canonical failing workflow id/name captured on first insert.
+- Repeated identical failures in a later, separate top-level run are new failures and must insert a new row.
+
+### Lifecycle
+
+Failures move through one minimal status model:
+
+- `captured`
+- `analyzed`
+- `resolved`
+
+The agent can only provide:
+
+- `analysis_reason`
+- `proposed_fix`
+
+The agent does not apply a fix and does not mutate runtime state.
+
+The UI can mark a failure as resolved from any prior state. For v1, resolved is terminal.
+
+### Retrieval
+
+- The UI can list current `captured` failures with summary metadata.
+- Codex scripts can list open failures, fetch one failure, copy all sidecars for one failure, and submit analysis.
+- Codex scripts prefer local trusted-network access when available and otherwise fall back to n8n webhook access.
+- Non-UI agent operations are exposed through n8n webhook façades so PKM UI and n8n remain the only backend API consumers.
+
+---
+
+## Contract delta table
+
+| Surface | Changes? | Baseline known? | Notes |
+|---|---|---|---|
+| n8n failure write path | yes | yes | propagate `root_execution_id`; update insert/update semantics |
+| PKM backend failure endpoints | yes | yes | add analyze, resolve, open-failure read semantics; keep backend owned by PKM |
+| n8n webhook façade | yes | no | new façade for Codex-facing read/analyze actions |
+| Database schema | yes | yes | minimal additive changes to `pkm.failure_packs` |
+| Sidecar handling | yes | partial | backend still stores metadata; copy is local script over SSH |
+| PKM debug UI | yes | yes | Failures page gains analysis and resolve actions |
+| Codex scripts | yes | no | new script surface and agent instructions |
+| Docs | yes | yes | PRD, API docs, DB schema docs, any Failures-page docs |
+
+---
+
+## Key product decisions
+
+### 1. Logical failure identity
+
+`root_execution_id` is the logical failure key for collapse of duplicate reports within one propagated failure tree.
+
+`execution_id` remains the local failing workflow execution id and is stored as recorded fact.
+
+### 2. Dedupe boundary
+
+Deduplication applies only within one propagated failure tree.
+
+Rules:
+
+- same `root_execution_id` -> update existing row
+- different `root_execution_id` -> insert new row, even if the workflow name, node name, and error text are identical
+
+### 3. Canonical failing workflow vs propagation reporters
+
+Keep the canonical failing workflow separate from propagation reporters.
+
+Use:
+
+- existing canonical `workflow_id` / `workflow_name` columns for the actual failing workflow captured on first insert,
+- new `reporting_workflow_names text[]` for the names of outer workflows that also reported the same logical failure.
+
+This array is propagation-only and must not replace the canonical failing workflow fields.
+
+### 4. Single lifecycle status
+
+Use only one status field with three values:
+
+- `captured`
+- `analyzed`
+- `resolved`
+
+Remove the earlier capture-quality lifecycle from top-level row status.
+
+### 5. Agent role
+
+The agent may submit explanation and proposed fix text only.
+
+The agent may not:
+
+- mark resolved,
+- apply code changes through this surface,
+- mutate workflow runtime state,
+- mutate sidecars.
+
+### 6. Resolve behavior
+
+Resolve is an explicit PKM UI action.
+
+Rules:
+
+- it can set `status = resolved` from any prior state,
+- it does not require the failure to be analyzed first,
+- it is terminal for v1.
+
+### 7. Sidecar copy model
+
+Sidecars remain on the Pi shared data path and are referenced through relative paths stored in `pack.artifacts`.
+
+Codex does not fetch sidecars through backend APIs. A local helper script copies all sidecars for one failure over SSH into a gitignored local directory.
+
+### 8. Backend API ownership rule
+
+PKM UI and n8n are the only backend API consumers.
+
+Therefore:
+
+- PKM backend still owns the failure data model and row updates,
+- PKM UI may call backend APIs directly,
+- Codex-facing remote operations go through n8n webhook façades,
+- local helper scripts may prefer the existing trusted local reachability path when available, but that does not create a new public backend surface.
+
+---
+
+## Write path
+
+### Initial insert path
+
+1. A workflow execution fails.
+2. The workflow passes or reconstructs `root_execution_id`.
+3. WF99 receives the local failure event with:
+   - `root_execution_id`
+   - local failing `execution_id`
+   - failing workflow id/name
+   - failing node metadata
+   - error details
+   - local payload context and sidecars
+4. WF99 writes sidecars first to the shared storage root if needed.
+5. WF99 builds the normalized failure-pack envelope.
+6. WF99 posts the envelope to PKM through the existing backend write path.
+7. PKM checks for an existing row keyed by `root_execution_id`.
+8. If none exists:
+   - insert the row,
+   - set canonical failing workflow fields from this first insert,
+   - initialize `reporting_workflow_names` with the current reporting workflow if it differs from the canonical failing workflow.
+
+### Duplicate report update path
+
+If a row already exists for `root_execution_id`:
+
+- do not insert a second row,
+- append the new reporting workflow name if not already present,
+- keep canonical failing workflow id/name unchanged,
+- keep local failing `execution_id` from the first canonical insert unchanged for v1,
+- update `updated_at`,
+- do not reopen a resolved row.
+
+### Repeated later incidents
+
+If the same workflow fails again in a separate top-level run:
+
+- the new run has a different `root_execution_id`,
+- PKM inserts a new row,
+- later agent or operator logic may recognize that it is semantically similar, but storage does not collapse those rows.
+
+---
+
+## Data model
+
+### Table
+
+Continue using `pkm.failure_packs`.
+
+### Existing retained fields
+
+Retain the current failure-pack fields that still matter, including:
+
+- `failure_id`
+- `created_at`
+- `updated_at`
+- `run_id`
+- `execution_id`
+- `workflow_id`
+- `workflow_name`
+- `failed_at`
+- `node_name`
+- `node_type`
+- `error_name`
+- `error_message`
+- `has_sidecars`
+- `sidecar_root`
+- `pack`
+
+### Minimal new fields
+
+Add:
+
+- `root_execution_id text not null`
+- `reporting_workflow_names text[] not null default '{}'`
+- `status text not null default 'captured'`
+- `analysis_reason text`
+- `proposed_fix text`
+- `analyzed_at timestamptz`
+
+### Removed top-level meaning
+
+The previous top-level status semantics of `captured | partial | failed` are removed from the PRD model.
+
+### Recommended indexes
+
+Add or update indexes for:
+
+- unique `(root_execution_id)`
+- `(status, failed_at desc)`
+- partial `(failed_at desc) where status = 'captured'`
 - `(workflow_name, failed_at desc)`
 - `(node_name, failed_at desc)`
-- `(mode, failed_at desc)`
-- partial `(failed_at desc) where status = 'captured'`
 
-Notes:
-- `pack` is the authoritative stored JSON envelope.
-- top-level projected columns exist for fast filtering and summaries.
-- one table covers both test and production runs.
+### Notes
 
-### 8.2 Sidecar artifact root
-
-Host root:
-- `/home/igasovic/pkm-import/debug/failures/`
-
-Container views:
-- n8n writes under `/files/debug/failures/...`
-- PKM reads under `/data/debug/failures/...`
-
-Proposed layout:
-
-```text
-/home/igasovic/pkm-import/debug/failures/
-  YYYY/
-    MM/
-      DD/
-        <run_id>/
-          pack-sidecars/
-            failing-node-input-item-000.json
-            parent-input-node-<slug>-item-000.json
-            ...
-```
-
-Artifact paths stored in JSON should be **relative** to the shared root, not host-absolute paths.
+- `run_id` remains useful correlation metadata and may remain unique only if current production behavior requires it, but it is no longer the logical failure-row dedupe key in this PRD.
+- If the implementation must relax a current unique index on `run_id`, that must be called out explicitly in the migration and docs.
+- `reporting_workflow_names` stores propagation reporters only, not the full execution chain.
 
 ---
 
-## 9. JSON envelope contract
+## Status model
 
-Canonical schema version:
-- `failure-pack.v1`
+### States
 
-Proposed shape:
+- `captured`
+- `analyzed`
+- `resolved`
 
-```json
-{
-  "schema_version": "failure-pack.v1",
-  "failure_id": "11111111-1111-4111-8111-111111111111",
-  "created_at": "2026-03-28T14:21:11.000-05:00",
-  "run_id": "existing-run-id",
-  "correlation": {
-    "execution_id": "231",
-    "workflow_id": "99",
-    "workflow_name": "WF 99 Error Capture",
-    "execution_url": "https://n8n.gasovic.com/execution/231",
-    "mode": "production",
-    "retry_of": null
-  },
-  "failure": {
-    "node_name": "Normalize article",
-    "node_type": "n8n-nodes-base.httpRequest",
-    "error_name": "AxiosError",
-    "error_message": "Request failed with status 500",
-    "stack": "full stack if available",
-    "timestamp": "2026-03-28T14:21:09.000-05:00"
-  },
-  "graph": {
-    "failing_node": "Normalize article",
-    "direct_parents": [
-      {
-        "node_name": "Prepare request",
-        "node_type": "n8n-nodes-base.code",
-        "branch_index": 0
-      }
-    ]
-  },
-  "payloads": {
-    "failing_node_input": {
-      "item_count": 1,
-      "items": [
-        {
-          "json": {},
-          "binary_refs": [],
-          "paired_item": null,
-          "sidecar_ref": null,
-          "sha256": null
-        }
-      ]
-    },
-    "upstream_context": {
-      "basis": "direct-parent-input",
-      "nodes": [
-        {
-          "node_name": "Prepare request",
-          "node_type": "n8n-nodes-base.code",
-          "item_count": 1,
-          "items": [
-            {
-              "json_delta": {},
-              "duplicate_paths_omitted": [],
-              "binary_refs": [],
-              "sidecar_ref": null,
-              "sha256": null
-            }
-          ]
-        }
-      ]
-    }
-  },
-  "artifacts": [
-    {
-      "kind": "payload-sidecar",
-      "relative_path": "debug/failures/2026/03/28/run-123/pack-sidecars/failing-node-input-item-000.json",
-      "sha256": "...",
-      "content_type": "application/json"
-    }
-  ],
-  "redaction": {
-    "applied": true,
-    "ruleset_version": "v1"
-  }
-}
-```
+### Transitions
 
-### 9.1 Envelope rules
+#### Captured -> analyzed
+Triggered by the analyze API.
 
-- `run_id` is the stable retrieval key.
-- `failure_id` is the stable record key.
-- `payloads.failing_node_input` stores full input for the failing node.
-- `payloads.upstream_context` stores **immediate parent input**, not output.
-- `json_delta` omits fields already present unchanged in failing node input.
-- `duplicate_paths_omitted` must make the omission explicit.
-- sidecars are allowed for either failing input or parent input.
-- binary-like content should never be embedded raw in the main row JSON.
-- `failure.stack` is stored in the main JSON, not sidecar-only.
+Effects:
+
+- write `analysis_reason`
+- write `proposed_fix`
+- set `analyzed_at = now()`
+- set `status = analyzed`
+
+#### Captured -> resolved
+Triggered by PKM UI resolve action.
+
+Effects:
+
+- set `status = resolved`
+
+#### Analyzed -> analyzed
+Allowed for overwrite.
+
+Effects:
+
+- replace `analysis_reason`
+- replace `proposed_fix`
+- refresh `analyzed_at`
+
+#### Analyzed -> resolved
+Triggered by PKM UI resolve action.
+
+Effects:
+
+- set `status = resolved`
+
+#### Resolved
+Terminal for v1.
+
+Later duplicate propagation reports may still append new reporter names and update `updated_at`, but they must not reopen the row.
 
 ---
 
-## 10. PKM API surface
+## API and webhook surface
 
-All failure-pack endpoints are admin-protected.
+## Backend-owned surface
 
-### 10.1 `POST /debug/failures`
+PKM backend continues to own persistence and the canonical failure row contract.
+
+### 1. Write / upsert
+
+`POST /debug/failures`
 
 Purpose:
-- write or upsert a failure pack from `wf99`.
 
-Headers:
-- `x-pkm-admin-secret: <secret>`
-- `X-PKM-Run-Id: <run_id>`
+- WF99 writes or updates a failure row keyed by `root_execution_id`.
+
+Behavior:
+
+- insert on first `root_execution_id`
+- update on later duplicate reports for same `root_execution_id`
+- append `reporting_workflow_names`
+- return stored identifiers and action
+
+### 2. Read one
+
+`GET /debug/failures/:failure_id`
+
+Purpose:
+
+- PKM UI retrieves one failure row and full pack
+
+### 3. Read captured failures
+
+`GET /debug/failures/open`
+
+Purpose:
+
+- PKM UI reads failures where `status = captured`
+
+Response should include summary rows, not ids only:
+
+- `failure_id`
+- `failed_at`
+- `workflow_name`
+- `node_name`
+- `has_sidecars`
+- `status`
+
+### 4. Analyze one
+
+`POST /debug/failures/:failure_id/analyze`
+
+Purpose:
+
+- n8n webhook façade or local trusted helper submits agent analysis text
 
 Body:
-- full `failure-pack.v1` envelope
+
+- `analysis_reason`
+- `proposed_fix`
 
 Behavior:
-- validate schema version,
-- validate `run_id`,
-- upsert by `run_id`,
-- project summary columns,
-- persist `pack` jsonb,
-- return stored identifiers.
 
-Response:
+- valid only when current status is `captured` or `analyzed`
+- overwrite allowed
+- set `status = analyzed`
+- set `analyzed_at = now()`
 
-```json
-{
-  "failure_id": "uuid",
-  "run_id": "existing-run-id",
-  "status": "captured",
-  "upsert_action": "inserted"
-}
-```
+### 5. Resolve one
 
-### 10.2 `GET /debug/failures/:failure_id`
+`POST /debug/failures/:failure_id/resolve`
 
 Purpose:
-- retrieve one stored failure pack.
 
-Response:
-- projected summary + full `pack`
-
-### 10.3 `GET /debug/failures/by-run/:run_id`
-
-Purpose:
-- retrieve one stored failure pack by `run_id`.
-
-Response:
-- projected summary + full `pack`
-
-### 10.4 `GET /debug/failures`
-
-Purpose:
-- recent failure search for operator or agent lookup.
-
-Query params:
-- `limit` default `20`, max `100`
-- `before_ts` optional
-- `workflow_name` optional
-- `node_name` optional
-- `mode` optional
-
-Response:
-- summary rows only
-
-### 10.5 `GET /debug/failure-bundle/:run_id`
-
-Purpose:
-- one-call diagnostic retrieval for agents.
+- PKM UI marks a failure resolved
 
 Behavior:
-- load stored failure pack by `run_id`
-- load backend run trace via existing pipeline-event lookup
-- return merged response
 
-Response:
+- set `status = resolved` regardless of prior state
+- terminal for v1
 
-```json
-{
-  "run_id": "existing-run-id",
-  "failure": {
-    "failure_id": "uuid",
-    "workflow_name": "10 Read",
-    "node_name": "Normalize article",
-    "error_message": "Request failed with status 500",
-    "failed_at": "2026-03-28T14:21:09.000-05:00"
-  },
-  "pack": {},
-  "run_trace": {
-    "rows": []
-  }
-}
-```
+## n8n webhook façade
+
+For Codex-facing operations that are not PKM-UI-exclusive, expose n8n webhook façades backed by the backend endpoints above.
+
+Minimum façade operations:
+
+- list current captured failures
+- get one failure by `failure_id`
+- submit analysis for one failure
+
+These webhook façades exist so PKM UI and n8n remain the only direct backend API consumers.
 
 ---
 
-## 11. Operator UI
+## Sidecars
 
-Add a new **Failures** page to the existing debug UI app.
+### Storage model
 
-Minimum v1 behaviors:
-- side-menu entry: `Failures`
-- recent failures list backed by `GET /debug/failures`
-- filters for `workflow_name`, `node_name`, and `mode`
-- click into a failure detail view using `failure_id` or `run_id`
-- detail view surfaces:
-  - failure summary,
-  - stored failure pack,
-  - sidecar references,
-  - existing PKM run trace
+Retain the current shared-disk model:
 
-Out of scope for v1 UI:
-- editing,
+- sidecars written by WF99 to the shared mounted path,
+- relative artifact references stored in `pack.artifacts`.
+
+### Copy model
+
+Add a local helper script that:
+
+1. resolves a failure row and its artifact list,
+2. copies all related sidecars from Pi to a local gitignored folder over SSH,
+3. returns the local destination paths for Codex.
+
+### Local destination
+
+Use a gitignored local folder such as:
+
+- `.codex/failure-sidecars/<failure_id>/`
+
+The exact folder name is implementation-owned, but it must be gitignored and stable.
+
+### Copy scope
+
+For v1, copy all sidecars for one failure id. No per-artifact selection is required.
+
+---
+
+## Codex access model
+
+Codex interacts with this surface only through local helper scripts.
+
+Recommended scripts:
+
+- `list-open-failures`
+- `get-failure <failure_id>`
+- `copy-failure-sidecars <failure_id>`
+- `analyze-failure <failure_id> --reason-file <path> --fix-file <path>`
+
+### Access order
+
+Scripts prefer:
+
+1. local trusted-network access path when available,
+2. n8n webhook fallback when not.
+
+This is a transport decision inside the script layer, not a separate product surface.
+
+### Non-goals
+
+This surface does not make Codex:
+
+- a general backend client,
+- a general n8n API client,
+- a sidecar browser over raw SSH without helper constraints.
+
+---
+
+## PKM debug UI
+
+The Failures page remains in scope and gains:
+
+- recent captured failures list,
+- analysis display,
+- resolve action,
+- detail view for one failure,
+- sidecar metadata visibility.
+
+V1 UI does not need:
+
 - bulk actions,
-- retention management,
-- artifact preview beyond basic links/paths.
+- reopen action,
+- issue-tracker integration,
+- code-apply flow.
 
 ---
 
-## 12. Security and access model
+## Security and access model
 
-- Secrets stay off-repo.
-- PKM admin secret remains server-side only.
-- Codex should never receive `PKM_ADMIN_SECRET` or n8n API credentials directly.
-- Failure-pack endpoints are admin-only.
-- Sidecar artifact paths are relative and resolved server-side.
-- Sidecar reads must not allow path traversal.
-- Redaction runs before persistence.
-
----
-
-## 13. Logging and observability boundary
-
-This feature intentionally creates a **separate diagnostic artifact path** rather than sending heavy payloads into:
-
-- backend application logs,
-- `pipeline_events` summaries,
-- Braintrust telemetry.
-
-Boundary rule:
-- `pipeline_events` remains lightweight transition telemetry.
-- Failure packs are durable debug artifacts captured only for failed n8n-orchestrated runs.
-- Failure packs may contain large payloads, but only within the dedicated failure-pack store and sidecar path.
-
-This exception is narrow, deliberate, and owned by this PRD.
+- secrets stay off-repo,
+- PKM backend remains admin-protected,
+- PKM UI is local-network constrained,
+- Codex scripts should not hold raw backend credentials as a general-purpose interface,
+- remote Codex usage should prefer the n8n webhook façade,
+- sidecar copy uses constrained helper logic and relative artifact paths,
+- no backend path traversal is allowed when resolving artifact metadata.
 
 ---
 
-## 14. Retention and cleanup
+## Validation and acceptance criteria
 
-V1 policy:
-- failure-pack DB rows are retained indefinitely,
-- sidecar artifacts are retained indefinitely,
-- no automated cleanup is required for v1.
+This change is complete when all of the following are true:
 
-Future note:
-- cleanup and retention management are a future concern and should be designed later once real storage growth is understood.
-
----
-
-## 15. Success criteria
-
-A normal failure investigation should require:
-
-- zero raw log digging,
-- zero manual n8n execution browsing for first-pass diagnosis,
-- one lookup by `run_id` or recent-failure search,
-- one response containing failing input, parent context, and PKM trace.
-
-Operational success metrics:
-
-- `>= 95%` of failed n8n-orchestrated runs generate a persisted failure pack,
-- `>= 95%` of persisted failure packs are retrievable by `run_id`,
-- pack capture does not materially delay alert delivery,
-- no secrets are leaked into persisted artifacts.
+1. A nested failure tree such as `WF01 -> WF02 -> WF22` produces one failure row keyed by `root_execution_id`.
+2. That one row preserves the local failing workflow identity from the first insert.
+3. Later WF99 calls from parent workflows append `reporting_workflow_names` without creating extra rows.
+4. A repeated later incident with a different `root_execution_id` creates a new row even if the failure text is identical.
+5. `GET /debug/failures/open` returns summary rows for `captured` failures.
+6. Agent analysis can move a row to `analyzed` and store explanation plus proposed fix.
+7. PKM UI can mark a row `resolved`.
+8. Resolved rows are not reopened by later duplicate reports for the same `root_execution_id`.
+9. Sidecar copy works from Pi to a local gitignored folder for one `failure_id`.
+10. Codex instructions can complete the full read-analyze path using scripts only.
 
 ---
 
-## 16. Risks
+## Risks
 
-- sidecar payloads may grow quickly if failure volume spikes,
-- indefinite retention may create storage growth pressure,
-- insufficient redaction could leak secrets,
-- parent-input deltas may be too lossy for some investigations,
-- some failure modes may not provide enough context for `wf99` to assemble a complete pack,
-- write path failures in `wf99` could produce Telegram alert without stored pack.
-
-Mitigations:
-
-- schema validation,
-- redaction tests,
-- partial-pack support with capture-status metadata,
-- alert text should state whether failure-pack persistence succeeded,
-- storage growth should be observed and cleanup designed later based on real usage.
+- migration from `run_id`-keyed assumptions to `root_execution_id`-keyed row identity may require careful constraint/index changes,
+- workflows that fail to propagate `root_execution_id` will bypass intended dedupe,
+- first-insert canonical identity may be wrong if propagation ordering is inconsistent,
+- remote Codex usage depends on webhook auth and reliability,
+- repeated overwrite of analysis text may hide earlier drafts,
+- terminal resolved state may be too rigid if operator needs reopen later.
 
 ---
 
-## 17. Open questions / resolved notes
+## Open questions / REVIEW_REQUIRED
 
-Resolved for v1:
+### REVIEW_REQUIRED: exact handling of existing `run_id` uniqueness
+The current table and prior PRD assume strong row identity around `run_id`. The migration must state explicitly whether:
 
-1. Retention window: retain rows and sidecars indefinitely; cleanup is future work.
-2. Failure list filtering: workflow-name filter is sufficient; workflow-id filter is not required.
-3. `stack` is stored in the main JSON.
-4. Sidecar write order: `wf99` writes sidecars first, then PKM persists metadata.
-5. Operator UI is in scope now via a Failures page in the existing debug UI.
-6. Scope covers n8n-orchestrated paths only.
-7. One table covers both test and production modes.
+- `run_id` remains unique as a recorded per-failure fact,
+- or uniqueness moves fully to `root_execution_id`.
+
+This must be verified against current code and current write behavior before implementation.
+
+### REVIEW_REQUIRED: canonical first-insert selection
+The target model keeps the canonical failing workflow from the first insert for a given `root_execution_id`. This assumes the first report received is also the most local and useful one. That should be verified against actual WF99 invocation ordering in nested workflow failures.
+
+---
+
+## Work-package split
+
+- `failure-pack-wp1-root-dedupe-and-write-path.md`
+- `failure-pack-wp2-analysis-lifecycle-and-ui.md`
+- `failure-pack-wp3-codex-access-and-sidecars.md`
