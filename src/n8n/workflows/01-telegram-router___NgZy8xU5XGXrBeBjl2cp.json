@@ -630,7 +630,7 @@
       "id": "f6e29fae-95f8-4b12-8404-5dcfcf3db7a4",
       "name": "Format Ambiguous Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n  const asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n  \n  const question = asText($json.clarification_question)\n    || 'Do you want this saved as a calendar event or as a PKM note?';\n  \n  return [{\n    json: {\n      ...$json,\n      telegram_chat_id: asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id)),\n      telegram_message: mdv2Message(question),\n    },\n  }];\n"
+        "jsCode": "'use strict';\n\nfunction mdv2(value) {\n  return String(value ?? '').replace(/[\\\\_*\\[\\]()~`>#+\\-=|{}.!]/g, '\\\\$&');\n}\n\nfunction mdv2Message(value, options) {\n  const maxLen = Number((options && options.maxLen) || 4000);\n  const text = mdv2(value);\n  return text.length > maxLen ? text.slice(0, Math.max(0, maxLen - 3)) + '...' : text;\n}\nconst asText = (value) => String(value === undefined || value === null ? '' : value).trim();\n  \n  const question = asText($json.clarification_question)\n    || 'Do you want this saved as a calendar event or as a PKM note?';\n  \n  return [{\n    json: {\n      ...$json,\n      telegram_chat_id: asText($json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id)),\n      telegram_message: mdv2Message(question),\n    },\n  }];\n"
       },
       "position": [
         1344,

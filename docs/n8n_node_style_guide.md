@@ -72,6 +72,8 @@ return rows.map(r => ({ json: r }));
 - Canonical workflow wrappers must import from package root `@igasovic/n8n-blocks` and call named root exports.
 - Root-export naming convention: `wf<NN><NodeName>` (for example `wf10CommandParser`, `wf30PrepareFinalizeRequest`).
 - Externalized node files may import shared helpers via package subpaths (`@igasovic/n8n-blocks/shared/...`).
+- Inline Code-node `jsCode` must not import `@igasovic/n8n-blocks/shared/...`; some task-runner allowlists disallow shared subpath imports in inline scripts.
+- If an inline node needs Markdown/helper logic, either externalize it behind a root export wrapper or embed a minimal local helper function in that inline node.
 - Do not use `/data/...` runtime imports.
 - Do not use fragile relative repo imports like `../../../src/...`.
 - Shared helpers from `src/libs/**` are available to n8n only when they are explicitly staged through `src/n8n/package.manifest.json`.
