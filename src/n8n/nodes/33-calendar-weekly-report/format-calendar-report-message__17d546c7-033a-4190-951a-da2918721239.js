@@ -1,6 +1,6 @@
 'use strict';
 
-const { mdv2, finalizeMarkdownV2 } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
+const { mdv2, finalizeMarkdownV2 } = require('igasovic-n8n-blocks/shared/telegram-markdown.js');
 
 const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

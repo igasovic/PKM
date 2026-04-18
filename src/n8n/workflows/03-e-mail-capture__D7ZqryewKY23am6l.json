@@ -426,7 +426,7 @@
       "id": "7ab7a2b4-4a8e-4ad8-9c58-b2c63c0a3d26",
       "name": "Format Duplicate Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n  const entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\n  return [{ json: { ...$json, telegram_message: mdv2Message('Duplicate email entry ' + entryId + ' processing stopped') } }];\n"
+        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('igasovic-n8n-blocks/shared/telegram-markdown.js');\n  const entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\n  return [{ json: { ...$json, telegram_message: mdv2Message('Duplicate email entry ' + entryId + ' processing stopped') } }];\n"
       },
       "position": [
         912,

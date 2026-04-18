@@ -1,6 +1,6 @@
 'use strict';
 
-const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
+const { mdv2Message } = require('igasovic-n8n-blocks/shared/telegram-markdown.js');
 
 function asText(value) {
   return String(value === undefined || value === null ? '' : value).trim();

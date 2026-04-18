@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = async function run(ctx) {
-  const { loadFailurePackConfig, redactSecrets, sha256Hex, byteLength } = require('@igasovic/n8n-blocks/shared/failure-pack.js');
+  const { loadFailurePackConfig, redactSecrets, sha256Hex, byteLength } = require('igasovic-n8n-blocks/shared/failure-pack.js');
   const fs = require('node:fs/promises');
   const path = require('node:path');
   const posixPath = path.posix;

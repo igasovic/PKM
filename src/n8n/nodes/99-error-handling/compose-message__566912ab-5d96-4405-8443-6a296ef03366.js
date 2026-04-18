@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = async function run(ctx) {
-  const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
+  const { mdv2Message } = require('igasovic-n8n-blocks/shared/telegram-markdown.js');
 
   const input = (ctx && ctx.$json) || {};
   const asText = (value) => String(value === undefined || value === null ? '' : value).trim();

@@ -2,7 +2,7 @@
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
-  const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
+  const { mdv2Message } = require('igasovic-n8n-blocks/shared/telegram-markdown.js');
   const raw = $json.stdout ?? '{}';
   let s = {};
   try { s = JSON.parse(raw); } catch (e) { s = {}; }
