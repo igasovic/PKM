@@ -227,22 +227,24 @@ describe('classify and ingest API contract', () => {
     if (listenDenied) return;
 
     const body = {
-      text: 'raw text',
+      capture_text: 'raw text',
       url: 'https://example.com',
       excerpt: 'preview',
+      source: { system: 'telegram', chat_id: '1', message_id: '2' },
     };
     const res = await request(port, 'POST', '/normalize/webpage', JSON.stringify(body), { 'Content-Type': 'application/json' });
 
     expect(res.status).toBe(200);
     expect(webpageNormalizeMock).toHaveBeenCalledWith({
-      text: 'raw text',
+      text: undefined,
       extracted_text: undefined,
       clean_text: undefined,
-      capture_text: undefined,
+      capture_text: 'raw text',
       content_type: undefined,
       url: 'https://example.com',
       url_canonical: undefined,
       excerpt: 'preview',
+      source: { system: 'telegram', chat_id: '1', message_id: '2' },
     });
     expect(JSON.parse(res.body)).toEqual({ clean_text: 'clean', quality_score: 0.8 });
   });

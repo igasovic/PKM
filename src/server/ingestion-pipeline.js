@@ -38,9 +38,9 @@ function applyQualityFields(normalized, opts = {}) {
     ? String(normalized.capture_text)
     : (normalized.clean_text != null ? String(normalized.clean_text) : '');
   const clean_text = normalized.clean_text != null ? String(normalized.clean_text) : '';
-  const extracted_text = normalized.extracted_text != null
-    ? String(normalized.extracted_text)
-    : '';
+  const extracted_text = opts.extracted_text_override != null
+    ? String(opts.extracted_text_override)
+    : (normalized.extracted_text != null ? String(normalized.extracted_text) : '');
 
   const retrieval_fields = buildRetrievalForDb({
     capture_text,
@@ -210,8 +210,10 @@ async function runWebpageIngestionPipeline({
   url,
   url_canonical,
   excerpt,
+  source,
 }) {
   const logger = getLogger().child({ pipeline: 'ingestion.webpage' });
+  const src = ensureObject(source);
   const normalized = await logger.step(
     'normalize.webpage',
     async () => normalizeWebpage({
@@ -224,7 +226,10 @@ async function runWebpageIngestionPipeline({
       url_canonical,
       excerpt,
     }),
-    { input: { text, extracted_text, clean_text, capture_text, content_type, url, url_canonical, excerpt }, output: (out) => out }
+    {
+      input: { text, extracted_text, clean_text, capture_text, content_type, url, url_canonical, excerpt, source: src },
+      output: (out) => out,
+    }
   );
 
   const withQuality = await logger.step(
@@ -232,10 +237,19 @@ async function runWebpageIngestionPipeline({
     async () => applyQualityFields(normalized, {
       content_type,
       excerpt_override: excerpt ?? null,
+      extracted_text_override: normalized && normalized.capture_text != null ? normalized.capture_text : null,
     }),
     { input: normalized, output: (out) => out }
   );
-  return stripInternalFields(withQuality);
+  const withIdempotency = await logger.step(
+    'idempotency.webpage',
+    async () => applyIdempotencyFields(withQuality, {
+      ...src,
+      system: src.system || 'telegram',
+    }),
+    { input: withQuality, output: (out) => out }
+  );
+  return stripInternalFields(withIdempotency);
 }
 
 async function runNotionIngestionPipeline({

@@ -1,5 +1,35 @@
 # changelog
 
+## 2026-04-17 — Telegram URL ingest refactor (WF02/WF22, capture_text-first webpage normalize)
+
+### What changed
+- Refactored `02 Telegram Capture` URL handling:
+  - mixed text + URL now routes to regular thought flow with URLs stripped from `raw_text`
+  - URL-only input (single URL or comma/newline URL list) expands to one item per URL
+  - each URL item executes `22 Web Extraction` individually (no canonical bulk execution path in WF02)
+- Refactored `22 Web Extraction` to follow the standard ingest pattern:
+  - capture (`Read Webpage`, `Trafilatura`) -> normalize (`/normalize/webpage`) -> insert (`/db/insert`) -> Tier-1 (`21 Tier-1 Enrichment`)
+  - kept fail-fast URL validation at WF22 entry
+- Updated webpage normalization backend contract:
+  - `/normalize/webpage` is now `capture_text`-first
+  - `text` / `extracted_text` are compatibility aliases only
+  - response now includes idempotency fields for insert-oriented URL ingest
+- Added ingestion pipeline coverage for webpage insert-oriented orchestration:
+  - `test/server/ingestion-pipeline.webpage.test.js`
+
+### Surfaces changed
+- n8n Telegram capture/web extraction workflow behavior
+- backend ingest normalization/orchestration for webpage content
+- ingest API and ingest PRD documentation
+- server ingest test coverage
+
+### PRDs impacted
+- `docs/PRD/ingest-prd.md`
+
+### Contract docs impacted
+- `docs/api_ingest.md`
+- `docs/changelog.md`
+
 ## 2026-04-17 — Global workflow timezone pinning
 
 ### What changed

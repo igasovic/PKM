@@ -79,12 +79,14 @@ describe('normalization', () => {
 
   test('webpage normalization returns cleaned text and canonical url only', async () => {
     const out = await normalizeWebpage({
-      text: 'Line 1\n\nLine 2',
+      capture_text: 'Line 1\n\nLine 2',
       url: 'https://example.com/post?utm_medium=email',
       content_type: 'newsletter',
     });
 
     expect(out.clean_text).toBe('Line 1\n\nLine 2');
+    expect(out.capture_text).toBe('Line 1\n\nLine 2');
+    expect(out.extracted_text).toBeUndefined();
     expect(out.content_hash).toBe(deriveContentHashFromCleanText(out.clean_text));
     expect(out.url_canonical).toBe('https://example.com/post');
     expect(out.retrieval_excerpt).toBeUndefined();
@@ -195,12 +197,13 @@ describe('normalization', () => {
 
   test('webpage normalization sets null hash when cleaned text is empty', async () => {
     const out = await normalizeWebpage({
-      text: '   \n\t',
+      capture_text: '   \n\t',
       url: 'https://example.com/post',
       content_type: 'newsletter',
     });
 
     expect(out.clean_text).toBe('');
+    expect(out.capture_text).toBe('   \n\t');
     expect(out.content_hash).toBeNull();
     expect(out.retrieval_update_skipped).toBe(true);
   });

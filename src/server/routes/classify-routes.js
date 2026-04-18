@@ -137,6 +137,7 @@ async function handleClassifyRoutes(ctx) {
           url: body.url,
           url_canonical: body.url_canonical,
           excerpt: body.excerpt,
+          source: body.source,
         }),
         { input: body, output: (out) => out, meta: { route: url.pathname } }
       );

@@ -50,8 +50,8 @@ Current repo behavior is:
 - retrieval excerpt and quality fields are applied in the backend ingestion pipeline, not duplicated in n8n
 - conflict resolution is enforced in backend DB insert logic, not in n8n
 - Telegram, email, email-batch, and Notion ingest are fail-closed when required idempotency fields are missing
-- `/normalize/webpage` returns DB-ready quality/retrieval projections for `/db/update`, but intentionally does not derive idempotency
-- `POST /ingest/telegram/url-batch` handles comma/newline URL-list capture as a backend-owned parse + batch-insert path with per-URL result reporting
+- `/normalize/webpage` is capture-text-first and returns DB-ready quality/retrieval plus idempotency fields for insert-oriented web ingest
+- `02 Telegram Capture` routes URL-only input (single or comma/newline list) into one-item-per-URL execution of `22 Web Extraction`
 - `/normalize/notion` runs `collect -> normalize -> idempotency -> quality`, with a non-fatal skip path for unsupported block types
 - `/import/email/mbox` normalizes each message synchronously, inserts idempotently, records partial failures, and enqueues classify batches only for rows that were not skipped
 - backlog import uses `source = "email-batch"` while preserving email idempotency semantics by aliasing `email-batch` to `email` during idempotency derivation
@@ -73,7 +73,7 @@ Primary callers:
 - `02 Telegram Capture` -> `/normalize/telegram` -> `/db/insert`
 - `03 E-Mail Capture` -> `/normalize/email` -> `/db/insert`
 - `04 Notion Capture` -> `/normalize/notion` -> `/db/insert`
-- `22 Web Extraction` -> `/normalize/webpage` -> `/db/update`
+- `22 Web Extraction` -> `/normalize/webpage` -> `/db/insert` -> `21 Tier-1 Enrichment`
 - `23 E-Mail Batch Import` -> `/import/email/mbox`
 
 Boundary rule:
@@ -100,10 +100,12 @@ Boundary rule:
 4. backend DB conflict handling returns `inserted`, `updated`, or `skipped`.
 5. only non-skipped rows are eligible for downstream classify handoff.
 
-### Web extraction update flow
-1. workflow or caller provides extracted or cleaned webpage text.
-2. `/normalize/webpage` recalculates clean-text-derived retrieval and quality fields.
-3. caller updates the existing entry through `/db/update`.
+### Web extraction ingest flow
+1. workflow provides one URL item at a time.
+2. workflow capture step fetches webpage HTML plus Trafilatura text.
+3. `/normalize/webpage` normalizes `capture_text`, computes retrieval/quality, and derives idempotency.
+4. workflow inserts through `/db/insert`.
+5. inserted URL entries continue to Tier-1 enrichment.
 
 ### Email backlog import
 1. `/import/email/mbox` reads an `.mbox` file from the approved import root.
@@ -117,10 +119,10 @@ Boundary rule:
 | Method | Backend sequence | Output intent | Write boundary |
 |---|---|---|---|
 | Telegram | `normalize -> quality -> idempotency` | note/thought or link/archive | `/db/insert` |
-| Telegram URL list batch | `parse url-list -> normalize(each) -> quality(each) -> idempotency(each) -> batch insert` | multi-link archive ingest with per-URL status | `/ingest/telegram/url-batch` (internally uses `/db/insert` repository path) |
+| Telegram URL-only capture | `route url list -> per-url wf22(capture -> normalize -> quality -> idempotency -> insert)` | link/archive ingest per URL item | `/normalize/webpage` + `/db/insert` |
 | Email | `normalize -> quality -> idempotency` | newsletter, correspondence, or note | `/db/insert` |
 | Notion | `collect -> normalize -> skip-or-idempotency -> quality` | note/archive depending on content type | `/db/insert` |
-| Webpage | `normalize -> quality` | update existing entry projections | `/db/update` |
+| Webpage | `capture -> normalize -> quality -> idempotency` | insert-oriented URL ingest payload | `/db/insert` |
 | Email backlog import | `parse mbox -> normalize email -> batch insert -> classify enqueue` | backlog ingest up to classify handoff | `/db/insert` then `/enrich/t1/batch` |
 
 ### Telegram normalization modes
@@ -134,14 +136,10 @@ Boundary rule:
   - `intent = archive`
   - `url_canonical` is derived in backend normalization
 - Otherwise the message remains a note/thought path without a URL.
-- Telegram URL-list batch ingest (`/ingest/telegram/url-batch`) is URL-only:
-  - accepts comma/newline URL lists
-  - rejects mixed free text + URLs as invalid input
-  - parses URL items in parallel and reports per-item normalize/insert outcomes
 - `02 Telegram Capture` explicitly routes thought text and URL capture as separate flow modes:
-  - mixed thought+URL input is rejected before normalization
-  - URL mode defaults to web extraction (`22 Web Extraction`) for both single-URL and successful URL-list entries
-  - URL-list mode reports one insert summary and one aggregated extraction summary back to Telegram
+  - mixed thought+URL input uses thought flow after URL removal from `raw_text`
+  - URL-only input supports one or multiple URLs (comma/newline-separated)
+  - URL-only mode expands to one item per URL and executes `22 Web Extraction` per item
 
 ### Email normalization modes
 - Email normalization first performs transport cleanup, forwarded-envelope detection, mojibake cleanup, and body extraction.
@@ -158,9 +156,10 @@ Boundary rule:
 - Idempotency runs before quality/retrieval enrichment for the normal Notion path.
 
 ### Webpage normalization mode
-- Webpage normalization is update-oriented, not insert-oriented.
+- Webpage normalization is insert-oriented for URL ingestion and includes idempotency derivation.
+- `capture_text` is canonical input; `text`/`extracted_text` are compatibility aliases.
 - If normalized clean text is empty, the response sets `retrieval_update_skipped = true` and `content_hash = null`.
-- Callers should treat that as a skip-overwrite signal for retrieval fields rather than forcing an empty update.
+- Callers should treat that as a signal not to overwrite retrieval fields with empty cleaned text.
 
 ## Data model / state transitions
 Ingest is responsible for producing or updating these entry-shaping fields before persistence:
@@ -201,7 +200,7 @@ This PRD owns the ingest requirement that normalization and DB writes agree on t
 
 ### Write-boundary contract
 - `POST /db/insert` is the canonical ingest insert boundary.
-- `POST /db/update` is the canonical ingest update boundary for webpage and downstream writeback flows.
+- `POST /db/update` remains available for downstream writeback flows outside canonical URL ingest.
 - For `entries` writes, backend resolves idempotency behavior from the active schema's `idempotency_policies` table.
 - Required idempotency sources are:
   - `telegram`
@@ -247,7 +246,7 @@ This PRD owns the ingest requirement that normalization and DB writes agree on t
 ## API / contract surfaces
 Owned or coupled internal routes:
 - `POST /normalize/telegram`
-- `POST /ingest/telegram/url-batch`
+- `POST /ingest/telegram/url-batch` (compatibility path; not the canonical WF02 URL flow)
 - `POST /normalize/email/intent`
 - `POST /normalize/email`
 - `POST /normalize/webpage`

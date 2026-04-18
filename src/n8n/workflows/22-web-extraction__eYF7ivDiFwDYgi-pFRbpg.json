@@ -44,13 +44,35 @@
         [
           {
             "index": 0,
-            "node": "PKM Update",
+            "node": "PKM Insert",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Insert": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Call 'Tier-1 Enhancement'",
             "type": "main"
           }
         ]
       ]
     },
     "PKM Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Assert URL Present",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Assert URL Present": {
       "main": [
         [
           {
@@ -80,6 +102,11 @@
             "type": "main"
           }
         ]
+      ]
+    },
+    "Call 'Tier-1 Enhancement'": {
+      "main": [
+        []
       ]
     },
     "Read Webpage (HTTP)": {
@@ -213,7 +240,7 @@
             }
           ]
         },
-        "jsonBody": "={{ JSON.stringify((() => ({\n  text: $json.text ?? $json.extracted_text ?? null,\n  capture_text: $json.capture_text ?? null,\n  content_type: $json.content_type ?? null,\n  url: $json.url ?? null,\n  url_canonical: $json.url_canonical ?? null\n}))()) }}\n",
+        "jsonBody": "={{ JSON.stringify((() => ({\n  capture_text: $json.capture_text ?? $json.text ?? null,\n  text: $json.text ?? null,\n  content_type: $json.content_type ?? 'newsletter',\n  url: $json.url ?? null,\n  url_canonical: $json.url_canonical ?? null,\n  source: $json.source ?? {\n    system: 'telegram',\n    chat_id: $json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id) || null,\n    message_id: $json.telegram_message_id || ($json.message && $json.message.message_id) || null,\n    user_id: $json.telegram_user_id || ($json.message && $json.message.from && $json.message.from.id) || null,\n  }\n}))()) }}\n",
         "method": "POST",
         "options": {},
         "sendBody": true,
@@ -275,7 +302,7 @@
     },
     {
       "id": "f6e46a32-f8e6-4adf-aa0f-30469691d814",
-      "name": "PKM Update",
+      "name": "PKM Insert",
       "parameters": {
         "headerParameters": {
           "parameters": [
@@ -285,13 +312,13 @@
             }
           ]
         },
-        "jsonBody": "={{ JSON.stringify((() => {\n  const id = $json.id;\n\n  const url = $json.url ?? null;\n  const url_canonical = $json.url_canonical ?? null;\n  const title = $json.title ?? null;\n  const author = $json.author ?? null;\n\n  // only send clean_text/extracted_text if non-empty (matches your previous COALESCE logic)\n  const clean = String($json.clean_text ?? \"\");\n  const cleanTrim = clean.trim();\n\n  const extractedRaw = $json.extracted_text ?? $json.text ?? null;\n  const extracted = (extractedRaw === null || extractedRaw === undefined) ? \"\" : String(extractedRaw);\n  const extractedTrim = extracted.trim();\n\n  // retrieval patch + promoted columns (WP2)\n  const retrieval = $json.retrieval ?? null;\n  const doMeta = !!(retrieval && typeof retrieval === \"object\");\n  const q = doMeta ? (retrieval.quality || {}) : {};\n\n  const body = {\n    id,\n\n    url,\n    url_canonical,\n    title,\n    author,\n\n    returning: [\n      \"entry_id\",\n      \"id\",\n      \"created_at\",\n      \"source\",\n      \"intent\",\n      \"content_type\",\n      \"COALESCE(title,'') AS title\",\n      \"COALESCE(author,'') AS author\",\n      \"COALESCE(clean_text,'') AS clean_text\",\n      \"url_canonical\",\n      \"COALESCE(char_length(clean_text), 0) AS clean_len\",\n      \"COALESCE(char_length(extracted_text), 0) AS extracted_len\"\n    ]\n  };\n\n  // Respect retrieval_update_skipped: only patch retrieval fields when backend returned retrieval.\n  if (doMeta) {\n    body.metadata = { retrieval };\n    body.retrieval_excerpt = retrieval.excerpt ?? null;\n    body.retrieval_version = retrieval.version ?? null;\n    body.source_domain = retrieval.source_domain ?? null;\n\n    body.clean_word_count = q.clean_word_count ?? null;\n    body.clean_char_count = q.clean_char_count ?? null;\n    body.extracted_char_count = q.extracted_char_count ?? null;\n\n    body.link_count = q.link_count ?? null;\n    body.link_ratio = q.link_ratio ?? null;\n\n    body.boilerplate_heavy = q.boilerplate_heavy ?? null;\n    body.low_signal = q.low_signal ?? null;\n    body.extraction_incomplete = q.extraction_incomplete ?? null;\n    body.quality_score = q.quality_score ?? null;\n  }\n\n  if (cleanTrim) {\n    body.clean_text = clean;\n    body.content_hash = $json.content_hash ?? null;\n  }\n  if (extractedTrim) body.extracted_text = extracted;\n\n  return body;\n})()) }}\n",
+        "jsonBody": "={{ JSON.stringify((() => {\n  const retrieval = $json.retrieval ?? null;\n  const q = retrieval && retrieval.quality ? retrieval.quality : {};\n\n  return {\n    source: 'telegram',\n    intent: 'archive',\n    content_type: $json.content_type ?? 'newsletter',\n    title: $json.title ?? null,\n    author: $json.author ?? null,\n    capture_text: $json.capture_text ?? null,\n    clean_text: $json.clean_text ?? null,\n    url: $json.url ?? null,\n    url_canonical: $json.url_canonical ?? null,\n\n    topic_primary: null,\n    topic_primary_confidence: null,\n    topic_secondary: null,\n    topic_secondary_confidence: null,\n    gist: null,\n\n    idempotency_policy_key: $json.idempotency_policy_key ?? null,\n    idempotency_key_primary: $json.idempotency_key_primary ?? null,\n    idempotency_key_secondary: $json.idempotency_key_secondary ?? null,\n\n    metadata: retrieval ? { retrieval } : null,\n    retrieval_excerpt: retrieval ? (retrieval.excerpt ?? null) : null,\n    retrieval_version: retrieval ? (retrieval.version ?? null) : null,\n    source_domain: retrieval ? (retrieval.source_domain ?? null) : null,\n\n    clean_word_count: q.clean_word_count ?? null,\n    clean_char_count: q.clean_char_count ?? null,\n    extracted_char_count: q.extracted_char_count ?? null,\n    link_count: q.link_count ?? null,\n    link_ratio: q.link_ratio ?? null,\n    boilerplate_heavy: q.boilerplate_heavy ?? null,\n    low_signal: q.low_signal ?? null,\n    extraction_incomplete: q.extraction_incomplete ?? null,\n    quality_score: q.quality_score ?? null,\n\n    returning: [\n      'entry_id',\n      'id',\n      'created_at',\n      'source',\n      'intent',\n      'content_type',\n      'url_canonical',\n      \"COALESCE(title,'') AS title\",\n      \"COALESCE(author,'') AS author\",\n      'clean_text',\n      'capture_text',\n      'topic_primary',\n      'topic_secondary',\n      'gist',\n      'COALESCE(char_length(clean_text), 0) AS clean_len'\n    ]\n  };\n})()) }}\n",
         "method": "POST",
         "options": {},
         "sendBody": true,
         "sendHeaders": true,
         "specifyBody": "json",
-        "url": "http://pkm-server:8080/db/update"
+        "url": "http://pkm-server:8080/db/insert"
       },
       "position": [
         1680,
@@ -299,6 +326,34 @@
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
+    },
+    {
+      "id": "f18a3e0b-21fb-427d-9767-bf05b3b7372b",
+      "name": "Call 'Tier-1 Enhancement'",
+      "parameters": {
+        "options": {},
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "21 Tier-1 Enrichment",
+          "cachedResultUrl": "/workflow/WFB4SDkDPDPIphppIn3l7",
+          "mode": "list",
+          "value": "WFB4SDkDPDPIphppIn3l7"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        }
+      },
+      "position": [
+        1904,
+        -96
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
     },
     {
       "id": "31b3ff63-9719-493f-be09-1176aa452fa3",
@@ -355,6 +410,19 @@
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
+    },
+    {
+      "id": "f52f864a-fbce-4db4-a87c-7465f4f086a0",
+      "name": "Assert URL Present",
+      "parameters": {
+        "jsCode": "const urlRaw = String($json.url_canonical || $json.url || '').trim();\nif (!urlRaw) {\n  throw new Error('WF22 requires url/url_canonical input; got empty/missing URL');\n}\nreturn [{ json: { ...$json, url: $json.url || urlRaw, url_canonical: urlRaw } }];"
+      },
+      "position": [
+        208,
+        0
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {

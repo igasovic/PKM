@@ -32,7 +32,7 @@
 | Endpoint family | Auth | Primary callers | Schema touched | Typical tests |
 |---|---|---|---|---|
 | Normalization | internal | n8n ingest workflows | none directly; returns DB-ready payloads | `test/server/normalization.test.js`, `test/server/content-hash.test.js`, `test/server/quality.test.js` |
-| Telegram URL batch ingest | internal | Telegram capture workflows | `entries` (through backend write repository) | `test/server/classify.api-contract.test.js`, `test/server/telegram-url-batch-ingest.test.js` |
+| Telegram URL batch ingest | internal | compatibility callers (legacy URL-list batching) | `entries` (through backend write repository) | `test/server/classify.api-contract.test.js`, `test/server/telegram-url-batch-ingest.test.js` |
 | Tier-1 enrichment | internal | n8n, backend orchestration | `entries`, `active_topic_related_entries`, `t1_*` status tables for batch flows | `test/server/classify.api-contract.test.js`, `test/server/tier2.enrichment.test.js`, `test/server/batch-status-service.test.js` |
 | Backlog import | internal | n8n backlog flows | `entries`, `t1_*` tables | `test/server/idempotency.test.js`, related batch tests |
 
@@ -91,6 +91,7 @@ Response:
 ### `POST /ingest/telegram/url-batch`
 Normalizes and inserts a pure URL list from one Telegram message in one backend call.
 The backend parses URLs in parallel, inserts with idempotency, and returns a per-URL summary.
+Canonical WF02 URL handling now uses per-URL `22 Web Extraction` execution instead of this bulk route.
 
 This route is for URL-only lists (comma/newline separated). Mixed free text + URLs is rejected.
 When `continue_on_error` is true (default), per-URL normalize or insert failures are reported in `results[]` while successful URLs still complete.
@@ -212,35 +213,46 @@ Response:
 ```
 
 ### `POST /normalize/webpage`
-Normalizes extracted webpage/article text and recomputes retrieval excerpt + quality in one call.
-Designed for update flows where output can be sent directly to `/db/update`.
+Normalizes webpage/article capture text and recomputes retrieval + quality in one call.
+The response is insert-ready for canonical web extraction flows (`/db/insert`), including idempotency fields.
 
 Body:
 ```json
 {
-  "text": "raw extracted webpage text",
-  "capture_text": "optional original capture text",
+  "capture_text": "raw extracted webpage text",
+  "text": "optional legacy alias for capture_text",
   "content_type": "newsletter",
   "url": "https://example.com/article",
   "url_canonical": "https://example.com/article",
-  "excerpt": "optional excerpt override"
+  "excerpt": "optional excerpt override",
+  "source": {
+    "system": "telegram",
+    "chat_id": "123",
+    "message_id": "456",
+    "user_id": "789"
+  }
 }
 ```
 
 Notes:
-- `text` is preferred input and is mapped to `extracted_text`.
+- `capture_text` is the canonical input field.
+- `text` and `extracted_text` are accepted as legacy aliases when `capture_text` is missing.
 - If `clean_text` is provided instead, it is used as the cleaning input.
 - If cleaned text is empty, response includes `retrieval_update_skipped: true`.
 - If `excerpt` is provided, it is used as excerpt override.
+- `source.system` defaults to `telegram` when omitted.
 
 Response:
 ```json
 {
-  "extracted_text": "...",
-  "extracted_len": 12000,
+  "capture_text": "...",
+  "capture_len": 12000,
   "clean_text": "...",
   "content_hash": "3b066804f6d1d077173cfe4d06002e6a61e6f21c2b2e648417962115f1afcd8e",
   "clean_len": 9800,
+  "idempotency_policy_key": "telegram_link_v1",
+  "idempotency_key_primary": "https://example.com/article",
+  "idempotency_key_secondary": "6d7b...",
   "retrieval_excerpt": "...",
   "clean_word_count": 1400,
   "clean_char_count": 9800,

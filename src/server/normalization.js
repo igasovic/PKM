@@ -1505,42 +1505,45 @@ async function normalizeWebpage({
   url_canonical,
   excerpt,
 }) {
-  // Step 1: text-clean behavior from telegram-capture/09_text-clean.
-  const extracted = String(
-    text !== undefined && text !== null
-      ? text
-      : (extracted_text !== undefined && extracted_text !== null ? extracted_text : (clean_text || ''))
+  // capture_text is canonical for webpage extraction input. Keep legacy aliases
+  // (text/extracted_text) as fallback for compatibility.
+  const captured = String(
+    capture_text !== undefined && capture_text !== null
+      ? capture_text
+      : (text !== undefined && text !== null
+        ? text
+        : (extracted_text !== undefined && extracted_text !== null ? extracted_text : (clean_text || '')))
   );
   const cleaned = cleanWebpageExtractedText(
-    clean_text !== undefined && clean_text !== null ? clean_text : extracted
+    clean_text !== undefined && clean_text !== null ? clean_text : captured
   );
 
   // Preserve node parity: if cleaned text is empty, do not force retrieval overwrite.
   if (!cleaned) {
     return {
-      extracted_text: extracted,
-      extracted_len: extracted.length,
+      capture_text: captured,
+      capture_len: captured.length,
       clean_text: '',
       content_hash: null,
       clean_len: 0,
       retrieval_update_skipped: true,
+      content_type: String(content_type || '').trim() || 'newsletter',
+      url: url || null,
+      url_canonical: canonicalizeUrl(url_canonical || url || null),
+      excerpt: excerpt !== undefined && excerpt !== null ? String(excerpt) : null,
     };
   }
 
   // Step 2: return normalized webpage fields; quality/idempotency are orchestrated upstream.
   const effectiveUrl = url || null;
   const effectiveCanonical = canonicalizeUrl(url_canonical || effectiveUrl);
-  const effectiveCaptureText = (capture_text !== undefined && capture_text !== null)
-    ? String(capture_text)
-    : cleaned;
 
   return {
-    extracted_text: extracted,
-    extracted_len: extracted.length,
+    capture_text: captured,
+    capture_len: captured.length,
     clean_text: cleaned,
     content_hash: deriveContentHashFromCleanText(cleaned),
     clean_len: cleaned.length,
-    capture_text: effectiveCaptureText,
     content_type: String(content_type || '').trim() || 'newsletter',
     url: effectiveUrl,
     url_canonical: effectiveCanonical,
