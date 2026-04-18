@@ -64,6 +64,7 @@ export function EntitiesPage() {
   const [pullRunId, setPullRunId] = useState('');
   const [pullTargetEntryId, setPullTargetEntryId] = useState('');
   const [pullPayload, setPullPayload] = useState<Record<string, unknown> | null>(null);
+  const [pullEntryIdInput, setPullEntryIdInput] = useState('');
 
   const selectedEntryIds = useMemo(() => Array.from(selectedIds), [selectedIds]);
   const selectedCount = selectedEntryIds.length;
@@ -166,6 +167,20 @@ export function EntitiesPage() {
     } finally {
       setDrawerLoading(false);
     }
+  };
+
+  const runPullByEntryId = async () => {
+    const normalized = normalizeEntryId(pullEntryIdInput);
+    if (!normalized) {
+      setDrawerOpen(true);
+      setDrawerLoading(false);
+      setDrawerError('entry_id must be a positive integer');
+      setPullTargetEntryId(String(pullEntryIdInput || '').trim());
+      setPullPayload(null);
+      setPullRunId('');
+      return;
+    }
+    await openEntityDrawer(normalized);
   };
 
   const toggleSelection = (entryIdRaw: string | null) => {
@@ -367,6 +382,30 @@ export function EntitiesPage() {
             disabled={loading}
           >
             Reset
+          </button>
+        </div>
+
+        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(220px,320px)_auto]">
+          <input
+            value={pullEntryIdInput}
+            onChange={(event) => setPullEntryIdInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                void runPullByEntryId();
+              }
+            }}
+            inputMode="numeric"
+            placeholder="load entry_id (e.g. 123456)"
+            className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500 placeholder:text-slate-500 focus:ring"
+          />
+          <button
+            type="button"
+            className="rounded border border-cyan-500 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300 hover:bg-cyan-500/20 disabled:opacity-50"
+            onClick={() => { void runPullByEntryId(); }}
+            disabled={drawerLoading}
+          >
+            {drawerLoading ? 'Loading Entry...' : 'Load By Entry ID'}
           </button>
         </div>
 
