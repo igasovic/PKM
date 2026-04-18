@@ -29,7 +29,12 @@ module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
 
 const msg = $json.message || {};
-const text = String($json.raw_text || msg.text || '').trim();
+const normalizeCommandText = (value) => String(value || '')
+  // Telegram clients sometimes auto-replace "--" with Unicode dashes.
+  // Normalize dash runs so flags like —limit/–limit/−limit are parsed as --limit.
+  .replace(/[\u2012\u2013\u2014\u2015\u2212]+\s*/g, '--')
+  .trim();
+const text = normalizeCommandText($json.raw_text || msg.text || '');
 const telegram_chat_id = $json.telegram_chat_id ?? msg.chat?.id ?? null;
 const smoke_mode = $json.smoke_mode === true;
 const smoke_case = String($json.smoke_case || '').trim() || null;
@@ -138,6 +143,16 @@ const COMMAND_HELP = {
 function usageFor(commandName) {
   const key = String(commandName || '').trim().toLowerCase();
   return COMMAND_HELP[key] || HELP_OVERVIEW;
+}
+
+function parseIntArg(text, flag) {
+  const spaced = new RegExp(`--${flag}\\s+(\\d+)`, 'i');
+  const equal = new RegExp(`--${flag}=(\\d+)`, 'i');
+  const m = text.match(spaced) || text.match(equal);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  if (!Number.isFinite(n)) return null;
+  return n;
 }
 
 function replyNow(telegram_chat_id, message) {
@@ -347,8 +362,8 @@ if (cmd === 'classify') {
   if (forceBatch && forceSync) {
     return replyNow(telegram_chat_id, usageFor('classify'));
   }
-  const mLimit = text.match(/--limit\s+(\d+)/i);
-  const classify_limit = mLimit ? Math.max(0, parseInt(mLimit[1], 10)) : 0;
+  const parsedLimit = parseIntArg(text, 'limit');
+  const classify_limit = parsedLimit === null ? 0 : Math.max(0, parsedLimit);
   const execution_mode = forceBatch ? 'batch' : 'sync';
 
   return [{
@@ -367,10 +382,7 @@ if (cmd === 'classify') {
 // Special case: /distill-run [--batch|--sync] [--dry-run] [--candidate-limit N] [--max-sync-items N] [--no-persist-eligibility]
 if (cmd === 'distillrun') {
   const parsePositiveIntArg = (flag) => {
-    const re = new RegExp(`--${flag}\\s+(\\d+)`, 'i');
-    const m = text.match(re);
-    if (!m) return null;
-    const n = parseInt(m[1], 10);
+    const n = parseIntArg(text, flag);
     if (!Number.isFinite(n) || n <= 0) return null;
     return n;
   };

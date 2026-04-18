@@ -99,6 +99,25 @@ describe('n8n command parser', () => {
     expect(out.classify_limit).toBe(500);
   });
 
+  test('/classify parses --limit=N form for sync and batch variants', async () => {
+    const syncOut = await runParser('/classify --sync --limit=7');
+    expect(syncOut.cmd).toBe('classify');
+    expect(syncOut.execution_mode).toBe('sync');
+    expect(syncOut.classify_limit).toBe(7);
+
+    const batchOut = await runParser('/classify --batch --limit=9');
+    expect(batchOut.cmd).toBe('classify');
+    expect(batchOut.execution_mode).toBe('batch');
+    expect(batchOut.classify_limit).toBe(9);
+  });
+
+  test('/classify accepts Unicode dash for limit flag (Telegram smart punctuation)', async () => {
+    const out = await runParser('/classify —limit 10');
+    expect(out.cmd).toBe('classify');
+    expect(out.execution_mode).toBe('sync');
+    expect(out.classify_limit).toBe(10);
+  });
+
   test('/classify rejects conflicting --batch and --sync', async () => {
     const out = await runParser('/classify --batch --sync');
     const text = unescapeMdv2(out.telegram_message);
