@@ -4,6 +4,7 @@
   "private": true,
   "description": "Internal runtime package for n8n Code-node blocks.",
   "rootExports": {
+    "contextPackBuilder": "shared/context-pack-builder.js",
     "readCommandParser": "nodes/10-read/command-parser.js",
     "wf02CreateMessage": "nodes/02-telegram-capture/create-message.js",
     "wf03ComposeReplyText": "nodes/03-e-mail-capture/compose-reply-text.js",
