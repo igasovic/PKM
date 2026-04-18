@@ -83,6 +83,55 @@
 - `docs/config_operations.md`
 - `docs/changelog.md`
 
+## 2026-04-17 — Failure-pack root dedupe + lifecycle + Codex script surface
+
+### What changed
+- Moved failure-pack logical identity from `run_id` to `root_execution_id` in backend write semantics:
+  - `POST /debug/failures` now upserts by `root_execution_id`
+  - duplicate propagated reports update one logical row and append `reporting_workflow_names`
+  - resolved rows remain resolved during duplicate updates (no reopen)
+- Added lifecycle endpoints and fields:
+  - `GET /debug/failures/open` (captured queue)
+  - `POST /debug/failures/:failure_id/analyze`
+  - `POST /debug/failures/:failure_id/resolve`
+  - row fields: `status(captured|analyzed|resolved)`, `analysis_reason`, `proposed_fix`, `analyzed_at`
+- Added migration:
+  - `scripts/db/migrations/2026-04-17_failure_pack_root_dedupe_lifecycle.sql`
+  - adds `root_execution_id`, `reporting_workflow_names`, analysis fields, new status check/indexes
+- Updated WF99 envelope shaping to emit:
+  - `correlation.root_execution_id`
+  - `correlation.reporting_workflow_name`
+  - status normalized to lifecycle `captured` on write path
+- Updated PKM UI Failures page:
+  - reads open failures from `GET /debug/failures/open`
+  - supports inline analyze and resolve actions
+  - preserves detail + bundle view for one failure
+- Added Codex helper scripts:
+  - `scripts/failure/list-open-failures`
+  - `scripts/failure/get-failure`
+  - `scripts/failure/copy-failure-sidecars`
+  - `scripts/failure/analyze-failure`
+  - with shared helper `scripts/failure/common.js`
+  - sidecar destination `.codex/failure-sidecars/<failure_id>/` (gitignored)
+
+### Surfaces changed
+- failure-pack backend API contracts
+- `pkm.failure_packs` schema and lifecycle semantics
+- WF99 failure envelope correlation fields
+- PKM UI Failures page behavior
+- Codex failure helper script surface
+
+### PRDs impacted
+- `docs/PRD/failure-pack-prd.md`
+- `docs/PRD/failure-pack-work-packages.md`
+
+### Contract docs impacted
+- `docs/api_control.md`
+- `docs/database_schema.md`
+- `docs/n8n_backend_contract_map.md`
+- `src/web/pkm-debug-ui/README.md`
+- `docs/failure-pack-codex.md`
+
 ## 2026-04-17 — WF99 reliability hardening (transport-failure alert continuity + coverage)
 
 ### What changed

@@ -176,6 +176,8 @@ describe('n8n WF99 error handling', () => {
     expect(row.workflow_name).toBe('99 Error Handling');
     expect(row.workflow_id).toBe('wf99-id');
     expect(row.execution_id).toBe('901');
+    expect(row.root_execution_id).toBe('901');
+    expect(row.reporting_workflow_name).toBe('99 Error Handling');
     expect(row.execution_url).toBe('/execution/901');
     expect(row.run_id).toBe('run-telegram-1');
     expect(row.node_name).toBe('Send a text message');
@@ -208,6 +210,7 @@ describe('n8n WF99 error handling', () => {
 
     expect(out[0].json.node_name).toBe('Compose Message');
     expect(out[0].json.run_id).toBe('run-extjs-1');
+    expect(out[0].json.root_execution_id).toBe('902');
   });
 
   test('build-failure-pack-envelope captures redacted payloads and parent deltas', async () => {
@@ -277,6 +280,8 @@ describe('n8n WF99 error handling', () => {
 
     expect(envelope.run_id).toBe('run-pack-1');
     expect(envelope.status).toBe('captured');
+    expect(envelope.correlation.root_execution_id).toBe('777');
+    expect(envelope.correlation.reporting_workflow_name).toBe('10 Read');
     expect(envelope.graph.failing_node).toBe('HTTP Request');
     expect(envelope.graph.direct_parents).toEqual([
       {

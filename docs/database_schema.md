@@ -658,6 +658,8 @@ Durable diagnostics store for n8n-orchestrated workflow failures captured by WF9
 - `created_at` timestamptz NOT NULL default `now()`
 - `updated_at` timestamptz NOT NULL default `now()`
 - `run_id` text NOT NULL UNIQUE
+- `root_execution_id` text NOT NULL UNIQUE
+- `reporting_workflow_names` text[] NOT NULL default `'{}'`
 - `execution_id` text
 - `workflow_id` text
 - `workflow_name` text NOT NULL
@@ -667,14 +669,19 @@ Durable diagnostics store for n8n-orchestrated workflow failures captured by WF9
 - `node_type` text
 - `error_name` text
 - `error_message` text
-- `status` text NOT NULL default `captured` CHECK in `('captured','partial','failed')`
+- `status` text NOT NULL default `captured` CHECK in `('captured','analyzed','resolved')`
+- `analysis_reason` text
+- `proposed_fix` text
+- `analyzed_at` timestamptz
 - `has_sidecars` boolean NOT NULL default `false`
 - `sidecar_root` text
 - `pack` jsonb NOT NULL
 
 **Indexes**
 - unique `(run_id)`
+- unique `(root_execution_id)`
 - `(failed_at DESC)`
+- `(status, failed_at DESC)`
 - `(workflow_name, failed_at DESC)`
 - `(node_name, failed_at DESC)`
 - `(mode, failed_at DESC)`
@@ -683,6 +690,8 @@ Durable diagnostics store for n8n-orchestrated workflow failures captured by WF9
 **Notes**
 - This table is prod-only (`pkm`) by design.
 - Test-mode and production captures share this table; the captured mode is projected in both `mode` and `pack`.
+- Failure-row dedupe identity is `root_execution_id`; `run_id` remains correlation metadata from first insert.
+- `reporting_workflow_names` captures propagation reporters only; canonical failing workflow remains in `workflow_id` / `workflow_name`.
 - Sidecar files are persisted on shared disk under `debug/failures/...` and referenced by relative paths inside `pack.artifacts`.
 
 ---

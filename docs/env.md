@@ -310,7 +310,7 @@ docker exec -it postgres psql -U "$PGUSER" -d pkm
 ```bash
 PGUSER="${POSTGRES_ADMIN_USER:-$(grep -E '^POSTGRES_ADMIN_USER=' /home/igasovic/stack/.env | tail -n1 | cut -d= -f2-)}"
 PGUSER="${PGUSER:-postgres}"
-MIGRATION="/home/igasovic/repos/n8n-workflows/scripts/db/migrations/2026-03-28_failure_packs.sql"
+MIGRATION="/home/igasovic/repos/n8n-workflows/scripts/db/migrations/2026-04-17_failure_pack_root_dedupe_lifecycle.sql"
 cat "$MIGRATION" | docker exec -i postgres psql -U "$PGUSER" -d pkm -v ON_ERROR_STOP=1
 ```
 

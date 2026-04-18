@@ -131,6 +131,8 @@ async function upsertFailurePack(input) {
   const sql = sb.buildUpsertFailurePack({ failurePacksTable: FAILURE_PACKS_TABLE });
   const params = [
     summary.run_id,
+    summary.root_execution_id,
+    summary.reporting_workflow_names,
     summary.execution_id,
     summary.workflow_id,
     summary.workflow_name,
@@ -149,12 +151,19 @@ async function upsertFailurePack(input) {
     const res = await traceDb('failure_pack_upsert', {
       table: FAILURE_PACKS_TABLE,
       run_id: summary.run_id,
+      root_execution_id: summary.root_execution_id,
       status: summary.status,
       has_sidecars: summary.has_sidecars,
     }, () => getPool().query(sql, params));
     return res.rows && res.rows[0]
       ? res.rows[0]
-      : { run_id: summary.run_id, status: summary.status, upsert_action: 'updated' };
+      : {
+        run_id: summary.run_id,
+        root_execution_id: summary.root_execution_id,
+        reporting_workflow_names: summary.reporting_workflow_names,
+        status: summary.status,
+        upsert_action: 'updated',
+      };
   } catch (err) {
     throw wrapFailurePacksError(err);
   }
@@ -182,6 +191,20 @@ async function getFailurePackByRunId(runId) {
       table: FAILURE_PACKS_TABLE,
       run_id,
     }, () => getPool().query(sql, [run_id]));
+    return res.rows && res.rows[0] ? res.rows[0] : null;
+  } catch (err) {
+    throw wrapFailurePacksError(err);
+  }
+}
+
+async function getFailurePackByRootExecutionId(rootExecutionId) {
+  const root_execution_id = parseNonEmptyText(rootExecutionId, 'root_execution_id');
+  const sql = sb.buildGetFailurePackByRootExecutionId({ failurePacksTable: FAILURE_PACKS_TABLE });
+  try {
+    const res = await traceDb('failure_pack_get_by_root', {
+      table: FAILURE_PACKS_TABLE,
+      root_execution_id,
+    }, () => getPool().query(sql, [root_execution_id]));
     return res.rows && res.rows[0] ? res.rows[0] : null;
   } catch (err) {
     throw wrapFailurePacksError(err);
@@ -229,6 +252,74 @@ async function listFailurePacks(opts) {
   }
 }
 
+async function listOpenFailurePacks(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const limitRaw = parsePositiveInt(options.limit, 30);
+  const limit = Math.min(limitRaw, 100);
+  const sql = sb.buildListOpenFailurePacks({ failurePacksTable: FAILURE_PACKS_TABLE });
+  try {
+    const res = await traceDb('failure_pack_list_open', {
+      table: FAILURE_PACKS_TABLE,
+      limit,
+    }, () => getPool().query(sql, [limit]));
+    return {
+      rows: res.rows || [],
+      limit,
+    };
+  } catch (err) {
+    throw wrapFailurePacksError(err);
+  }
+}
+
+async function analyzeFailurePack(failureId, payload) {
+  const failure_id = parseUuid(failureId, 'failure_id');
+  const body = payload && typeof payload === 'object' ? payload : {};
+  const analysis_reason = parseNonEmptyText(body.analysis_reason, 'analysis_reason');
+  const proposed_fix = parseNonEmptyText(body.proposed_fix, 'proposed_fix');
+  const sql = sb.buildAnalyzeFailurePackById({ failurePacksTable: FAILURE_PACKS_TABLE });
+  try {
+    const res = await traceDb('failure_pack_analyze', {
+      table: FAILURE_PACKS_TABLE,
+      failure_id,
+    }, () => getPool().query(sql, [failure_id, analysis_reason, proposed_fix]));
+    if (res.rows && res.rows[0]) return res.rows[0];
+
+    const existing = await getFailurePackById(failure_id);
+    if (!existing) {
+      const err = new Error('failure not found');
+      err.statusCode = 404;
+      throw err;
+    }
+    if (existing.status === 'resolved') {
+      const err = new Error('resolved failures cannot be analyzed');
+      err.statusCode = 409;
+      throw err;
+    }
+    const err = new Error('analyze failed');
+    err.statusCode = 409;
+    throw err;
+  } catch (err) {
+    throw wrapFailurePacksError(err);
+  }
+}
+
+async function resolveFailurePack(failureId) {
+  const failure_id = parseUuid(failureId, 'failure_id');
+  const sql = sb.buildResolveFailurePackById({ failurePacksTable: FAILURE_PACKS_TABLE });
+  try {
+    const res = await traceDb('failure_pack_resolve', {
+      table: FAILURE_PACKS_TABLE,
+      failure_id,
+    }, () => getPool().query(sql, [failure_id]));
+    if (res.rows && res.rows[0]) return res.rows[0];
+    const err = new Error('failure not found');
+    err.statusCode = 404;
+    throw err;
+  } catch (err) {
+    throw wrapFailurePacksError(err);
+  }
+}
+
 async function prunePipelineEvents(days) {
   const keepDays = parsePositiveInt(days, 30);
   const sql = sb.buildPrunePipelineEvents({ eventsTable: PIPELINE_EVENTS_TABLE });
@@ -247,6 +338,10 @@ module.exports = {
   upsertFailurePack,
   getFailurePackById,
   getFailurePackByRunId,
+  getFailurePackByRootExecutionId,
   listFailurePacks,
+  listOpenFailurePacks,
+  analyzeFailurePack,
+  resolveFailurePack,
   prunePipelineEvents,
 };

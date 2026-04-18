@@ -345,7 +345,7 @@ Response:
 ```
 
 ### `POST /debug/failures`
-Upserts one failure pack by `run_id` (admin-only write path used by WF99).
+Writes or updates one logical failure row by `root_execution_id` (admin-only write path used by WF99).
 
 Headers:
 - `x-pkm-admin-secret: <secret>` (required)
@@ -359,6 +359,7 @@ Response:
 {
   "failure_id": "11111111-1111-4111-8111-111111111111",
   "run_id": "run-abc",
+  "root_execution_id": "root-exec-abc",
   "status": "captured",
   "upsert_action": "inserted"
 }
@@ -370,14 +371,46 @@ Returns one persisted failure-pack row by `failure_id` (summary fields + `pack`)
 Headers:
 - `x-pkm-admin-secret: <secret>` (required)
 
+### `GET /debug/failures/open`
+Returns currently open failure rows (`status = captured`) for operator/agent work queues.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Query params:
+- `limit` (optional, default `30`, max `100`)
+
+Response:
+```json
+{
+  "rows": [
+    {
+      "failure_id": "11111111-1111-4111-8111-111111111111",
+      "run_id": "run-abc",
+      "root_execution_id": "root-exec-abc",
+      "workflow_name": "WF 99 Error Handling",
+      "node_name": "Normalize article",
+      "failed_at": "2026-03-28T20:00:00.000Z",
+      "has_sidecars": true,
+      "status": "captured"
+    }
+  ],
+  "limit": 30
+}
+```
+
 ### `GET /debug/failures/by-run/:run_id`
-Returns one persisted failure-pack row by `run_id` (summary fields + `pack`).
+Returns one persisted failure-pack row by canonical stored `run_id` (summary fields + `pack`).
+
+Compatibility note:
+- this route remains for run-centric debug helpers.
+- dedupe identity is `root_execution_id`; callers should prefer `failure_id` lookup where possible.
 
 Headers:
 - `x-pkm-admin-secret: <secret>` (required)
 
 ### `GET /debug/failures`
-Returns recent failure-pack summary rows.
+Returns recent failure-pack summary rows with optional filters (debug surface, not the open-queue surface).
 
 Headers:
 - `x-pkm-admin-secret: <secret>` (required)
@@ -413,6 +446,36 @@ Response:
   "mode": null
 }
 ```
+
+### `POST /debug/failures/:failure_id/analyze`
+Stores analysis text and transitions status to `analyzed`.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Body:
+```json
+{
+  "analysis_reason": "Root workflow timed out while waiting on parser response.",
+  "proposed_fix": "Increase timeout and add retry with backoff."
+}
+```
+
+Behavior:
+- allowed when current status is `captured` or `analyzed`
+- overwrite is allowed (refreshes `analyzed_at`)
+- rejected when current status is `resolved` (`409`)
+
+### `POST /debug/failures/:failure_id/resolve`
+Marks one failure row resolved.
+
+Headers:
+- `x-pkm-admin-secret: <secret>` (required)
+
+Behavior:
+- allowed from any prior state
+- sets `status = resolved`
+- terminal in v1
 
 ### `GET /debug/failure-bundle/:run_id`
 Returns one merged diagnostic payload by `run_id`:

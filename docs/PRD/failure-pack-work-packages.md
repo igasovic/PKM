@@ -1,6 +1,6 @@
 # Work Packages — Failure Pack Root Dedupe, Analysis Lifecycle, and Codex Access
 
-Status: proposed active companion  
+Status: active companion  
 Related PRD: `docs/PRD/failure-pack-prd.md`
 
 Read this alongside the canonical PRD. This companion breaks the work into implementation slices and does not replace the canonical surface owner.
@@ -9,7 +9,7 @@ Read this alongside the canonical PRD. This companion breaks the work into imple
 
 # WP1 — Failure Pack Root Dedupe And Write Path
 
-Status: proposed active companion  
+Status: active companion  
 Related PRD: `docs/PRD/failure-pack-prd.md`
 
 ## Goal
@@ -116,7 +116,7 @@ This work package must not add a second failure table.
 
 # WP2 — Failure Analysis Lifecycle And UI
 
-Status: proposed active companion  
+Status: active companion  
 Related PRD: `docs/PRD/failure-pack-prd.md`
 
 ## Goal
@@ -275,7 +275,7 @@ V1 UI does not need:
 
 # WP3 — Codex Access And Sidecars
 
-Status: proposed active companion  
+Status: active companion  
 Related PRD: `docs/PRD/failure-pack-prd.md`
 
 ## Goal
@@ -304,7 +304,7 @@ without making Codex a first-class backend or n8n runtime client.
 - n8n webhook workflows or routes used as façades
 - PKM backend endpoints consumed by those façades
 - gitignore for local sidecar destination
-- Codex instruction doc
+- `docs/failure-pack-codex.md`
 - failure-pack PRD
 
 ## Script surface

@@ -2,6 +2,7 @@
 
 const {
   normalizeFailurePackEnvelope,
+  parseFailurePackSummary,
   redactSecrets,
   validateRelativeArtifactPath,
 } = require('../../src/libs/failure-pack.js');
@@ -36,5 +37,25 @@ describe('failure-pack utils', () => {
 
   test('rejects artifact path traversal', () => {
     expect(() => validateRelativeArtifactPath('../outside.json', 'debug/failures')).toThrow('must not traverse outside root');
+  });
+
+  test('derives root_execution_id fallback and normalizes legacy status', () => {
+    const summary = parseFailurePackSummary({
+      schema_version: 'failure-pack.v1',
+      run_id: 'run-x',
+      correlation: {
+        workflow_name: 'WF Child',
+        execution_id: 'exec-1',
+      },
+      failure: {
+        node_name: 'Node A',
+        error_message: 'boom',
+      },
+      status: 'partial',
+    });
+
+    expect(summary.root_execution_id).toBe('exec-1');
+    expect(summary.status).toBe('captured');
+    expect(summary.reporting_workflow_names).toEqual([]);
   });
 });

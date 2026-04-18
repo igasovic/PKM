@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+'use strict';
+
+const { parseArgs, callFailureApi, printJson } = require('./common.js');
+
+async function main() {
+  const args = parseArgs(process.argv);
+  const limitRaw = Number(args.limit || 30);
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(100, Math.trunc(limitRaw)) : 30;
+
+  const { payload, transport, url } = await callFailureApi(`/debug/failures/open?limit=${limit}`);
+  printJson({
+    transport,
+    url,
+    rows: Array.isArray(payload && payload.rows) ? payload.rows : [],
+    limit: Number(payload && payload.limit) || limit,
+  });
+}
+
+main().catch((err) => {
+  process.stderr.write(`list-open-failures: ${err.message}\n`);
+  process.exitCode = 1;
+});

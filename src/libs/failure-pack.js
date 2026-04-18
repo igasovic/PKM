@@ -13,6 +13,12 @@ const DEFAULTS = {
   inline_max_bytes: 65536,
 };
 
+const FAILURE_PACK_STATUSES = new Set([
+  'captured',
+  'analyzed',
+  'resolved',
+]);
+
 function asText(value) {
   return String(value === undefined || value === null ? '' : value).trim();
 }
@@ -38,6 +44,15 @@ function parseDateIso(value, fallbackIso) {
   const dt = new Date(raw);
   if (Number.isNaN(dt.getTime())) return fallbackIso;
   return dt.toISOString();
+}
+
+function normalizeFailureStatus(value, fallback = 'captured') {
+  const raw = asText(value).toLowerCase();
+  if (!raw) return fallback;
+  if (FAILURE_PACK_STATUSES.has(raw)) return raw;
+  // Legacy capture-quality statuses are collapsed into the v2 lifecycle.
+  if (raw === 'partial' || raw === 'failed') return 'captured';
+  return fallback;
 }
 
 function stableJson(value) {
@@ -190,6 +205,12 @@ function normalizeFailurePackEnvelope(input) {
   const payloadsInput = (data.payloads && typeof data.payloads === 'object') ? data.payloads : {};
 
   const workflow_name = asText(correlationInput.workflow_name || data.workflow_name || data.workflow || 'unknown-workflow');
+  const reporting_workflow_name = asText(
+    correlationInput.reporting_workflow_name
+    || data.reporting_workflow_name
+    || data.reportingWorkflowName
+    || workflow_name
+  ) || workflow_name;
   const node_name = asText(failureInput.node_name || failureInput.failing_node || data.node_name || 'unknown-node');
   if (!workflow_name) throw new Error('workflow_name is required');
   if (!node_name) throw new Error('node_name is required');
@@ -198,13 +219,24 @@ function normalizeFailurePackEnvelope(input) {
   const failure_timestamp = parseDateIso(failureInput.timestamp || data.failed_at || created_at, created_at);
   const artifacts = normalizeArtifactList(data.artifacts, cfg.sidecar_root_relative);
 
+  const execution_id = asText(correlationInput.execution_id || data.execution_id) || null;
+  const root_execution_id = asText(
+    correlationInput.root_execution_id
+    || data.root_execution_id
+    || data.rootExecutionId
+    || execution_id
+    || run_id
+  ) || run_id;
+
   const envelope = {
     schema_version: cfg.schema_version,
     failure_id: asText(data.failure_id) || null,
     created_at,
     run_id,
     correlation: {
-      execution_id: asText(correlationInput.execution_id || data.execution_id) || null,
+      root_execution_id,
+      reporting_workflow_name,
+      execution_id,
       workflow_id: asText(correlationInput.workflow_id || data.workflow_id) || null,
       workflow_name,
       execution_url: asText(correlationInput.execution_url || data.execution_url) || null,
@@ -229,7 +261,7 @@ function normalizeFailurePackEnvelope(input) {
       applied: toBoolean(data.redaction && data.redaction.applied, true),
       ruleset_version: asText(data.redaction && data.redaction.ruleset_version) || cfg.redaction_ruleset_version,
     },
-    status: asText(data.status) || 'captured',
+    status: normalizeFailureStatus(data.status, 'captured'),
   };
 
   return envelope;
@@ -241,8 +273,17 @@ function parseFailurePackSummary(pack) {
   const sidecar_root = firstArtifact
     ? posixPath.dirname(firstArtifact.relative_path)
     : null;
+  const reportingWorkflowNames = [];
+  const reporter = asText(envelope.correlation && envelope.correlation.reporting_workflow_name);
+  const canonicalWorkflow = asText(envelope.correlation && envelope.correlation.workflow_name);
+  if (reporter && reporter !== canonicalWorkflow) {
+    reportingWorkflowNames.push(reporter);
+  }
+
   return {
     run_id: envelope.run_id,
+    root_execution_id: asText(envelope.correlation && envelope.correlation.root_execution_id) || envelope.run_id,
+    reporting_workflow_names: reportingWorkflowNames,
     execution_id: envelope.correlation.execution_id,
     workflow_id: envelope.correlation.workflow_id,
     workflow_name: envelope.correlation.workflow_name,
@@ -252,7 +293,7 @@ function parseFailurePackSummary(pack) {
     node_type: envelope.failure.node_type,
     error_name: envelope.failure.error_name,
     error_message: envelope.failure.error_message,
-    status: asText(envelope.status) || 'captured',
+    status: normalizeFailureStatus(envelope.status, 'captured'),
     has_sidecars: envelope.artifacts.length > 0,
     sidecar_root,
     pack: envelope,
@@ -274,7 +315,9 @@ function summarizeForLog(pack) {
   return {
     schema_version: envelope.schema_version,
     run_id: envelope.run_id,
+    root_execution_id: asText(envelope.correlation && envelope.correlation.root_execution_id) || envelope.run_id,
     workflow_name: envelope.correlation.workflow_name,
+    reporting_workflow_name: asText(envelope.correlation && envelope.correlation.reporting_workflow_name) || null,
     node_name: envelope.failure.node_name,
     has_sidecars: envelope.artifacts.length > 0,
     artifact_count: envelope.artifacts.length,
@@ -295,6 +338,7 @@ module.exports = {
   redactSecrets,
   validateRelativeArtifactPath,
   normalizeArtifactList,
+  normalizeFailureStatus,
   normalizeFailurePackEnvelope,
   parseFailurePackSummary,
   summarizeForLog,

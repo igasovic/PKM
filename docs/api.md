@@ -48,7 +48,7 @@ The machine-readable route ownership registry lives in `docs/backend_route_regis
 
 | Family | Detailed doc | Auth pattern | Primary schema touched | Typical tests |
 |---|---|---|---|---|
-| Control / debug | `docs/api_control.md` | mixed; debug/admin routes require secret | `runtime_config`, `pipeline_events`, `failure_packs` | debug/config/failure-pack tests |
+| Control / debug | `docs/api_control.md` | mixed; debug/admin routes require secret | `runtime_config`, `pipeline_events`, `failure_packs` | debug/config/failure-pack lifecycle tests |
 | Ingest / enrichment | `docs/api_ingest.md` | internal | `entries`, `t1_*` for batch flows | normalization, telegram URL-batch ingest, idempotency, batch-status tests |
 | Calendar | `docs/api_calendar.md` | admin secret | `calendar_requests`, `calendar_event_observations` | calendar API and workflow tests |
 | Tier-2 distill | `docs/api_distill.md` | admin secret | `entries`, `t2_*` | tier2 API/control-plane/service tests |

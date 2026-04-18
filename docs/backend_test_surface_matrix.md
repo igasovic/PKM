@@ -8,8 +8,8 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 - keep route, doc, and test planning tied to one source of truth
 
 ## Summary
-- total routes: 68
-- routes with contract tests: 68
+- total routes: 71
+- routes with contract tests: 71
 - routes with smoke coverage: 9
 - routes with integration tests: 0
 - operator/UI/probe routes: 33
@@ -51,8 +51,11 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 | `POST /import/email/mbox` | `internal` | Backlog import workflows | `docs/api_ingest.md` | yes | yes | no | no | test/server/classify.api-contract.test.js |
 | `POST /debug/failures` | `admin_secret` | WF99, operators | `docs/api_control.md` | yes | no | no | yes | test/server/failure-pack.api-contract.test.js |
 | `GET /debug/failures` | `admin_secret` | operators, debug UI | `docs/api_control.md` | yes | no | no | yes | test/server/failure-pack.api-contract.test.js |
+| `GET /debug/failures/open` | `admin_secret` | PKM UI Failures page, n8n failure webhook facade | `docs/api_control.md` | yes | no | no | no | test/server/failure-pack.api-contract.test.js |
 | `GET /debug/failures/by-run/:run_id` | `admin_secret` | operators, debug UI | `docs/api_control.md` | yes | no | no | yes | test/server/control.api-contract.test.js |
 | `GET /debug/failures/:failure_id` | `admin_secret` | operators, debug UI | `docs/api_control.md` | yes | no | no | yes | test/server/failure-pack.api-contract.test.js |
+| `POST /debug/failures/:failure_id/analyze` | `admin_secret` | PKM UI Failures page, n8n failure webhook facade | `docs/api_control.md` | yes | no | no | no | test/server/failure-pack.api-contract.test.js |
+| `POST /debug/failures/:failure_id/resolve` | `admin_secret` | PKM UI Failures page | `docs/api_control.md` | yes | no | no | no | test/server/failure-pack.api-contract.test.js |
 | `GET /debug/failure-bundle/:run_id` | `admin_secret` | operators, debug UI | `docs/api_control.md` | yes | no | no | yes | test/server/control.api-contract.test.js |
 | `GET /debug/run/last` | `admin_secret` | operators, debug UI | `docs/api_control.md` | yes | no | no | yes | test/server/control.api-contract.test.js |
 | `GET /debug/runs` | `admin_secret` | operators, debug UI | `docs/api_control.md` | yes | no | no | yes | test/server/control.api-contract.test.js |

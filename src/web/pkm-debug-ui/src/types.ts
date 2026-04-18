@@ -50,6 +50,8 @@ export interface FailurePackSummary {
   created_at: string | null;
   updated_at: string | null;
   run_id: string;
+  root_execution_id: string | null;
+  reporting_workflow_names: string[];
   execution_id: string | null;
   workflow_id: string | null;
   workflow_name: string | null;
@@ -60,6 +62,9 @@ export interface FailurePackSummary {
   error_name: string | null;
   error_message: string | null;
   status: string | null;
+  analysis_reason: string | null;
+  proposed_fix: string | null;
+  analyzed_at: string | null;
   has_sidecars: boolean;
   sidecar_root: string | null;
 }
@@ -72,6 +77,7 @@ export interface FailureBundle {
   run_id: string;
   failure: {
     failure_id: string | null;
+    root_execution_id?: string | null;
     workflow_name: string | null;
     node_name: string | null;
     error_message: string | null;

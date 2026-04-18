@@ -1,6 +1,8 @@
 'use strict';
 
-const { buildContextPackMarkdown } = require('igasovic-n8n-blocks/shared/context-pack-builder.js');
+const { createContextPackBuilder } = require('@igasovic/n8n-blocks/shared/context-pack-builder-core.js');
+const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
+const { buildContextPackMarkdown } = createContextPackBuilder({ mdv2Message });
 
 function resolvePayload(ctx) {
   const inputAll = ctx && ctx.$input && typeof ctx.$input.all === 'function'

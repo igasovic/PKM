@@ -40,9 +40,10 @@ Local React + Tailwind GUI for:
   - `GET /debug/run/:run_id`
   - `GET /debug/runs`
 - Failures page depends on:
-  - `GET /debug/failures`
+  - `GET /debug/failures/open`
   - `GET /debug/failures/:failure_id`
-  - `GET /debug/failures/by-run/:run_id`
+  - `POST /debug/failures/:failure_id/analyze`
+  - `POST /debug/failures/:failure_id/resolve`
   - `GET /debug/failure-bundle/:run_id`
 - Handles payload variants:
   - `[{ run_id, rows: [...] }]`
@@ -124,9 +125,10 @@ This keeps frontend requests relative and avoids backend CORS changes.
 
 ### Failures
 - Side-menu route at `/failures`.
-- Recent failure list with filters (`workflow_name`, `node_name`, `mode`).
-- Run-id lookup for direct detail open.
+- Open failure queue (`status=captured`) with refresh.
 - Detail panel with summary + stored pack + merged bundle trace.
+- Inline analysis editor (`analysis_reason`, `proposed_fix`) with save action.
+- Resolve action (`status=resolved`, terminal in v1).
 - Quick jump to `/debug/run/:run_id`.
 
 ### Recipes

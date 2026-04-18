@@ -47,6 +47,47 @@ async function fetchJson(path: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<
   }
 }
 
+async function postJson(path: string, body: unknown, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<unknown> {
+  const ctrl = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body ?? {}),
+    });
+
+    const text = await res.text();
+    let payload: unknown;
+
+    try {
+      payload = text ? JSON.parse(text) : {};
+    } catch {
+      throw new Error('server returned invalid JSON');
+    }
+
+    if (!res.ok) {
+      const err = payload as { message?: string; error?: string };
+      const details = err?.message || err?.error || `http_${res.status}`;
+      throw new Error(details);
+    }
+
+    return payload;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error(`request timed out after ${timeoutMs}ms`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function fetchRunById(runId: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<unknown> {
   const id = String(runId || '').trim();
   if (!id) throw new Error('run id is required');
@@ -141,11 +182,18 @@ export async function fetchRecentRuns(
 }
 
 function normalizeFailureSummary(row: Record<string, unknown>): FailurePackSummary {
+  const reporting = Array.isArray(row.reporting_workflow_names)
+    ? row.reporting_workflow_names
+      .map((value) => asString(value))
+      .filter((value): value is string => !!value)
+    : [];
   return {
     failure_id: asString(row.failure_id) || 'unknown-failure',
     created_at: asString(row.created_at),
     updated_at: asString(row.updated_at),
     run_id: asString(row.run_id) || 'unknown-run',
+    root_execution_id: asString(row.root_execution_id),
+    reporting_workflow_names: reporting,
     execution_id: asString(row.execution_id),
     workflow_id: asString(row.workflow_id),
     workflow_name: asString(row.workflow_name),
@@ -156,6 +204,9 @@ function normalizeFailureSummary(row: Record<string, unknown>): FailurePackSumma
     error_name: asString(row.error_name),
     error_message: asString(row.error_message),
     status: asString(row.status),
+    analysis_reason: asString(row.analysis_reason),
+    proposed_fix: asString(row.proposed_fix),
+    analyzed_at: asString(row.analyzed_at),
     has_sidecars: asBoolean(row.has_sidecars),
     sidecar_root: asString(row.sidecar_root),
   };
@@ -228,6 +279,24 @@ export async function fetchFailurePacks(
   };
 }
 
+export async function fetchOpenFailurePacks(
+  limit = 30,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<{ rows: FailurePackSummary[]; limit: number }> {
+  const n = Number(limit);
+  const safeLimit = Number.isFinite(n) && n > 0 ? Math.min(100, Math.trunc(n)) : 30;
+  const payload = await fetchJson(`/api/debug/failures/open?limit=${safeLimit}`, timeoutMs);
+  const data = (payload && typeof payload === 'object') ? (payload as Record<string, unknown>) : {};
+  const rowsRaw = Array.isArray(data.rows) ? data.rows : [];
+  const rows: FailurePackSummary[] = rowsRaw
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+    .map((row) => normalizeFailureSummary(row));
+  return {
+    rows,
+    limit: asNumber(data.limit, safeLimit),
+  };
+}
+
 export async function fetchFailurePackById(
   failureId: string,
   timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -236,6 +305,33 @@ export async function fetchFailurePackById(
   if (!id) throw new Error('failure id is required');
   const payload = await fetchJson(`/api/debug/failures/${encodeURIComponent(id)}`, timeoutMs);
   const data = (payload && typeof payload === 'object') ? (payload as Record<string, unknown>) : {};
+  return normalizeFailureDetail(data);
+}
+
+export async function analyzeFailurePack(
+  failureId: string,
+  payload: { analysis_reason: string; proposed_fix: string },
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<FailurePackDetail> {
+  const id = String(failureId || '').trim();
+  if (!id) throw new Error('failure id is required');
+  const body = {
+    analysis_reason: String(payload.analysis_reason || '').trim(),
+    proposed_fix: String(payload.proposed_fix || '').trim(),
+  };
+  const res = await postJson(`/api/debug/failures/${encodeURIComponent(id)}/analyze`, body, timeoutMs);
+  const data = (res && typeof res === 'object') ? (res as Record<string, unknown>) : {};
+  return normalizeFailureDetail(data);
+}
+
+export async function resolveFailurePack(
+  failureId: string,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<FailurePackDetail> {
+  const id = String(failureId || '').trim();
+  if (!id) throw new Error('failure id is required');
+  const res = await postJson(`/api/debug/failures/${encodeURIComponent(id)}/resolve`, {}, timeoutMs);
+  const data = (res && typeof res === 'object') ? (res as Record<string, unknown>) : {};
   return normalizeFailureDetail(data);
 }
 

@@ -102,11 +102,16 @@ function isStructuredTelegramRouteInput(rawText, prefixes) {
 
 function failurePackResponseRow(row) {
   if (!row || typeof row !== 'object') return null;
+  const reporters = Array.isArray(row.reporting_workflow_names)
+    ? row.reporting_workflow_names.map((value) => asText(value)).filter(Boolean)
+    : [];
   return {
     failure_id: row.failure_id || null,
     created_at: row.created_at || null,
     updated_at: row.updated_at || null,
     run_id: row.run_id || null,
+    root_execution_id: row.root_execution_id || null,
+    reporting_workflow_names: reporters,
     execution_id: row.execution_id || null,
     workflow_id: row.workflow_id || null,
     workflow_name: row.workflow_name || null,
@@ -117,6 +122,9 @@ function failurePackResponseRow(row) {
     error_name: row.error_name || null,
     error_message: row.error_message || null,
     status: row.status || null,
+    analysis_reason: row.analysis_reason || null,
+    proposed_fix: row.proposed_fix || null,
+    analyzed_at: row.analyzed_at || null,
     has_sidecars: !!row.has_sidecars,
     sidecar_root: row.sidecar_root || null,
     pack: row.pack || null,

@@ -6,9 +6,7 @@ Scope type: canonical surface
 Baseline date: 2026-04-17  
 Related authoritative docs: `docs/api.md`, `docs/database_schema.md`, `docs/env.md`, `docs/n8n_sync.md`, `docs/prd-expectations.md`  
 Related work-package docs:
-- `docs/PRD/failure-pack-wp1-root-dedupe-and-write-path.md`
-- `docs/PRD/failure-pack-wp2-analysis-lifecycle-and-ui.md`
-- `docs/PRD/failure-pack-wp3-codex-access-and-sidecars.md`
+- `docs/PRD/failure-pack-work-packages.md`
 
 ## Purpose
 
@@ -636,13 +634,10 @@ This change is complete when all of the following are true:
 
 ## Open questions / REVIEW_REQUIRED
 
-### REVIEW_REQUIRED: exact handling of existing `run_id` uniqueness
-The current table and prior PRD assume strong row identity around `run_id`. The migration must state explicitly whether:
-
-- `run_id` remains unique as a recorded per-failure fact,
-- or uniqueness moves fully to `root_execution_id`.
-
-This must be verified against current code and current write behavior before implementation.
+### Resolved: exact handling of existing `run_id` uniqueness
+- `run_id` remains unique as stored correlation metadata from first insert.
+- dedupe identity is `root_execution_id`.
+- duplicate propagated reports update the existing `root_execution_id` row and keep canonical first-insert fields.
 
 ### REVIEW_REQUIRED: canonical first-insert selection
 The target model keeps the canonical failing workflow from the first insert for a given `root_execution_id`. This assumes the first report received is also the most local and useful one. That should be verified against actual WF99 invocation ordering in nested workflow failures.
@@ -651,6 +646,4 @@ The target model keeps the canonical failing workflow from the first insert for 
 
 ## Work-package split
 
-- `failure-pack-wp1-root-dedupe-and-write-path.md`
-- `failure-pack-wp2-analysis-lifecycle-and-ui.md`
-- `failure-pack-wp3-codex-access-and-sidecars.md`
+- `failure-pack-work-packages.md`

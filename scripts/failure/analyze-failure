@@ -1,0 +1,39 @@
+#!/usr/bin/env node
+'use strict';
+
+const { asText, parseArgs, readTextFile, callFailureApi, printJson } = require('./common.js');
+
+async function main() {
+  const args = parseArgs(process.argv);
+  const failureId = asText(args._[0]);
+  if (!failureId) {
+    throw new Error('usage: analyze-failure <failure_id> --reason-file <path> --fix-file <path>');
+  }
+
+  const reasonText = asText(await readTextFile(args['reason-file']));
+  const fixText = asText(await readTextFile(args['fix-file']));
+  if (!reasonText || !fixText) {
+    throw new Error('reason-file and fix-file must contain non-empty text');
+  }
+
+  const body = {
+    analysis_reason: reasonText,
+    proposed_fix: fixText,
+  };
+
+  const { payload, transport, url } = await callFailureApi(
+    `/debug/failures/${encodeURIComponent(failureId)}/analyze`,
+    { method: 'POST', body }
+  );
+
+  printJson({
+    transport,
+    url,
+    failure: payload,
+  });
+}
+
+main().catch((err) => {
+  process.stderr.write(`analyze-failure: ${err.message}\n`);
+  process.exitCode = 1;
+});

@@ -1,0 +1,91 @@
+#!/usr/bin/env node
+'use strict';
+
+const path = require('node:path');
+const { mkdir } = require('node:fs/promises');
+const { spawnSync } = require('node:child_process');
+const { asText, parseArgs, callFailureApi, printJson } = require('./common.js');
+
+function listArtifacts(failure) {
+  const pack = failure && typeof failure === 'object' ? failure.pack : null;
+  const artifacts = pack && typeof pack === 'object' && Array.isArray(pack.artifacts) ? pack.artifacts : [];
+  return artifacts
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      kind: asText(item.kind) || 'payload-sidecar',
+      relative_path: asText(item.relative_path),
+      sha256: asText(item.sha256) || null,
+    }))
+    .filter((item) => !!item.relative_path);
+}
+
+function copyFileOverScp({ host, remotePath, localPath }) {
+  const res = spawnSync('scp', ['-q', `${host}:${remotePath}`, localPath], {
+    encoding: 'utf8',
+  });
+  if (res.status !== 0) {
+    const stderr = asText(res.stderr);
+    throw new Error(stderr || `scp_failed_${res.status}`);
+  }
+}
+
+async function main() {
+  const args = parseArgs(process.argv);
+  const failureId = asText(args._[0]);
+  if (!failureId) {
+    throw new Error('usage: copy-failure-sidecars <failure_id>');
+  }
+
+  const { payload: failure, transport, url } = await callFailureApi(`/debug/failures/${encodeURIComponent(failureId)}`);
+  const artifacts = listArtifacts(failure);
+
+  const destinationRoot = path.resolve(process.cwd(), '.codex', 'failure-sidecars', failureId);
+  if (artifacts.length === 0) {
+    await mkdir(destinationRoot, { recursive: true });
+    printJson({
+      transport,
+      source_url: url,
+      failure_id: failureId,
+      copied_count: 0,
+      destination_root: destinationRoot,
+      copied_files: [],
+      note: 'no_sidecars_found',
+    });
+    return;
+  }
+
+  const sshHost = asText(process.env.PKM_FAILURE_PI_HOST || 'pi');
+  const sourceRoot = asText(process.env.PKM_FAILURE_PI_SOURCE_ROOT || '/home/igasovic/pkm-import').replace(/\/+$/g, '');
+  if (!sshHost || !sourceRoot) {
+    throw new Error('missing sidecar source config (PKM_FAILURE_PI_HOST / PKM_FAILURE_PI_SOURCE_ROOT)');
+  }
+
+  const copied = [];
+  for (const artifact of artifacts) {
+    const rel = artifact.relative_path.replace(/^\/+/, '');
+    const remotePath = `${sourceRoot}/${rel}`;
+    const localPath = path.join(destinationRoot, rel);
+    await mkdir(path.dirname(localPath), { recursive: true });
+    copyFileOverScp({ host: sshHost, remotePath, localPath });
+    copied.push({
+      kind: artifact.kind,
+      relative_path: rel,
+      local_path: localPath,
+      sha256: artifact.sha256,
+    });
+  }
+
+  printJson({
+    transport,
+    source_url: url,
+    failure_id: failureId,
+    copied_count: copied.length,
+    destination_root: destinationRoot,
+    copied_files: copied,
+  });
+}
+
+main().catch((err) => {
+  process.stderr.write(`copy-failure-sidecars: ${err.message}\n`);
+  process.exitCode = 1;
+});

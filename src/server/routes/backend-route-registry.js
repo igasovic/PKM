@@ -319,6 +319,14 @@ const BACKEND_ROUTE_REGISTRY = [
   },
   {
     "method": "GET",
+    "path": "/debug/failures/open",
+    "auth": "admin_secret",
+    "doc": "docs/api_control.md",
+    "primary_callers": ["PKM UI Failures page", "n8n failure webhook facade"],
+    "tests": ["test/server/failure-pack.api-contract.test.js"]
+  },
+  {
+    "method": "GET",
     "path": "/debug/failures/by-run/:run_id",
     "auth": "admin_secret",
     "doc": "docs/api_control.md",
@@ -331,6 +339,22 @@ const BACKEND_ROUTE_REGISTRY = [
     "auth": "admin_secret",
     "doc": "docs/api_control.md",
     "primary_callers": ["operators", "debug UI"],
+    "tests": ["test/server/failure-pack.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
+    "path": "/debug/failures/:failure_id/analyze",
+    "auth": "admin_secret",
+    "doc": "docs/api_control.md",
+    "primary_callers": ["PKM UI Failures page", "n8n failure webhook facade"],
+    "tests": ["test/server/failure-pack.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
+    "path": "/debug/failures/:failure_id/resolve",
+    "auth": "admin_secret",
+    "doc": "docs/api_control.md",
+    "primary_callers": ["PKM UI Failures page"],
     "tests": ["test/server/failure-pack.api-contract.test.js"]
   },
   {

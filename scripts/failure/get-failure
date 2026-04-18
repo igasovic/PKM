@@ -1,0 +1,24 @@
+#!/usr/bin/env node
+'use strict';
+
+const { asText, parseArgs, callFailureApi, printJson } = require('./common.js');
+
+async function main() {
+  const args = parseArgs(process.argv);
+  const failureId = asText(args._[0]);
+  if (!failureId) {
+    throw new Error('usage: get-failure <failure_id>');
+  }
+
+  const { payload, transport, url } = await callFailureApi(`/debug/failures/${encodeURIComponent(failureId)}`);
+  printJson({
+    transport,
+    url,
+    failure: payload,
+  });
+}
+
+main().catch((err) => {
+  process.stderr.write(`get-failure: ${err.message}\n`);
+  process.exitCode = 1;
+});

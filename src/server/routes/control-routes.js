@@ -188,6 +188,7 @@ async function handleControlRoutes(ctx) {
           output: (out) => ({
             failure_id: out && out.failure_id ? out.failure_id : null,
             run_id: out && out.run_id ? out.run_id : null,
+            root_execution_id: out && out.root_execution_id ? out.root_execution_id : null,
             status: out && out.status ? out.status : null,
             upsert_action: out && out.upsert_action ? out.upsert_action : null,
           }),
@@ -197,6 +198,7 @@ async function handleControlRoutes(ctx) {
       json(res, 200, {
         failure_id: result.failure_id || null,
         run_id: result.run_id || envelope.run_id,
+        root_execution_id: result.root_execution_id || (envelope.correlation && envelope.correlation.root_execution_id) || null,
         status: result.status || envelope.status || 'captured',
         upsert_action: result.upsert_action || 'updated',
       });
@@ -266,6 +268,33 @@ async function handleControlRoutes(ctx) {
     return true;
   }
 
+  if (method === 'GET' && url.pathname === '/debug/failures/open') {
+    try {
+      requireAdminSecret(req);
+      const limit = Number(url.searchParams.get('limit') || 30);
+      const result = await logger.step(
+        'api.debug.failures.list_open',
+        async () => debugRepository.listOpenFailurePacks({ limit }),
+        {
+          input: { limit },
+          output: (out) => ({
+            count: out && Array.isArray(out.rows) ? out.rows.length : 0,
+            limit: out && out.limit ? out.limit : limit,
+          }),
+          meta: { route: url.pathname },
+        }
+      );
+      json(res, 200, {
+        ...result,
+        rows: Array.isArray(result.rows) ? result.rows.map((row) => failurePackSummaryRow(row)) : [],
+      });
+    } catch (err) {
+      logError(err, req);
+      sendError(res, err, { includeErrorCodeField: false, includeField: false });
+    }
+    return true;
+  }
+
   const debugFailureByIdMatch = (method === 'GET')
     ? url.pathname.match(/^\/debug\/failures\/([^/]+)$/)
     : null;
@@ -287,6 +316,57 @@ async function handleControlRoutes(ctx) {
       } else {
         json(res, 200, failurePackResponseRow(row));
       }
+    } catch (err) {
+      logError(err, req);
+      sendError(res, err, { includeErrorCodeField: false, includeField: false });
+    }
+    return true;
+  }
+
+  const debugFailureAnalyzeMatch = (method === 'POST')
+    ? url.pathname.match(/^\/debug\/failures\/([^/]+)\/analyze$/)
+    : null;
+  if (debugFailureAnalyzeMatch) {
+    try {
+      requireAdminSecret(req);
+      const failure_id = decodeURIComponent(debugFailureAnalyzeMatch[1]);
+      const raw = await readBody(req, 1024 * 1024);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const row = await logger.step(
+        'api.debug.failures.analyze',
+        async () => debugRepository.analyzeFailurePack(failure_id, body),
+        {
+          input: { failure_id, has_analysis_reason: !!asText(body.analysis_reason), has_proposed_fix: !!asText(body.proposed_fix) },
+          output: (out) => out ? { failure_id: out.failure_id, status: out.status } : { failure_id, found: false },
+          meta: { route: url.pathname },
+        }
+      );
+      json(res, 200, failurePackResponseRow(row));
+    } catch (err) {
+      logError(err, req);
+      sendError(res, err, { includeErrorCodeField: false, includeField: false });
+    }
+    return true;
+  }
+
+  const debugFailureResolveMatch = (method === 'POST')
+    ? url.pathname.match(/^\/debug\/failures\/([^/]+)\/resolve$/)
+    : null;
+  if (debugFailureResolveMatch) {
+    try {
+      requireAdminSecret(req);
+      const failure_id = decodeURIComponent(debugFailureResolveMatch[1]);
+      const row = await logger.step(
+        'api.debug.failures.resolve',
+        async () => debugRepository.resolveFailurePack(failure_id),
+        {
+          input: { failure_id },
+          output: (out) => out ? { failure_id: out.failure_id, status: out.status } : { failure_id, found: false },
+          meta: { route: url.pathname },
+        }
+      );
+      json(res, 200, failurePackResponseRow(row));
     } catch (err) {
       logError(err, req);
       sendError(res, err, { includeErrorCodeField: false, includeField: false });

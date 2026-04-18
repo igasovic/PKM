@@ -41,12 +41,15 @@ describe('failure-pack API contract', () => {
       upsertFailurePack: jest.fn(async () => ({
         failure_id: '11111111-1111-4111-8111-111111111111',
         run_id: 'run-abc',
+        root_execution_id: 'root-exec-abc',
         status: 'captured',
         upsert_action: 'inserted',
       })),
       getFailurePackById: jest.fn(async () => ({
         failure_id: '11111111-1111-4111-8111-111111111111',
         run_id: 'run-abc',
+        root_execution_id: 'root-exec-abc',
+        reporting_workflow_names: ['WF Parent'],
         workflow_name: 'WF 99 Error Handling',
         node_name: 'Normalize article',
         error_message: 'Request failed with status 500',
@@ -59,6 +62,9 @@ describe('failure-pack API contract', () => {
         workflow_id: '99',
         node_type: 'n8n-nodes-base.httpRequest',
         error_name: 'AxiosError',
+        analysis_reason: 'HTTP 500 in upstream parser',
+        proposed_fix: 'Guard empty parser responses',
+        analyzed_at: '2026-03-28T20:10:00.000Z',
         has_sidecars: true,
         sidecar_root: 'debug/failures/2026/03/28/run-abc/pack-sidecars',
         pack: { schema_version: 'failure-pack.v1', run_id: 'run-abc' },
@@ -66,6 +72,8 @@ describe('failure-pack API contract', () => {
       getFailurePackByRunId: jest.fn(async () => ({
         failure_id: '11111111-1111-4111-8111-111111111111',
         run_id: 'run-abc',
+        root_execution_id: 'root-exec-abc',
+        reporting_workflow_names: [],
         workflow_name: 'WF 99 Error Handling',
         node_name: 'Normalize article',
         error_message: 'Request failed with status 500',
@@ -78,6 +86,9 @@ describe('failure-pack API contract', () => {
         workflow_id: '99',
         node_type: 'n8n-nodes-base.httpRequest',
         error_name: 'AxiosError',
+        analysis_reason: null,
+        proposed_fix: null,
+        analyzed_at: null,
         has_sidecars: true,
         sidecar_root: 'debug/failures/2026/03/28/run-abc/pack-sidecars',
         pack: { schema_version: 'failure-pack.v1', run_id: 'run-abc' },
@@ -86,6 +97,8 @@ describe('failure-pack API contract', () => {
         rows: [{
           failure_id: '11111111-1111-4111-8111-111111111111',
           run_id: 'run-abc',
+          root_execution_id: 'root-exec-abc',
+          reporting_workflow_names: [],
           workflow_name: 'WF 99 Error Handling',
           node_name: 'Normalize article',
           error_message: 'Request failed with status 500',
@@ -98,6 +111,9 @@ describe('failure-pack API contract', () => {
           workflow_id: '99',
           node_type: 'n8n-nodes-base.httpRequest',
           error_name: 'AxiosError',
+          analysis_reason: null,
+          proposed_fix: null,
+          analyzed_at: null,
           has_sidecars: false,
           sidecar_root: null,
         }],
@@ -106,6 +122,67 @@ describe('failure-pack API contract', () => {
         workflow_name: 'WF',
         node_name: 'Normalize',
         mode: 'production',
+      })),
+      listOpenFailurePacks: jest.fn(async () => ({
+        rows: [{
+          failure_id: '11111111-1111-4111-8111-111111111111',
+          run_id: 'run-abc',
+          root_execution_id: 'root-exec-abc',
+          workflow_name: 'WF 99 Error Handling',
+          node_name: 'Normalize article',
+          failed_at: '2026-03-28T20:00:00.000Z',
+          has_sidecars: true,
+          status: 'captured',
+        }],
+        limit: 30,
+      })),
+      analyzeFailurePack: jest.fn(async () => ({
+        failure_id: '11111111-1111-4111-8111-111111111111',
+        run_id: 'run-abc',
+        root_execution_id: 'root-exec-abc',
+        reporting_workflow_names: ['WF Parent'],
+        workflow_name: 'WF 99 Error Handling',
+        node_name: 'Normalize article',
+        error_message: 'Request failed with status 500',
+        failed_at: '2026-03-28T20:00:00.000Z',
+        mode: 'production',
+        status: 'analyzed',
+        created_at: '2026-03-28T20:00:00.000Z',
+        updated_at: '2026-03-28T20:20:00.000Z',
+        execution_id: '123',
+        workflow_id: '99',
+        node_type: 'n8n-nodes-base.httpRequest',
+        error_name: 'AxiosError',
+        analysis_reason: 'Root workflow timed out',
+        proposed_fix: 'Increase timeout and add retry',
+        analyzed_at: '2026-03-28T20:20:00.000Z',
+        has_sidecars: true,
+        sidecar_root: 'debug/failures/2026/03/28/run-abc/pack-sidecars',
+        pack: { schema_version: 'failure-pack.v1', run_id: 'run-abc' },
+      })),
+      resolveFailurePack: jest.fn(async () => ({
+        failure_id: '11111111-1111-4111-8111-111111111111',
+        run_id: 'run-abc',
+        root_execution_id: 'root-exec-abc',
+        reporting_workflow_names: ['WF Parent'],
+        workflow_name: 'WF 99 Error Handling',
+        node_name: 'Normalize article',
+        error_message: 'Request failed with status 500',
+        failed_at: '2026-03-28T20:00:00.000Z',
+        mode: 'production',
+        status: 'resolved',
+        created_at: '2026-03-28T20:00:00.000Z',
+        updated_at: '2026-03-28T20:30:00.000Z',
+        execution_id: '123',
+        workflow_id: '99',
+        node_type: 'n8n-nodes-base.httpRequest',
+        error_name: 'AxiosError',
+        analysis_reason: 'Root workflow timed out',
+        proposed_fix: 'Increase timeout and add retry',
+        analyzed_at: '2026-03-28T20:20:00.000Z',
+        has_sidecars: true,
+        sidecar_root: 'debug/failures/2026/03/28/run-abc/pack-sidecars',
+        pack: { schema_version: 'failure-pack.v1', run_id: 'run-abc' },
       })),
       getPipelineRun: jest.fn(async () => ({ run_id: 'run-abc', rows: [{ run_id: 'run-abc', seq: 1 }] })),
       getLastPipelineRun: jest.fn(async () => ({ run_id: null, rows: [] })),
@@ -180,6 +257,7 @@ describe('failure-pack API contract', () => {
     expect(parsed).toEqual({
       failure_id: '11111111-1111-4111-8111-111111111111',
       run_id: 'run-abc',
+      root_execution_id: 'root-exec-abc',
       status: 'captured',
       upsert_action: 'inserted',
     });
@@ -229,6 +307,81 @@ describe('failure-pack API contract', () => {
     const parsed = JSON.parse(res.body);
     expect(parsed.rows).toHaveLength(1);
     expect(parsed.rows[0].pack).toBeUndefined();
+  });
+
+  test('GET /debug/failures/open returns captured summary rows', async () => {
+    await startServer();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'GET',
+      '/debug/failures/open?limit=30',
+      null,
+      { 'x-pkm-admin-secret': 'test-admin-secret' },
+    );
+
+    expect(res.status).toBe(200);
+    expect(debugRepoMock.listOpenFailurePacks).toHaveBeenCalledWith({ limit: 30 });
+    const parsed = JSON.parse(res.body);
+    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.rows[0]).toEqual(expect.objectContaining({
+      failure_id: '11111111-1111-4111-8111-111111111111',
+      root_execution_id: 'root-exec-abc',
+      status: 'captured',
+    }));
+  });
+
+  test('POST /debug/failures/:failure_id/analyze updates row to analyzed', async () => {
+    await startServer();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/debug/failures/11111111-1111-4111-8111-111111111111/analyze',
+      JSON.stringify({
+        analysis_reason: 'Root workflow timed out',
+        proposed_fix: 'Increase timeout and add retry',
+      }),
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    expect(debugRepoMock.analyzeFailurePack).toHaveBeenCalledWith(
+      '11111111-1111-4111-8111-111111111111',
+      expect.objectContaining({
+        analysis_reason: 'Root workflow timed out',
+        proposed_fix: 'Increase timeout and add retry',
+      }),
+    );
+    const parsed = JSON.parse(res.body);
+    expect(parsed.status).toBe('analyzed');
+    expect(parsed.analysis_reason).toBe('Root workflow timed out');
+  });
+
+  test('POST /debug/failures/:failure_id/resolve sets status to resolved', async () => {
+    await startServer();
+    if (listenDenied) return;
+
+    const res = await request(
+      port,
+      'POST',
+      '/debug/failures/11111111-1111-4111-8111-111111111111/resolve',
+      '{}',
+      {
+        'Content-Type': 'application/json',
+        'x-pkm-admin-secret': 'test-admin-secret',
+      },
+    );
+
+    expect(res.status).toBe(200);
+    expect(debugRepoMock.resolveFailurePack).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111');
+    const parsed = JSON.parse(res.body);
+    expect(parsed.status).toBe('resolved');
   });
 
   test('GET /debug/failure-bundle/:run_id returns failure + run trace', async () => {
