@@ -55,7 +55,7 @@
         [
           {
             "index": 0,
-            "node": "Call 'Tier-1 Enhancement'",
+            "node": "If 'skipped'",
             "type": "main"
           }
         ]
@@ -148,6 +148,18 @@
           {
             "index": 1,
             "node": "Merge1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "If 'skipped'": {
+      "main": [
+        [],
+        [
+          {
+            "index": 0,
+            "node": "Call 'Tier-1 Enhancement'",
             "type": "main"
           }
         ]
@@ -423,6 +435,40 @@
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
+    },
+    {
+      "id": "7e2f8d58-df68-4f16-9ef6-0a1b56468c95",
+      "name": "If 'skipped'",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1888,
+        -96
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c67697d7-59ea-4ab4-b118-35bf42545f57",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "skipped",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
     }
   ],
   "settings": {

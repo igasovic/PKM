@@ -133,24 +133,6 @@
         ]
       ]
     },
-    "IF Has URL": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Call '06 Web Extraction'",
-            "type": "main"
-          }
-        ],
-        [
-          {
-            "index": 0,
-            "node": "Format Thought Saved Message",
-            "type": "main"
-          }
-        ]
-      ]
-    },
     "If 'skipped'": {
       "main": [
         [
@@ -163,7 +145,7 @@
         [
           {
             "index": 0,
-            "node": "IF Has URL",
+            "node": "Call 'Tier-1 Enhancement'",
             "type": "main"
           }
         ]
@@ -302,40 +284,6 @@
   "isArchived": false,
   "name": "02 Telegram Capture",
   "nodes": [
-    {
-      "id": "0ff69fb7-2f88-4864-8ccd-385134a83376",
-      "name": "IF Has URL",
-      "parameters": {
-        "conditions": {
-          "combinator": "and",
-          "conditions": [
-            {
-              "id": "144dac2d-e0d8-46f4-bd49-34d9ef783406",
-              "leftValue": "={{ !!($json.url_canonical || $json.url) }}",
-              "operator": {
-                "operation": "true",
-                "singleValue": true,
-                "type": "boolean"
-              },
-              "rightValue": "true"
-            }
-          ],
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 1
-          }
-        },
-        "options": {}
-      },
-      "position": [
-        464,
-        -320
-      ],
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2
-    },
     {
       "id": "e7474a77-f17b-4f8f-bbe1-632804bd2e69",
       "name": "Create Message",
