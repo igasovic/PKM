@@ -7,8 +7,8 @@
  */
 'use strict';
 
-const { getConfig } = require('igasovic-n8n-blocks/shared/config.js');
-const { mdv2Message } = require('igasovic-n8n-blocks/shared/telegram-markdown.js');
+const { getConfig } = require('@igasovic/n8n-blocks/shared/config.js');
+const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
 
 module.exports = async function run(ctx) {
   const { $json, $items } = ctx;

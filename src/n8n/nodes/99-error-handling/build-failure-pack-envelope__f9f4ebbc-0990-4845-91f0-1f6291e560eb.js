@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = async function run(ctx) {
-  const { loadFailurePackConfig, redactSecrets, sha256Hex, byteLength } = require('igasovic-n8n-blocks/shared/failure-pack.js');
+  const { loadFailurePackConfig, redactSecrets, sha256Hex, byteLength } = require('@igasovic/n8n-blocks/shared/failure-pack.js');
   const fs = require('node:fs/promises');
   const path = require('node:path');
   const posixPath = path.posix;
@@ -211,6 +211,10 @@ module.exports = async function run(ctx) {
   const stack = asText(input.error_stack);
   const time = asText(input.failed_at) || new Date().toISOString();
   const execId = asText(input.execution_id) || 'unknown';
+  const rootExecutionId = asText(input.root_execution_id)
+    || asText(findFirstValueByKey(e, 'root_execution_id'))
+    || asText(findFirstValueByKey(e, 'rootExecutionId'))
+    || execId;
   const execUrl = asText(input.execution_url);
   const runId = asText(input.run_id) || `n8n-error-${Date.now()}`;
   const createdAtIso = asText(input.created_at_iso) || new Date().toISOString();
@@ -358,6 +362,8 @@ module.exports = async function run(ctx) {
     created_at: createdAtIso,
     run_id: runId,
     correlation: {
+      root_execution_id: rootExecutionId || runId,
+      reporting_workflow_name: workflowName,
       execution_id: execId === 'unknown' ? null : execId,
       workflow_id: workflowId || null,
       workflow_name: workflowName,
@@ -392,7 +398,7 @@ module.exports = async function run(ctx) {
       applied: true,
       ruleset_version: failurePackConfig.redaction_ruleset_version || 'v1',
     },
-    status: sidecarWriteErrors.length ? 'partial' : 'captured',
+    status: 'captured',
   };
 
   return [{

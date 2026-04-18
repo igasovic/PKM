@@ -19,7 +19,7 @@ function loadTelegramMarkdown() {
   try {
     return require(packagedPath);
   } catch (_err) {
-    return require('igasovic-n8n-blocks/shared/telegram-markdown.js');
+    return require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
   }
 }
 

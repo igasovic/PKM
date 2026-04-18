@@ -6,7 +6,7 @@ const {
   bullet,
   joinLines,
   finalizeMarkdownV2,
-} = require('igasovic-n8n-blocks/shared/telegram-markdown.js');
+} = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
 
 function asText(value) {
   return String(value === undefined || value === null ? '' : value).trim();

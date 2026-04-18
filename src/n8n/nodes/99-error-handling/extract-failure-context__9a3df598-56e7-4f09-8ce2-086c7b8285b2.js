@@ -132,6 +132,11 @@ module.exports = async function run(ctx) {
   const runId = asText(findFirstValueByKey(e, 'run_id'))
     || asText(e.run_id)
     || (execId && execId !== 'unknown' ? `n8n-exec-${execId}` : `n8n-error-${Date.now()}`);
+  const rootExecutionId = asText(findFirstValueByKey(e, 'root_execution_id'))
+    || asText(findFirstValueByKey(e, 'rootExecutionId'))
+    || asText(e.root_execution_id)
+    || asText(e.rootExecutionId)
+    || execId;
 
   const SMOKE_MASTER_WORKFLOW_ID = '2DB1S0mq7UQN4U3InXRM0';
   const SMOKE_MASTER_WORKFLOW_NAME = '00 Smoke - Master';
@@ -148,6 +153,8 @@ module.exports = async function run(ctx) {
       telegram_error: telegramError,
       failed_at: time,
       execution_id: execId,
+      root_execution_id: rootExecutionId || execId,
+      reporting_workflow_name: workflowName,
       execution_url: execUrl || null,
       run_id: runId,
       created_at_iso: new Date().toISOString(),

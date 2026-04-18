@@ -2,7 +2,7 @@
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
-  const { mdv2Message } = require('igasovic-n8n-blocks/shared/telegram-markdown.js');
+  const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
   const asText = (value) => String(value === undefined || value === null ? '' : value).trim();
   const asArray = (value) => Array.isArray(value) ? value : [];
   const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

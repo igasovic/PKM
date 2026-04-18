@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const { deriveContentHashFromCleanText } = require('igasovic-n8n-blocks/shared/content-hash.js');
+const { deriveContentHashFromCleanText } = require('@igasovic/n8n-blocks/shared/content-hash.js');
 
 module.exports = async function run(ctx) {
   const { $input, $json, $items, $node, $env, helpers } = ctx;
