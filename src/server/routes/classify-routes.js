@@ -260,6 +260,20 @@ async function handleClassifyRoutes(ctx) {
       const raw = await readBody(req);
       const body = parseJsonBody(raw);
       bindRunIdFromBody(body);
+      const hasRunParams = body
+        && typeof body === 'object'
+        && !Array.isArray(body)
+        && (
+          Object.prototype.hasOwnProperty.call(body, 'execution_mode')
+          || Object.prototype.hasOwnProperty.call(body, 'dry_run')
+          || Object.prototype.hasOwnProperty.call(body, 'limit')
+          || Object.prototype.hasOwnProperty.call(body, 'schema')
+        );
+      if (!hasRunParams) {
+        const err = new Error('enrich/t1/run requires at least one parameter (--dry-run, --limit, --sync, --batch, or schema)');
+        err.statusCode = 400;
+        throw err;
+      }
       const result = await logger.step(
         'api.enrich.t1.run',
         async () => runTier1ClassifyRun(body || {}),

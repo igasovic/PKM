@@ -346,6 +346,19 @@ describe('classify and ingest API contract', () => {
     });
   });
 
+  test('POST /enrich/t1/run rejects empty payload', async () => {
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(port, 'POST', '/enrich/t1/run', JSON.stringify({}), { 'Content-Type': 'application/json' });
+
+    expect(res.status).toBe(400);
+    expect(classifyRunMock).not.toHaveBeenCalled();
+    const parsed = JSON.parse(res.body);
+    expect(parsed.error).toBe('bad_request');
+    expect(String(parsed.message || '')).toContain('requires at least one parameter');
+  });
+
   test('POST /enrich/t1/update forwards explicit classify update payload', async () => {
     classifyUpdateMock.mockResolvedValue({
       schema: 'pkm',

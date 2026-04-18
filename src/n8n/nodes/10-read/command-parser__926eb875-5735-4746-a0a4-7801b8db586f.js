@@ -356,6 +356,10 @@ if (cmd === 'distill') {
 
 // Special case: /classify [--batch] [--dry-run] [--limit N]
 if (cmd === 'classify') {
+  const hasExplicitFlags = /--(?:dry-run|batch|sync|limit(?:\s+\d+|=\d+))\b/i.test(text);
+  if (!hasExplicitFlags) {
+    return replyNow(telegram_chat_id, usageFor('classify'));
+  }
   const dry_run = /--dry-run\b/i.test(text);
   const forceBatch = /--batch\b/i.test(text);
   const forceSync = /--sync\b/i.test(text);

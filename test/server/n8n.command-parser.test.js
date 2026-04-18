@@ -92,6 +92,13 @@ describe('n8n command parser', () => {
     expect(out.classify_limit).toBe(0);
   });
 
+  test('/classify without params returns usage block', async () => {
+    const out = await runParser('/classify');
+    const text = unescapeMdv2(out.telegram_message);
+    expect(out._reply_now).toBe(true);
+    expect(text).toContain('/classify [--batch] [--dry-run] [--limit N]');
+  });
+
   test('/classify --batch sets execution_mode=batch and parses limit', async () => {
     const out = await runParser('/classify --batch --limit 500');
     expect(out.cmd).toBe('classify');
