@@ -657,7 +657,7 @@
       "id": "42a2c7f4-b0fb-4b18-8f1e-8b9f1d3bcb6a",
       "name": "Format Thought Saved Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nconst { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');\n  const entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\n  const action = String($json.action ?? 'inserted').trim() || 'inserted';\n  const text = 'Thought saved as entry ' + entryId + ' operation ' + action;\n  return [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\n"
+        "jsCode": "'use strict';\n\nfunction mdv2Message(value) {\n  const escaped = String(value ?? '').replace(/[\\\\_*\\[\\]()~`>#+\\-=|{}.!]/g, '\\\\$&');\n  return escaped.length > 4000 ? escaped.slice(0, 3997) + '...' : escaped;\n}\n\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nconst action = String($json.action ?? 'inserted').trim() || 'inserted';\nconst text = 'Thought saved as entry ' + entryId + ' operation ' + action;\n\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\n"
       },
       "position": [
         1584,
