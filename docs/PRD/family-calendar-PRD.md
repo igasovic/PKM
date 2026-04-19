@@ -75,7 +75,7 @@ The current Telegram entry point is workflow **`01 Telegram Router`**. It perfor
 
 - calls PKM config
 - calls `POST /normalize/telegram`
-- calls `POST /db/insert`
+- calls `POST /pkm/insert`
 - continues existing PKM capture / enrichment behavior
 
 This matters because `POST /normalize/telegram` is explicitly documented as returning a `pkm.entries`-compatible payload for Telegram capture, not a calendar-event contract. Calendar work must therefore be introduced as a separate intent family and a separate backend contract rather than extending the current note-normalization path.

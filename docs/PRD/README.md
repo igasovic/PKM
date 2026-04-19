@@ -69,7 +69,7 @@ The legacy sections that previously lived in `docs/requirements.md` were reviewe
 | idempotency policy catalog | `docs/PRD/ingest-prd.md` | database facts still stay in `docs/database_schema.md` |
 | DB idempotency table / column / constraint contract | `docs/PRD/ingest-prd.md` | schema reference remains authoritative in `docs/database_schema.md` |
 | skip / update conflict behavior | `docs/PRD/ingest-prd.md` | backend DB write boundary owned by ingest |
-| batch `/db/insert` / `/db/update` semantics | `docs/PRD/ingest-prd.md` | until a dedicated write-surface PRD exists |
+| batch `/pkm/insert/batch` / `/db/update` semantics | `docs/PRD/ingest-prd.md` | until a dedicated write-surface PRD exists |
 | shared retrieval / quality computation | `docs/PRD/ingest-prd.md` | especially normalization-side DB-ready projections |
 | Tier-1 LiteLLM runtime contract | `docs/PRD/classify-prd.md` | config/env details still move with backend runtime docs |
 | Tier-1 graph / orchestration rules | `docs/PRD/classify-prd.md` | includes sync, schedule, and collect graphs |

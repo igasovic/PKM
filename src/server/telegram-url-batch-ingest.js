@@ -3,18 +3,6 @@
 const readWriteRepository = require('./repositories/read-write-repository.js');
 const { runTelegramBulkUrlIngestionPipeline } = require('./ingestion-pipeline.js');
 
-const DEFAULT_RETURNING = [
-  'entry_id',
-  'id',
-  'created_at',
-  'source',
-  'intent',
-  'content_type',
-  'url',
-  'url_canonical',
-  'COALESCE(char_length(capture_text), 0) AS text_len',
-];
-
 function toTelegramInsertItem(normalized, opts = {}) {
   const smokeMode = opts.smoke_mode === true;
   const smokeRunId = String(opts.test_run_id || '').trim();
@@ -34,12 +22,6 @@ function toTelegramInsertItem(normalized, opts = {}) {
     url: normalized.url ?? null,
     url_canonical: normalized.url_canonical ?? null,
 
-    topic_primary: null,
-    topic_primary_confidence: null,
-    topic_secondary: null,
-    topic_secondary_confidence: null,
-    gist: null,
-
     idempotency_policy_key: normalized.idempotency_policy_key,
     idempotency_key_primary: normalized.idempotency_key_primary,
     idempotency_key_secondary: normalized.idempotency_key_secondary,
@@ -49,14 +31,12 @@ function toTelegramInsertItem(normalized, opts = {}) {
     retrieval_version: normalized.retrieval?.version ?? null,
     source_domain: normalized.retrieval?.source_domain ?? null,
 
-    clean_word_count: normalized.retrieval?.quality?.clean_word_count ?? null,
     clean_char_count: normalized.retrieval?.quality?.clean_char_count ?? null,
     extracted_char_count: normalized.retrieval?.quality?.extracted_char_count ?? null,
     link_count: normalized.retrieval?.quality?.link_count ?? null,
     link_ratio: normalized.retrieval?.quality?.link_ratio ?? null,
     boilerplate_heavy: normalized.retrieval?.quality?.boilerplate_heavy ?? null,
     low_signal: normalized.retrieval?.quality?.low_signal ?? null,
-    extraction_incomplete: normalized.retrieval?.quality?.extraction_incomplete ?? null,
     quality_score: normalized.retrieval?.quality?.quality_score ?? null,
   };
 }
@@ -76,10 +56,9 @@ async function ingestTelegramUrlBatch(body = {}) {
   const itemBatchIndexes = normalized.items.map((item) => Number(item._bulk_index));
 
   const inserted = items.length > 0
-    ? await readWriteRepository.insert({
+    ? await readWriteRepository.insertPkmBatch({
       items,
       continue_on_error: continueOnError,
-      returning: DEFAULT_RETURNING,
     })
     : { rows: [] };
 

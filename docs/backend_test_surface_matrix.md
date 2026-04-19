@@ -8,9 +8,9 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 - keep route, doc, and test planning tied to one source of truth
 
 ## Summary
-- total routes: 71
-- routes with contract tests: 71
-- routes with smoke coverage: 9
+- total routes: 73
+- routes with contract tests: 73
+- routes with smoke coverage: 11
 - routes with integration tests: 0
 - operator/UI/probe routes: 33
 - routes with no declared tests: 0
@@ -80,7 +80,9 @@ Generated from `docs/backend_route_registry.json` by `scripts/CI/generate_backen
 | `POST /todoist/brief/waiting` | `internal` | 36 Todoist Waiting Radar, 10 Read /waiting | `docs/api_todoist.md` | yes | no | no | no | test/server/todoist.api-contract.test.js |
 | `POST /todoist/brief/weekly` | `internal` | 37 Todoist Weekly Pruning | `docs/api_todoist.md` | yes | no | no | no | test/server/todoist.api-contract.test.js |
 | `POST /todoist/eval/normalize` | `admin_secret` | Pi eval runner | `docs/api_todoist.md` | yes | no | no | no | test/server/todoist.api-contract.test.js |
-| `POST /db/insert` | `internal` | n8n capture workflows | `docs/api_read_write.md` | yes | yes | no | no | test/server/read-write.api-contract.test.js |
+| `POST /pkm/insert` | `internal` | n8n capture workflows | `docs/api_read_write.md` | yes | yes | no | no | test/server/read-write.api-contract.test.js |
+| `POST /pkm/insert/batch` | `internal` | batch ingest workflows, email backlog import | `docs/api_read_write.md` | yes | yes | no | no | test/server/read-write.api-contract.test.js |
+| `POST /pkm/insert/enriched` | `internal` | chatgpt wrap_commit, enriched ingest workflows | `docs/api_read_write.md` | yes | yes | no | no | test/server/read-write.api-contract.test.js |
 | `POST /db/update` | `internal` | n8n update workflows | `docs/api_read_write.md` | yes | no | no | no | test/server/read-write.api-contract.test.js |
 | `POST /db/delete` | `admin_secret` | operators | `docs/api_read_write.md` | yes | no | no | yes | test/server/read-write.api-contract.test.js |
 | `POST /db/move` | `admin_secret` | operators | `docs/api_read_write.md` | yes | no | no | yes | test/server/read-write.api-contract.test.js |

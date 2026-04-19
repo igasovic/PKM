@@ -25,7 +25,7 @@ async function handleReadWriteRoutes(ctx) {
     testModeService,
   } = ctx;
 
-  if (method === 'POST' && url.pathname.startsWith('/db/')) {
+  if (method === 'POST' && (url.pathname.startsWith('/db/') || url.pathname.startsWith('/pkm/'))) {
     const start = Date.now();
     const meta = {
       op: `api${url.pathname.replace(/\//g, '_')}`,
@@ -46,7 +46,9 @@ async function handleReadWriteRoutes(ctx) {
       result = await logger.step(
         `api${url.pathname.replace(/\//g, '_')}`,
         async () => {
-          if (url.pathname === '/db/insert') return readWriteRepository.insert(body);
+          if (url.pathname === '/pkm/insert') return readWriteRepository.insertPkm(body);
+          if (url.pathname === '/pkm/insert/batch') return readWriteRepository.insertPkmBatch(body);
+          if (url.pathname === '/pkm/insert/enriched') return readWriteRepository.insertPkmEnriched(body);
           if (url.pathname === '/db/update') return readWriteRepository.update(body);
           if (url.pathname === '/db/delete') return readWriteRepository.deleteEntries(body);
           if (url.pathname === '/db/move') return readWriteRepository.moveEntries(body);

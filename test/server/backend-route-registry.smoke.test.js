@@ -96,6 +96,9 @@ describe('backend route registry smoke matrix', () => {
 
     jest.doMock('../../src/server/repositories/read-write-repository.js', () => ({
       insert: async () => ({ rows: [{ entry_id: 101 }], rowCount: 1 }),
+      insertPkm: async () => ({ rows: [{ entry_id: 101, id: 'uuid-101', action: 'inserted' }], rowCount: 1 }),
+      insertPkmBatch: async () => ({ rows: [{ _batch_index: 0, _batch_ok: true, entry_id: 101, id: 'uuid-101', action: 'inserted', error: null }], rowCount: 1 }),
+      insertPkmEnriched: async () => ({ rows: [{ entry_id: 101, id: 'uuid-101', action: 'inserted' }], rowCount: 1 }),
       update: async () => ({ rows: [{ entry_id: 101 }], rowCount: 1 }),
       deleteEntries: async () => ({ rows: [{ deleted_count: 1 }], rowCount: 1 }),
       moveEntries: async () => ({ rows: [{ moved_count: 1 }], rowCount: 1 }),

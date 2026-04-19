@@ -38,7 +38,9 @@ describe('read-write API contract', () => {
     process.env.PKM_ADMIN_SECRET = 'test-admin-secret';
 
     repoMock = {
-      insert: jest.fn(async () => ({ rows: [{ entry_id: 1 }], rowCount: 1 })),
+      insertPkm: jest.fn(async () => ({ rows: [{ entry_id: 1, id: 'uuid-1', action: 'inserted' }], rowCount: 1 })),
+      insertPkmBatch: jest.fn(async () => ({ rows: [{ _batch_index: 0, _batch_ok: true, entry_id: 1, id: 'uuid-1', action: 'inserted', error: null }], rowCount: 1 })),
+      insertPkmEnriched: jest.fn(async () => ({ rows: [{ entry_id: 1, id: 'uuid-1', action: 'inserted', gist: 'ok' }], rowCount: 1 })),
       update: jest.fn(async () => ({ rows: [{ entry_id: 1, updated: true }], rowCount: 1 })),
       deleteEntries: jest.fn(async () => ({ rows: [{ entry_id: 1, deleted: true }], rowCount: 1 })),
       moveEntries: jest.fn(async () => ({ rows: [{ entry_id: 1, moved: true }], rowCount: 1 })),
@@ -98,16 +100,78 @@ describe('read-write API contract', () => {
     }
   }
 
-  test('POST /db/insert returns repository rows', async () => {
+  test('POST /db/insert is removed', async () => {
     await startServer();
     if (listenDenied) return;
 
     const payload = { input: { source: 'telegram', capture_text: 'hello' } };
     const res = await request(port, 'POST', '/db/insert', JSON.stringify(payload), { 'Content-Type': 'application/json' });
 
+    expect(res.status).toBe(404);
+  });
+
+  test('POST /pkm/insert returns repository rows', async () => {
+    await startServer();
+    if (listenDenied) return;
+
+    const payload = {
+      source: 'telegram',
+      intent: 'archive',
+      content_type: 'note',
+      capture_text: 'hello',
+      clean_text: 'hello',
+      idempotency_policy_key: 'telegram_thought_v1',
+      idempotency_key_primary: 'tg:1:1',
+    };
+    const res = await request(port, 'POST', '/pkm/insert', JSON.stringify(payload), { 'Content-Type': 'application/json' });
+
     expect(res.status).toBe(200);
-    expect(repoMock.insert).toHaveBeenCalledWith(payload);
-    expect(JSON.parse(res.body)).toEqual([{ entry_id: 1 }]);
+    expect(repoMock.insertPkm).toHaveBeenCalledWith(payload);
+    expect(JSON.parse(res.body)).toEqual([{ entry_id: 1, id: 'uuid-1', action: 'inserted' }]);
+  });
+
+  test('POST /pkm/insert/batch returns repository rows', async () => {
+    await startServer();
+    if (listenDenied) return;
+
+    const payload = {
+      continue_on_error: true,
+      items: [{
+        source: 'telegram',
+        intent: 'archive',
+        content_type: 'note',
+        capture_text: 'hello',
+        clean_text: 'hello',
+        idempotency_policy_key: 'telegram_thought_v1',
+        idempotency_key_primary: 'tg:1:1',
+      }],
+    };
+    const res = await request(port, 'POST', '/pkm/insert/batch', JSON.stringify(payload), { 'Content-Type': 'application/json' });
+
+    expect(res.status).toBe(200);
+    expect(repoMock.insertPkmBatch).toHaveBeenCalledWith(payload);
+    expect(JSON.parse(res.body)).toEqual([{ _batch_index: 0, _batch_ok: true, entry_id: 1, id: 'uuid-1', action: 'inserted', error: null }]);
+  });
+
+  test('POST /pkm/insert/enriched returns repository rows', async () => {
+    await startServer();
+    if (listenDenied) return;
+
+    const payload = {
+      source: 'chatgpt',
+      intent: 'thought',
+      content_type: 'note',
+      capture_text: 'hello',
+      clean_text: 'hello',
+      idempotency_policy_key: 'chatgpt_session_note_v1',
+      idempotency_key_primary: 'chatgpt:session-1',
+      gist: 'gist',
+    };
+    const res = await request(port, 'POST', '/pkm/insert/enriched', JSON.stringify(payload), { 'Content-Type': 'application/json' });
+
+    expect(res.status).toBe(200);
+    expect(repoMock.insertPkmEnriched).toHaveBeenCalledWith(payload);
+    expect(JSON.parse(res.body)).toEqual([{ entry_id: 1, id: 'uuid-1', action: 'inserted', gist: 'ok' }]);
   });
 
   test('POST /db/update returns repository rows', async () => {

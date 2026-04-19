@@ -250,7 +250,7 @@ Current behavior:
 
 - already supports `When Executed by Another Workflow`
 - normalizes via `/normalize/telegram`
-- inserts via `/db/insert`
+- inserts via `/pkm/insert`
 - handles duplicates via `action == skipped`
 - optionally runs web extraction when URL exists
 - calls Tier-1 enrichment
@@ -268,7 +268,7 @@ Current behavior:
 
 - starts from IMAP trigger
 - normalizes via `/normalize/email`
-- inserts via `/db/insert`
+- inserts via `/pkm/insert`
 - handles duplicates
 - calls Tier-1 enrichment
 - formats and sends Telegram notification

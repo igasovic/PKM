@@ -214,7 +214,7 @@ Response:
 
 ### `POST /normalize/webpage`
 Normalizes webpage/article capture text and recomputes retrieval + quality in one call.
-The response is insert-ready for canonical web extraction flows (`/db/insert`), including idempotency fields.
+The response is insert-ready for canonical web extraction flows (`/pkm/insert`), including idempotency fields.
 
 Body:
 ```json

@@ -551,7 +551,7 @@ const BACKEND_ROUTE_REGISTRY = [
   },
   {
     "method": "POST",
-    "path": "/db/insert",
+    "path": "/pkm/insert",
     "auth": "internal",
     "doc": "docs/api_read_write.md",
     "primary_callers": ["n8n capture workflows"],
@@ -560,10 +560,69 @@ const BACKEND_ROUTE_REGISTRY = [
       "enabled": true,
       "expected_status": 200,
       "body": {
-        "input": {
-          "source": "telegram",
-          "capture_text": "hello from smoke"
+        "source": "telegram",
+        "intent": "archive",
+        "content_type": "note",
+        "capture_text": "hello from smoke",
+        "clean_text": "hello from smoke",
+        "idempotency_policy_key": "telegram_thought_v1",
+        "idempotency_key_primary": "smoke:insert:telegram:hello",
+        "idempotency_key_secondary": "smoke:insert:telegram:hello:v1",
+        "metadata": {
+          "smoke": {
+            "suite": "route-registry"
+          }
         }
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/pkm/insert/batch",
+    "auth": "internal",
+    "doc": "docs/api_read_write.md",
+    "primary_callers": ["batch ingest workflows", "email backlog import"],
+    "tests": ["test/server/read-write.api-contract.test.js"],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "continue_on_error": true,
+        "items": [
+          {
+            "source": "telegram",
+            "intent": "archive",
+            "content_type": "note",
+            "capture_text": "hello batch smoke",
+            "clean_text": "hello batch smoke",
+            "idempotency_policy_key": "telegram_thought_v1",
+            "idempotency_key_primary": "smoke:insert-batch:telegram:hello",
+            "idempotency_key_secondary": "smoke:insert-batch:telegram:hello:v1"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/pkm/insert/enriched",
+    "auth": "internal",
+    "doc": "docs/api_read_write.md",
+    "primary_callers": ["chatgpt wrap_commit", "enriched ingest workflows"],
+    "tests": ["test/server/read-write.api-contract.test.js"],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "source": "telegram",
+        "intent": "thought",
+        "content_type": "note",
+        "capture_text": "hello enriched smoke",
+        "clean_text": "hello enriched smoke",
+        "idempotency_policy_key": "telegram_thought_v1",
+        "idempotency_key_primary": "smoke:insert-enriched:telegram:hello",
+        "idempotency_key_secondary": "smoke:insert-enriched:telegram:hello:v1",
+        "gist": "enriched smoke gist"
       }
     }
   },

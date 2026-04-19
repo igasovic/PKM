@@ -3,7 +3,7 @@
 Status: active  
 Surface owner: n8n capture flows + backend ingest normalization/insert boundary  
 Scope type: backfilled baseline  
-Last verified: 2026-03-30  
+Last verified: 2026-04-18  
 Related authoritative docs: `docs/api_ingest.md`, `docs/api_read_write.md`, `docs/database_schema.md`, `docs/config_operations.md`, `docs/n8n_sync.md`, `docs/requirements.md`  
 Related work-package doc: none
 
@@ -32,7 +32,7 @@ Baseline the ingest surface that turns external captures into PKM entry writes, 
 This PRD owns:
 - normalization for Telegram, email, webpage/article text, and Notion
 - idempotency and content-hash expectations for ingest payloads
-- ingest-side use of `/db/insert` and `/db/update`
+- ingest-side use of canonical insert boundaries and downstream `/db/update`
 - email backlog import through the point where classify work is enqueued
 - n8n workflows `02 Telegram Capture`, `03 E-Mail Capture`, `04 Notion Capture`, `22 Web Extraction`, and `23 E-Mail Batch Import` at the ingest boundary
 
@@ -56,6 +56,12 @@ Current repo behavior is:
 - `/import/email/mbox` normalizes each message synchronously, inserts idempotently, records partial failures, and enqueues classify batches only for rows that were not skipped
 - backlog import uses `source = "email-batch"` while preserving email idempotency semantics by aliasing `email-batch` to `email` during idempotency derivation
 
+Insert API standardization decision (this PRD update):
+- canonical ingest insert surface is now `POST /pkm/insert`, `POST /pkm/insert/batch`, and `POST /pkm/insert/enriched`
+- callers must not provide `content_hash`; backend derives it from `clean_text`
+- `extraction_incomplete` is not part of the entries schema contract and must not be passed by ingest callers
+- client-controlled SQL `returning` is removed from the canonical insert contract
+
 ## Goals
 - keep ingest deterministic and rerunnable
 - keep idempotency and content-hash logic centralized in backend normalization and DB layers
@@ -70,10 +76,10 @@ Current repo behavior is:
 
 ## Boundaries and callers
 Primary callers:
-- `02 Telegram Capture` -> `/normalize/telegram` -> `/db/insert`
-- `03 E-Mail Capture` -> `/normalize/email` -> `/db/insert`
-- `04 Notion Capture` -> `/normalize/notion` -> `/db/insert`
-- `22 Web Extraction` -> `/normalize/webpage` -> `/db/insert` -> `21 Tier-1 Enrichment`
+- `02 Telegram Capture` -> `/normalize/telegram` -> `/pkm/insert`
+- `03 E-Mail Capture` -> `/normalize/email` -> `/pkm/insert`
+- `04 Notion Capture` -> `/normalize/notion` -> `/pkm/insert`
+- `22 Web Extraction` -> `/normalize/webpage` -> `/pkm/insert` -> `21 Tier-1 Enrichment`
 - `23 E-Mail Batch Import` -> `/import/email/mbox`
 
 Boundary rule:
@@ -96,7 +102,7 @@ Boundary rule:
 ### Sync capture flows
 1. n8n receives source-specific input.
 2. Backend normalization converts that input into the canonical PKM entry shape.
-3. n8n sends the normalized payload to `/db/insert`.
+3. n8n sends the normalized payload to `/pkm/insert`.
 4. backend DB conflict handling returns `inserted`, `updated`, or `skipped`.
 5. only non-skipped rows are eligible for downstream classify handoff.
 
@@ -104,7 +110,7 @@ Boundary rule:
 1. workflow provides one URL item at a time.
 2. workflow capture step fetches webpage HTML plus Trafilatura text.
 3. `/normalize/webpage` normalizes `capture_text`, computes retrieval/quality, and derives idempotency.
-4. workflow inserts through `/db/insert`.
+4. workflow inserts through `/pkm/insert`.
 5. inserted URL entries continue to Tier-1 enrichment.
 
 ### Email backlog import
@@ -118,12 +124,12 @@ Boundary rule:
 
 | Method | Backend sequence | Output intent | Write boundary |
 |---|---|---|---|
-| Telegram | `normalize -> quality -> idempotency` | note/thought or link/archive | `/db/insert` |
-| Telegram URL-only capture | `route url list -> per-url wf22(capture -> normalize -> quality -> idempotency -> insert)` | link/archive ingest per URL item | `/normalize/webpage` + `/db/insert` |
-| Email | `normalize -> quality -> idempotency` | newsletter, correspondence, or note | `/db/insert` |
-| Notion | `collect -> normalize -> skip-or-idempotency -> quality` | note/archive depending on content type | `/db/insert` |
-| Webpage | `capture -> normalize -> quality -> idempotency` | insert-oriented URL ingest payload | `/db/insert` |
-| Email backlog import | `parse mbox -> normalize email -> batch insert -> classify enqueue` | backlog ingest up to classify handoff | `/db/insert` then `/enrich/t1/batch` |
+| Telegram | `normalize -> quality -> idempotency` | note/thought or link/archive | `/pkm/insert` |
+| Telegram URL-only capture | `route url list -> per-url wf22(capture -> normalize -> quality -> idempotency -> insert)` | link/archive ingest per URL item | `/normalize/webpage` + `/pkm/insert` |
+| Email | `normalize -> quality -> idempotency` | newsletter, correspondence, or note | `/pkm/insert` |
+| Notion | `collect -> normalize -> skip-or-idempotency -> quality` | note/archive depending on content type | `/pkm/insert` |
+| Webpage | `capture -> normalize -> quality -> idempotency` | insert-oriented URL ingest payload | `/pkm/insert` |
+| Email backlog import | `parse mbox -> normalize email -> batch insert -> classify enqueue` | backlog ingest up to classify handoff | `/pkm/insert/batch` then `/enrich/t1/batch` |
 
 ### Telegram normalization modes
 - If the message starts with a JSON object followed by remainder text, Telegram normalization treats it as a note/thought path:
@@ -199,8 +205,27 @@ This PRD owns the ingest requirement that normalization and DB writes agree on t
 - Any ingest/update flow that recalculates `clean_text` must recalculate `content_hash` in the same step before persistence.
 
 ### Write-boundary contract
-- `POST /db/insert` is the canonical ingest insert boundary.
+- `POST /pkm/insert` is the canonical single-row ingest insert boundary.
+- `POST /pkm/insert/batch` is the canonical ingest batch insert boundary.
+- `POST /pkm/insert/enriched` is the canonical ingest boundary for enriched/manual writes that may include topic/distill payloads.
 - `POST /db/update` remains available for downstream writeback flows outside canonical URL ingest.
+- Required fields for `/pkm/insert` and `/pkm/insert/batch` item payloads:
+  - `source`
+  - `intent`
+  - `content_type`
+  - `capture_text`
+  - `clean_text`
+  - `idempotency_policy_key`
+  - `idempotency_key_primary`
+- required fields must not be `null` or empty string after trim.
+- `url` is required when `url_canonical` is set.
+- `/pkm/insert/batch` requires:
+  - `continue_on_error`
+  - non-empty `items[]`
+- `/pkm/insert/enriched` may include topic/distill/gist/enrichment-write fields and allows optional `enrichment_status` override.
+- `/pkm/insert` and `/pkm/insert/batch` default `enrichment_status = "pending"` when omitted.
+- canonical insert endpoints do not accept client `returning`.
+- canonical insert endpoints do not accept client `content_hash`; backend derives and persists it from `clean_text`.
 - For `entries` writes, backend resolves idempotency behavior from the active schema's `idempotency_policies` table.
 - Required idempotency sources are:
   - `telegram`
@@ -220,17 +245,18 @@ This PRD owns the ingest requirement that normalization and DB writes agree on t
 - `metadata` is recursively merged for idempotent updates instead of being blindly overwritten.
 
 ### Batch write expectations
-- `/db/insert` and `/db/update` both support `items: []` batch mode.
+- `/pkm/insert/batch` and `/db/update` both support `items: []` batch mode.
 - Batch mode with `continue_on_error = true` must return per-item result rows with:
   - `_batch_index`
   - `_batch_ok`
   - `error` on failures
+  - canonical row output fields (`id`, `entry_id`, `action`, and fixed projection fields) on success rows
 - Email backlog import relies on this contract and must not abort the whole request when one item fails.
 - Backend currently includes a bulk fast path for homogeneous `skip`-policy insert batches, with fallback to per-item insert behavior when shapes or policies require it.
 
 ### Retrieval / quality ownership at ingest time
 - Shared quality logic is applied in backend ingestion orchestration, not copied into n8n nodes.
-- Returned retrieval/quality fields must stay DB-ready for direct `/db/insert` or `/db/update` usage.
+- Returned retrieval/quality fields must stay DB-ready for direct `/pkm/insert` or `/db/update` usage.
 - This includes:
   - `retrieval_excerpt`
   - `clean_word_count`
@@ -252,7 +278,10 @@ Owned or coupled internal routes:
 - `POST /normalize/webpage`
 - `POST /normalize/notion`
 - `POST /import/email/mbox`
-- `/db/insert` and `/db/update` as the ingest write boundary
+- `/pkm/insert`
+- `/pkm/insert/batch`
+- `/pkm/insert/enriched`
+- `/db/update` as downstream generic write surface
 
 Related docs that must move with contract changes:
 - `docs/api_ingest.md`

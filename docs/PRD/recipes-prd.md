@@ -87,7 +87,7 @@ The recipes V1 surface is implemented and documented:
 This PRD is now a canonical active-surface owner and should be updated alongside schema/API/workflow changes instead of treated as proposal-only text.
 
 ### 3.3 Baseline assumptions
-- generic `/db/insert`, `/db/update`, `/db/read/*`, and `/db/read/pull` exist for `entries`
+- generic `/pkm/insert*`, `/db/update`, `/db/read/*`, and `/db/read/pull` exist for `entries`
 - current normalization endpoints are `entries`-compatible rather than recipe-native
 - debug endpoints already exist and are admin-protected, which provides a precedent for adding recipe support to the debug UI
 - existing Telegram workflow patterns and n8n/backend separation remain the default integration style

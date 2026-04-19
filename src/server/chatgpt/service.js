@@ -1,7 +1,7 @@
 'use strict';
 
 const { readWorkingMemory } = require('../db/read-store.js');
-const { insert } = require('../db/write-store.js');
+const { insertPkmEnriched } = require('../db/write-store.js');
 const activeTopicRepository = require('../repositories/active-topic-repository.js');
 const { deriveContentHashFromCleanText } = require('../../libs/content-hash.js');
 const contextPackBuilder = require('../../libs/context-pack-builder-core.js');
@@ -509,7 +509,6 @@ async function wrapCommit(args) {
     author: 'chatgpt',
     capture_text: sessionMarkdown,
     clean_text: sessionCleanText,
-    content_hash: sessionContentHash,
     metadata: {
       chatgpt: {
         artifact_kind: 'session_note',
@@ -573,24 +572,7 @@ async function wrapCommit(args) {
   const topicStateMarkdown = renderWorkingMemoryFromTopicState(topicSnapshotResult);
   const workingMemoryCleanText = topicStateMarkdown.trim() || legacyWorkingMemoryMarkdown.trim();
   const workingMemoryContentHash = deriveContentHashFromCleanText(workingMemoryCleanText);
-
-  const returning = [
-    'entry_id',
-    'id',
-    'created_at',
-    'source',
-    'intent',
-    'content_type',
-    'title',
-    'topic_primary',
-    'topic_secondary',
-    'topic_secondary_confidence',
-  ];
-
-  const sessionInsertResult = await insert({
-    input: sessionInsertInput,
-    returning,
-  });
+  const sessionInsertResult = await insertPkmEnriched(sessionInsertInput);
 
   const sessionRow = Array.isArray(sessionInsertResult && sessionInsertResult.rows)
     ? sessionInsertResult.rows[0]

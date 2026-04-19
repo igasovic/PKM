@@ -5,6 +5,7 @@
 - keep DB-facing payload and selector semantics together for n8n and internal tooling
 
 ## Authoritative For
+- `/pkm/insert*` canonical insert contracts
 - `/db/*` read and write endpoint contracts
 - selector, auth, and response-shape rules for read/write paths
 
@@ -13,11 +14,11 @@
 - normalization/enrichment contract details; use `docs/api_ingest.md`
 
 ## Read When
-- changing `/db/*` selectors, payloads, or response semantics
+- changing `/pkm/insert*` or `/db/*` selectors, payloads, or response semantics
 - reviewing read/write coupling to the active schema
 
 ## Update When
-- any `/db/*` request or response shape changes
+- any `/pkm/insert*` or `/db/*` request or response shape changes
 - destructive selector or admin-auth rules change
 
 ## Related Docs
@@ -29,125 +30,124 @@
 
 | Endpoint family | Auth | Primary callers | Schema touched | Typical tests |
 |---|---|---|---|---|
-| Insert / update | internal | n8n, internal tooling | active schema `entries` | `test/server/idempotency.test.js`, `test/server/normalization.test.js` |
+| Insert / update | internal | n8n, internal tooling | active schema `entries` | `test/server/idempotency.test.js`, `test/server/normalization.test.js`, `test/server/read-write.api-contract.test.js` |
 | Delete / move | admin secret | operators, smoke harness, controlled workflows | `pkm.entries`, `pkm_test.entries` | `test/server/db.read-smoke.api-contract.test.js`, smoke-related tests |
 | Read | internal | n8n read workflows, PKM UI Read + Entities pages, context-pack builder | active schema `entries` | `test/server/read-sql-distill-projection.test.js`, `test/server/context-pack-builder.test.js`, `test/server/n8n.wf11-context-pack.test.js`, `test/server/read-write.api-contract.test.js` |
 
 ## Insert / Update
 
-### `POST /db/insert`
-Builds and executes a SQL `INSERT` using a **generic JSON input** that matches `docs/database_schema.md`.
-The backend validates and sanitizes fields and builds SQL.
+### `POST /pkm/insert`
+Canonical single-row insert surface for ingest callers.
 
-Body:
-```json
-{
-  "table": "\"pkm\".\"entries\"",
-  "columns": ["source", "intent"],
-  "values": ["'telegram'::text", "'archive'::text"],
-  "returning": ["id", "created_at"]
-}
-```
-
-**Simple input (recommended for n8n)**
-
-```json
-{
-  "input": {
-    "source": "telegram",
-    "intent": "archive",
-    "capture_text": "raw text",
-    "clean_text": "cleaned text",
-    "content_type": "note",
-    "title": "Some title",
-    "author": "Some author",
-    "url": "https://example.com",
-    "url_canonical": "https://example.com",
-    "topic_primary": "ai",
-    "topic_primary_confidence": 0.7,
-    "topic_secondary": "decision hygiene",
-    "topic_secondary_confidence": 0.5,
-    "gist": "One sentence gist.",
-    "metadata": {
-      "retrieval": {
-        "excerpt": "excerpt",
-        "version": "v1",
-        "quality": {
-          "clean_word_count": 10,
-          "clean_char_count": 20,
-          "extracted_char_count": 30,
-          "link_count": 2,
-          "link_ratio": 0.2,
-          "boilerplate_heavy": false,
-          "low_signal": false,
-          "quality_score": 0.8
-        }
-      }
-    }
-  }
-}
-```
-
-You can also send the same fields at the top level (no `input` wrapper).
-Required fields: `source`, `capture_text`. Optional: any `pkm.entries` column (see `docs/database_schema.md`).
-For JSONB columns (`metadata`, `external_ref`), send either a JSON object or a JSON string; invalid JSON strings will be rejected.
-
-Idempotent ingest fields (mandatory):
+Required input fields:
+- `source`
+- `intent`
+- `content_type`
+- `capture_text`
+- `clean_text`
 - `idempotency_policy_key`
 - `idempotency_key_primary`
+
+Optional input fields:
+- `url`
+- `url_canonical` (`url` becomes required when this is set)
+- `title`
+- `author`
+- `quality_score`
+- `low_signal`
+- `boilerplate_heavy`
 - `idempotency_key_secondary`
+- `external_ref`
+- `metadata`
+- `link_count`
+- `link_ratio`
+- `extracted_char_count`
+- `clean_char_count`
+- `retrieval_excerpt`
+- `source_domain`
+- `retrieval_version`
 
-Inserts without idempotency fields are rejected to prevent duplicate rows.
+Validation rules:
+- required fields must not be `null` or empty string after trim
+- `url` is required when `url_canonical` is set
+- `returning` is not accepted
+- `content_hash` is not accepted
+- `extraction_incomplete` is not accepted
+- `enrichment_status` override is not accepted on this endpoint (defaults to `pending`)
 
-When idempotency fields are provided, backend resolves policy in the active schema and returns per-row `action`:
-- `inserted`
-- `skipped` (policy conflict action = skip)
-- `updated` (policy conflict action = update)
+`content_hash` is derived server-side from `clean_text`.
 
-**Batch insert**
+Response rows always use the same shape:
+- `entry_id`
+- `id`
+- `created_at`
+- `source`
+- `intent`
+- `content_type`
+- `url_canonical`
+- `title`
+- `author`
+- `clean_text`
+- `clean_word_count`
+- `boilerplate_heavy`
+- `low_signal`
+- `quality_score`
+- `action` (`inserted` / `updated` / `skipped`)
 
-You can insert multiple rows in one request:
+### `POST /pkm/insert/batch`
+Canonical batch insert surface.
 
-```json
-{
-  "items": [
-    {
-      "source": "email-batch",
-      "capture_text": "raw",
-      "clean_text": "clean",
-      "idempotency_policy_key": "email_newsletter_v1",
-      "idempotency_key_primary": "<msg-1@example.com>",
-      "idempotency_key_secondary": "abc"
-    },
-    {
-      "source": "email-batch",
-      "capture_text": "raw2",
-      "clean_text": "clean2",
-      "idempotency_policy_key": "email_newsletter_v1",
-      "idempotency_key_primary": "<msg-2@example.com>",
-      "idempotency_key_secondary": "def"
-    }
-  ],
-  "continue_on_error": true
-}
-```
+Body:
+- `continue_on_error` (required boolean)
+- `items` (required non-empty array)
 
-Batch response returns per-item rows. Error rows include:
+Each `items[]` entry is validated exactly like `POST /pkm/insert`.
+
+Response is per-item. Success rows include the canonical insert output fields plus:
+- `_batch_index`
+- `_batch_ok`
+
+Failure rows include:
 - `_batch_index`
 - `_batch_ok: false`
 - `error`
 
-**Custom RETURNING**
+### `POST /pkm/insert/enriched`
+Single-row insert for enriched/manual ingest writes.
 
-You can override the default `RETURNING` columns by adding `returning` at the top level or inside `input`:
+Base required and optional fields are the same as `POST /pkm/insert`, plus optional enriched fields:
+- `topic_primary`
+- `topic_primary_confidence`
+- `topic_secondary`
+- `topic_secondary_confidence`
+- `gist`
+- `keywords`
+- `enrichment_model`
+- `prompt_version`
+- `distill_summary`
+- `distill_excerpt`
+- `distill_version`
+- `distill_created_from_hash`
+- `distill_why_it_matters`
+- `distill_stance`
+- `distill_status`
+- `distill_metadata`
+- `enrichment_status` (override allowed only on this endpoint)
 
-```json
-{
-  "source": "telegram",
-  "capture_text": "raw text",
-  "returning": ["id", "entry_id", "created_at"]
-}
-```
+Response rows include canonical insert output fields plus:
+- `topic_primary`
+- `topic_primary_confidence`
+- `topic_secondary`
+- `topic_secondary_confidence`
+- `gist`
+- `distill_summary`
+- `distill_excerpt`
+- `distill_version`
+- `distill_created_from_hash`
+- `distill_why_it_matters`
+- `distill_stance`
+- `distill_status`
+- `distill_metadata`
 
 ### `POST /db/update`
 Builds and executes a SQL `UPDATE` using a generic JSON input that matches `docs/database_schema.md`.

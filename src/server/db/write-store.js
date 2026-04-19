@@ -1,5 +1,6 @@
 'use strict';
 
+const { deriveContentHashFromCleanText } = require('../../libs/content-hash.js');
 const {
   sb,
   getPool,
@@ -36,6 +37,90 @@ const {
   getConfigWithTestMode,
   exec,
 } = require('./runtime-store.js');
+
+const PKM_INSERT_REQUIRED_FIELDS = [
+  'source',
+  'intent',
+  'content_type',
+  'capture_text',
+  'clean_text',
+  'idempotency_policy_key',
+  'idempotency_key_primary',
+];
+
+const PKM_INSERT_OPTIONAL_FIELDS = [
+  'url',
+  'url_canonical',
+  'title',
+  'author',
+  'quality_score',
+  'low_signal',
+  'boilerplate_heavy',
+  'idempotency_key_secondary',
+  'external_ref',
+  'metadata',
+  'link_count',
+  'link_ratio',
+  'extracted_char_count',
+  'clean_char_count',
+  'retrieval_excerpt',
+  'source_domain',
+  'retrieval_version',
+];
+
+const PKM_INSERT_ENRICHED_EXTRA_FIELDS = [
+  'topic_primary',
+  'topic_primary_confidence',
+  'topic_secondary',
+  'topic_secondary_confidence',
+  'gist',
+  'keywords',
+  'enrichment_model',
+  'prompt_version',
+  'distill_summary',
+  'distill_excerpt',
+  'distill_version',
+  'distill_created_from_hash',
+  'distill_why_it_matters',
+  'distill_stance',
+  'distill_status',
+  'distill_metadata',
+  'enrichment_status',
+];
+
+const PKM_INSERT_RETURNING = [
+  'entry_id',
+  'id',
+  'created_at',
+  'source',
+  'intent',
+  'content_type',
+  'url_canonical',
+  'title',
+  'author',
+  'clean_text',
+  'clean_word_count',
+  'boilerplate_heavy',
+  'low_signal',
+  'quality_score',
+];
+
+const PKM_INSERT_ENRICHED_RETURNING = [
+  ...PKM_INSERT_RETURNING,
+  'topic_primary',
+  'topic_primary_confidence',
+  'topic_secondary',
+  'topic_secondary_confidence',
+  'gist',
+  'distill_summary',
+  'distill_excerpt',
+  'distill_version',
+  'distill_created_from_hash',
+  'distill_why_it_matters',
+  'distill_stance',
+  'distill_status',
+  'distill_metadata',
+];
 
 async function getPolicyByKey(schema, policyKey) {
   const policiesTable = sb.qualifiedTable(schema, 'idempotency_policies');
@@ -168,6 +253,124 @@ function buildSetForIdempotentUpdate({ incoming, existing, policyUpdateFields })
     set.push(`${key} = ${toSqlValue(type, value)}`);
   }
   return set;
+}
+
+function hasOwn(obj, key) {
+  return !!(obj && Object.prototype.hasOwnProperty.call(obj, key));
+}
+
+function isBlankTextValue(value) {
+  if (value === null || value === undefined) return true;
+  return String(value).trim() === '';
+}
+
+function deriveCleanWordCount(cleanText) {
+  const text = String(cleanText || '').trim();
+  if (!text) return 0;
+  return text.split(/\s+/g).filter(Boolean).length;
+}
+
+function sanitizeMetadataObject(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('metadata must be a JSON object');
+      }
+      return parsed;
+    } catch {
+      throw new Error('metadata must be a JSON object');
+    }
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('metadata must be a JSON object');
+  }
+  return value;
+}
+
+function validateAllowedFields(data, allowedFields) {
+  const allowed = new Set(allowedFields);
+  for (const key of Object.keys(data)) {
+    if (!allowed.has(key)) {
+      throw new Error(`unsupported field: ${key}`);
+    }
+  }
+}
+
+function parsePkmInsertInput(input, options = {}) {
+  const {
+    allowEnrichedFields = false,
+    requireBaseFields = true,
+    allowEnrichmentStatusOverride = false,
+  } = options;
+
+  const data = getDataObject(input);
+  if (hasOwn(data, 'returning')) throw new Error('returning is not supported');
+  if (hasOwn(data, 'content_hash')) throw new Error('content_hash must not be provided');
+  if (hasOwn(data, 'extraction_incomplete')) throw new Error('extraction_incomplete is not supported');
+  if (hasOwn(data, 'items') || hasOwn(data, 'continue_on_error')) {
+    throw new Error('pkm insert item must be a single-row payload');
+  }
+
+  const allowedFields = [
+    ...PKM_INSERT_REQUIRED_FIELDS,
+    ...PKM_INSERT_OPTIONAL_FIELDS,
+    ...(allowEnrichedFields ? PKM_INSERT_ENRICHED_EXTRA_FIELDS : []),
+  ];
+  validateAllowedFields(data, allowedFields);
+
+  const out = { ...data };
+
+  if (!allowEnrichmentStatusOverride) {
+    if (hasOwn(out, 'enrichment_status')) {
+      throw new Error('enrichment_status override is allowed only on /pkm/insert/enriched');
+    }
+    out.enrichment_status = 'pending';
+  } else if (!hasOwn(out, 'enrichment_status') || out.enrichment_status === null || String(out.enrichment_status).trim() === '') {
+    out.enrichment_status = 'pending';
+  }
+
+  if (requireBaseFields) {
+    for (const field of PKM_INSERT_REQUIRED_FIELDS) {
+      if (!hasOwn(out, field) || isBlankTextValue(out[field])) {
+        throw new Error(`${field} is required`);
+      }
+    }
+  }
+
+  if (!isBlankTextValue(out.url_canonical) && isBlankTextValue(out.url)) {
+    throw new Error('url is required when url_canonical is set');
+  }
+
+  if (!hasOwn(out, 'clean_word_count') || out.clean_word_count === null || out.clean_word_count === undefined || out.clean_word_count === '') {
+    out.clean_word_count = deriveCleanWordCount(out.clean_text);
+  }
+
+  out.content_hash = deriveContentHashFromCleanText(out.clean_text);
+
+  const sourceDomain = hasOwn(out, 'source_domain') ? String(out.source_domain || '').trim() : '';
+  const retrievalVersion = hasOwn(out, 'retrieval_version') ? String(out.retrieval_version || '').trim() : '';
+  const retrievalExcerpt = hasOwn(out, 'retrieval_excerpt') ? String(out.retrieval_excerpt || '').trim() : '';
+
+  if (sourceDomain || retrievalVersion || retrievalExcerpt) {
+    const metadata = sanitizeMetadataObject(out.metadata) || {};
+    const retrieval = metadata.retrieval && typeof metadata.retrieval === 'object' && !Array.isArray(metadata.retrieval)
+      ? { ...metadata.retrieval }
+      : {};
+    if (sourceDomain && !retrieval.source_domain) retrieval.source_domain = sourceDomain;
+    if (retrievalVersion && !retrieval.version) retrieval.version = retrievalVersion;
+    if (retrievalExcerpt && !retrieval.excerpt) retrieval.excerpt = retrievalExcerpt;
+    metadata.retrieval = retrieval;
+    out.metadata = metadata;
+  }
+
+  delete out.source_domain;
+  delete out.retrieval_version;
+
+  return out;
 }
 
 async function insertBatch(opts) {
@@ -720,8 +923,73 @@ ORDER BY m.from_entry_id ASC`;
   });
 }
 
+async function insertPkm(opts) {
+  const data = parsePkmInsertInput(opts, {
+    allowEnrichedFields: false,
+    requireBaseFields: true,
+    allowEnrichmentStatusOverride: false,
+  });
+  return insert({
+    input: data,
+    returning: PKM_INSERT_RETURNING,
+  });
+}
+
+async function insertPkmEnriched(opts) {
+  const data = parsePkmInsertInput(opts, {
+    allowEnrichedFields: true,
+    requireBaseFields: true,
+    allowEnrichmentStatusOverride: true,
+  });
+  return insert({
+    input: data,
+    returning: PKM_INSERT_ENRICHED_RETURNING,
+  });
+}
+
+async function insertPkmBatch(opts) {
+  const data = (opts && (opts.input || opts.data || opts)) || {};
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('pkm/insert/batch requires JSON object input');
+  }
+  if (!Object.prototype.hasOwnProperty.call(data, 'continue_on_error')) {
+    throw new Error('continue_on_error is required');
+  }
+  if (!Object.prototype.hasOwnProperty.call(data, 'items')) {
+    throw new Error('items is required');
+  }
+  const continue_on_error = parseBooleanStrict(data.continue_on_error, 'continue_on_error', null);
+  if (continue_on_error === null) {
+    throw new Error('continue_on_error must be boolean');
+  }
+  if (!Array.isArray(data.items) || data.items.length === 0) {
+    throw new Error('items must be a non-empty array');
+  }
+
+  const items = data.items.map((item, idx) => {
+    try {
+      return parsePkmInsertInput(item, {
+        allowEnrichedFields: false,
+        requireBaseFields: true,
+        allowEnrichmentStatusOverride: false,
+      });
+    } catch (err) {
+      throw new Error(`items[${idx}]: ${err.message}`);
+    }
+  });
+
+  return insert({
+    items,
+    continue_on_error,
+    returning: PKM_INSERT_RETURNING,
+  });
+}
+
 module.exports = {
   insert,
+  insertPkm,
+  insertPkmBatch,
+  insertPkmEnriched,
   update,
   deleteEntries,
   moveEntries,

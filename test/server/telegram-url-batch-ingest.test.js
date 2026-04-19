@@ -2,18 +2,18 @@
 
 describe('telegram url batch ingest service', () => {
   const runTelegramBulkUrlIngestionPipelineMock = jest.fn();
-  const insertMock = jest.fn();
+  const insertPkmBatchMock = jest.fn();
 
   beforeEach(() => {
     jest.resetModules();
     runTelegramBulkUrlIngestionPipelineMock.mockReset();
-    insertMock.mockReset();
+    insertPkmBatchMock.mockReset();
 
     jest.doMock('../../src/server/ingestion-pipeline.js', () => ({
       runTelegramBulkUrlIngestionPipeline: runTelegramBulkUrlIngestionPipelineMock,
     }));
     jest.doMock('../../src/server/repositories/read-write-repository.js', () => ({
-      insert: insertMock,
+      insertPkmBatch: insertPkmBatchMock,
     }));
   });
 
@@ -33,7 +33,7 @@ describe('telegram url batch ingest service', () => {
       ],
       normalize_failures: [],
     });
-    insertMock.mockResolvedValue({
+    insertPkmBatchMock.mockResolvedValue({
       rows: [
         { _batch_index: 0, _batch_ok: true, action: 'inserted', entry_id: 101, url_canonical: 'https://a.com' },
         { _batch_index: 1, _batch_ok: true, action: 'skipped', entry_id: 102, url_canonical: 'https://b.com' },
@@ -49,7 +49,7 @@ describe('telegram url batch ingest service', () => {
       continue_on_error: true,
     });
 
-    expect(insertMock).toHaveBeenCalled();
+    expect(insertPkmBatchMock).toHaveBeenCalled();
     expect(out.url_count).toBe(3);
     expect(out.inserted_count).toBe(1);
     expect(out.skipped_count).toBe(1);
@@ -93,7 +93,7 @@ describe('telegram url batch ingest service', () => {
         },
       ],
     });
-    insertMock.mockResolvedValue({
+    insertPkmBatchMock.mockResolvedValue({
       rows: [
         { _batch_index: 0, _batch_ok: true, action: 'inserted', entry_id: 201, id: 'uuid-201' },
       ],

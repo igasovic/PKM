@@ -103,7 +103,7 @@ Use at least these:
 
 ### Must verify
 - `/normalize/telegram` succeeds
-- `/db/insert` succeeds or returns `skipped` when expected
+- `/pkm/insert` succeeds or returns `skipped` when expected
 - `entry_id` is returned and captured
 - optional web extraction path runs when URL exists
 - Tier-1 enrichment path does not break the flow
@@ -146,7 +146,7 @@ Use the provided newsletter-style payload as the first canonical fixture.
 
 ### Must verify
 - `/normalize/email` accepts fixture payload
-- `/db/insert` succeeds or skips as expected
+- `/pkm/insert` succeeds or skips as expected
 - Tier-1 enrichment handoff does not break the flow
 - final Telegram notification renders and sends
 - inserted `entry_id` is returned for cleanup use
