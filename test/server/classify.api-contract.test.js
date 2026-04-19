@@ -407,7 +407,7 @@ describe('classify and ingest API contract', () => {
   test('POST /enrich/t1/update forwards explicit classify update payload', async () => {
     classifyUpdateMock.mockResolvedValue({
       schema: 'pkm',
-      row: { entry_id: 42, topic_primary: 'parenting', action: 'updated' },
+      row: { entry_id: 42, topic_primary: 'parenting', topic_is_active: true, action: 'updated' },
       topic_link: { linked: true, topic_key: 'parenting' },
     });
     await startServerWithMocks();
@@ -425,7 +425,7 @@ describe('classify and ingest API contract', () => {
     expect(classifyUpdateMock).toHaveBeenCalledWith(body);
     expect(JSON.parse(res.body)).toEqual({
       schema: 'pkm',
-      row: { entry_id: 42, topic_primary: 'parenting', action: 'updated' },
+      row: { entry_id: 42, topic_primary: 'parenting', topic_is_active: true, action: 'updated' },
       topic_link: { linked: true, topic_key: 'parenting' },
     });
   });
@@ -459,6 +459,7 @@ describe('classify and ingest API contract', () => {
       distill_stance: null,
       distill_status: null,
       distill_metadata: null,
+      topic_is_active: true,
     });
     await startServerWithMocks();
     if (listenDenied) return;
@@ -507,13 +508,14 @@ describe('classify and ingest API contract', () => {
       distill_stance: null,
       distill_status: null,
       distill_metadata: null,
+      topic_is_active: true,
     }]);
   });
 
   test('POST /enrich/t1/update-batch forwards explicit classify batch update payload', async () => {
     classifyUpdateBatchMock.mockResolvedValue({
       rowCount: 1,
-      rows: [{ _batch_index: 0, _batch_ok: true, entry_id: 12 }],
+      rows: [{ _batch_index: 0, _batch_ok: true, entry_id: 12, topic_is_active: true }],
     });
     await startServerWithMocks();
     if (listenDenied) return;
@@ -528,7 +530,7 @@ describe('classify and ingest API contract', () => {
     expect(classifyUpdateBatchMock).toHaveBeenCalledWith(body);
     expect(JSON.parse(res.body)).toEqual({
       rowCount: 1,
-      rows: [{ _batch_index: 0, _batch_ok: true, entry_id: 12 }],
+      rows: [{ _batch_index: 0, _batch_ok: true, entry_id: 12, topic_is_active: true }],
     });
   });
 

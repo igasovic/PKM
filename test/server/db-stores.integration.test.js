@@ -574,6 +574,7 @@ describeIntegration('Postgres-backed DB store integration', () => {
       topic_secondary: 'bedtime routine',
       gist: 'Bedtime process needs simplification.',
       enrichment_status: 'done',
+      topic_is_active: true,
       action: 'updated',
     }));
     expect(out.topic_link).toEqual(expect.objectContaining({
@@ -641,6 +642,7 @@ describeIntegration('Postgres-backed DB store integration', () => {
       _batch_ok: true,
       topic_primary: 'ai',
       gist: 'Agent workflow planning notes.',
+      topic_is_active: true,
     }));
 
     const linked = await queryOne(

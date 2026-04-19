@@ -395,6 +395,7 @@ Response:
     "topic_secondary": "bedtime routine",
     "gist": "One sentence summary.",
     "enrichment_status": "done",
+    "topic_is_active": true,
     "action": "updated"
   },
   "topic_link": {
@@ -408,6 +409,7 @@ Response:
 Notes:
 - When `topic_primary` resolves to an active topic key, backend upserts `active_topic_related_entries` with `relation_type='classified_primary'`.
 - If the resolved topic is not active, prior `classified_primary` links for that entry are cleared and no active-topic link is created.
+- `row.topic_is_active` mirrors active-topic resolution for this classify result.
 
 ### `POST /pkm/classify`
 Runs Tier‑1 enrichment and persists the update to one already-inserted row.
@@ -452,6 +454,7 @@ Response:
     "topic_secondary": "bedtime routine",
     "topic_secondary_confidence": 0.6,
     "gist": "One sentence summary.",
+    "topic_is_active": true,
     "distill_summary": null,
     "distill_excerpt": null,
     "distill_version": null,
@@ -567,12 +570,16 @@ Response:
       "_batch_ok": true,
       "entry_id": 123,
       "topic_primary": "parenting",
+      "topic_is_active": true,
       "action": "updated"
     }
   ],
   "rowCount": 1
 }
 ```
+
+Notes:
+- successful row items include `topic_is_active` as a per-item boolean.
 
 ### `GET /status/batch`
 Returns current batch job status for a stage (`t1` or `t2`).

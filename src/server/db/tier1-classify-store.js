@@ -400,8 +400,12 @@ async function applyTier1Update(input, opts) {
         throw new Error('tier1 update target not found');
       }
       const topicLink = await syncActiveTopicClassificationLink(client, schema, row, tier1, enrichmentModel);
+      const topicIsActive = !!(topicLink && topicLink.linked === true);
+      const rowWithTopicActive = { ...row, topic_is_active: topicIsActive };
       return {
-        row: responseProfile === 'legacy' ? { ...row, action: 'updated' } : row,
+        row: responseProfile === 'legacy'
+          ? { ...rowWithTopicActive, action: 'updated' }
+          : rowWithTopicActive,
         topic_link: topicLink,
       };
     }
