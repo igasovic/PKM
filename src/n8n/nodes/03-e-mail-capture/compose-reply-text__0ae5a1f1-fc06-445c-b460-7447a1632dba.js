@@ -36,8 +36,8 @@ if (typeof flags === 'string' && flags.trim()) {
 }
 if (!flags || typeof flags !== 'object') flags = {};
 
-const boilerplate = flags.boilerplate_heavy === true;
-const lowSignal = flags.low_signal === true;
+const boilerplate = flags.boilerplate_heavy === true || $json.boilerplate_heavy === true;
+const lowSignal = flags.low_signal === true || $json.low_signal === true;
 
 const lines = [];
 

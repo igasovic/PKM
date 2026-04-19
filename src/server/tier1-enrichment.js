@@ -79,6 +79,65 @@ async function enrichTier1AndPersist(input) {
   );
 }
 
+function parseRequiredEntryId(value) {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    throw new Error('pkm/classify requires entry_id');
+  }
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new Error('pkm/classify entry_id must be a positive integer');
+  }
+  return Math.trunc(n);
+}
+
+function parseRequiredCleanText(value) {
+  const text = String(value === undefined || value === null ? '' : value).trim();
+  if (!text) {
+    throw new Error('pkm/classify requires non-empty clean_text');
+  }
+  return text;
+}
+
+async function classifyPkmEntry(input) {
+  const args = input && typeof input === 'object' ? input : {};
+  const entryId = parseRequiredEntryId(args.entry_id);
+  const cleanText = parseRequiredCleanText(args.clean_text);
+
+  const logger = getLogger().child({ pipeline: 't1.enrich.pkm_classify' });
+  return logger.step(
+    't1.enrich.pkm_classify',
+    async () => {
+      const t1 = await runSyncEnrichmentGraph({
+        title: args.title ?? null,
+        author: args.author ?? null,
+        clean_text: cleanText,
+      });
+      const persisted = await tier1ClassifyStore.applyTier1Update({
+        entry_id: entryId,
+        clean_text: cleanText,
+        enrichment_model: args.enrichment_model ?? null,
+        prompt_version: args.prompt_version ?? null,
+        t1,
+        schema: args.schema ?? null,
+      }, {
+        response_profile: 'pkm_enriched',
+      });
+      return persisted && persisted.row ? persisted.row : null;
+    },
+    {
+      input: {
+        entry_id: entryId,
+        has_title: !!(args.title && String(args.title).trim()),
+        has_author: !!(args.author && String(args.author).trim()),
+      },
+      output: (out) => ({
+        entry_id: out && out.entry_id ? out.entry_id : null,
+        topic_primary: out && out.topic_primary ? out.topic_primary : null,
+      }),
+    }
+  );
+}
+
 async function applyTier1CollectedBatchResults(input) {
   const args = input && typeof input === 'object' ? input : {};
   const logger = getLogger().child({ pipeline: 't1.enrich.batch.apply' });
@@ -448,6 +507,7 @@ function stopTier1BatchWorker() {
 
 module.exports = {
   enrichTier1,
+  classifyPkmEntry,
   enrichTier1AndPersist,
   enrichTier1AndPersistBatch,
   runTier1ClassifyRun,

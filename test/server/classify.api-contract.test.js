@@ -35,6 +35,7 @@ describe('classify and ingest API contract', () => {
   const webpageNormalizeMock = jest.fn();
   const notionNormalizeMock = jest.fn();
   const classifyMock = jest.fn();
+  const classifyPkmMock = jest.fn();
   const classifyUpdateMock = jest.fn();
   const classifyUpdateBatchMock = jest.fn();
   const classifyBatchMock = jest.fn();
@@ -54,6 +55,7 @@ describe('classify and ingest API contract', () => {
     webpageNormalizeMock.mockReset();
     notionNormalizeMock.mockReset();
     classifyMock.mockReset();
+    classifyPkmMock.mockReset();
     classifyUpdateMock.mockReset();
     classifyUpdateBatchMock.mockReset();
     classifyBatchMock.mockReset();
@@ -86,6 +88,7 @@ describe('classify and ingest API contract', () => {
     }));
     jest.doMock('../../src/server/tier1-enrichment.js', () => ({
       enrichTier1: classifyMock,
+      classifyPkmEntry: classifyPkmMock,
       enrichTier1AndPersist: classifyUpdateMock,
       enrichTier1AndPersistBatch: classifyUpdateBatchMock,
       enqueueTier1Batch: classifyBatchMock,
@@ -383,6 +386,86 @@ describe('classify and ingest API contract', () => {
       row: { entry_id: 42, topic_primary: 'parenting', action: 'updated' },
       topic_link: { linked: true, topic_key: 'parenting' },
     });
+  });
+
+  test('POST /pkm/classify forwards classify update payload and returns enriched row shape', async () => {
+    classifyPkmMock.mockResolvedValue({
+      entry_id: 42,
+      id: '00000000-0000-0000-0000-000000000042',
+      created_at: '2026-04-19T10:00:00.000Z',
+      source: 'email',
+      intent: 'archive',
+      content_type: 'newsletter',
+      url_canonical: null,
+      title: 'A',
+      author: 'B',
+      clean_text: 'C',
+      clean_word_count: 1,
+      boilerplate_heavy: false,
+      low_signal: false,
+      quality_score: 0.7,
+      topic_primary: 'parenting',
+      topic_primary_confidence: 0.8,
+      topic_secondary: 'bedtime',
+      topic_secondary_confidence: 0.6,
+      gist: 'one sentence',
+      distill_summary: null,
+      distill_excerpt: null,
+      distill_version: null,
+      distill_created_from_hash: null,
+      distill_why_it_matters: null,
+      distill_stance: null,
+      distill_status: null,
+      distill_metadata: null,
+    });
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const body = {
+      entry_id: 42,
+      title: 'A',
+      author: 'B',
+      clean_text: 'C',
+    };
+    const res = await request(port, 'POST', '/pkm/classify', JSON.stringify(body), { 'Content-Type': 'application/json' });
+
+    expect(res.status).toBe(200);
+    expect(classifyPkmMock).toHaveBeenCalledWith({
+      entry_id: 42,
+      title: 'A',
+      author: 'B',
+      clean_text: 'C',
+      schema: null,
+    });
+    expect(JSON.parse(res.body)).toEqual([{
+      entry_id: 42,
+      id: '00000000-0000-0000-0000-000000000042',
+      created_at: '2026-04-19T10:00:00.000Z',
+      source: 'email',
+      intent: 'archive',
+      content_type: 'newsletter',
+      url_canonical: null,
+      title: 'A',
+      author: 'B',
+      clean_text: 'C',
+      clean_word_count: 1,
+      boilerplate_heavy: false,
+      low_signal: false,
+      quality_score: 0.7,
+      topic_primary: 'parenting',
+      topic_primary_confidence: 0.8,
+      topic_secondary: 'bedtime',
+      topic_secondary_confidence: 0.6,
+      gist: 'one sentence',
+      distill_summary: null,
+      distill_excerpt: null,
+      distill_version: null,
+      distill_created_from_hash: null,
+      distill_why_it_matters: null,
+      distill_stance: null,
+      distill_status: null,
+      distill_metadata: null,
+    }]);
   });
 
   test('POST /enrich/t1/update-batch forwards explicit classify batch update payload', async () => {

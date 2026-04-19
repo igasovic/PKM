@@ -134,12 +134,71 @@ function resolveSchema(rawSchema, config) {
   return resolveSchemaFromConfig(config);
 }
 
-function buildUpdateSql({ schema, selector, includeCleanText }) {
+const LEGACY_RETURNING_FIELDS = [
+  'entry_id',
+  'id',
+  'created_at',
+  'source',
+  'intent',
+  'content_type',
+  'url_canonical',
+  "COALESCE(title,'') AS title",
+  "COALESCE(author,'') AS author",
+  'clean_text',
+  'capture_text',
+  'topic_primary',
+  'topic_secondary',
+  'gist',
+  'COALESCE(char_length(clean_text), 0) AS clean_len',
+  'array_length(keywords, 1) AS kw_count',
+  'enrichment_status',
+];
+
+const PKM_CLASSIFY_RETURNING_FIELDS = [
+  'entry_id',
+  'id',
+  'created_at',
+  'source',
+  'intent',
+  'content_type',
+  'url_canonical',
+  'title',
+  'author',
+  'clean_text',
+  'clean_word_count',
+  'boilerplate_heavy',
+  'low_signal',
+  'quality_score',
+  'topic_primary',
+  'topic_primary_confidence',
+  'topic_secondary',
+  'topic_secondary_confidence',
+  'gist',
+  'distill_summary',
+  'distill_excerpt',
+  'distill_version',
+  'distill_created_from_hash',
+  'distill_why_it_matters',
+  'distill_stance',
+  'distill_status',
+  'distill_metadata',
+];
+
+function buildReturningSql(responseProfile) {
+  const profile = String(responseProfile || 'legacy').trim().toLowerCase();
+  const fields = profile === 'pkm_enriched'
+    ? PKM_CLASSIFY_RETURNING_FIELDS
+    : LEGACY_RETURNING_FIELDS;
+  return fields.join(',\n      ');
+}
+
+function buildUpdateSql({ schema, selector, includeCleanText, responseProfile }) {
   const entriesTable = sb.qualifiedTable(schema, 'entries');
   const whereSql = selector.kind === 'id'
     ? 'id = $1::uuid'
     : 'entry_id = $1::bigint';
   const cleanTextSql = includeCleanText ? ', clean_text = $16::text' : '';
+  const returningSql = buildReturningSql(responseProfile);
 
   return `
     UPDATE ${entriesTable}
@@ -163,23 +222,7 @@ function buildUpdateSql({ schema, selector, includeCleanText }) {
       ${cleanTextSql}
     WHERE ${whereSql}
     RETURNING
-      entry_id,
-      id,
-      created_at,
-      source,
-      intent,
-      content_type,
-      url_canonical,
-      COALESCE(title,'') AS title,
-      COALESCE(author,'') AS author,
-      clean_text,
-      capture_text,
-      topic_primary,
-      topic_secondary,
-      gist,
-      COALESCE(char_length(clean_text), 0) AS clean_len,
-      array_length(keywords, 1) AS kw_count,
-      enrichment_status
+      ${returningSql}
   `;
 }
 
@@ -315,6 +358,7 @@ async function applyTier1Update(input, opts) {
     t1_raw: tier1.raw,
     t1_flags: tier1.flags,
   };
+  const responseProfile = String(options.response_profile || args.response_profile || 'legacy').trim().toLowerCase();
 
   const params = [
     selector.value,
@@ -339,6 +383,7 @@ async function applyTier1Update(input, opts) {
     schema,
     selector,
     includeCleanText: !!cleanText,
+    responseProfile,
   });
 
   const txResult = await runInTransaction(
@@ -356,10 +401,7 @@ async function applyTier1Update(input, opts) {
       }
       const topicLink = await syncActiveTopicClassificationLink(client, schema, row, tier1, enrichmentModel);
       return {
-        row: {
-          ...row,
-          action: 'updated',
-        },
+        row: responseProfile === 'legacy' ? { ...row, action: 'updated' } : row,
         topic_link: topicLink,
       };
     }

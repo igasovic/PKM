@@ -265,29 +265,28 @@
       "id": "16932292-79d1-4e14-a64e-3b84fce41bd5",
       "name": "Call 'Tier-1 Enhancement'",
       "parameters": {
-        "options": {},
-        "workflowId": {
-          "__rl": true,
-          "cachedResultName": "04 Tier-1 Enrichment",
-          "cachedResultUrl": "/workflow/WFB4SDkDPDPIphppIn3l7",
-          "mode": "list",
-          "value": "WFB4SDkDPDPIphppIn3l7"
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
         },
-        "workflowInputs": {
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true,
-          "mappingMode": "defineBelow",
-          "matchingColumns": [],
-          "schema": [],
-          "value": {}
-        }
+        "jsonBody": "={{ JSON.stringify((() => ({\n  entry_id: $json.entry_id ?? null,\n  title: $json.title ?? null,\n  author: $json.author ?? null,\n  clean_text: $json.clean_text ?? null,\n}))()) }}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/pkm/classify"
       },
       "position": [
         464,
         -416
       ],
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
     },
     {
       "id": "2c78cab4-52de-430e-90e4-6f46f5fe340c",
@@ -448,7 +447,7 @@
       "id": "42a2c7f4-b0fb-4b18-8f1e-8b9f1d3bcb6a",
       "name": "Format Thought Saved Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nfunction mdv2Message(value) {\n  const escaped = String(value ?? '').replace(/[\\\\_*\\[\\]()~`>#+\\-=|{}.!]/g, '\\\\$&');\n  return escaped.length > 4000 ? escaped.slice(0, 3997) + '...' : escaped;\n}\n\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nconst action = String($json.action ?? 'inserted').trim() || 'inserted';\nconst text = 'Thought saved as entry ' + entryId + ' operation ' + action;\n\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\n"
+        "jsCode": "'use strict';\\n\\nfunction mdv2Message(value) {\\n  const escaped = String(value ?? '').replace(/[\\\\_*\\[\\]()~`>#+\\-=|{}.!]/g, '\\\\$&');\\n  return escaped.length > 4000 ? escaped.slice(0, 3997) + '...' : escaped;\\n}\\n\\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\\nconst text = 'Thought classified for entry ' + entryId;\\n\\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\\n"
       },
       "position": [
         688,

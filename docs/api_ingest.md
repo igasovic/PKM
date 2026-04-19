@@ -409,6 +409,61 @@ Notes:
 - When `topic_primary` resolves to an active topic key, backend upserts `active_topic_related_entries` with `relation_type='classified_primary'`.
 - If the resolved topic is not active, prior `classified_primary` links for that entry are cleared and no active-topic link is created.
 
+### `POST /pkm/classify`
+Runs Tier‑1 enrichment and persists the update to one already-inserted row.
+This is the n8n capture-facing classify+write call.
+
+Body:
+```json
+{
+  "entry_id": 123,
+  "clean_text": "Required clean text",
+  "title": "Optional title",
+  "author": "Optional author"
+}
+```
+
+Rules:
+- `entry_id` is required and must be a positive integer.
+- `clean_text` is required and must be non-empty after trim.
+- `title` and `author` are optional.
+- request fails fast on invalid or missing required fields.
+
+Response:
+```json
+[
+  {
+    "entry_id": 123,
+    "id": "uuid",
+    "created_at": "2026-04-19T10:00:00.000Z",
+    "source": "email",
+    "intent": "archive",
+    "content_type": "newsletter",
+    "url_canonical": null,
+    "title": "Optional title",
+    "author": "Optional author",
+    "clean_text": "Required clean text",
+    "clean_word_count": 123,
+    "boilerplate_heavy": false,
+    "low_signal": false,
+    "quality_score": 0.72,
+    "topic_primary": "parenting",
+    "topic_primary_confidence": 0.8,
+    "topic_secondary": "bedtime routine",
+    "topic_secondary_confidence": 0.6,
+    "gist": "One sentence summary.",
+    "distill_summary": null,
+    "distill_excerpt": null,
+    "distill_version": null,
+    "distill_created_from_hash": null,
+    "distill_why_it_matters": null,
+    "distill_stance": null,
+    "distill_status": null,
+    "distill_metadata": null
+  }
+]
+```
+
 ### `POST /enrich/t1/batch`
 Creates a LiteLLM/OpenAI-compatible Batch job for Tier‑1 enrichment and persists mapping in Postgres.
 

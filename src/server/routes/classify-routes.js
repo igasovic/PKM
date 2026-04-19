@@ -9,6 +9,7 @@ const {
 } = require('../ingestion-pipeline.js');
 const {
   enrichTier1,
+  classifyPkmEntry,
   enrichTier1AndPersist,
   enrichTier1AndPersistBatch,
   enqueueTier1Batch,
@@ -227,6 +228,30 @@ async function handleClassifyRoutes(ctx) {
         { input: body, output: (out) => out, meta: { route: url.pathname } }
       );
       json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      sendError(res, err, { includeErrorCodeField: false, includeField: false });
+    }
+    return true;
+  }
+
+  if (method === 'POST' && url.pathname === '/pkm/classify') {
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const result = await logger.step(
+        'api.pkm.classify',
+        async () => classifyPkmEntry({
+          entry_id: body.entry_id,
+          title: body.title ?? null,
+          author: body.author ?? null,
+          clean_text: body.clean_text,
+          schema: body.schema ?? null,
+        }),
+        { input: body, output: (out) => out, meta: { route: url.pathname } }
+      );
+      json(res, 200, result ? [result] : []);
     } catch (err) {
       logError(err, req);
       sendError(res, err, { includeErrorCodeField: false, includeField: false });

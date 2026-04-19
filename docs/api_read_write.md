@@ -191,7 +191,8 @@ Tier-1 classify field guard:
   - `topic_secondary_confidence`
   - `keywords`
   - `gist`
-- use `POST /enrich/t1/update` (or `POST /enrich/t1/update-batch`) for classify writeback.
+- use `POST /pkm/classify` for capture classify+writeback.
+- use `POST /enrich/t1/update` (or `POST /enrich/t1/update-batch`) for explicit classify writeback and precomputed `t1` payloads.
 
 **Batch update**
 

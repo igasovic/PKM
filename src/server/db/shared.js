@@ -249,7 +249,7 @@ function buildGenericUpdatePayload(input, returningOverride) {
 
   if (tier1WriteFields.length > 0) {
     throw new Error(
-      `generic /db/update does not accept Tier-1 classify fields (${tier1WriteFields.join(', ')}); use /enrich/t1/update`
+      `generic /db/update does not accept Tier-1 classify fields (${tier1WriteFields.join(', ')}); use /pkm/classify or /enrich/t1/update`
     );
   }
 

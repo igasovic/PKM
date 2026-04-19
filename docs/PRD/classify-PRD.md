@@ -3,7 +3,7 @@
 Status: active  
 Surface owner: backend Tier-1 orchestration + classify batch lifecycle  
 Scope type: backfilled baseline  
-Last verified: 2026-04-15  
+Last verified: 2026-04-19  
 Related authoritative docs: `docs/api_control.md`, `docs/database_schema.md`, `docs/backend_runtime_env.md`, `docs/requirements.md`  
 Related work-package doc: none
 
@@ -25,6 +25,7 @@ Baseline the Tier-1 classify surface so it is cleanly separated from ingest on t
 This PRD owns:
 - `POST /enrich/t1`
 - `POST /enrich/t1/update`
+- `POST /pkm/classify`
 - `POST /enrich/t1/batch`
 - `POST /enrich/t1/update-batch`
 - `GET /status/batch?stage=t1`
@@ -45,12 +46,14 @@ This PRD does not own:
 Current repo behavior is:
 - Tier-1 sync classify is exposed through `POST /enrich/t1`
 - explicit sync classify writeback is exposed through `POST /enrich/t1/update`
+- n8n capture flows call `POST /pkm/classify` for single-row classify+write after `/pkm/insert`
 - Tier-1 batch enqueue is exposed through `POST /enrich/t1/batch`
 - explicit batch classify writeback is exposed through `POST /enrich/t1/update-batch` and internal batch-collect apply flow
 - batch status is exposed through the generic `/status/batch` surface with explicit `stage=t1`
 - batch lifecycle persistence is backend-owned and restart-safe
 - LiteLLM is the only model gateway for Tier-1
 - Tier-1 orchestration is graph-driven and backend-owned; n8n callers use backend APIs only
+- the legacy `21 Tier-1 Enrichment` subworkflow has been removed; callers classify directly via HTTP
 - email backlog import enqueues classify work through `/enrich/t1/batch`, but backlog ingest itself remains ingest-owned until enqueue
 - sync calls use the OpenAI-compatible LiteLLM chat-completions path
 - batch classify uses LiteLLM file + batch endpoints through backend-owned orchestration
@@ -83,11 +86,11 @@ Boundary rule:
 ## Contract delta table
 | Surface | Changes? | Baseline known? | Notes |
 |---|---|---|---|
-| Internal backend API | yes | yes | classify writeback now has explicit update routes (`/enrich/t1/update*`) |
+| Internal backend API | yes | yes | classify writeback routes include `/pkm/classify` and explicit update routes (`/enrich/t1/update*`) |
 | Public webhook API | no | yes | out of scope here |
 | Database schema | no | mostly | lifecycle table families are known; detailed writeback field set still has one review marker |
 | Config / infra | no | yes | LiteLLM and backend runtime env dependencies are known |
-| n8n workflows / nodes | no | mostly | main workflow callers are known; exact full caller inventory still has one review marker |
+| n8n workflows / nodes | yes | yes | capture caller inventory is now explicit and verified (`02`, `03`, `04`, `22`) |
 | Runtime topology | no | yes | backend remains the only classify boundary |
 | Docs | yes | yes | this pass backfills runtime and status detail into the PRD |
 | Tests | no | yes | server/API/status tests exist for the current surface |
@@ -105,6 +108,12 @@ Boundary rule:
 3. backend applies the fixed Tier-1 writeback field set to `entries`.
 4. backend syncs active-topic related-entry link (`classified_primary`) when topic maps to an active topic.
 5. backend returns updated entry summary + topic-link result.
+
+### PKM classify (capture-facing sync update)
+1. caller submits `entry_id`, `clean_text`, and optional `title`/`author` to `POST /pkm/classify`.
+2. backend runs the same Tier-1 sync graph (`load -> prompt -> llm -> parse`) used by `/enrich/t1`.
+3. backend persists Tier-1 fields for the selected row and syncs active-topic link (`classified_primary`).
+4. backend returns one row in `/pkm/insert/enriched` response shape (without `action`).
 
 ### Batch classify
 1. caller submits `items[]` to `POST /enrich/t1/batch`.
@@ -165,6 +174,7 @@ Representative lifecycle states:
 Owned routes:
 - `POST /enrich/t1`
 - `POST /enrich/t1/update`
+- `POST /pkm/classify`
 - `POST /enrich/t1/batch`
 - `POST /enrich/t1/update-batch`
 - `GET /status/batch?stage=t1`
@@ -190,16 +200,22 @@ Recovered from:
 - `src/server/litellm-client.js`
 - `src/server/tier1-enrichment.js`
 - `src/libs/sql-builder.js`
-- `src/n8n/workflows/21-tier-1-enrichment*`
+- `src/n8n/workflows/02-telegram-capture*`
+- `src/n8n/workflows/03-e-mail-capture*`
+- `src/n8n/workflows/04-notion-capture*`
+- `src/n8n/workflows/22-web-extraction*`
+- `src/n8n/nodes/03-e-mail-capture/compose-reply-text*`
 - `src/n8n/workflows/23-e-mail-batch-import*`
 - `docs/requirements.md`
 - `docs/changelog.md`
 - `docs/backend_runtime_env.md`
 - `docs/api_ingest.md`
 
-## Known gaps requiring code deep-dive
-- `REVIEW_REQUIRED: verify the exact set of n8n capture workflows that currently call sync `/enrich/t1` before redesigning the ingest -> classify handoff. This pass confirmed the API surface and backlog batch path, but did not fully inventory every workflow caller.`
-- `REVIEW_REQUIRED: verify the exact writeback field set for Tier-1 results in `src/server/tier1/**` and DB tests before treating this PRD as a migration guide. The current surface ownership is clear, but the full persisted result contract was not exhaustively recovered in this pass.`
+## Findings from backfill verification
+- Verified capture caller inventory for single-row classify updates: `02 Telegram Capture`, `03 E-Mail Capture`, `04 Notion Capture`, `22 Web Extraction`.
+- Verified `flags_json` is not a backend API field; it is an n8n-side optional compatibility read in `03` email reply composition.
+- Verified `clean_len` is not part of canonical classify/update return shape; `clean_word_count` is used for caller-facing message rendering.
+- Verified capture-facing classify response contract now requires `entry_id` and returns row-level enriched fields without `action`.
 
 ## Validation / acceptance criteria
 This PRD remains accurate if:

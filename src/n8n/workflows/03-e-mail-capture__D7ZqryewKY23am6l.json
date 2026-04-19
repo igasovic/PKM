@@ -284,29 +284,28 @@
       "id": "47483d22-0a6b-4d39-b23b-f8abe2c2c7b6",
       "name": "Call 'Tier-1 Enhancement'",
       "parameters": {
-        "options": {},
-        "workflowId": {
-          "__rl": true,
-          "cachedResultName": "Tier-1 Enhancement",
-          "cachedResultUrl": "/workflow/WFB4SDkDPDPIphppIn3l7",
-          "mode": "list",
-          "value": "WFB4SDkDPDPIphppIn3l7"
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-PKM-Run-Id",
+              "value": "={{ $execution.id }}"
+            }
+          ]
         },
-        "workflowInputs": {
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true,
-          "mappingMode": "defineBelow",
-          "matchingColumns": [],
-          "schema": [],
-          "value": {}
-        }
+        "jsonBody": "={{ JSON.stringify((() => ({\n  entry_id: $json.entry_id ?? null,\n  title: $json.title ?? null,\n  author: $json.author ?? null,\n  clean_text: $json.clean_text ?? null,\n}))()) }}\n",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/pkm/classify"
       },
       "position": [
         464,
         -416
       ],
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
     },
     {
       "id": "38d88987-fe5a-4b83-bb5e-7078db544254",

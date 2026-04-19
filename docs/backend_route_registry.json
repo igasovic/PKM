@@ -239,6 +239,29 @@
   },
   {
     "method": "POST",
+    "path": "/pkm/classify",
+    "auth": "internal",
+    "doc": "docs/api_ingest.md",
+    "primary_callers": [
+      "02 Telegram Capture",
+      "03 E-Mail Capture",
+      "04 Notion Capture",
+      "22 Web Extraction"
+    ],
+    "tests": [
+      "test/server/classify.api-contract.test.js"
+    ],
+    "smoke": {
+      "enabled": true,
+      "expected_status": 200,
+      "body": {
+        "entry_id": 101,
+        "clean_text": "This is enough text to classify."
+      }
+    }
+  },
+  {
+    "method": "POST",
     "path": "/enrich/t1/update-batch",
     "auth": "internal",
     "doc": "docs/api_ingest.md",

@@ -84,7 +84,7 @@ Current repo behavior is:
 - working memory today is represented as a special ChatGPT-authored artifact in `entries`, not first-class topic state.
 - one working-memory row exists per normalized topic key where present, but not all desired active topics have rows.
 - ChatGPT-authored session notes and working-memory rows bypass Tier-1 and Tier-2 enrichment.
-- explicit Tier-1 classify write routes exist (`POST /enrich/t1/update`, `POST /enrich/t1/update-batch`) and are the only classify writeback path for Tier-1 field updates.
+- explicit Tier-1 classify write routes exist (`POST /pkm/classify`, `POST /enrich/t1/update`, `POST /enrich/t1/update-batch`) and are the only classify writeback path for Tier-1 field updates.
 - Tier-1 classify writeback can synchronize active-topic related-entry links via `active_topic_related_entries` with relation type `classified_primary` when `topic_primary` maps to an active topic.
 - current ChatGPT interaction pattern is topic-first:
   - read working memory
@@ -196,7 +196,7 @@ No new public edges, no direct UI-to-DB access, no n8n direct PKM table access.
 
 ### AD-9: Classify writeback uses explicit Tier-1 update methods only
 Tier-1 classify writes must use explicit classify-update methods/routes, not generic DB update:
-- sync: `POST /enrich/t1/update`
+- sync: `POST /pkm/classify` or `POST /enrich/t1/update`
 - batch: `POST /enrich/t1/update-batch` and batch-collect apply path
 
 Generic `POST /db/update` must reject Tier-1 classify field writes.
@@ -277,7 +277,7 @@ Phase 1 rule:
 7. backend returns one combined result envelope.
 
 ### Ingestion and classify related-entry linking
-1. Tier-1 classify writeback occurs through explicit update routes (`/enrich/t1/update`, `/enrich/t1/update-batch`) and batch-collect apply.
+1. Tier-1 classify writeback occurs through explicit update routes (`/pkm/classify`, `/enrich/t1/update`, `/enrich/t1/update-batch`) and batch-collect apply.
 2. Backend applies the fixed Tier-1 field set on `entries` and then synchronizes `active_topic_related_entries` for active-topic matches only.
 3. Link relation type is `classified_primary`.
 4. Non-active-topic `topic_primary` values do not create related-entry links.
