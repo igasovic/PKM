@@ -17,7 +17,7 @@
         [
           {
             "index": 0,
-            "node": "Send 'duplicate' message",
+            "node": "Send a text message1",
             "type": "main"
           }
         ]
@@ -28,7 +28,7 @@
         [
           {
             "index": 0,
-            "node": "Send 'thought saved' message",
+            "node": "Send a text message1",
             "type": "main"
           }
         ]
@@ -61,7 +61,7 @@
         [
           {
             "index": 0,
-            "node": "Create Message",
+            "node": "Format Thought Saved Message",
             "type": "main"
           }
         ]
@@ -72,7 +72,7 @@
         [
           {
             "index": 0,
-            "node": "Assert Tier1 Telegram",
+            "node": "Create Message",
             "type": "main"
           }
         ]
@@ -138,7 +138,7 @@
         [
           {
             "index": 0,
-            "node": "Format Duplicate Message",
+            "node": "Format Thought Saved Message",
             "type": "main"
           }
         ],
@@ -179,28 +179,6 @@
           {
             "index": 0,
             "node": "Assert Normalize Telegram",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Send 'duplicate' message": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Finalize Telegram Capture Result",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Send 'thought saved' message": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Finalize Telegram Capture Result",
             "type": "main"
           }
         ]
@@ -535,58 +513,6 @@
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
-    },
-    {
-      "credentials": {
-        "telegramApi": {
-          "id": "4svco1wrzYsvoLNB",
-          "name": "Telegram account"
-        }
-      },
-      "id": "a2b2fc7b-ce86-496d-90d1-b5c2b725d356",
-      "name": "Send 'duplicate' message",
-      "parameters": {
-        "additionalFields": {
-          "appendAttribution": false,
-          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}",
-          "parse_mode": "MarkdownV2"
-        },
-        "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
-        "text": "={{ $json.telegram_message }}"
-      },
-      "position": [
-        2032,
-        -608
-      ],
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
-    },
-    {
-      "credentials": {
-        "telegramApi": {
-          "id": "4svco1wrzYsvoLNB",
-          "name": "Telegram account"
-        }
-      },
-      "id": "725ddc72-d79c-4041-8931-5a9a84489694",
-      "name": "Send 'thought saved' message",
-      "parameters": {
-        "additionalFields": {
-          "appendAttribution": false,
-          "disable_notification": "={{ $json.smoke_telegram_dry_run === true }}",
-          "parse_mode": "MarkdownV2"
-        },
-        "chatId": "={{ (($json.message && $json.message.chat && $json.message.chat.id) || $json.telegram_chat_id || $env.TELEGRAM_ADMIN_CHAT_ID) }}",
-        "text": "={{ $json.telegram_message }}"
-      },
-      "position": [
-        2032,
-        -224
-      ],
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "webhookId": "6f123209-5952-4fa4-b096-5a03d6e8d0f2"
     },
     {
       "id": "c3f2f6d4-4e0a-4d9d-9d3d-51d0e9c77a21",
