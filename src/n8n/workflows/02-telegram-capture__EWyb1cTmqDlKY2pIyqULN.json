@@ -109,13 +109,7 @@
     },
     "Send a text message1": {
       "main": [
-        [
-          {
-            "node": "No operation, do nothing",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Telegram Trigger": {
