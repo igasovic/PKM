@@ -187,9 +187,10 @@
     "availableInMCP": false,
     "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
     "executionOrder": "v1",
-    "timezone": "America/Chicago",
-    "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW"
+    "timeSavedMode": "fixed",
+    "timezone": "America/Chicago"
   },
   "staticData": null,
   "tags": [],

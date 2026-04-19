@@ -243,7 +243,7 @@
       },
       "position": [
         -224,
-        -112
+        -184
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -257,7 +257,7 @@
       },
       "position": [
         0,
-        -16
+        -88
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -291,7 +291,7 @@
       },
       "position": [
         224,
-        -16
+        -88
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -408,7 +408,7 @@
       },
       "position": [
         448,
-        136
+        64
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -438,7 +438,7 @@
       },
       "position": [
         1344,
-        -32
+        -104
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -469,7 +469,7 @@
       },
       "position": [
         672,
-        416
+        520
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -484,7 +484,7 @@
       },
       "position": [
         896,
-        320
+        376
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -621,7 +621,7 @@
       },
       "position": [
         1120,
-        288
+        328
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -634,7 +634,7 @@
       },
       "position": [
         1344,
-        560
+        752
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -659,7 +659,7 @@
       },
       "position": [
         1568,
-        560
+        752
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -690,7 +690,7 @@
       },
       "position": [
         1344,
-        160
+        88
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -720,7 +720,7 @@
       },
       "position": [
         1568,
-        368
+        560
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -733,7 +733,7 @@
       },
       "position": [
         -224,
-        80
+        8
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -746,7 +746,7 @@
       },
       "position": [
         1792,
-        160
+        88
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -759,7 +759,7 @@
       },
       "position": [
         1344,
-        -256
+        280
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2

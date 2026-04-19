@@ -34,6 +34,17 @@
         ]
       ]
     },
+    "Format Classify Run Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send MarkdownV2 Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Format Distill Message": {
       "main": [
         [
@@ -136,6 +147,17 @@
           {
             "index": 0,
             "node": "Switch",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "PKM Classify Run": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Classify Run Message",
             "type": "main"
           }
         ]
@@ -435,9 +457,9 @@
         ],
         [
           {
+            "index": 0,
             "node": "PKM Classify Run",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -460,28 +482,6 @@
             "index": 0,
             "node": "PKM Config",
             "type": "main"
-          }
-        ]
-      ]
-    },
-    "PKM Classify Run": {
-      "main": [
-        [
-          {
-            "node": "Format Classify Run Message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Classify Run Message": {
-      "main": [
-        [
-          {
-            "node": "Send MarkdownV2 Message",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -520,7 +520,7 @@
       },
       "position": [
         896,
-        1992
+        504
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -554,7 +554,7 @@
       },
       "position": [
         1120,
-        1992
+        504
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -1045,7 +1045,7 @@
       },
       "position": [
         1344,
-        992
+        1072
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -1058,7 +1058,7 @@
       },
       "position": [
         224,
-        2088
+        600
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -1071,7 +1071,7 @@
       },
       "position": [
         672,
-        1992
+        504
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1110,7 +1110,7 @@
       },
       "position": [
         1792,
-        -96
+        96
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1135,7 +1135,7 @@
       },
       "position": [
         224,
-        1896
+        408
       ],
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.2,
@@ -1166,7 +1166,7 @@
       },
       "position": [
         448,
-        1992
+        504
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -1297,7 +1297,7 @@
       },
       "position": [
         1568,
-        1152
+        1344
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1310,7 +1310,7 @@
       },
       "position": [
         1792,
-        1152
+        1344
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1335,7 +1335,7 @@
       },
       "position": [
         2016,
-        928
+        1096
       ],
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -1367,7 +1367,7 @@
       },
       "position": [
         1568,
-        1344
+        1536
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1380,7 +1380,7 @@
       },
       "position": [
         1792,
-        1344
+        1536
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1411,7 +1411,7 @@
       },
       "position": [
         1568,
-        1728
+        1920
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1424,7 +1424,7 @@
       },
       "position": [
         1792,
-        1728
+        1920
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1464,7 +1464,7 @@
       "id": "ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca",
       "name": "Format Distill Message",
       "parameters": {
-        "jsCode": "'use strict';\n\nfunction mdv2(value) {\n  return String(value ?? '').replace(/[\\\\_*\\[\\]()~`>#+\\-=|{}.!]/g, '\\\\$&');\n}\n\nfunction bold(value) {\n  return '*' + mdv2(value) + '*';\n}\n\nfunction bullet(value) {\n  return '• ' + String(value ?? '');\n}\n\nfunction joinLines(lines, options) {\n  const cfg = options || {};\n  const text = (Array.isArray(lines) ? lines : []).map((line) => String(line ?? '')).join('\\n');\n  return cfg.trimTrailing === true ? text.replace(/\\s+$/, '') : text;\n}\n\nfunction finalizeMarkdownV2(value) {\n  const text = String(value ?? '');\n  return text.length > 4000 ? text.slice(0, 3997) + '...' : text;\n}\n\nconst status = String($json.status || \"\").trim().toLowerCase();\nconst entryId = String($json.entry_id ?? \"-\").trim() || \"-\";\n\nlet telegramMessage = \"\";\n\nif (status === \"completed\") {\n  const summary = mdv2($json.summary || \"n/a\");\n  const why = mdv2($json.why_it_matters || \"n/a\");\n  const excerpt = mdv2($json.excerpt || \"\");\n  const stance = mdv2($json.stance || \"n/a\");\n  const lines = [\n    bold('Tier_2 distill completed'),\n    bullet('Entry: ' + entryId),\n    bullet('Stance: ' + stance),\n    '',\n    bold('Summary'),\n    summary,\n    '',\n    bold('Why it matters'),\n    why,\n  ];\n  if (excerpt) lines.push(\"\", bold(\"Excerpt\"), excerpt);\n  telegramMessage = finalizeMarkdownV2(joinLines(lines, { trimTrailing: true }));\n} else {\n  const errorCode = mdv2($json.error_code || \"unknown_error\");\n  const message = mdv2($json.message || \"distill failed\");\n  const preserved = String($json.preserved_current_artifact === true);\n  telegramMessage = joinLines([\n    bold('Tier_2 distill failed'),\n    bullet('Entry: ' + mdv2(entryId)),\n    bullet('Error: ' + errorCode),\n    bullet('Message: ' + message),\n    bullet('Current artifact preserved: ' + mdv2(preserved)),\n  ], { trimTrailing: true });\n  telegramMessage = finalizeMarkdownV2(telegramMessage);\n}\n\nreturn [{ json: { ...$json, telegram_message: telegramMessage } }];\n"
+        "jsCode": "try{const {wf10FormatDistillMessage}=require('@igasovic/n8n-blocks');return await wf10FormatDistillMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:10-read/format-distill-message__ef76e14a-f96e-4cb2-90da-c1b8f6fd2fca.js] ${e.message}`;throw e;}"
       },
       "position": [
         1792,
@@ -1525,7 +1525,7 @@
       },
       "position": [
         2240,
-        928
+        1096
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1552,7 +1552,7 @@
       },
       "position": [
         1568,
-        1920
+        2112
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1579,7 +1579,7 @@
       },
       "position": [
         1568,
-        2112
+        2304
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1606,7 +1606,7 @@
       },
       "position": [
         1568,
-        2304
+        2496
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1619,7 +1619,7 @@
       },
       "position": [
         1792,
-        2176
+        2632
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -1646,7 +1646,7 @@
       },
       "position": [
         1568,
-        2496
+        2688
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1673,7 +1673,7 @@
       },
       "position": [
         1568,
-        2688
+        2880
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -1703,7 +1703,7 @@
       },
       "position": [
         1568,
-        1536
+        1728
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -1711,16 +1711,7 @@
     {
       "id": "50e3a95e-6763-4de5-8e53-6f8b220da9c6",
       "name": "PKM Classify Run",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        1568,
-        1088
-      ],
       "parameters": {
-        "method": "POST",
-        "url": "http://pkm-server:8080/enrich/t1/run",
-        "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
@@ -1733,24 +1724,33 @@
             }
           ]
         },
-        "sendBody": true,
-        "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify((() => ({ execution_mode: $json.execution_mode, dry_run: $json.dry_run, limit: $json.classify_limit }))()) }}",
-        "options": {}
-      }
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://pkm-server:8080/enrich/t1/run"
+      },
+      "position": [
+        1568,
+        1152
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
     },
     {
       "id": "68e6f8e8-b463-4ca9-8cc4-bf2cde7ad2f5",
       "name": "Format Classify Run Message",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1792,
-        1088
-      ],
       "parameters": {
         "jsCode": "'use strict';\n\nfunction mdv2(value) {\n  return String(value ?? '').replace(/[\\\\_*\\[\\]()~`>#+\\-=|{}.!]/g, '\\\\$&');\n}\n\nfunction bold(value) {\n  return '*' + mdv2(value) + '*';\n}\n\nfunction parens(value) {\n  return '\\\\(' + mdv2(value) + '\\\\)';\n}\n\nfunction joinLines(lines, options) {\n  const cfg = options || {};\n  const text = (Array.isArray(lines) ? lines : []).map((line) => String(line ?? '')).join('\\n');\n  return cfg.trimTrailing === true ? text.replace(/\\s+$/, '') : text;\n}\n\nfunction finalizeMarkdownV2(value) {\n  const text = String(value ?? '');\n  return text.length > 4000 ? text.slice(0, 3997) + '...' : text;\n}\n\nconst r = $json || {};\nconst mode = String(r.mode || 'run').toLowerCase();\nconst executionMode = String(r.execution_mode || 'sync').toLowerCase() === 'batch' ? 'batch' : 'sync';\nconst lines = [];\n\nlines.push(mode === 'dry_run' ? `${bold('Tier_1 classify')} ${parens('dry run')}` : bold('Tier_1 classify'));\nlines.push(`${bold('Execution:')} ${mdv2(executionMode)}`);\nif (r.batch_id) lines.push(`${bold('Batch_id:')} ${mdv2(r.batch_id)}`);\nlines.push('');\nlines.push(`${bold('Candidates:')} ${r.candidate_count ?? 0}`);\nlines.push(`${bold('Runnable:')} ${r.runnable_count ?? 0}`);\nif (Number(r.skipped_missing_clean_text || 0) > 0) lines.push(`Skipped missing clean text: ${Number(r.skipped_missing_clean_text || 0)}`);\n\nif (mode === 'dry_run') {\n  lines.push(`${bold('Would process:')} ${r.will_process_count ?? r.runnable_count ?? 0}`);\n} else if (executionMode === 'batch') {\n  lines.push(`${bold('Enqueued:')} ${r.enqueued_count ?? r.request_count ?? 0}`);\n  if (r.status) lines.push(`Batch status: ${mdv2(r.status)}`);\n} else {\n  lines.push(`${bold('Processed:')} ${r.processed_count ?? 0}`);\n  lines.push(`Completed: ${r.completed_count ?? 0}`);\n  lines.push(`Failed: ${r.failed_count ?? 0}`);\n  const topFailures = Object.entries((r && r.error_code_counts) || {})\n    .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))\n    .slice(0, 3);\n  if (topFailures.length) lines.push(`Top failures: ${topFailures.map(([code, count]) => `${mdv2(code)} ${parens(Number(count || 0))}`).join(', ')}`);\n}\n\nreturn [{ json: { ...r, telegram_message: finalizeMarkdownV2(joinLines(lines, { trimTrailing: true })) } }];\n"
-      }
+      },
+      "position": [
+        1792,
+        1152
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
   "settings": {

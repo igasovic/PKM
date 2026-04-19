@@ -1,12 +1,50 @@
 {
   "active": true,
   "connections": {
+    "Assert URL Present": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read Webpage (HTTP)",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Trafilatura Extract (HTTP)",
+            "type": "main"
+          },
+          {
+            "index": 1,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Call 'Tier-1 Enhancement'": {
+      "main": [
+        []
+      ]
+    },
     "Extract Title & Author": {
       "main": [
         [
           {
             "index": 0,
             "node": "Merge1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "If 'skipped'": {
+      "main": [
+        [],
+        [
+          {
+            "index": 0,
+            "node": "Call 'Tier-1 Enhancement'",
             "type": "main"
           }
         ]
@@ -50,17 +88,6 @@
         ]
       ]
     },
-    "PKM Insert": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "If 'skipped'",
-            "type": "main"
-          }
-        ]
-      ]
-    },
     "PKM Config": {
       "main": [
         [
@@ -72,22 +99,12 @@
         ]
       ]
     },
-    "Assert URL Present": {
+    "PKM Insert": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Read Webpage (HTTP)",
-            "type": "main"
-          },
-          {
-            "index": 0,
-            "node": "Trafilatura Extract (HTTP)",
-            "type": "main"
-          },
-          {
-            "index": 1,
-            "node": "Merge",
+            "node": "If 'skipped'",
             "type": "main"
           }
         ]
@@ -102,11 +119,6 @@
             "type": "main"
           }
         ]
-      ]
-    },
-    "Call 'Tier-1 Enhancement'": {
-      "main": [
-        []
       ]
     },
     "Read Webpage (HTTP)": {
@@ -152,18 +164,6 @@
           }
         ]
       ]
-    },
-    "If 'skipped'": {
-      "main": [
-        [],
-        [
-          {
-            "index": 0,
-            "node": "Call 'Tier-1 Enhancement'",
-            "type": "main"
-          }
-        ]
-      ]
     }
   },
   "description": null,
@@ -179,7 +179,7 @@
       },
       "position": [
         -176,
-        0
+        -112
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -193,8 +193,8 @@
         "options": {}
       },
       "position": [
-        576,
-        -192
+        720,
+        -184
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -208,8 +208,8 @@
         "options": {}
       },
       "position": [
-        1024,
-        -96
+        1168,
+        -88
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -221,7 +221,7 @@
         "jsCode": "const item = { ...$json };\n\n// Always discard Trafilatura title\ndelete item.title;\ndelete item.author;\n\nreturn [{ json: item }];\n"
       },
       "position": [
-        800,
+        944,
         32
       ],
       "type": "n8n-nodes-base.code",
@@ -234,8 +234,8 @@
         "jsCode": "try{const {wf22ExtractTitleAuthor}=require('@igasovic/n8n-blocks');return await wf22ExtractTitleAuthor({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:22-web-extraction/extract-title-author__0a3d5478-3ab2-4199-a276-e93723225434.js] ${e.message}`;throw e;}"
       },
       "position": [
-        800,
-        -192
+        944,
+        -184
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -261,8 +261,8 @@
         "url": "http://pkm-server:8080/normalize/webpage"
       },
       "position": [
-        1472,
-        -96
+        1392,
+        -16
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -276,8 +276,8 @@
         "options": {}
       },
       "position": [
-        1248,
-        -96
+        1616,
+        -88
       ],
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2
@@ -306,8 +306,8 @@
         }
       },
       "position": [
-        16,
-        0
+        48,
+        -112
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -333,8 +333,8 @@
         "url": "http://pkm-server:8080/pkm/insert"
       },
       "position": [
-        1680,
-        -96
+        1840,
+        -88
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -361,8 +361,8 @@
         }
       },
       "position": [
-        1904,
-        -96
+        2288,
+        -88
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -377,7 +377,7 @@
         "url": "={{'http://172.18.0.1:8787/extract?url=' + encodeURIComponent($json.url_canonical)}}"
       },
       "position": [
-        576,
+        720,
         32
       ],
       "type": "n8n-nodes-base.httpRequest",
@@ -417,7 +417,7 @@
         "url": "={{ $json.url_canonical }}"
       },
       "position": [
-        352,
+        496,
         -256
       ],
       "type": "n8n-nodes-base.httpRequest",
@@ -430,8 +430,8 @@
         "jsCode": "const urlRaw = String($json.url_canonical || $json.url || '').trim();\nif (!urlRaw) {\n  throw new Error('WF22 requires url/url_canonical input; got empty/missing URL');\n}\nreturn [{ json: { ...$json, url: $json.url || urlRaw, url_canonical: urlRaw } }];"
       },
       "position": [
-        208,
-        0
+        272,
+        -112
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -439,43 +439,45 @@
     {
       "id": "7e2f8d58-df68-4f16-9ef6-0a1b56468c95",
       "name": "If 'skipped'",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1888,
-        -96
-      ],
       "parameters": {
         "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c67697d7-59ea-4ab4-b118-35bf42545f57",
+              "leftValue": "={{ $json.action }}",
+              "operator": {
+                "name": "filter.operator.equals",
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "skipped"
+            }
+          ],
           "options": {
             "caseSensitive": true,
             "leftValue": "",
             "typeValidation": "strict",
             "version": 3
-          },
-          "conditions": [
-            {
-              "id": "c67697d7-59ea-4ab4-b118-35bf42545f57",
-              "leftValue": "={{ $json.action }}",
-              "rightValue": "skipped",
-              "operator": {
-                "type": "string",
-                "operation": "equals",
-                "name": "filter.operator.equals"
-              }
-            }
-          ],
-          "combinator": "and"
+          }
         },
         "options": {}
-      }
+      },
+      "position": [
+        2064,
+        -88
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2
     }
   ],
   "settings": {
     "availableInMCP": false,
+    "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
-    "executionOrder": "v1",
     "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed",
     "timezone": "America/Chicago"
   },
   "staticData": null,

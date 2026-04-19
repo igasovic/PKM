@@ -5,9 +5,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Create Message",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -16,9 +16,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Format Thought Saved Message",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -27,9 +27,20 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Send a text message1",
-            "type": "main",
-            "index": 0
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Expand URL Items": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Call '06 Web Extraction'",
+            "type": "main"
           }
         ]
       ]
@@ -38,9 +49,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Send a text message1",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -49,9 +60,27 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Send a text message1",
-            "type": "main",
-            "index": 0
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "IF URL Mode": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Expand URL Items",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "PKM Normalize Telegram",
+            "type": "main"
           }
         ]
       ]
@@ -78,9 +107,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Route Telegram Capture Mode",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -89,9 +118,9 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "If 'skipped'",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
@@ -100,9 +129,20 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "PKM Insert",
-            "type": "main",
-            "index": 0
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Route Telegram Capture Mode": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "IF URL Mode",
+            "type": "main"
           }
         ]
       ]
@@ -133,46 +173,6 @@
           }
         ]
       ]
-    },
-    "Route Telegram Capture Mode": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "IF URL Mode",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "IF URL Mode": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Expand URL Items",
-            "type": "main"
-          }
-        ],
-        [
-          {
-            "index": 0,
-            "node": "PKM Normalize Telegram",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Expand URL Items": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Call '06 Web Extraction'",
-            "type": "main"
-          }
-        ]
-      ]
     }
   },
   "description": null,
@@ -186,8 +186,8 @@
         "jsCode": "try{const {wf02CreateMessage}=require('@igasovic/n8n-blocks');return await wf02CreateMessage({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:02-telegram-capture/create-message__e7474a77-f17b-4f8f-bbe1-632804bd2e69.js] ${e.message}`;throw e;}"
       },
       "position": [
-        1584,
-        -416
+        688,
+        -224
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -283,7 +283,7 @@
         }
       },
       "position": [
-        1136,
+        464,
         -416
       ],
       "type": "n8n-nodes-base.executeWorkflow",
@@ -310,8 +310,8 @@
         "url": "http://pkm-server:8080/pkm/insert"
       },
       "position": [
-        -208,
-        -416
+        16,
+        -512
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -337,8 +337,8 @@
         "url": "http://pkm-server:8080/normalize/telegram"
       },
       "position": [
-        -656,
-        -416
+        -208,
+        -512
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -362,7 +362,7 @@
         "text": "={{ $json.telegram_message }}"
       },
       "position": [
-        2032,
+        912,
         -416
       ],
       "type": "n8n-nodes-base.telegram",
@@ -391,8 +391,8 @@
         }
       },
       "position": [
-        688,
-        -416
+        464,
+        -224
       ],
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3
@@ -426,7 +426,7 @@
       },
       "position": [
         240,
-        -416
+        -512
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -438,7 +438,7 @@
         "jsCode": "'use strict';\n\nfunction mdv2(value) {\n  return String(value ?? '').replace(/[\\\\_*\\[\\]()~`>#+\\-=|{}.!]/g, '\\\\$&');\n}\n\nfunction mdv2Message(value, options) {\n  const maxLen = Number((options && options.maxLen) || 4000);\n  const text = mdv2(value);\n  return text.length > maxLen ? text.slice(0, Math.max(0, maxLen - 3)) + '...' : text;\n}\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\n  return [{ json: { ...$json, telegram_message: mdv2Message('Duplicate telegram entry ' + entryId + ' processing stopped') } }];\n"
       },
       "position": [
-        1584,
+        688,
         -608
       ],
       "type": "n8n-nodes-base.code",
@@ -451,8 +451,8 @@
         "jsCode": "'use strict';\n\nfunction mdv2Message(value) {\n  const escaped = String(value ?? '').replace(/[\\\\_*\\[\\]()~`>#+\\-=|{}.!]/g, '\\\\$&');\n  return escaped.length > 4000 ? escaped.slice(0, 3997) + '...' : escaped;\n}\n\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nconst action = String($json.action ?? 'inserted').trim() || 'inserted';\nconst text = 'Thought saved as entry ' + entryId + ' operation ' + action;\n\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\n"
       },
       "position": [
-        1584,
-        -224
+        688,
+        -416
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -464,8 +464,8 @@
         "jsCode": "'use strict';\n\nconst inputText = String($json.raw_text || ($json.message && ($json.message.text || $json.message.caption)) || '').trim();\nconst URL_RE = /(https?:\\/\\/[^\\s<>()]+|www\\.[^\\s<>()]+)/ig;\nconst matches = inputText.match(URL_RE) || [];\nconst seen = new Set();\nconst urls = matches\n  .map((u) => {\n    let v = String(u || '').trim();\n    while (/[)\\],.?!:;\"'»]+$/.test(v)) v = v.replace(/[)\\],.?!:;\"'»]+$/, '');\n    if (/^www\\./i.test(v)) v = `https://${v}`;\n    return v;\n  })\n  .filter(Boolean)\n  .filter((u) => {\n    const k = u.toLowerCase();\n    if (seen.has(k)) return false;\n    seen.add(k);\n    return true;\n  });\n\nconst textWithoutUrls = inputText\n  .replace(URL_RE, ' ')\n  .replace(/[\\t\\r\\n,;|\\u2022]+/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim();\n\nconst residue = textWithoutUrls\n  .replace(/[()\\[\\]{}<>0-9.\\-_:]/g, '')\n  .trim();\n\nconst hasUrls = urls.length > 0;\nconst isUrlOnly = hasUrls && residue.length === 0;\nconst mode = isUrlOnly ? 'url' : 'thought';\nconst normalizedThoughtText = hasUrls && !isUrlOnly ? textWithoutUrls : inputText;\n\nreturn [{\n  json: {\n    ...$json,\n    raw_text: normalizedThoughtText,\n    raw_text_original: inputText,\n    telegram_capture_mode: mode,\n    telegram_url_count: urls.length,\n    telegram_urls: urls,\n    telegram_mode_error: null\n  },\n}];"
       },
       "position": [
-        -880,
-        -224
+        -656,
+        -416
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -499,7 +499,7 @@
       },
       "position": [
         -432,
-        -224
+        -416
       ],
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3
@@ -511,7 +511,7 @@
         "jsCode": "'use strict';\n\nconst urls = Array.isArray($json.telegram_urls) ? $json.telegram_urls.filter(Boolean) : [];\nif (!urls.length) return [];\n\nconst source = {\n  system: 'telegram',\n  chat_id: $json.telegram_chat_id || ($json.message && $json.message.chat && $json.message.chat.id) || null,\n  message_id: $json.telegram_message_id || ($json.message && $json.message.message_id) || null,\n  user_id: $json.telegram_user_id || ($json.message && $json.message.from && $json.message.from.id) || null,\n};\n\nreturn urls.map((url, idx) => {\n  const u = String(url);\n  return {\n    json: {\n      ...$json,\n      raw_text: u,\n      url: u,\n      url_canonical: u,\n      content_type: 'newsletter',\n      source,\n      telegram_url_index: idx,\n    },\n  };\n});"
       },
       "position": [
-        -208,
+        240,
         -224
       ],
       "type": "n8n-nodes-base.code",

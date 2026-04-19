@@ -378,9 +378,11 @@
   ],
   "settings": {
     "availableInMCP": false,
+    "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
     "executionOrder": "v1",
+    "timeSavedMode": "fixed",
     "timezone": "America/Chicago"
   },
   "staticData": null,

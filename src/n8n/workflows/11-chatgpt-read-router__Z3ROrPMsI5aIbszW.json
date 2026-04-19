@@ -184,7 +184,7 @@
       },
       "position": [
         -736,
-        128
+        232
       ],
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
@@ -197,8 +197,8 @@
         "jsCode": "try{const {wf11RouteReadRequest}=require('@igasovic/n8n-blocks');return await wf11RouteReadRequest({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/route-read-request__283ed177-aa90-4c34-b432-31b7d3048a49.js] ${e.message}`;throw e;}"
       },
       "position": [
-        -496,
-        128
+        -512,
+        232
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -207,6 +207,7 @@
       "id": "9a6e5d23-7e1f-48f5-a329-cb8f8b3f4952",
       "name": "Switch Read Command",
       "parameters": {
+        "options": {},
         "rules": {
           "values": [
             {
@@ -363,8 +364,8 @@
         }
       },
       "position": [
-        -240,
-        128
+        -288,
+        168
       ],
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4
@@ -392,7 +393,7 @@
         "url": "http://pkm-server:8080/db/read/pull"
       },
       "position": [
-        32,
+        -64,
         -128
       ],
       "type": "n8n-nodes-base.httpRequest",
@@ -421,8 +422,8 @@
         "url": "http://pkm-server:8080/db/read/last"
       },
       "position": [
-        32,
-        0
+        -64,
+        64
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -450,8 +451,8 @@
         "url": "http://pkm-server:8080/db/read/continue"
       },
       "position": [
-        32,
-        128
+        -64,
+        256
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -479,8 +480,8 @@
         "url": "http://pkm-server:8080/db/read/find"
       },
       "position": [
-        32,
-        256
+        -64,
+        448
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -512,8 +513,8 @@
         "url": "http://pkm-server:8080/chatgpt/working_memory"
       },
       "position": [
-        32,
-        384
+        -64,
+        640
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3
@@ -525,8 +526,8 @@
         "jsCode": "try{const {wf11BuildSearchContextPack}=require('@igasovic/n8n-blocks');return await wf11BuildSearchContextPack({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/build-search-context-pack__de43f4fe-84ab-43f5-b9b3-f3669e45b7ec.js] ${e.message}`;throw e;}"
       },
       "position": [
-        320,
-        128
+        160,
+        256
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -538,7 +539,7 @@
         "jsCode": "try{const {wf11BuildDetailContextPack}=require('@igasovic/n8n-blocks');return await wf11BuildDetailContextPack({$input,$json,$items,$node,$env,helpers});}catch(e){e.message=`[extjs:11-chatgpt-read-router/build-detail-context-pack__9d5c9ec9-87cd-4b76-9ba9-d1510d218740.js] ${e.message}`;throw e;}"
       },
       "position": [
-        320,
+        160,
         -128
       ],
       "type": "n8n-nodes-base.code",
@@ -551,8 +552,8 @@
         "jsCode": "'use strict';\n\nconst body = ($json && typeof $json === 'object' && !Array.isArray($json)) ? $json : {};\n  const error = (body.error && typeof body.error === 'object') ? body.error : {};\n\n  return [{\n    json: {\n      response_payload: {\n        ok: false,\n        action: 'chatgpt_read',\n        method: null,\n        outcome: 'failure',\n        no_result: false,\n        context_pack_markdown: null,\n        result: null,\n        error: {\n          code: String(error.code || 'bad_request'),\n          message: String(error.message || 'invalid read command payload'),\n        },\n      },\n      http_status: Number(body.http_status) || 400,\n    },\n  }];\n"
       },
       "position": [
-        320,
-        480
+        160,
+        784
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -564,8 +565,8 @@
         "jsCode": "'use strict';\n\nconst body = ($json && typeof $json === 'object' && !Array.isArray($json)) ? $json : {};\n  const payload = (body.response_payload && typeof body.response_payload === 'object')\n    ? body.response_payload\n    : body;\n  const status = Number(body.http_status);\n  const httpStatus = Number.isFinite(status) && status >= 100 && status <= 599\n    ? status\n    : (payload && payload.ok === false ? 400 : 200);\n  const outcome = String(payload.outcome || '').trim().toLowerCase();\n  const ok = Boolean(payload.ok);\n\n  return [{\n    json: {\n      http_status: httpStatus,\n      ok,\n      action: payload.action || 'chatgpt_read',\n      method: payload.method || null,\n      outcome: payload.outcome || null,\n      no_result: outcome === 'no_result',\n      context_pack_markdown: payload.context_pack_markdown || null,\n      result: payload.result || null,\n      error: payload.error || null,\n    },\n  }];\n"
       },
       "position": [
-        608,
-        128
+        384,
+        256
       ],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
@@ -581,8 +582,8 @@
         "responseBody": "={{ $json }}"
       },
       "position": [
-        864,
-        128
+        608,
+        256
       ],
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1
@@ -592,8 +593,8 @@
     "availableInMCP": false,
     "binaryMode": "separate",
     "callerPolicy": "workflowsFromSameOwner",
-    "executionOrder": "v1",
     "errorWorkflow": "R2r3jkL5Rb39zKpyutwhW",
+    "executionOrder": "v1",
     "timezone": "America/Chicago"
   },
   "staticData": null,
