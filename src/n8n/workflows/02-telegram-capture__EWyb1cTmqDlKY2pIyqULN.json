@@ -447,7 +447,7 @@
       "id": "42a2c7f4-b0fb-4b18-8f1e-8b9f1d3bcb6a",
       "name": "Format Thought Saved Message",
       "parameters": {
-        "jsCode": "'use strict';\\n\\nfunction mdv2Message(value) {\\n  const escaped = String(value ?? '').replace(/[\\\\_*\\[\\]()~`>#+\\-=|{}.!]/g, '\\\\$&');\\n  return escaped.length > 4000 ? escaped.slice(0, 3997) + '...' : escaped;\\n}\\n\\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\\nconst text = 'Thought classified for entry ' + entryId;\\n\\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\\n"
+        "jsCode": "'use strict';\n\nfunction mdv2(value) {\n  return String(value ?? '').replace(/[\\\\_*\\[\\]()~`>#+\\-=|{}.!]/g, '\\\\$&');\n}\n\nfunction mdv2Message(value, options) {\n  const maxLen = Number((options && options.maxLen) || 4000);\n  const text = mdv2(value);\n  return text.length > maxLen ? text.slice(0, Math.max(0, maxLen - 3)) + '...' : text;\n}\n\nconst entryId = String($json.entry_id ?? 'unknown').trim() || 'unknown';\nconst text = 'Thought classified for entry ' + entryId;\n\nreturn [{ json: { ...$json, telegram_message: mdv2Message(text) } }];\n"
       },
       "position": [
         688,
