@@ -19,8 +19,6 @@
     "wf11BuildSearchContextPack": "nodes/11-chatgpt-read-router/build-search-context-pack.js",
     "wf11RouteReadRequest": "nodes/11-chatgpt-read-router/route-read-request.js",
     "wf22ExtractTitleAuthor": "nodes/22-web-extraction/extract-title-author.js",
-    "wf22RecomputeRetrievalExcerptQualitySignalsFromCleanText": "nodes/22-web-extraction/recompute-retrieval-excerpt-quality-signals-from-clean-text.js",
-    "wf22TextClean": "nodes/22-web-extraction/text-clean.js",
     "wf30BuildGoogleEventPayload": "nodes/30-calendar-create/build-google-event-payload.js",
     "wf30FormatCreateResultMessage": "nodes/30-calendar-create/format-create-result-message.js",
     "wf30PrepareConflictContext": "nodes/30-calendar-create/prepare-conflict-context.js",
