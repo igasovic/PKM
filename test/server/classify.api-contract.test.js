@@ -362,6 +362,48 @@ describe('classify and ingest API contract', () => {
     expect(String(parsed.message || '')).toContain('requires at least one parameter');
   });
 
+  test('POST /pkm/classify/batch forwards classify run payload', async () => {
+    classifyRunMock.mockResolvedValue({
+      mode: 'dry_run',
+      execution_mode: 'sync',
+      candidate_count: 7,
+      runnable_count: 6,
+      will_process_count: 6,
+    });
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const body = {
+      execution_mode: 'sync',
+      dry_run: true,
+      limit: 10,
+    };
+    const res = await request(port, 'POST', '/pkm/classify/batch', JSON.stringify(body), { 'Content-Type': 'application/json' });
+
+    expect(res.status).toBe(200);
+    expect(classifyRunMock).toHaveBeenCalledWith(body);
+    expect(JSON.parse(res.body)).toEqual({
+      mode: 'dry_run',
+      execution_mode: 'sync',
+      candidate_count: 7,
+      runnable_count: 6,
+      will_process_count: 6,
+    });
+  });
+
+  test('POST /pkm/classify/batch rejects empty payload', async () => {
+    await startServerWithMocks();
+    if (listenDenied) return;
+
+    const res = await request(port, 'POST', '/pkm/classify/batch', JSON.stringify({}), { 'Content-Type': 'application/json' });
+
+    expect(res.status).toBe(400);
+    expect(classifyRunMock).not.toHaveBeenCalled();
+    const parsed = JSON.parse(res.body);
+    expect(parsed.error).toBe('bad_request');
+    expect(String(parsed.message || '')).toContain('requires at least one parameter');
+  });
+
   test('POST /enrich/t1/update forwards explicit classify update payload', async () => {
     classifyUpdateMock.mockResolvedValue({
       schema: 'pkm',

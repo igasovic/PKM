@@ -312,6 +312,38 @@ async function handleClassifyRoutes(ctx) {
     return true;
   }
 
+  if (method === 'POST' && url.pathname === '/pkm/classify/batch') {
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonBody(raw);
+      bindRunIdFromBody(body);
+      const hasRunParams = body
+        && typeof body === 'object'
+        && !Array.isArray(body)
+        && (
+          Object.prototype.hasOwnProperty.call(body, 'execution_mode')
+          || Object.prototype.hasOwnProperty.call(body, 'dry_run')
+          || Object.prototype.hasOwnProperty.call(body, 'limit')
+          || Object.prototype.hasOwnProperty.call(body, 'schema')
+        );
+      if (!hasRunParams) {
+        const err = new Error('pkm/classify/batch requires at least one parameter (--dry-run, --limit, --sync, --batch, or schema)');
+        err.statusCode = 400;
+        throw err;
+      }
+      const result = await logger.step(
+        'api.pkm.classify.batch',
+        async () => runTier1ClassifyRun(body || {}),
+        { input: body, output: (out) => out, meta: { route: url.pathname } }
+      );
+      json(res, 200, result);
+    } catch (err) {
+      logError(err, req);
+      sendError(res, err, { includeErrorCodeField: false, includeField: false });
+    }
+    return true;
+  }
+
   if (method === 'POST' && url.pathname === '/import/email/mbox') {
     try {
       const raw = await readBody(req);

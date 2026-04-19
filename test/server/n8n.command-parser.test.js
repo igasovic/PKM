@@ -84,12 +84,12 @@ describe('n8n command parser', () => {
     expect(text).toContain('/distill-run --help');
   });
 
-  test('/classify defaults to execution_mode=sync and unlimited limit', async () => {
+  test('/classify defaults to execution_mode=sync and omits limit', async () => {
     const out = await runParser('/classify --dry-run');
     expect(out.cmd).toBe('classify');
     expect(out.execution_mode).toBe('sync');
     expect(out.dry_run).toBe(true);
-    expect(out.classify_limit).toBe(0);
+    expect(out.classify_limit).toBeNull();
   });
 
   test('/classify without params returns usage block', async () => {

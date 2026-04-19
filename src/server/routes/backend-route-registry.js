@@ -152,6 +152,14 @@ const BACKEND_ROUTE_REGISTRY = [
     "path": "/enrich/t1/run",
     "auth": "internal",
     "doc": "docs/api_ingest.md",
+    "primary_callers": ["Legacy compatibility callers"],
+    "tests": ["test/server/classify.api-contract.test.js"]
+  },
+  {
+    "method": "POST",
+    "path": "/pkm/classify/batch",
+    "auth": "internal",
+    "doc": "docs/api_ingest.md",
     "primary_callers": ["10 Read (/classify)"],
     "tests": ["test/server/classify.api-contract.test.js"]
   },

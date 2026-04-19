@@ -1730,7 +1730,7 @@
         "sendBody": true,
         "sendHeaders": true,
         "specifyBody": "json",
-        "url": "http://pkm-server:8080/enrich/t1/run"
+        "url": "http://pkm-server:8080/pkm/classify/batch"
       },
       "position": [
         1568,

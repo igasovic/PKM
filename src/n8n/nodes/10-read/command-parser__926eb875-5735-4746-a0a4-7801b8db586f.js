@@ -367,7 +367,7 @@ if (cmd === 'classify') {
     return replyNow(telegram_chat_id, usageFor('classify'));
   }
   const parsedLimit = parseIntArg(text, 'limit');
-  const classify_limit = parsedLimit === null ? 0 : Math.max(0, parsedLimit);
+  const classify_limit = parsedLimit === null ? null : Math.max(1, parsedLimit);
   const execution_mode = forceBatch ? 'batch' : 'sync';
 
   return [{

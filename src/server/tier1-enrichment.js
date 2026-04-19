@@ -238,8 +238,13 @@ async function enqueueTier1Batch(items, opts) {
 }
 
 function resolveTier1RunLimit(value) {
+  if (value === undefined || value === null || value === '') return 1;
   const n = Number(value);
-  if (!Number.isFinite(n) || n < 0) return 0;
+  if (!Number.isFinite(n) || n < 1) {
+    const err = new Error('classify run limit must be a positive integer');
+    err.statusCode = 400;
+    throw err;
+  }
   return Math.trunc(n);
 }
 

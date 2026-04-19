@@ -496,7 +496,7 @@ Response:
 
 Batch completion handling is internal to backend workers. External callers only enqueue via `/enrich/t1/batch`.
 
-### `POST /enrich/t1/run`
+### `POST /pkm/classify/batch`
 Runs a classify sweep over entries where `topic_primary` or `gist` is missing.
 Supports sync writeback (`/enrich/t1/update-batch`) or async batch enqueue (`/enrich/t1/batch`) in one control-plane call.
 
@@ -505,14 +505,14 @@ Body:
 {
   "execution_mode": "sync",
   "dry_run": false,
-  "limit": 0
+  "limit": 1
 }
 ```
 
 Fields:
 - `execution_mode`: `sync` (default) or `batch`
 - `dry_run`: when true, returns counts only and does not classify
-- `limit`: non-negative integer; `0` means unlimited
+- `limit`: optional positive integer; defaults to `1` when omitted/null/empty, and values `< 1` fail with `400 bad_request`
 - `schema`: optional explicit schema override (`pkm` or `pkm_test`)
 
 Response:
@@ -520,7 +520,7 @@ Response:
 {
   "mode": "run",
   "execution_mode": "sync",
-  "limit": 0,
+  "limit": 1,
   "candidate_count": 120,
   "runnable_count": 118,
   "skipped_missing_clean_text": 2,
@@ -536,6 +536,10 @@ Response:
 Notes:
 - Batch mode returns enqueue metadata (`batch_id`, `status`, `request_count`, `enqueued_count`) instead of per-item completion counts.
 - Dry-run mode returns `will_process_count` and never performs enrichment calls.
+
+### `POST /enrich/t1/run`
+Legacy compatibility alias for `POST /pkm/classify/batch`.
+Request/response schema and validation behavior are identical.
 
 ### `POST /enrich/t1/update-batch`
 Persists explicit Tier‑1 updates for multiple existing entries in one call.

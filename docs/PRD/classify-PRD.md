@@ -26,6 +26,7 @@ This PRD owns:
 - `POST /enrich/t1`
 - `POST /enrich/t1/update`
 - `POST /pkm/classify`
+- `POST /pkm/classify/batch`
 - `POST /enrich/t1/batch`
 - `POST /enrich/t1/update-batch`
 - `GET /status/batch?stage=t1`
@@ -47,6 +48,7 @@ Current repo behavior is:
 - Tier-1 sync classify is exposed through `POST /enrich/t1`
 - explicit sync classify writeback is exposed through `POST /enrich/t1/update`
 - n8n capture flows call `POST /pkm/classify` for single-row classify+write after `/pkm/insert`
+- `10 Read` `/classify` command calls `POST /pkm/classify/batch` for sync/batch runs
 - Tier-1 batch enqueue is exposed through `POST /enrich/t1/batch`
 - explicit batch classify writeback is exposed through `POST /enrich/t1/update-batch` and internal batch-collect apply flow
 - batch status is exposed through the generic `/status/batch` surface with explicit `stage=t1`
@@ -60,6 +62,7 @@ Current repo behavior is:
 - model routing is config-driven through `T1_DEFAULT_MODEL` and `T1_BATCH_MODEL`
 - status aggregation exposes total, processed, pending, ok, parse_error, and error counters
 - status queries are schema-aware and are not limited by the current runtime test-mode flag
+- classify run sweep defaults `limit` to `1` when omitted; unlimited mode is removed for safety
 
 ## Goals
 - keep Tier-1 orchestration behind backend APIs
@@ -175,6 +178,7 @@ Owned routes:
 - `POST /enrich/t1`
 - `POST /enrich/t1/update`
 - `POST /pkm/classify`
+- `POST /pkm/classify/batch`
 - `POST /enrich/t1/batch`
 - `POST /enrich/t1/update-batch`
 - `GET /status/batch?stage=t1`
