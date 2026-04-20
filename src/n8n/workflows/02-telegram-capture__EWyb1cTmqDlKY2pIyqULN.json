@@ -372,6 +372,7 @@
       "id": "b732ea00-d46e-4161-91de-4a897856c1f7",
       "name": "Call '06 Web Extraction'",
       "parameters": {
+        "mode": "each",
         "options": {},
         "workflowId": {
           "__rl": true,

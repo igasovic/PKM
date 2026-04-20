@@ -11,99 +11,110 @@ const { getConfig } = require('@igasovic/n8n-blocks/shared/config.js');
 const { mdv2Message } = require('@igasovic/n8n-blocks/shared/telegram-markdown.js');
 
 module.exports = async function run(ctx) {
-  const { $json, $items } = ctx;
+  const { $input, $items, $json } = ctx;
 
   const s = (v) => (v ?? '').toString().trim();
+  const inputItems = ($input && typeof $input.all === 'function')
+    ? $input.all()
+    : (Array.isArray($items) ? $items : ($json && typeof $json === 'object' ? [{ json: $json }] : []));
+  if (!inputItems.length) return [];
 
   const config = getConfig();
   const isTestMode = !!(config && config.db && config.db.is_test_mode);
-  const smokeDryRun = $json.smoke_telegram_dry_run === true;
+  const smokeDryRun = inputItems.some((item) => item.json && item.json.smoke_telegram_dry_run === true);
 
-  const entryId = s($json.entry_id);
+  const formatItemMessage = (itemJson) => {
+    const entryId = s(itemJson.entry_id);
 
-  const url = s($json.url_canonical || $json.url);
-  const title = s($json.title);
-  const author = s($json.author);
+    const url = s(itemJson.url_canonical || itemJson.url);
+    const title = s(itemJson.title);
+    const author = s(itemJson.author);
 
-  // IMPORTANT: quality and display length should be based only on clean_text
-  const cleanText = s($json.clean_text);
-  const cleanLen = cleanText.length;
-  const cleanWordCountRaw = Number($json.clean_word_count);
-  const cleanWordCount = Number.isFinite(cleanWordCountRaw) && cleanWordCountRaw >= 0
-    ? Math.trunc(cleanWordCountRaw)
-    : (cleanText ? cleanText.split(/\s+/).filter(Boolean).length : 0);
-  const action = s($json.action).toLowerCase();
+    // IMPORTANT: quality and display length should be based only on clean_text
+    const cleanText = s(itemJson.clean_text);
+    const cleanLen = cleanText.length;
+    const cleanWordCountRaw = Number(itemJson.clean_word_count);
+    const cleanWordCount = Number.isFinite(cleanWordCountRaw) && cleanWordCountRaw >= 0
+      ? Math.trunc(cleanWordCountRaw)
+      : (cleanText ? cleanText.split(/\s+/).filter(Boolean).length : 0);
+    const action = s(itemJson.action).toLowerCase();
 
-  const topicPrimary = s($json.topic_primary);
-  const topicSecondary = s($json.topic_secondary);
-  const gist = s($json.gist);
+    const topicPrimary = s(itemJson.topic_primary);
+    const topicSecondary = s(itemJson.topic_secondary);
+    const gist = s(itemJson.gist);
 
-  const labelBase = title || url || 'link';
-  const label = author ? `${labelBase} — ${author}` : labelBase;
+    const labelBase = title || url || 'link';
+    const label = author ? `${labelBase} — ${author}` : labelBase;
 
-  // Determine status purely from clean_text length
-  let status = 'failed';
-  if (cleanLen > 0) status = cleanLen < 500 ? 'low_quality' : 'ok';
+    // Determine status purely from clean_text length
+    let status = 'failed';
+    if (cleanLen > 0) status = cleanLen < 500 ? 'low_quality' : 'ok';
 
-  const idLine = entryId ? ` (#${entryId})` : '';
+    const idLine = entryId ? ` (#${entryId})` : '';
 
-  // Keep the previous core message semantics (status + label + url),
-  // but enrich with topics + gist when available.
-  const lines = [];
-
-  if (action === 'skipped') {
-    if (status === 'ok') {
-      lines.push(`♻️ Duplicate entry (skipped)${idLine}: ${label} (${cleanWordCount.toLocaleString()} words)`);
+    const lines = [];
+    if (action === 'skipped') {
+      if (status === 'ok') {
+        lines.push(`♻️ Duplicate entry (skipped)${idLine}: ${label} (${cleanWordCount.toLocaleString()} words)`);
+      } else if (status === 'low_quality') {
+        lines.push(`♻️ Duplicate entry (skipped, low quality)${idLine}: ${label} (${cleanWordCount.toLocaleString()} words)`);
+      } else {
+        lines.push(`♻️ Duplicate entry (skipped)${idLine}: ${labelBase}`);
+      }
+    } else if (status === 'ok') {
+      lines.push(`✅ Saved${idLine}: ${label} (${cleanWordCount.toLocaleString()} words)`);
     } else if (status === 'low_quality') {
-      lines.push(`♻️ Duplicate entry (skipped, low quality)${idLine}: ${label} (${cleanWordCount.toLocaleString()} words)`);
+      lines.push(`⚠️ Saved (low quality)${idLine}: ${label} (${cleanWordCount.toLocaleString()} words)`);
     } else {
-      lines.push(`♻️ Duplicate entry (skipped)${idLine}: ${labelBase}`);
+      lines.push(`❌ Saved (extraction failed)${idLine}: ${labelBase}`);
     }
-  } else if (status === 'ok') {
-    lines.push(`✅ Saved${idLine}: ${label} (${cleanWordCount.toLocaleString()} words)`);
-  } else if (status === 'low_quality') {
-    lines.push(`⚠️ Saved (low quality)${idLine}: ${label} (${cleanWordCount.toLocaleString()} words)`);
-  } else {
-    lines.push(`❌ Saved (extraction failed)${idLine}: ${labelBase}`);
-  }
 
-  if (url) lines.push(url);
+    if (url) lines.push(url);
+    if (topicPrimary && topicSecondary) lines.push(`🏷️ ${topicPrimary} → ${topicSecondary}`);
+    else if (topicPrimary) lines.push(`🏷️ ${topicPrimary}`);
+    if (gist) lines.push(gist);
 
-  // Add topic path + gist (new)
-  if (topicPrimary && topicSecondary) lines.push(`🏷️ ${topicPrimary} → ${topicSecondary}`);
-  else if (topicPrimary) lines.push(`🏷️ ${topicPrimary}`);
+    return {
+      message: lines.join('\n'),
+      cleanLen,
+      cleanWordCount,
+      topicPrimary,
+      topicSecondary,
+      gist,
+    };
+  };
 
-  if (gist) lines.push(gist);
+  const formatted = inputItems.map((item) => formatItemMessage(item.json || {}));
+  let msg = formatted.map((entry) => entry.message).join('\n\n');
 
-  let msg = lines.join('\n');
-
-  if (isTestMode) msg = `⚗️🧪 TEST MODE\n` + msg;
+  if (isTestMode) msg = `⚗️🧪 TEST MODE\n\n` + msg;
   if (smokeDryRun) msg = `[SMOKE DRY RUN]\n` + msg;
 
   // Escape + truncate through shared MarkdownV2 helper.
   msg = mdv2Message(msg, { maxLen: 4000 });
 
+  const firstJson = ($json && typeof $json === 'object') ? $json : (inputItems[0].json || {});
+  const first = formatted[0] || {};
+
+  const topicPrimary = first.topicPrimary || s(firstJson.topic_primary);
+  const topicSecondary = first.topicSecondary || s(firstJson.topic_secondary);
   const topic_path =
     topicPrimary && topicSecondary ? `${topicPrimary} → ${topicSecondary}`
     : topicPrimary ? topicPrimary
     : '';
 
-  // Keep prior behavior: return everything as before, plus new fields
+  // Keep prior behavior on output fields while aggregating to a single Telegram message item.
   return [{
     json: {
-      ...$json,
+      ...firstJson,
       telegram_message: msg,
-
-      // new/normalized outputs
-      gist: gist || $json.gist,
-      topic_primary: topicPrimary || $json.topic_primary,
-      topic_secondary: topicSecondary || $json.topic_secondary,
+      gist: first.gist || firstJson.gist,
+      topic_primary: topicPrimary || firstJson.topic_primary,
+      topic_secondary: topicSecondary || firstJson.topic_secondary,
       topic_path,
-
-      // updated length derived from clean_text (your requirement)
-      text_len: cleanLen,
-      clean_len: cleanLen,
-      clean_word_count: cleanWordCount,
+      text_len: first.cleanLen ?? s(firstJson.clean_text).length,
+      clean_len: first.cleanLen ?? s(firstJson.clean_text).length,
+      clean_word_count: first.cleanWordCount ?? (Number(firstJson.clean_word_count) || 0),
       smoke_telegram_dry_run: smokeDryRun,
     }
   }];
