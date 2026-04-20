@@ -341,6 +341,11 @@ function parsePkmInsertInput(input, options = {}) {
     }
   }
 
+  const sourceName = String(out.source || '').trim().toLowerCase();
+  if (sourceName.startsWith('email') && isBlankTextValue(out.idempotency_key_secondary)) {
+    throw new Error('idempotency_key_secondary is required when source starts with "email"');
+  }
+
   if (!isBlankTextValue(out.url_canonical) && isBlankTextValue(out.url)) {
     throw new Error('url is required when url_canonical is set');
   }

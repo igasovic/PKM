@@ -69,6 +69,7 @@ Optional input fields:
 
 Validation rules:
 - required fields must not be `null` or empty string after trim
+- for `source` values starting with `email` (for example `email`, `email-batch`), `idempotency_key_secondary` is also required
 - `url` is required when `url_canonical` is set
 - `returning` is not accepted
 - `content_hash` is not accepted

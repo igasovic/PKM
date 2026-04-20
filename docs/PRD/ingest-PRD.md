@@ -195,6 +195,9 @@ This PRD owns the ingest requirement that normalization and DB writes agree on t
 | `notion_correspondence_v1` | Notion correspondence | `update` | `notion:{page_id}` | `sha256(created_at + title)` when available |
 | `notion_other_v1` | Notion other | `update` | `notion:{page_id}` | `sha256(created_at + title)` when available |
 
+Insert-time exception:
+- For sources that start with `email` (including `email-batch`), `idempotency_key_secondary` is mandatory at `/pkm/insert*` boundaries, in addition to the default required primary key.
+
 ### Content-hash invariants
 - `content_hash` is derived only from `clean_text`.
 - Algorithm:
@@ -218,6 +221,7 @@ This PRD owns the ingest requirement that normalization and DB writes agree on t
   - `idempotency_policy_key`
   - `idempotency_key_primary`
 - required fields must not be `null` or empty string after trim.
+- insert exception for email-family sources: when `source` starts with `email` (including `email-batch`), `idempotency_key_secondary` is also required.
 - `url` is required when `url_canonical` is set.
 - `/pkm/insert/batch` requires:
   - `continue_on_error`
